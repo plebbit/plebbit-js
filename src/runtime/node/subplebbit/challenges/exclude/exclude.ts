@@ -1,7 +1,16 @@
 //@ts-expect-error
 import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
-import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
+import {
+    testVote,
+    testReply,
+    testPost,
+    testScore,
+    testFirstCommentTimestamp,
+    testRole,
+    testCommentEdit,
+    testCommentModeration
+} from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
@@ -44,6 +53,8 @@ const shouldExcludePublication = (
             exclude.post === undefined &&
             exclude.reply === undefined &&
             exclude.vote === undefined &&
+            exclude.commentEdit === undefined &&
+            exclude.commentModeration === undefined &&
             exclude.rateLimit === undefined &&
             !exclude.role?.length
         ) {
@@ -71,6 +82,15 @@ const shouldExcludePublication = (
         if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
             shouldExclude = false;
         }
+
+        if (typeof exclude.commentEdit === "boolean" && !testCommentEdit(exclude.commentEdit, request)) {
+            shouldExclude = false;
+        }
+
+        if (typeof exclude.commentModeration === "boolean" && !testCommentModeration(exclude.commentModeration, request)) {
+            shouldExclude = false;
+        }
+
         if (!testRateLimit(exclude, request)) {
             shouldExclude = false;
         }

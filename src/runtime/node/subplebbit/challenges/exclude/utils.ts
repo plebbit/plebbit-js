@@ -12,6 +12,9 @@ const testFirstCommentTimestamp = (excludeTime: number | undefined, authorFirstC
     excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity);
 
 const isVote = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.vote);
+const isCommentEdit = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentEdit);
+const isCommentModeration = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentModeration);
+
 const isReply = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => isRequestPubsubPublicationOfReply(request);
 const isPost = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => isRequestPubsubPublicationOfPost(request);
 
@@ -34,6 +37,14 @@ const testType = (
 };
 const testVote = (excludeVote: boolean | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) =>
     testType(excludeVote, request, isVote);
+
+const testCommentEdit = (excludeCommentEdit: boolean | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) =>
+    testType(excludeCommentEdit, request, isCommentEdit);
+
+const testCommentModeration = (
+    excludeCommentModeration: boolean | undefined,
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+) => testType(excludeCommentModeration, request, isCommentModeration);
 const testReply = (excludeReply: boolean | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) =>
     testType(excludeReply, request, isReply);
 const testPost = (excludePost: boolean | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) =>
@@ -50,4 +61,18 @@ const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, 
     return false;
 };
 
-export { isVote, isReply, isPost, testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole };
+export {
+    isVote,
+    isReply,
+    isPost,
+    isCommentEdit,
+    isCommentModeration,
+    testVote,
+    testReply,
+    testPost,
+    testScore,
+    testFirstCommentTimestamp,
+    testRole,
+    testCommentEdit,
+    testCommentModeration
+};

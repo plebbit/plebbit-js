@@ -124,6 +124,8 @@ export const ChallengeExcludeSchema = z
         post: z.boolean().optional(),
         reply: z.boolean().optional(),
         vote: z.boolean().optional(),
+        commentModeration: z.boolean().optional(),
+        commentEdit: z.boolean().optional(),
         role: SubplebbitRoleSchema.shape.role.array().nonempty().optional(),
         address: AuthorAddressSchema.array().nonempty().optional(),
         rateLimit: z.number().nonnegative().int().optional(),
@@ -131,7 +133,7 @@ export const ChallengeExcludeSchema = z
     })
     .passthrough()
     .refine(
-        (args) => [args.post, args.vote, args.reply].filter((pub) => pub === true).length <= 1,
+        (args) => [args.post, args.vote, args.reply, args.commentModeration, args.commentEdit].filter((pub) => pub === true).length <= 1,
         messages.ERR_CAN_NOT_SET_EXCLUDE_TO_HAVE_MORE_THAN_ONE_PUBLICATION
     );
 

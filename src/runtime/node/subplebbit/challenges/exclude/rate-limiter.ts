@@ -1,5 +1,16 @@
 import QuickLRU from "quick-lru";
-import { isVote, isReply, isPost, testVote, testReply, testPost } from "./utils.js";
+import {
+    isVote,
+    isReply,
+    isPost,
+    testVote,
+    testReply,
+    testPost,
+    isCommentEdit,
+    isCommentModeration,
+    testCommentEdit,
+    testCommentModeration
+} from "./utils.js";
 import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
@@ -11,7 +22,7 @@ import {
     isRequestPubsubPublicationOfPost,
     isRequestPubsubPublicationOfReply
 } from "../../../../../util.js";
-type PublicationType = "post" | "reply" | "vote";
+type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
 const rateLimiters = new QuickLRU<string, RateLimiter>({ maxSize: 50000 });
@@ -61,17 +72,32 @@ const getRateLimitersToTest = (
     request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeSuccess: ChallengeResult["success"]
 ) => {
+    // TODO I think we need to change this
     const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote].includes(true)) {
+    if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote, exclude.commentEdit, exclude.commentModeration].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
     }
-    if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote].includes(true)) {
+    if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote, exclude.commentEdit, exclude.commentModeration].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
     }
-    if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply].includes(true)) {
+    if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply, exclude.commentEdit, exclude.commentModeration].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
+    }
+
+    if (
+        testCommentEdit(exclude.commentEdit, request) &&
+        ![exclude.post, exclude.reply, exclude.vote, exclude.commentModeration].includes(true)
+    ) {
+        addFilteredRateLimiter(exclude, publication, "commentEdit", challengeSuccess, filteredRateLimiters);
+    }
+
+    if (
+        testCommentModeration(exclude.commentModeration, request) &&
+        ![exclude.post, exclude.reply, exclude.vote, exclude.commentEdit].includes(true)
+    ) {
+        addFilteredRateLimiter(exclude, publication, "commentModeration", challengeSuccess, filteredRateLimiters);
     }
     return filteredRateLimiters;
 };
@@ -82,8 +108,12 @@ const testRateLimit = (exclude: Exclude, request: DecryptedChallengeRequestMessa
         (exclude.post === true && !isPost(request)) ||
         (exclude.reply === true && !isReply(request)) ||
         (exclude.vote === true && !isVote(request)) ||
+        (exclude.commentEdit === true && !isCommentEdit(request)) ||
+        (exclude.commentModeration === true && !isCommentModeration(request)) ||
         (exclude.post === false && isPost(request)) ||
         (exclude.reply === false && isReply(request)) ||
+        (exclude.commentEdit === false && isCommentEdit(request)) ||
+        (exclude.commentModeration === false && isCommentModeration(request)) ||
         (exclude.vote === false && isVote(request))
     ) {
         // early exit based on exclude type and publication type
@@ -128,6 +158,12 @@ const getRateLimitersToAddTo = (
         }
         if (request.vote) {
             addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
+        }
+        if (request.commentEdit) {
+            addFilteredRateLimiter(exclude, publication, "commentEdit", challengeSuccess, filteredRateLimiters);
+        }
+        if (request.commentModeration) {
+            addFilteredRateLimiter(exclude, publication, "commentModeration", challengeSuccess, filteredRateLimiters);
         }
     }
     return filteredRateLimiters;
