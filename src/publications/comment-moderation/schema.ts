@@ -20,6 +20,7 @@ export const ModeratorOptionsSchema = z
         pinned: z.boolean().optional(),
         locked: z.boolean().optional(),
         removed: z.boolean().optional(),
+        purged: z.boolean().optional(),
         reason: z.string().optional(),
         author: SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true }).passthrough().optional()
     })

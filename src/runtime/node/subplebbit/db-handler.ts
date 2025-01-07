@@ -289,7 +289,7 @@ export class DbHandler {
 
     private async _createCommentModerationsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
-            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS); // from commentModerationPublication.commentCid
+            table.text("commentCid").notNullable(); // from commentModerationPublication.commentCid. It's not a foreign key because when we purge a comment we still want to maintain its moderation rows for further inspection
             table.json("author").notNullable(); // commentModerationPublication.author
             table.json("signature").notNullable(); // from commentModerationPublication.signature
             table.text("modSignerAddress").notNullable(); // calculated from commentModerationPublication.signatuer.publicKey
@@ -462,7 +462,7 @@ export class DbHandler {
                 log.error(
                     `Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged along with comment update, votes and children comments`
                 );
-                await this._deleteComment(commentRecord.cid);
+                await this.purgeComment(commentRecord.cid);
                 continue;
             }
 
@@ -482,7 +482,7 @@ export class DbHandler {
                     validRes.reason,
                     `It will be purged along with its children commentUpdate, votes, comments`
                 );
-                await this._deleteComment(commentRecord.cid);
+                await this.purgeComment(commentRecord.cid);
             }
         }
     }
@@ -1067,23 +1067,36 @@ export class DbHandler {
         };
     }
 
-    // Not meant to be used within plebbit-js
-    // Only in edge cases where a comment is invalid or it's causing a problem
-
-    async _deleteComment(cid: string) {
+    // will return a list of comment cids + comment updates + their pages that got purged
+    async purgeComment(cid: string, trx?: Transaction): Promise<string[]> {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
 
-        await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
-        await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        await this._baseTransaction()(TABLES.COMMENT_MODERATIONS).where({ commentCid: cid }).del();
+        const purgedCids: string[] = [];
+        await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
+        await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
 
-        if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES))
-            await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid }).del();
+        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
+            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
 
-        const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: cid });
-        for (const child of children) await this._deleteComment(child.cid);
+            let curCid: string | undefined = cid;
+            while (curCid) {
+                const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
+                if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
+                if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
+                await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
 
-        await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).del(); // Will throw if we do not disable foreign_keys constraint
+                const comment = await this.queryComment(curCid, trx);
+                curCid = comment?.parentCid;
+            }
+        }
+
+        // delete the replies tree of this comment (going down the tree here)
+        const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: cid });
+        for (const child of children) purgedCids.push(...(await this.purgeComment(child.cid, trx)));
+
+        await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        purgedCids.push(cid);
+        return remeda.unique(purgedCids);
     }
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");

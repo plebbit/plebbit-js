@@ -580,6 +580,43 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._dbHandler.insertCommentModeration(modTableRow);
         log(`Inserted new CommentModeration in DB`, remeda.omit(modTableRow, ["signature"]));
+
+        if (modTableRow.commentModeration.purged) {
+            const transactionName = challengeRequestId.toString() + modTableRow.commentCid + "purge";
+            const trx = await this._dbHandler.createTransaction(transactionName);
+            log(
+                "commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs",
+                "comment cid is",
+                modTableRow.commentCid
+            );
+
+            const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid, trx);
+            await this._dbHandler.commitTransaction(transactionName);
+
+            const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
+            this._cidsToUnPin.push(...purgedCids);
+
+            const purgedMfsPaths = cidsToPurgeOffIpfsNode.filter((ipfsPath) => ipfsPath.startsWith("/"));
+
+            this._mfsPathsToUnPin.push(...purgedMfsPaths);
+
+            await this._unpinStaleCids();
+
+            await this._cleanUpIpfsRepoRarely(true);
+
+            await this._syncPostUpdatesFilesystemWithIpfs();
+
+            log(
+                "Purged comment",
+                modTableRow.commentCid,
+                "and its comment and comment update children",
+                cidsToPurgeOffIpfsNode.length,
+                "out of DB and IPFS"
+            );
+
+            this._subplebbitUpdateTrigger = true; // force plebbit-js to produce a new subplebbit.posts and an IPNS
+            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+        }
     }
 
     private async storeVote(
@@ -1654,6 +1691,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     throw e;
                 }
             }
+
+            for (const ipfsPath of this._mfsPathsToUnPin) {
+                const fullFsPath = path.join(this._getPostUpdatesDirOnFilesystem(), ...ipfsPath.split("/"));
+                await fsPromises.rm(fullFsPath, { force: true });
+            }
+
             this._mfsPathsToUnPin = [];
         }
     }
@@ -1778,9 +1821,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (this._subplebbitUpdateTrigger) await this._syncPostUpdatesFilesystemWithIpfs();
     }
 
-    private async _cleanUpIpfsRepoRarely() {
+    private async _cleanUpIpfsRepoRarely(force = false) {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        if (Math.random() < 0.001) {
+        if (Math.random() < 0.001 || force) {
             let gcCids = 0;
             try {
                 for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
