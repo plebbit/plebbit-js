@@ -1,0 +1,204 @@
+import signers from "../../../fixtures/signers.js";
+import {
+    publishRandomPost,
+    publishRandomReply,
+    generateMockComment,
+    generateMockVote,
+    publishWithExpectedResult,
+    findCommentInPage,
+    resolveWhenConditionIsTrue,
+    getRemotePlebbitConfigs,
+    waitTillPostInSubplebbitPages,
+    mockPlebbit,
+    createSubWithNoChallenge,
+    waitTillReplyInParentPages,
+    mockRemotePlebbitIpfsOnly
+} from "../../../../dist/node/test/test-util.js";
+import { expect } from "chai";
+import { messages } from "../../../../dist/node/errors.js";
+import * as remeda from "remeda";
+
+const subplebbitAddress = signers[0].address;
+const roles = [
+    { role: "owner", signer: signers[1] },
+    { role: "admin", signer: signers[2] },
+    { role: "mod", signer: signers[3] }
+];
+
+// only mods can purge
+
+// after purging
+// should not be able to load it (DONE)
+// should not be able to load its children (DONE)
+// should not be able to vote on it (DONE)
+// should not be able to load one of its pages (DONE)
+// the purged post should not appear in the subplebbit posts (DONE)
+// the purged comment should not appear in its parent pages ()
+
+// should also test loading pages of postToPurge to see if its tree exists
+
+// should not be able to load its comment update (DONE)
+
+getRemotePlebbitConfigs().map((config) => {
+    describe(`Purging post - ${config.name}`, async () => {
+        let plebbit, postToPurge, postReply, replyUnderReply;
+        let remotePlebbitIpfs;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            remotePlebbitIpfs = await mockRemotePlebbitIpfsOnly(); // this instance is connected to the same IPFS node as the sub
+            postToPurge = await publishRandomPost(subplebbitAddress, plebbit, { content: "post to be purged" + Date.now() });
+            await postToPurge.update();
+            await resolveWhenConditionIsTrue(postToPurge, () => typeof postToPurge.updatedAt === "number");
+            await waitTillPostInSubplebbitPages(postToPurge, plebbit);
+            postReply = await publishRandomReply(postToPurge, plebbit);
+            await postReply.update();
+            await resolveWhenConditionIsTrue(postReply, () => typeof postReply.updatedAt === "number");
+
+            await waitTillReplyInParentPages(postReply, plebbit);
+
+            replyUnderReply = await publishRandomReply(postReply, plebbit);
+            await waitTillReplyInParentPages(replyUnderReply, plebbit);
+
+            // make sure both postToPurge and postReply exists on the IPFS node
+
+            for (const cid of [postToPurge.cid, postReply.cid, replyUnderReply.cid]) {
+                const res =
+                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
+                        cid
+                    );
+                expect(res.size).to.be.a("number");
+            }
+        });
+        after(async () => {
+            await postToPurge.stop();
+            await postReply.stop();
+            await replyUnderReply.stop();
+            await plebbit.destroy();
+        });
+
+        it(`Regular author can not purge a comment`, async () => {
+            const removeEdit = await plebbit.createCommentModeration({
+                subplebbitAddress: postToPurge.subplebbitAddress,
+                commentCid: postToPurge.cid,
+                commentModeration: { reason: "To purge a post", purged: true },
+                signer: await plebbit.createSigner() // Mod role
+            });
+            await publishWithExpectedResult(removeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
+        });
+
+        it(`Mod can mark an author post as purged`, async () => {
+            const removeEdit = await plebbit.createCommentModeration({
+                subplebbitAddress: postToPurge.subplebbitAddress,
+                commentCid: postToPurge.cid,
+                commentModeration: { reason: "To purge a post", purged: true },
+                signer: roles[2].signer // Mod role
+            });
+            await publishWithExpectedResult(removeEdit, true);
+        });
+
+        it(`The whole reply tree including post, replies and their pages should not be stored in the ipfs node of the subplebbit`, async () => {
+            const cids = [
+                postToPurge.cid,
+                postReply.cid,
+                replyUnderReply.cid,
+                ...Object.values(postToPurge.replies.pageCids),
+                ...Object.values(postReply.replies.pageCids)
+            ];
+
+            for (const cid of cids) {
+                try {
+                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
+                        cid
+                    );
+
+                    expect.fail("should not succeed");
+                } catch (e) {
+                    expect(e.message).to.include("block was not found locally");
+                }
+            }
+        });
+
+        it(`Purged post don't show in subplebbit.posts`, async () => {
+            const sub = await plebbit.createSubplebbit({ address: postToPurge.subplebbitAddress });
+
+            const updatePromise = new Promise((resolve) =>
+                sub.on("update", async () => {
+                    const purgedPostInPage = await findCommentInPage(postToPurge.cid, sub.posts.pageCids.new, sub.posts);
+                    if (!purgedPostInPage) resolve();
+                })
+            );
+            await sub.update();
+
+            await updatePromise;
+
+            await sub.stop();
+
+            for (const pageCid of Object.values(sub.posts.pageCids)) {
+                const purgedPostInPage = await findCommentInPage(postToPurge.cid, pageCid, sub.posts);
+
+                expect(purgedPostInPage).to.be.undefined;
+            }
+        });
+
+        it(`Sub rejects votes on purged post`, async () => {
+            const vote = await generateMockVote(postToPurge, 1, plebbit, remeda.sample(signers, 1)[0]);
+            await publishWithExpectedResult(vote, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
+        });
+
+        it(`Sub rejects replies under purged post`, async () => {
+            const reply = await generateMockComment(postToPurge, plebbit, false);
+            await publishWithExpectedResult(reply, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
+        });
+
+        it(`Sub rejects votes on a reply of a purged post`, async () => {
+            const vote = await generateMockVote(postReply, 1, plebbit);
+            await publishWithExpectedResult(vote, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
+        });
+
+        it(`Sub rejects replies on a reply of a purged post`, async () => {
+            const reply = await generateMockComment(postReply, plebbit, false);
+            await publishWithExpectedResult(reply, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
+        });
+
+        it(`Author of post can't purge their own comment`, async () => {
+            const postToBePurged = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const purgeCommentModeration = await plebbit.createCommentModeration({
+                subplebbitAddress: postToBePurged.subplebbitAddress,
+                commentCid: postToBePurged.cid,
+                commentModeration: { reason: "To purge a post" + Date.now(), purged: true },
+                signer: postToBePurged.signer
+            });
+            await publishWithExpectedResult(
+                purgeCommentModeration,
+                false,
+                messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR
+            );
+        });
+
+        it(`Mod can't un-purge a comment`, async () => {
+            const unPurgeMod = await plebbit.createCommentModeration({
+                subplebbitAddress: postToPurge.subplebbitAddress,
+                commentCid: postToPurge.cid,
+                commentModeration: { reason: "To unpurge a post", purged: false },
+                signer: roles[2].signer
+            });
+            await publishWithExpectedResult(unPurgeMod, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
+        });
+
+        it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
+            await Promise.all(
+                [postToPurge, postReply, replyUnderReply].map(async (purgedComment) => {
+                    purgedComment.updatedAt = undefined;
+                    await purgedComment.update();
+
+                    await new Promise((resolve) => setTimeout(resolve, 10000));
+                    // we've waiting 10s for the update but it's not defined yet
+                    // plebbit-js keeps on retrying to load the comment update, but it's not loading because ipfs node removed it from MFS
+                    expect(purgedComment.updatedAt).to.be.undefined;
+
+                    await purgedComment.stop();
+                })
+            );
+        });
+    });
+});
