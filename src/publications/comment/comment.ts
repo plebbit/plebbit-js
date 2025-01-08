@@ -453,7 +453,7 @@ export class Comment
                     // fetchCommentUpdate could throw a non-retriable error
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.trace(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`);
+                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e);
                     if (this._clientsManager._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e))
                         // Should we emit an error event or keep retrying?
                         this._loadingOperation!.retry(<Error>e);
