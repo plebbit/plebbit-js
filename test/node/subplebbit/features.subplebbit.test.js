@@ -7,7 +7,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     resolveWhenConditionIsTrue,
     publishRandomPost,
-    generateMockVote
+    generateMockVote,
+    publishRandomReply
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 
@@ -173,5 +174,171 @@ describe(`subplebbit.features.noDownvotes`, async () => {
         const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit); // should be accepted
 
         await publishWithExpectedResult(upvote, true);
+    });
+});
+
+describe(`subplebbit.features.noPostDownvotes`, async () => {
+    let plebbit, subplebbit, remotePlebbit, postToVoteOn;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+
+        await subplebbit.edit({ features: { ...subplebbit.features, noPostDownvotes: true } });
+
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+
+    it(`Not allowed to publish downvotes to posts if subplebbit.features.noPostDownvotes=true`, async () => {
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit); // should be rejected
+
+        await publishWithExpectedResult(downvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_POST_DOWNVOTES);
+    });
+
+    it(`Allowed to publish upvotes to posts if subplebbit.features.noPostDownvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit); // should be accepted
+
+        await publishWithExpectedResult(upvote, true);
+    });
+
+    it(`Allowed to publish upvotes and downvotes to replies if subplebbit.noPostDownvotes=true`, async () => {
+        const reply = await publishRandomReply(postToVoteOn, plebbit);
+
+        const upvote = await generateMockVote(reply, 1, remotePlebbit);
+        const downvote = await generateMockVote(reply, -1, remotePlebbit);
+
+        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
+    });
+});
+describe(`subplebbit.features.noPostUpvotes`, async () => {
+    let plebbit, subplebbit, remotePlebbit, postToVoteOn;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+
+        await subplebbit.edit({ features: { ...subplebbit.features, noPostUpvotes: true } });
+
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+
+    it(`Not allowed to publish upvotes to posts if subplebbit.features.noPostUpvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit); // should be rejected
+
+        await publishWithExpectedResult(upvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_POST_UPVOTES);
+    });
+
+    it(`Allowed to publish downvotes to posts if subplebbit.features.noPostUpvotes=true`, async () => {
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit); // should be accepted
+
+        await publishWithExpectedResult(downvote, true);
+    });
+
+    it(`Allowed to publish upvotes and downvotes to replies if subplebbit.noPostUpvotes=true`, async () => {
+        const reply = await publishRandomReply(postToVoteOn, plebbit);
+
+        const upvote = await generateMockVote(reply, 1, remotePlebbit);
+        const downvote = await generateMockVote(reply, -1, remotePlebbit);
+
+        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
+    });
+});
+
+describe(`subplebbit.features.noReplyDownvotes`, async () => {
+    let plebbit, subplebbit, remotePlebbit, postToVoteOn, replyToVoteOn;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+
+        await subplebbit.edit({ features: { ...subplebbit.features, noReplyDownvotes: true } });
+
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
+
+        replyToVoteOn = await publishRandomReply(postToVoteOn, remotePlebbit);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+
+    it(`Not allowed to publish downvotes to replies if subplebbit.features.noReplyDownvotes=true`, async () => {
+        const downvote = await generateMockVote(replyToVoteOn, -1, remotePlebbit); // should be rejected
+
+        await publishWithExpectedResult(downvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_DOWNVOTES);
+    });
+
+    it(`Allowed to publish upvote to replies if subplebbit.features.noReplyDownvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit); // should be accepted
+
+        await publishWithExpectedResult(upvote, true);
+    });
+
+    it(`Allowed to publish upvotes and downvotes to posts if subplebbit.noReplyDownvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit);
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit);
+
+        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
+    });
+});
+describe(`subplebbit.features.noReplyUpvotes`, async () => {
+    let plebbit, subplebbit, remotePlebbit, postToVoteOn, replyToVoteOn;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+
+        await subplebbit.edit({ features: { ...subplebbit.features, noReplyUpvotes: true } });
+
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
+
+        replyToVoteOn = await publishRandomReply(postToVoteOn, remotePlebbit);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+
+    it(`Not allowed to publish upvotes to replies if subplebbit.features.noReplyUpvotes=true`, async () => {
+        const upvote = await generateMockVote(replyToVoteOn, 1, remotePlebbit); // should be rejected
+
+        await publishWithExpectedResult(upvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES);
+    });
+
+    it(`Allowed to publish downvote to replies if subplebbit.features.noReplyUpvotes=true`, async () => {
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit); // should be accepted
+
+        await publishWithExpectedResult(downvote, true);
+    });
+
+    it(`Allowed to publish upvotes and downvotes to posts if subplebbit.noReplyUpvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit);
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit);
+
+        await Promise.all([upvote, downvote].map((vote) => publishWithExpectedResult(vote, true)));
     });
 });
