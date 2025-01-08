@@ -9,6 +9,7 @@ import {
     getRemotePlebbitConfigs
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
+import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -130,6 +131,12 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(vote.toJSONPubsubMessagePublication()).to.deep.equal(voteFromStringifiedVote.toJSONPubsubMessagePublication());
             expect(vote.toJSONPubsubRequestToEncrypt()).to.deep.equal(voteFromStringifiedVote.toJSONPubsubRequestToEncrypt());
+        });
+
+        it(`A vote=0 is rejected if the author never published a vote on the comment before`, async () => {
+            const vote = await generateMockVote(postToVote, 0, plebbit);
+
+            await publishWithExpectedResult(vote, false, messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL);
         });
     });
 });
