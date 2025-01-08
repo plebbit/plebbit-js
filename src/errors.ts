@@ -196,6 +196,11 @@ export enum messages {
     ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE = "Timestamp of publication is either too high or too low. It should be within 5 minutes range",
     ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES = "subplebbit.features.noUpvotes is true which means no upvotes can be published to this subplebbit",
     ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES = "subplebbit.features.noDownvotes is true which means no downvotes can be published to this subplebbit",
+    ERR_NOT_ALLOWED_TO_PUBLISH_POST_DOWNVOTES = "subplebbit.features.noPostDownvotes is true which means no downvotes can be published to posts",
+    ERR_NOT_ALLOWED_TO_PUBLISH_POST_UPVOTES = "subplebbit.features.noPostUpvotes is true which means no upvotes can be published to posts",
+    ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_DOWNVOTES = "subplebbit.features.noReplyDownvotes is true which means no downvotes can be published to replies (depth > 0)",
+    ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES = "subplebbit.features.noReplyUpvotes is true which means no upvotes can be published to replies (depth > 0)",
+    ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL = "vote=0 is for canceling a previous vote, but the author doesn't have a previous vote on this comment",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",

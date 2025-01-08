@@ -1090,8 +1090,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const votePublication = request.vote;
             if (remeda.intersection(VotePubsubReservedFields, remeda.keys.strict(votePublication)).length > 0)
                 return messages.ERR_VOTE_HAS_RESERVED_FIELD;
-            if (votePublication.vote === 1 && this.features?.noUpvotes) return messages.ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES;
-            if (votePublication.vote === -1 && this.features?.noDownvotes) return messages.ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES;
+            if (this.features?.noUpvotes && votePublication.vote === 1) return messages.ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES;
+            if (this.features?.noDownvotes && votePublication.vote === -1) return messages.ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES;
+
+            const commentToVoteOn = await this._dbHandler.queryComment(request.vote.commentCid)!;
+
+            if (this.features?.noPostDownvotes && commentToVoteOn!.depth === 0 && votePublication.vote === -1)
+                return messages.ERR_NOT_ALLOWED_TO_PUBLISH_POST_DOWNVOTES;
+            if (this.features?.noPostUpvotes && commentToVoteOn!.depth === 0 && votePublication.vote === 1)
+                return messages.ERR_NOT_ALLOWED_TO_PUBLISH_POST_UPVOTES;
+
+            if (this.features?.noReplyDownvotes && commentToVoteOn!.depth > 0 && votePublication.vote === -1)
+                return messages.ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_DOWNVOTES;
+            if (this.features?.noReplyUpvotes && commentToVoteOn!.depth > 0 && votePublication.vote === 1)
+                return messages.ERR_NOT_ALLOWED_TO_PUBLISH_REPLY_UPVOTES;
+
+            const voteAuthorSignerAddress = await getPlebbitAddressFromPublicKey(votePublication.signature.publicKey);
+            const previousVote = await this._dbHandler.queryVote(commentToVoteOn!.cid, voteAuthorSignerAddress);
+            if (!previousVote && votePublication.vote === 0) return messages.ERR_THERE_IS_NO_PREVIOUS_VOTE_TO_CANCEL;
         } else if (request.commentModeration) {
             const commentModerationPublication = request.commentModeration;
             if (remeda.intersection(CommentModerationReservedFields, remeda.keys.strict(commentModerationPublication)).length > 0)

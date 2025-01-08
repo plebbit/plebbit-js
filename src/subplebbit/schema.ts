@@ -69,6 +69,10 @@ export const SubplebbitFeaturesSchema = z
         noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
         markdownImageReplies: z.boolean().optional(), // Not implemented
         markdownVideoReplies: z.boolean().optional(), // Not implemented
+        noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0
+        noReplyUpvotes: z.boolean().optional(), // not allowed to publish a vote=1 to comment with depth > 0
+        noPostDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth = 0
+        noReplyDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth > 0
         noUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1
         noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
         requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
