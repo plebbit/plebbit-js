@@ -410,7 +410,7 @@ const _verifyPublicationWithAuthor = async (
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
     if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress) {
-        log(
+        log.trace(
             `Will override publication.author.address (${publicationJson.author.address}) with signer address (${authorSignatureValidity.derivedAddress})`,
             publicationJson
         );
