@@ -1,8 +1,7 @@
-import { Plebbit } from "./plebbit/plebbit.js";
-import { ChainTicker } from "./types.js";
+import type { ChainTicker } from "./types.js";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import { createPublicClient as createViemClient, http } from "viem";
+import { createPublicClient as createViemClient, http as httpViemTransport, webSocket as webSocketViemTransport } from "viem";
 import * as chains from "viem/chains";
 import { ethers } from "ethers";
 import { Connection as SolanaConnection, clusterApiUrl } from "@solana/web3.js";
@@ -31,18 +30,27 @@ async function _resolveViaViem(
         if (chainProviderUrl === "viem" && chainTicker === "eth") {
             viemClients[clientCacheKey] = createViemClient({
                 chain: chains.mainnet,
-                transport: http()
+                transport: httpViemTransport()
             });
         } else {
             // should use extract chain here
             const chain = Object.values(chains).find((chain) => chain.id === chainId);
             assert(chain, `Was not able to find a chain with id ${chainId}`);
-            if (!viemClients[clientCacheKey])
-                //@ts-expect-error
-                viemClients[clientCacheKey] = createViemClient({
+            if (!viemClients[clientCacheKey]) {
+                const parsedProviderUrl = new URL(chainProviderUrl);
+                const transport = parsedProviderUrl.protocol.startsWith("ws")
+                    ? webSocketViemTransport(chainProviderUrl)
+                    : parsedProviderUrl.protocol.startsWith("http")
+                      ? httpViemTransport(chainProviderUrl)
+                      : undefined;
+                if (!transport) throw Error("Failed to parse chain provider url to its proper viem transport " + chainProviderUrl);
+                const chainClient = createViemClient({
                     chain,
-                    transport: http(chainProviderUrl)
+                    transport
                 });
+                //@ts-expect-error
+                viemClients[clientCacheKey] = chainClient;
+            }
         }
 
         log(`Created a new viem client at chain ${chainTicker} with chain provider url ${chainProviderUrl}`);
@@ -106,6 +114,7 @@ export async function resolveTxtRecord(
 ): Promise<string | null> {
     const log = Logger("plebbit-js:resolver:resolveTxtRecord");
 
+    // we only support resolving text records on ETH and Solana for now
     log.trace(`Attempting to resolve text record (${txtRecordName}) of address (${address}) with chain provider (${chainProviderUrl})`);
     let txtRecordResult: string | null;
     if (chainProviderUrl === "ethers.js" && chain === "eth") txtRecordResult = await _resolveViaEthers(chain, address, txtRecordName);
