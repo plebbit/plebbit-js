@@ -98,7 +98,7 @@
         "typestub-ipfs-only-hash": "4.0.0",
         "uuid": "9.0.1",
         "viem": "2.21.57",
-        "zod": "3.23.8"
+        "zod": "3.24.1"
     },
     "devDependencies": {
         "@babel/core": "7.23.7",
