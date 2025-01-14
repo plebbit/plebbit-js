@@ -76,41 +76,35 @@ const getRateLimitersToTest = (
     const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote, exclude.commentEdit, exclude.commentModeration].includes(true)) {
+    if (testPost(exclude.publication?.post, request))
         addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
-    }
-    if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote, exclude.commentEdit, exclude.commentModeration].includes(true)) {
+
+    if (testReply(exclude.publication?.reply, request))
         addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
-    }
-    if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply, exclude.commentEdit, exclude.commentModeration].includes(true)) {
+
+    if (testVote(exclude.publication?.vote, request))
         addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
-    }
 
-    if (
-        testCommentEdit(exclude.commentEdit, request) &&
-        ![exclude.post, exclude.reply, exclude.vote, exclude.commentModeration].includes(true)
-    ) {
+    if (testCommentEdit(exclude.publication?.commentEdit, request))
         addFilteredRateLimiter(exclude, publication, "commentEdit", challengeSuccess, filteredRateLimiters);
-    }
 
-    if (
-        testCommentModeration(exclude.commentModeration, request) &&
-        ![exclude.post, exclude.reply, exclude.vote, exclude.commentEdit].includes(true)
-    ) {
+    if (testCommentModeration(exclude.publication?.commentModeration, request))
         addFilteredRateLimiter(exclude, publication, "commentModeration", challengeSuccess, filteredRateLimiters);
-    }
+
     return filteredRateLimiters;
 };
 
 const testRateLimit = (exclude: Exclude, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => {
+    // will come back here later
+
     if (
         exclude?.rateLimit === undefined ||
-        (exclude.post === true && !isPost(request)) ||
+        (exclude.publication?.post === true && !isPost(request)) ||
         (exclude.reply === true && !isReply(request)) ||
         (exclude.vote === true && !isVote(request)) ||
         (exclude.commentEdit === true && !isCommentEdit(request)) ||
         (exclude.commentModeration === true && !isCommentModeration(request)) ||
-        (exclude.post === false && isPost(request)) ||
+        (exclude.publication?.post === false && isPost(request)) ||
         (exclude.reply === false && isReply(request)) ||
         (exclude.commentEdit === false && isCommentEdit(request)) ||
         (exclude.commentModeration === false && isCommentModeration(request)) ||

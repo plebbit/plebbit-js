@@ -9,7 +9,12 @@ import {
     testFirstCommentTimestamp,
     testRole,
     testCommentEdit,
-    testCommentModeration
+    testCommentModeration,
+    isPost,
+    isReply,
+    isVote,
+    isCommentEdit,
+    isCommentModeration
 } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
@@ -45,16 +50,13 @@ const shouldExcludePublication = (
     // if match any of the exclude array, should exclude
     for (const exclude of subplebbitChallenge.exclude) {
         // if doesn't have any author excludes, shouldn't exclude
+        // will come back here later
         if (
-            !exclude.postScore &&
-            !exclude.replyScore &&
-            !exclude.firstCommentTimestamp &&
+            typeof exclude.postScore !== "number" &&
+            typeof exclude.publication?.replyScore !== "number" &&
+            typeof exclude.firstCommentTimestamp !== "number" &&
             !exclude.address?.length &&
-            exclude.post === undefined &&
-            exclude.reply === undefined &&
-            exclude.vote === undefined &&
-            exclude.commentEdit === undefined &&
-            exclude.commentModeration === undefined &&
+            exclude.publication === undefined &&
             exclude.rateLimit === undefined &&
             !exclude.role?.length
         ) {
@@ -63,46 +65,29 @@ const shouldExcludePublication = (
 
         // if match all of the exclude item properties, should exclude
         // keep separated for easier debugging
-        let shouldExclude = true;
-        if (!testScore(exclude.postScore, author.subplebbit?.postScore)) {
-            shouldExclude = false;
+        if (exclude.publication?.post && isPost(request)) {
+            return true;
         }
-        if (!testScore(exclude.replyScore, author.subplebbit?.replyScore)) {
-            shouldExclude = false;
+        if (exclude.publication?.reply && isReply(request)) {
+            return true;
         }
-        if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
-            shouldExclude = false;
+        if (exclude.publication?.vote && isVote(request)) {
+            return true;
         }
-        if (typeof exclude.post === "boolean" && !testPost(exclude.post, request)) {
-            shouldExclude = false;
+        if (exclude.publication?.commentEdit && isCommentEdit(request)) {
+            return true;
         }
-        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, request)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
-            shouldExclude = false;
+        if (exclude.publication?.commentModeration && isCommentModeration(request)) {
+            return true;
         }
 
-        if (typeof exclude.commentEdit === "boolean" && !testCommentEdit(exclude.commentEdit, request)) {
-            shouldExclude = false;
+        if (testRateLimit(exclude, request)) {
+            return true;
         }
-
-        if (typeof exclude.commentModeration === "boolean" && !testCommentModeration(exclude.commentModeration, request)) {
-            shouldExclude = false;
+        if (exclude.address && exclude.address.includes(author.address)) {
+            return true;
         }
-
-        if (!testRateLimit(exclude, request)) {
-            shouldExclude = false;
-        }
-        if (exclude.address && !exclude.address.includes(author.address)) {
-            shouldExclude = false;
-        }
-        if (Array.isArray(exclude.role) && !testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
-            shouldExclude = false;
-        }
-
-        // if one of the exclude item is successful, should exclude author
-        if (shouldExclude) {
+        if (exclude.role && testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
             return true;
         }
     }
