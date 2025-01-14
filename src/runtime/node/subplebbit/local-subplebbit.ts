@@ -129,7 +129,8 @@ import {
 import {
     parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails,
-    parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails
+    parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails,
+    parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails
 } from "../../../schema/schema-util.js";
 import {
     CommentIpfsSchema,
@@ -284,6 +285,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._setSubplebbitIpfsIfNeeded();
 
         await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+
+        // need to validate schema of Subplebbit IPFS
+        if (this._rawSubplebbitIpfs)
+            try {
+                parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(this._rawSubplebbitIpfs);
+            } catch (e) {
+                if (e instanceof Error) {
+                    e.message = "Local subplebbit" + this.address + " has an invalid schema: " + e.message;
+                    throw e;
+                }
+            }
     }
     private async _importSubplebbitSignerIntoIpfsIfNeeded() {
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
