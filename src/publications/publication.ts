@@ -88,7 +88,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     publishingState!: PublicationPublishingState;
 
     // private
-    private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
+    private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> & { updateCid: string } = undefined; // will be used for publishing
     private _challengeAnswer?: DecryptedChallengeAnswerMessageType = undefined;
     private _publishedChallengeRequests?: DecryptedChallengeRequestMessageType[] = undefined;
     private _challengeIdToPubsubSigner: Record<string, Signer> = {};
@@ -519,12 +519,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // cache.has will return false if the item is stale
             if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
-                this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
+                this._clientsManager.fetchSubplebbit(this.subplebbitAddress, cachedSubplebbit);
             }
             return cachedSubplebbit;
         } else {
-            const subRes = await this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
-            return subRes.subplebbit;
+            const subRes = await this._clientsManager.fetchSubplebbit(this.subplebbitAddress, {});
+            if (!subRes) throw Error("Should fail properly here");
+            return { ...subRes.subplebbit, updateCid: subRes.cid };
         }
     }
 

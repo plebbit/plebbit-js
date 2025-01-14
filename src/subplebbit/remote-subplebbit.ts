@@ -7,7 +7,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
-import { SubplebbitClientsManager } from "../clients/client-manager.js";
+import { ResultOfFetchingSubplebbit, SubplebbitClientsManager } from "../clients/client-manager.js";
 import type {
     CreateRemoteSubplebbitOptions,
     SubplebbitIpfsType,
@@ -230,14 +230,16 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         return true;
     }
 
-    private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType | PlebbitError> {
+    private async _retryLoadingSubplebbitIpns(
+        log: Logger,
+        subplebbitIpnsAddress: string
+    ): Promise<ResultOfFetchingSubplebbit | PlebbitError> {
         return new Promise((resolve) => {
             this._ipnsLoadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ${this.address} ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
-                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
-                    this.updateCid = update.cid;
-                    resolve(update.subplebbit);
+                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress, { updateCid: this.updateCid });
+                    resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(`Failed to load Subplebbit ${this.address} IPNS for the ${curAttempt}th attempt`, e);
@@ -262,28 +264,29 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             );
             this.emit("error", <PlebbitError>loadedSubIpfsOrError);
             return;
-        }
-        // Signature already has been validated
-
-        if ((this.updatedAt || 0) < loadedSubIpfsOrError.updatedAt) {
-            await this.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError);
+        } else if (loadedSubIpfsOrError?.subplebbit && (this.updatedAt || 0) < loadedSubIpfsOrError.subplebbit.updatedAt) {
+            await this.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError.subplebbit);
+            this.updateCid = loadedSubIpfsOrError.cid;
             log(
                 `Remote Subplebbit`,
                 this.address,
                 `received a new update. Will emit an update event with updatedAt`,
-                loadedSubIpfsOrError.updatedAt,
+                this.updatedAt,
                 "that's",
-                timestamp() - loadedSubIpfsOrError.updatedAt,
+                timestamp() - this.updatedAt!,
                 "seconds old"
             );
             this.emit("update", this);
-        } else
+        } else {
+            // no new update to the IPNS, same CID value
             log.trace(
                 "Remote subplebbit",
                 this.address,
-                "loaded a SubplebbitIpfsType with no new information whose updatedAt is",
-                loadedSubIpfsOrError.updatedAt
+                "Resolved to an IPNS with the same IPFS value",
+                this.updateCid,
+                "No need to do anything"
             );
+        }
     }
 
     async update() {

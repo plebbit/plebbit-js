@@ -90,6 +90,7 @@ export class Comment
     private _updateInterval?: any = undefined;
     _rawCommentUpdate?: CommentUpdateType = undefined;
     _rawCommentIpfs?: CommentIpfsType = undefined;
+    _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
     private _loadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
@@ -441,14 +442,16 @@ export class Comment
         });
     }
 
-    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdateType | PlebbitError | Error> {
+    private async _retryLoadingCommentUpdate(
+        log: Logger
+    ): Promise<{ commentUpdate: CommentUpdateType; commentUpdateIpfsPath: string } | PlebbitError | Error> {
         return new Promise((resolve) => {
             this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    const update: CommentUpdateType = await this._clientsManager.fetchCommentUpdate();
+                    const updateRes = await this._clientsManager.fetchCommentUpdate();
                     this._setUpdatingState("succeeded");
-                    resolve(update);
+                    resolve(updateRes);
                 } catch (e) {
                     // fetchCommentUpdate could throw a non-retriable error
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
@@ -498,9 +501,10 @@ export class Comment
             log.error(`Encountered an error while trying to load CommentUpdate of (${this.cid})`, commentUpdateOrError.toString());
             this.emit("error", commentUpdateOrError);
             return;
-        } else if (commentUpdateOrError && (this.updatedAt || 0) < commentUpdateOrError.updatedAt) {
+        } else if (commentUpdateOrError?.commentUpdate && (this.updatedAt || 0) < commentUpdateOrError.commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate`);
-            this._initCommentUpdate(commentUpdateOrError);
+            this._initCommentUpdate(commentUpdateOrError.commentUpdate);
+            this._commentUpdateIpfsPath = commentUpdateOrError.commentUpdateIpfsPath;
             this.emit("update", this);
         } else log.trace(`Comment (${this.cid}) has no new CommentUpdate`);
     }

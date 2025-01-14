@@ -45,7 +45,16 @@ type GenericGatewayFetch = {
 
 export type CachedResolve = { timestampSeconds: number; valueOfTextRecord: string | null };
 
-export type OptionsToLoadFromGateway = { recordIpfsType: "ipfs" | "ipns"; root: string; path?: string; recordPlebbitType: LoadType };
+export type OptionsToLoadFromGateway = {
+    recordIpfsType: "ipfs" | "ipns";
+    root: string;
+    path?: string;
+    recordPlebbitType: LoadType;
+    abortController: AbortController;
+    shouldConsumeBodyFn?: (res: Response) => Promise<boolean>; // this is called before consuming the body of the gateway response. Can be used to abort and stop the consumption
+    validateGatewayResponse: (resObj: { resText: string | undefined; res: Response }) => Promise<void>; // can throw here to trigger a failure in response
+    log: Logger;
+};
 
 const createUrlFromPathResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
     const root = opts.recordIpfsType === "ipfs" ? CID.parse(opts.root).toV1().toString() : convertBase58IpnsNameToBase36Cid(opts.root);
@@ -115,6 +124,7 @@ export class BaseClientsManager {
         const timeBefore = Date.now();
         let error: Error | undefined;
         try {
+            // TODO sshould rewrite this
             await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
                 onError: async (err) => {
                     error = err;
@@ -231,20 +241,13 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<{ resText: string; res: Response }> {
+    private async _fetchWithLimit(
+        url: string,
+        options: { cache: RequestCache; signal: AbortSignal; shouldConsumeBodyFn?: (res: Response) => Promise<boolean> }
+    ): Promise<{ resText: string | undefined; res: Response }> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
-        let res: Response;
-        try {
-            res = await nativeFunctions.fetch(url, {
-                cache,
-                signal,
-                //@ts-expect-error, this option is for node-fetch
-                size: DOWNLOAD_LIMIT_BYTES
-            });
-            if (res.status !== 200) throw Error("Failed to fetch");
-            // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-            if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
-        } catch (e) {
+
+        const handleError = (e: Error) => {
             if (e instanceof Error && e.message.includes("over limit"))
                 throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
             const errorCode = url.includes("/ipfs/")
@@ -252,32 +255,56 @@ export class BaseClientsManager {
                 : url.includes("/ipns/")
                   ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                   : "ERR_FAILED_TO_FETCH_GENERIC";
-            //@ts-expect-error
             throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
 
             // If error is not related to size limit, then throw it again
+        };
+
+        let res: Response;
+        // should have a callback after calling fetch, but before streaming the body
+        let shouldConsumeBody: boolean = true;
+        try {
+            res = await nativeFunctions.fetch(url, {
+                cache: options.cache,
+                signal: options.signal,
+                //@ts-expect-error, this option is for node-fetch
+                size: DOWNLOAD_LIMIT_BYTES
+            });
+
+            if (res.status !== 200)
+                throw Error("Failed to fetch due to status code: " + res.status + " And res.statusText" + res.statusText);
+            if (options.shouldConsumeBodyFn) shouldConsumeBody = await options.shouldConsumeBodyFn(res);
+            if (!shouldConsumeBody) return { res, resText: undefined };
+
+            // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
+            if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
+        } catch (e) {
+            handleError(<Error>e);
         }
 
         //@ts-expect-error
         if (res?.body?.getReader !== undefined) {
             let totalBytesRead = 0;
 
-            // @ts-ignore
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder("utf-8");
+            try {
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
 
-            let resText: string = "";
+                let resText: string = "";
 
-            while (true) {
-                const { done, value } = await reader.read();
-                //@ts-ignore
-                if (value) resText += decoder.decode(value);
-                if (done || !value) break;
-                if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                    throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                totalBytesRead += value.length;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    //@ts-ignore
+                    if (value) resText += decoder.decode(value);
+                    if (done || !value) break;
+                    if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+                    totalBytesRead += value.length;
+                }
+                return { resText, res };
+            } catch (e) {
+                handleError(<Error>e);
             }
-            return { resText, res };
         }
 
         throw Error("should not reach this block in _fetchWithLimit");
@@ -291,21 +318,19 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {}
 
-    private async _fetchFromGatewayAndVerifyIfNeeded(
+    private async _fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid(
         url: string,
-        loadOpts: OptionsToLoadFromGateway,
-        abortController: AbortController,
-        log: Logger
+        loadOpts: Omit<OptionsToLoadFromGateway, "validateGatewayResponses">
     ) {
-        log.trace(`Fetching url (${url})`);
+        loadOpts.log.trace(`Fetching url (${url})`);
 
-        const resObj = await this._fetchWithLimit(
-            url,
-            loadOpts.recordIpfsType === "ipfs" ? "force-cache" : "no-store",
-            abortController.signal
-        );
-        const verifyCidWithContent = loadOpts.recordIpfsType === "ipfs" && !loadOpts.path;
-        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resObj.resText, loadOpts.root);
+        const resObj = await this._fetchWithLimit(url, {
+            cache: loadOpts.recordIpfsType === "ipfs" ? "force-cache" : "no-store",
+            signal: loadOpts.abortController.signal
+        });
+        const shouldVerifyBodyAgainstCid = loadOpts.recordIpfsType === "ipfs" && !loadOpts.path;
+        if (shouldVerifyBodyAgainstCid && !resObj.resText) throw Error("Can't verify body against cid when there's no body");
+        if (shouldVerifyBodyAgainstCid && resObj.resText) await this._verifyContentIsSameAsCid(resObj.resText, loadOpts.root);
         return resObj;
     }
 
@@ -325,10 +350,8 @@ export class BaseClientsManager {
     }
     protected async _fetchWithGateway(
         gateway: string,
-        loadOpts: OptionsToLoadFromGateway,
-        abortController: AbortController,
-        validateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
-    ): Promise<{ res: Response; resText: string } | { error: PlebbitError }> {
+        loadOpts: OptionsToLoadFromGateway
+    ): Promise<{ res: Response; resText: string | undefined } | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
 
         const url = GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway]
@@ -341,17 +364,16 @@ export class BaseClientsManager {
         const cacheKey = url;
         let isUsingCache = true;
         try {
-            let resObj: { res: Response; resText: string };
+            let resObj: { res: Response; resText: string | undefined };
             if (gatewayFetchPromiseCache.has(cacheKey)) resObj = await gatewayFetchPromiseCache.get(cacheKey)!;
             else {
                 isUsingCache = false;
-                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(url, loadOpts, abortController, log);
+                const fetchPromise = this._fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid(url, loadOpts);
                 gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
                 resObj = await fetchPromise;
                 if (loadOpts.recordIpfsType === "ipns") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
             }
-            // TODO should check if redirect here
-            await validateGatewayResponse(resObj); // should throw if there's an issue
+            await loadOpts.validateGatewayResponse(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, loadOpts);
             if (!isUsingCache) await this._plebbit._stats.recordGatewaySuccess(gateway, loadOpts.recordIpfsType, Date.now() - timeBefore);
             await this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
@@ -393,8 +415,7 @@ export class BaseClientsManager {
     }
 
     async fetchFromMultipleGateways(
-        loadOpts: OptionsToLoadFromGateway,
-        valiateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
+        loadOpts: Omit<OptionsToLoadFromGateway, "abortController">
     ): Promise<{ resText: string; res: Response }> {
         const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadOpts.recordPlebbitType);
         const concurrencyLimit = 3;
@@ -421,7 +442,7 @@ export class BaseClientsManager {
             const abortController = new AbortController();
             gatewayFetches[gateway] = {
                 abortController,
-                promise: queueLimit(() => this._fetchWithGateway(gateway, loadOpts, abortController, valiateGatewayResponse)),
+                promise: queueLimit(() => this._fetchWithGateway(gateway, { ...loadOpts, abortController })),
                 timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
             };
         }

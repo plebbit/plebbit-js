@@ -5,6 +5,7 @@ import { PublicClient as ViemClient, createPublicClient, http } from "viem";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
 import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
+import type Publication from "./publications/publication.js";
 
 export enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT, // InternalSubplebbitType
@@ -25,7 +26,7 @@ export const commentPostUpdatesParentsPathConfig: Omit<LRUStorageConstructor, "p
 };
 
 // Memory caches
-export const subplebbitForPublishingCache = new LRUCache<string, Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">>({
+export const subplebbitForPublishingCache = new LRUCache<string, NonNullable<Publication["_subplebbit"]>>({
     max: 100,
     ttl: 600000
 }); // Cache for only 10 mins
@@ -35,7 +36,7 @@ export const pageCidToSortTypesCache = new LRUCache<string, string[]>({ max: 500
 // Below will be the caches for promises of fetching or resolving
 export const domainResolverPromiseCache = new LRUCache<string, Promise<string | null>>({ ttl: 60 * 1000, max: 50 }); // cache key will be (address + txtRecordName + chain + chainproviderUrl) and value will be the promise of resolving through viem or ethers
 
-export const gatewayFetchPromiseCache = new LRUCache<string, Promise<{ resText: string; res: Response }>>({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
+export const gatewayFetchPromiseCache = new LRUCache<string, Promise<{ resText: string | undefined; res: Response }>>({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
 
 export const p2pIpnsPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 200 }); // cache key will be ipnsName and the result will be a promise of cid
 

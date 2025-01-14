@@ -173,13 +173,16 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    async _fetchPageFromGateways(pageCid: string): Promise<PageIpfs> {
+    async _fetchPageFromGateways(pageCid: string, log: Logger): Promise<PageIpfs> {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
-        const res = await this.fetchFromMultipleGateways(
-            { root: pageCid, recordIpfsType: "ipfs", recordPlebbitType: "page-ipfs" },
-            async (_) => {}
-        );
+        const res = await this.fetchFromMultipleGateways({
+            root: pageCid,
+            recordIpfsType: "ipfs",
+            recordPlebbitType: "page-ipfs",
+            validateGatewayResponse: async () => {},
+            log
+        });
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
 
         return pageIpfs;
@@ -190,7 +193,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         let page: PageIpfs;
         if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
-        else page = await this._fetchPageFromGateways(pageCid);
+        else page = await this._fetchPageFromGateways(pageCid, log);
 
         if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
         return page;

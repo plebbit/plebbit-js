@@ -40,7 +40,9 @@ import {
 } from "../schema/schema-util.js";
 import { verifyCommentUpdate } from "../signer/signatures.js";
 
-type ResultOfFetchingSubplebbit = { subplebbit: SubplebbitIpfsType; cid: string };
+export type ResultOfFetchingSubplebbit =
+    | { subplebbit: SubplebbitIpfsType; cid: string } // when we fetch a new subplebbit only
+    | undefined; // undefined is when we resolve an IPNS and it's equal to subplebbit.updateCid. So no need to fetch IPFS
 
 export class ClientsManager extends BaseClientsManager {
     clients: {
@@ -196,10 +198,14 @@ export class ClientsManager extends BaseClientsManager {
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
         else {
-            const resObj = await this.fetchFromMultipleGateways(
-                { root: cid, recordIpfsType: "ipfs", recordPlebbitType: "generic-ipfs" },
-                async () => {}
-            );
+            const log = Logger("plebbit-js:clients-manager:fetchCid");
+            const resObj = await this.fetchFromMultipleGateways({
+                root: cid,
+                recordIpfsType: "ipfs",
+                recordPlebbitType: "generic-ipfs",
+                validateGatewayResponse: async () => {}, // no need to validate body against cid here, fetchFromMultipleGateways already does it
+                log
+            });
             return resObj.resText;
         }
     }
@@ -230,16 +236,40 @@ export class ClientsManager extends BaseClientsManager {
         }
     }
 
-    async fetchSubplebbit(subAddress: string) {
+    async fetchSubplebbit(subAddress: string, curSubplebbit: Pick<RemoteSubplebbit, "updateCid">) {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
         if (!ipnsName) throw Error("Failed to resolve subplebbit address to an IPNS name");
 
-        return this._fetchSubplebbitIpns(ipnsName);
+        // This function should fetch SubplebbitIpfs, parse it and verify its signature
+        // Then return SubplebbitIpfs
+
+        // only exception is if the ipnsRecord.value (ipfs path) is the same as as curSubplebbit.updateCid
+        // in that case no need to fetch the subplebbitIpfs
+        this.preFetchSubplebbitIpns(ipnsName);
+        let subRes: ResultOfFetchingSubplebbit;
+        if (this._defaultIpfsProviderUrl) subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName, curSubplebbit);
+        else subRes = await this._fetchSubplebbitFromGateways(ipnsName, curSubplebbit);
+        // States of gateways should be updated by fetchFromMultipleGateways
+        // Subplebbit records are verified within _fetchSubplebbitFromGateways
+
+        if (subRes?.subplebbit) {
+            this.postFetchSubplebbitIpfsSuccess(subRes); // We successfully fetched and verified the SubplebbitIpfs
+
+            subplebbitForPublishingCache.set(subRes.subplebbit.address, {
+                ...remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"]),
+                updateCid: subRes.cid
+            });
+        }
+        return subRes;
     }
 
-    private async _fetchSubplebbitIpnsP2PAndVerify(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
+    private async _fetchSubplebbitIpnsP2PAndVerify(
+        ipnsName: string,
+        curSubplebbit: Pick<RemoteSubplebbit, "updateCid">
+    ): Promise<ResultOfFetchingSubplebbit> {
+        const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         this.preResolveSubplebbitIpnsP2P(ipnsName);
         let subplebbitCid: string;
         try {
@@ -250,6 +280,11 @@ export class ClientsManager extends BaseClientsManager {
         }
         this.postResolveSubplebbitIpnsP2PSuccess(ipnsName, subplebbitCid);
 
+        // need to check if subplebbitCid === sub.updateCid
+        if (subplebbitCid === curSubplebbit.updateCid) {
+            log("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
+            return undefined;
+        }
         let rawSubJsonString: string;
         try {
             rawSubJsonString = await this._fetchCidP2P(subplebbitCid);
@@ -274,27 +309,10 @@ export class ClientsManager extends BaseClientsManager {
         }
     }
 
-    private async _fetchSubplebbitIpns(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
-        // This function should fetch SubplebbitIpfs, parse it and verify its signature
-        // Then return SubplebbitIpfs
-        this.preFetchSubplebbitIpns(ipnsName);
-        let subRes: ResultOfFetchingSubplebbit;
-        if (this._defaultIpfsProviderUrl) subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
-        else subRes = await this._fetchSubplebbitFromGateways(ipnsName);
-        // States of gateways should be updated by fetchFromMultipleGateways
-        // Subplebbit records are verified within _fetchSubplebbitFromGateways
-
-        this.postFetchSubplebbitIpfsSuccess(subRes); // We successfully fetched and verified the SubplebbitIpfs
-
-        subplebbitForPublishingCache.set(
-            subRes.subplebbit.address,
-            remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
-        );
-
-        return subRes;
-    }
-
-    private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
+    private async _fetchSubplebbitFromGateways(
+        ipnsName: string,
+        curSubplebbit: Pick<RemoteSubplebbit, "updateCid">
+    ): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
         const concurrencyLimit = 3;
         const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs("subplebbit");
@@ -307,33 +325,62 @@ export class ClientsManager extends BaseClientsManager {
                 ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit._stats.sortGatewaysAccordingToScore("ipns");
 
+        // need to handle
+        // if all gateways returned the same subplebbit.updateCid
         const gatewayFetches: SubplebbitGatewayFetch = {};
+
+        const throwIfGatewayRespondsWithInvalidSubplebbit: OptionsToLoadFromGateway["validateGatewayResponse"] = async (gatewayRes) => {
+            if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
+            // get ipfs cid of IPNS from header or calculate it
+            const subCid = await calculateIpfsHash(gatewayRes.resText);
+            // TODO need to compare it against updateCid somewhere
+            const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
+                parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
+            );
+            const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+            if (errorWithinRecord) {
+                delete errorWithinRecord["stack"];
+                throw errorWithinRecord;
+            } else {
+                const gateway = new URL(gatewayRes.res.url).origin;
+                gatewayFetches[gateway].subplebbitRecord = subIpfs;
+                gatewayFetches[gateway].cid = subCid;
+            }
+        };
+
+        const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldConsumeBodyFn"] = async (res: Response) => {
+            const ipnsCidFromGateway = res.headers.get("x-ipfs-roots");
+            if (curSubplebbit?.updateCid && ipnsCidFromGateway === curSubplebbit.updateCid) {
+                // this gateway responded with a subplebbit IPFS we already have
+                // we will abort and stop it from consuming the body
+                const gateway = new URL(res.url).origin;
+                gatewayFetches[gateway].abortController.abort(
+                    "Gateway response has the same cid as subplebbit.updateCid. No need to consume body"
+                );
+                return false;
+            }
+            return true;
+        };
 
         for (const gateway of gatewaysSorted) {
             const abortController = new AbortController();
             gatewayFetches[gateway] = {
                 abortController,
                 promise: queueLimit(() =>
-                    this._fetchWithGateway(
-                        gateway,
-                        { recordIpfsType: "ipns", root: ipnsName, recordPlebbitType: "subplebbit" },
+                    this._fetchWithGateway(gateway, {
+                        recordIpfsType: "ipns",
+                        root: ipnsName,
+                        recordPlebbitType: "subplebbit",
+                        validateGatewayResponse: throwIfGatewayRespondsWithInvalidSubplebbit,
+                        shouldConsumeBodyFn: checkIpnsCidFromGateway,
                         abortController,
-                        async (gatewayRes) => {
-                            const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
-                                parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
-                            );
-                            const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
-                            if (errorWithinRecord) {
-                                delete errorWithinRecord["stack"];
-                                throw errorWithinRecord;
-                            } else {
-                                gatewayFetches[gateway].subplebbitRecord = subIpfs;
-                                gatewayFetches[gateway].cid = await calculateIpfsHash(gatewayRes.resText);
-                            }
-                        }
-                    )
+                        log
+                    })
                 ),
-                timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
+                timeoutId: setTimeout(
+                    () => abortController.abort("Aborting subplebbit IPNS request because it timed out after " + timeoutMs + "ms"),
+                    timeoutMs
+                )
             };
         }
 
@@ -724,11 +771,15 @@ export class CommentClientsManager extends PublicationClientsManager {
         timestampRanges: string[],
         parentsPostUpdatePath: string,
         log: Logger
-    ): Promise<CommentUpdateType> {
+    ): Promise<{ commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }> {
         const attemptedPaths: string[] = [];
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            if (path === this._comment._commentUpdateIpfsPath) {
+                log("Comment", this._comment.cid, "calculated path has already been used", path, "will be skipping loading this path");
+                continue;
+            }
             attemptedPaths.push(path);
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
@@ -742,7 +793,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
             await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
-            return commentUpdate;
+            return { commentUpdate, commentUpdateIpfsPath: path };
         }
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
@@ -795,35 +846,50 @@ export class CommentClientsManager extends PublicationClientsManager {
         timestampRanges: string[],
         parentsPostUpdatePath: string,
         log: Logger
-    ): Promise<CommentUpdateType> {
+    ): Promise<{ commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }> {
         const attemptedPaths: string[] = [];
+
+        let commentUpdate: CommentUpdateType | undefined;
+
+        const validateCommentFromGateway: OptionsToLoadFromGateway["validateGatewayResponse"] = async (res) => {
+            if (typeof res.resText !== "string") throw Error("Gateway response has no body");
+            const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
+                parseJsonWithPlebbitErrorIfFails(res.resText)
+            );
+            await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature);
+            commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
+        };
+
         for (const timestampRange of timestampRanges) {
             // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
 
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            if (path === this._comment._commentUpdateIpfsPath) {
+                log(
+                    "CommentUpdate",
+                    this._comment.cid,
+                    "calculated path has already been used",
+                    path,
+                    "will be skipping loading this path"
+                );
+                continue;
+            }
             attemptedPaths.push(path);
-            let commentUpdate: CommentUpdateType | undefined;
+
             try {
                 // Validate the Comment Update within the gateway fetching algo
                 // fetchFromMultipleGateways will throw if all gateways failed to load the record
-                await this.fetchFromMultipleGateways(
-                    {
-                        recordIpfsType: "ipfs",
-                        root: folderCid,
-                        path: path.replace(`${folderCid}/`, ""),
-                        recordPlebbitType: "comment-update"
-                    },
-                    async (res) => {
-                        const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
-                            parseJsonWithPlebbitErrorIfFails(res.resText)
-                        );
-                        await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature);
-                        commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
-                    }
-                );
+                await this.fetchFromMultipleGateways({
+                    recordIpfsType: "ipfs",
+                    root: folderCid,
+                    path: path.replace(`${folderCid}/`, ""),
+                    recordPlebbitType: "comment-update",
+                    validateGatewayResponse: validateCommentFromGateway,
+                    log
+                });
                 if (!commentUpdate) throw Error("Failed to load comment update from gateways. This is a critical logic error");
-                return commentUpdate;
+                return { commentUpdate, commentUpdateIpfsPath: path };
             } catch (e) {
                 // We need to find out if it's loading error, and if it is we just move on to the next timestamp range
                 // If it's a schema or signature error we should stop and throw
@@ -840,10 +906,13 @@ export class CommentClientsManager extends PublicationClientsManager {
         });
     }
 
-    async fetchCommentUpdate(): Promise<CommentUpdateType> {
+    async fetchCommentUpdate() {
         const log = Logger("plebbit-js:comment:update");
         const subIpns = (await this.fetchSubplebbit(this._comment.subplebbitAddress)).subplebbit;
-        const parentsPostUpdatePath = await this._getParentsPath(subIpns);
+
+        const parentsPostUpdatePath = this._comment._commentUpdateIpfsPath
+            ? this._comment._commentUpdateIpfsPath.replace("/update", "").split("/").slice(1).join("/") // not super sure about this expression
+            : await this._getParentsPath(subIpns);
         const postCid = this._comment.postCid;
         if (!postCid) throw Error("comment.postCid needs to be defined to fetch comment update");
         const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(postCid);
@@ -874,10 +943,14 @@ export class CommentClientsManager extends PublicationClientsManager {
     private async _fetchCommentIpfsFromGateways(parentCid: string): Promise<string> {
         // We only need to validate once, because with Comment Ipfs the fetchFromMultipleGateways already validates if the response is the same as its cid
 
-        const res = await this.fetchFromMultipleGateways(
-            { recordIpfsType: "ipfs", recordPlebbitType: "comment", root: parentCid },
-            async (_) => {}
-        );
+        const log = Logger("plebbit-js:comment:client-manager:_fetchCommentIpfsFromGateways");
+        const res = await this.fetchFromMultipleGateways({
+            recordIpfsType: "ipfs",
+            recordPlebbitType: "comment",
+            root: parentCid,
+            validateGatewayResponse: async () => {},
+            log
+        });
         return res.resText;
     }
 
