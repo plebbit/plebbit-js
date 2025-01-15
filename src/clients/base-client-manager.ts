@@ -17,7 +17,6 @@ import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
-import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub.js";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
@@ -28,6 +27,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
+import { createHeliaBrowserNode } from "../runtime/node/helia/helia-for-plebbit.js";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -105,7 +105,7 @@ export class BaseClientsManager {
         if (this._defaultPubsubProviderUrl !== "browser-libp2p-pubsub")
             throw Error("Default pubsub should be browser-libp2p-pubsub on browser");
         if (!this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl]?._client)
-            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createLibp2pNode();
+            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createHeliaBrowserNode();
     }
 
     async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string) {
