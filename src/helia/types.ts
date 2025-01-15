@@ -1,7 +1,6 @@
-import { createHelia } from "helia";
-import type { IpfsClient } from "../../../types";
-import { gossipsub } from "@chainsafe/libp2p-gossipsub";
-import { PubsubRoutingComponents } from "@helia/ipns/routing";
+import type { createHelia } from "helia";
+import type { IpfsClient } from "../types";
+import type { PubsubRoutingComponents } from "@helia/ipns/routing";
 
 type IpnsForBrowser = Pick<IpfsClient["_client"]["name"], "resolve">;
 export interface IpfsClientForBrowser extends Omit<IpfsClient, "_client"> {

@@ -12,13 +12,13 @@ import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../../../types.js";
+import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub, IpfsClientForBrowser } from "./types.js";
 import type { NameResolveOptions } from "kubo-rpc-client";
 
-const log = Logger("plebbit-js:helia-for-plebbit");
+const log = Logger("plebbit-js:helia-browser");
 
 let heliaBrowserClient: IpfsClientForBrowser;
 
@@ -60,13 +60,13 @@ export async function createHeliaBrowserNode(
     //@ts-expect-error
     helia.routing.routers = [helia.routing.routers[0]]; // remove gateway routing
 
-    log("Initialized address of Libp2p in browser", helia.libp2p.getMultiaddrs());
+    log("Initialized helia in browser", helia.libp2p.peerId.toString());
 
     const pubsubEventHandler = new EventEmitter();
 
     helia.libp2p.services.pubsub.addEventListener("message", (evt) => {
         //@ts-expect-error
-        log(`Event from libp2p pubsub in browser:`, `${evt.detail["from"]}: on topic ${evt.detail.topic}`);
+        log(`Event from helia libp2p pubsub in browser:`, `${evt.detail["from"]}: on topic ${evt.detail.topic}`);
 
         //@ts-expect-error
         const msgFormatted: IpfsHttpClientPubsubMessage = { data: evt.detail.data, topic: evt.detail.topic, type: evt.detail.type };
