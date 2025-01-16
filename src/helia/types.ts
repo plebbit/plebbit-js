@@ -5,9 +5,11 @@ import type { PubsubRoutingComponents } from "@helia/ipns/routing";
 type IpnsForBrowser = Pick<IpfsClient["_client"]["name"], "resolve">;
 export interface IpfsClientForBrowser extends Omit<IpfsClient, "_client"> {
     _client: {
+        add: IpfsClient["_client"]["add"];
         name: IpnsForBrowser;
         cat: IpfsClient["_client"]["cat"];
         pubsub: IpfsClient["_client"]["pubsub"];
+        stop: IpfsClient["_client"]["stop"];
     };
 }
 

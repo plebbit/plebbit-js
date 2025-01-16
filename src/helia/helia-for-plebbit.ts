@@ -28,7 +28,8 @@ function getDelegatedRoutingFields(routers: string[]) {
         const routingClient = createDelegatedRoutingV1HttpApiClient(routers[i]);
         //@ts-expect-error
         routingClient.getIPNS = routingClient.getPeers = routingClient.putIPNS = undefined; // our routers don't support any of these
-        routersObj["delegatedRouting" + i] = routingClient;
+        //@ts-expect-error
+        routersObj["delegatedRouting" + i] = () => routingClient;
     }
     return routersObj;
 }
@@ -54,7 +55,8 @@ export async function createHeliaBrowserNode(
             peerDiscovery: undefined
         },
         blockstore: new MemoryBlockstore(), // TODO use indexed db here
-        blockBrokers: [bitswap()]
+        blockBrokers: [bitswap()],
+        start: false
     });
 
     //@ts-expect-error
@@ -125,6 +127,12 @@ export async function createHeliaBrowserNode(
                 pubsubEventHandler.removeListener(topic, handler);
                 if (pubsubEventHandler.listenerCount(topic) === 0) helia.libp2p.services.pubsub.unsubscribe(topic);
             }
+        },
+        add(entry, options) {
+            throw Error("Adding files to helia node is not supported at the moment");
+        },
+        stop(options) {
+            return helia.stop();
         }
     };
 
@@ -135,5 +143,8 @@ export async function createHeliaBrowserNode(
         peers: async () =>
             helia.libp2p.getConnections().map((conn) => ({ ...conn, peer: conn.remotePeer, addr: conn.remoteAddr, streams: undefined }))
     };
+
+    await helia.start();
+
     return heliaBrowserClient;
 }

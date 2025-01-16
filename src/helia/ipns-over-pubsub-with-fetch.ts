@@ -37,13 +37,16 @@ const pubsubTopicToDhtKey = async (pubsubTopic: string) => {
 async function addPubsubPeersFromDelegatedRouters(helia: HeliaWithLibp2pPubsub, ipnsPeersCid: string) {
     for await (const ipnsPubsubPeer of helia.libp2p.contentRouting.findProviders(CID.parse(ipnsPeersCid))) {
         try {
+            // TODO we should return all peers
             await helia.libp2p.dial(ipnsPubsubPeer.id); // will be a no-op if we're already connected
             // we should stop making new connections maybe after 3 connections?
             log("Succeesfully dialed", ipnsPubsubPeer.id.toString(), "To be able to connect for IPNS-OverPubsub", ipnsPeersCid);
             // if it succeeds, means we can connect to this peer
 
             return [peerIdFromString(ipnsPubsubPeer.id.toString())];
-        } catch (e) {}
+        } catch (e) {
+            log.error("Failed to dial IPNS-Over-Pubsub peer", ipnsPubsubPeer.id.toString(), "Due to error", e);
+        }
     }
     throw Error("Failed to find any IPNS-Over-Pubsub peers from delegated routers");
 
@@ -56,19 +59,19 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
     const libp2pFetchService = <Fetch>helia.libp2p.services.fetch;
 
     //@ts-expect-error
-    const pubsub = <PubsubRoutingComponents["libp2p"]["services"]["pubsub"]>originalRouter.pubsub;
+    const originalRouterPubsub = <PubsubRoutingComponents["libp2p"]["services"]["pubsub"]>originalRouter.pubsub;
     originalRouter.get = async function (routingKey, options) {
         try {
             const topic = keyToTopic(routingKey);
 
             let ipnsRecordFromFetch: Uint8Array | undefined;
-            if (!pubsub.getTopics().includes(topic)) {
+            if (!originalRouterPubsub.getTopics().includes(topic)) {
                 // add peers if if we don't have any peers connected to this topic
                 let peersFromDelegatedRouters: Awaited<ReturnType<typeof addPubsubPeersFromDelegatedRouters>> | undefined;
-                if (pubsub.getSubscribers(topic).length === 0)
+                if (originalRouterPubsub.getSubscribers(topic).length === 0)
                     peersFromDelegatedRouters = await addPubsubPeersFromDelegatedRouters(helia, await pubsubTopicToDhtKey(topic));
 
-                const peersToFetchFrom = peersFromDelegatedRouters || pubsub.getSubscribers(topic);
+                const peersToFetchFrom = peersFromDelegatedRouters || originalRouterPubsub.getSubscribers(topic);
 
                 if (!peersToFetchFrom?.length) throw Error("Failed to detect peers for pubsub topic");
 
@@ -78,13 +81,14 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
                         ipnsRecordFromFetch = await libp2pFetchService.fetch(pubsubPeer, routingKey);
                         if (!ipnsRecordFromFetch) throw Error("Fetch for IPNS-Over-PUbsub returned undefined");
                         log("Fetched IPNS record of topic", topic, "from peer", pubsubPeer.toString());
+                        break;
                     } catch (e) {
                         log.error("Failed to fetch IPNS record", topic, "from peer", pubsubPeer.toString(), e);
                     }
                 }
 
                 log("add subscription for topic", topic);
-                pubsub.subscribe(topic);
+                originalRouterPubsub.subscribe(topic);
                 //@ts-expect-error
                 this.subscriptions.push(topic);
 
@@ -93,6 +97,16 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
             }
             if (ipnsRecordFromFetch) return ipnsRecordFromFetch;
 
+            log("Failed to fetch IPNS from all IPNS-Over-Pubsub peers, will await the IPNS in the gossipsub topic", topic);
+
+            await new Promise((resolve) => {
+                originalRouterPubsub.addEventListener("message", (evt) => {
+                    const message = evt.detail;
+
+                    if (message.topic === topic) resolve(1); // should resolve after the first subscription handles adding the ipns to local store
+                    // this.localStore.get below should not fail now
+                });
+            });
             //@ts-expect-error
             const { record } = await this.localStore.get(routingKey, options);
 
