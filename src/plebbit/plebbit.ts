@@ -262,6 +262,25 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         for (const gatewayUrl of this.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
     }
 
+    private async _initHttpRoutersWithIpfsInBackground() {
+        const log = Logger("plebbit-js:plebbit:_initHttpRoutersWithIpfsInBackground");
+
+        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && this._canCreateNewLocalSub()) {
+            // only for node
+            setupIpfsAddressesRewriterAndHttpRouters(this)
+                .then(() =>
+                    log(
+                        "Set http router options and their proxies successfully on all connected ipfs",
+                        Object.keys(this.clients.ipfsClients)
+                    )
+                )
+                .catch((e: Error) => {
+                    log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
+                    this.emit("error", e);
+                });
+        }
+    }
+
     async _init() {
         const log = Logger("plebbit-js:plebbit:_init");
         // Init storage
@@ -281,20 +300,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             this.subplebbits = []; // subplebbits = [] on browser
         }
 
-        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && this._canCreateNewLocalSub()) {
-            // only for node
-            setupIpfsAddressesRewriterAndHttpRouters(this)
-                .then(() =>
-                    log(
-                        "Set http router options and their proxies successfully on all connected ipfs",
-                        Object.keys(this.clients.ipfsClients)
-                    )
-                )
-                .catch((e: Error) => {
-                    log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
-                    this.emit("error", e);
-                });
-        }
+        await this._initHttpRoutersWithIpfsInBackground();
 
         hideClassPrivateProps(this);
     }

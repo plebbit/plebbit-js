@@ -5,7 +5,7 @@ const port = 25963;
 
 let ioClient: Socket;
 
-class IpfsHttpClient {
+class MockPubsubHttpClient {
     public pubsub: IpfsClient["_client"]["pubsub"];
     private subscriptions: { topic: string; rawCallback: PubsubSubscriptionHandler; callback: (...args: any[]) => any }[];
 
@@ -48,14 +48,14 @@ class IpfsHttpClient {
     }
 }
 
-export const createMockIpfsClient = (dropRate?: number) => {
+export const createMockPubsubClient = (dropRate?: number) => {
     //@ts-expect-error
     if (globalThis["window"] && !globalThis["window"]["io"]) globalThis["window"]["io"] = io(`ws://localhost:${port}`);
     //@ts-expect-error
     if (!ioClient) ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
-    return new IpfsHttpClient(dropRate);
+    return new MockPubsubHttpClient(dropRate);
 };
 
-export const destroyMockIpfsClient = () => {
+export const destroyMockPubsubClient = () => {
     ioClient?.disconnect();
 };
