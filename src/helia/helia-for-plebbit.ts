@@ -89,7 +89,8 @@ export async function createHeliaBrowserNode(
                 async function* generator() {
                     const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
                     const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), options);
-                    yield result.cid.toString();
+                    yield result.record.value;
+                    return;
                 }
 
                 return generator();
