@@ -35,21 +35,21 @@ const pubsubTopicToDhtKey = async (pubsubTopic: string) => {
 };
 
 async function addPubsubPeersFromDelegatedRouters(helia: HeliaWithLibp2pPubsub, ipnsPeersCid: string) {
+    const pubsubPeers: ReturnType<typeof peerIdFromString>[] = [];
     for await (const ipnsPubsubPeer of helia.libp2p.contentRouting.findProviders(CID.parse(ipnsPeersCid))) {
         try {
             // TODO we should return all peers
             await helia.libp2p.dial(ipnsPubsubPeer.id); // will be a no-op if we're already connected
-            // we should stop making new connections maybe after 3 connections?
             log("Succeesfully dialed", ipnsPubsubPeer.id.toString(), "To be able to connect for IPNS-OverPubsub", ipnsPeersCid);
             // if it succeeds, means we can connect to this peer
 
-            return [peerIdFromString(ipnsPubsubPeer.id.toString())];
+            pubsubPeers.push(peerIdFromString(ipnsPubsubPeer.id.toString()));
         } catch (e) {
             log.error("Failed to dial IPNS-Over-Pubsub peer", ipnsPubsubPeer.id.toString(), "Due to error", e);
         }
     }
-    throw Error("Failed to find any IPNS-Over-Pubsub peers from delegated routers");
-
+    if (pubsubPeers.length === 0) throw Error("Failed to find any IPNS-Over-Pubsub peers from delegated routers");
+    else return pubsubPeers;
     // need to add a check
 }
 
@@ -99,14 +99,6 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
 
             log("Failed to fetch IPNS from all IPNS-Over-Pubsub peers, will await the IPNS in the gossipsub topic", topic);
 
-            await new Promise((resolve) => {
-                originalRouterPubsub.addEventListener("message", (evt) => {
-                    const message = evt.detail;
-
-                    if (message.topic === topic) resolve(1); // should resolve after the first subscription handles adding the ipns to local store
-                    // this.localStore.get below should not fail now
-                });
-            });
             //@ts-expect-error
             const { record } = await this.localStore.get(routingKey, options);
 
