@@ -452,7 +452,7 @@ results[blacklistChallegeSubplebbit.title] = {
 //   'high-karma.eth': { challengeSuccess: true },
 //   'low-karma.eth': {
 //     challengeSuccess: false,
-//     challengeErrors: [ "Author doesn't have wallet (eth) set." ]
+//     challengeErrors: {"0": "Author doesn't have wallet (eth) set." }
 //   }
 // }
 results[evmContractCallChallegeSubplebbit.title] = {
