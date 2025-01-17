@@ -16,6 +16,8 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
+import { CID } from "kubo-rpc-client";
+
 import * as remeda from "remeda";
 
 const subplebbitAddress = signers[0].address;
@@ -97,15 +99,16 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`The whole reply tree including post, replies and their pages should not be stored in the ipfs node of the subplebbit`, async () => {
-            const cids = [
+            const cids = remeda.unique([
                 postToPurge.cid,
                 postReply.cid,
                 replyUnderReply.cid,
                 ...Object.values(postToPurge.replies.pageCids),
                 ...Object.values(postReply.replies.pageCids)
-            ];
+            ]);
+            const cidsV1 = cids.map((cid) => CID.parse(cid).toV1().toString());
 
-            for (const cid of cids) {
+            for (const cid of [...cids, ...cidsV1]) {
                 try {
                     await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
                         cid
@@ -113,7 +116,7 @@ getRemotePlebbitConfigs().map((config) => {
 
                     expect.fail("should not succeed");
                 } catch (e) {
-                    expect(e.message).to.include("block was not found locally");
+                    expect(e.message).to.include("is blocked and cannot be provided", "CID " + cid + "Still exists on the subplebbit node");
                 }
             }
         });
