@@ -8,6 +8,13 @@ import version from "./version.js";
 
 export const ChainTickerSchema = z.string().min(1);
 
+export const nonNegativeIntStringSchema = z
+    .string()
+    .regex(/^\d+$/)
+    .refine((val) => parseInt(val) >= 0, {
+        message: "Must be a non-negative integer"
+    });
+
 const LibraryChainProvider = z.enum(["viem", "ethers.js", "web3.js"]);
 export const ChainProviderSchema = z.object({
     urls: z.string().url().or(LibraryChainProvider).array(),
