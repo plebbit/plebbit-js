@@ -16,6 +16,7 @@ import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js"
 import * as remeda from "remeda";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
 import { messages } from "../errors.js";
+import { nonNegativeIntStringSchema } from "../schema.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
@@ -198,7 +199,7 @@ export const SubplebbitIpfsSchema = z
         pubsubTopic: PubsubTopicSchema.optional(),
         statsCid: CidStringSchema,
         protocolVersion: ProtocolVersionSchema,
-        postUpdates: z.record(z.string(), CidStringSchema).optional(),
+        postUpdates: z.record(nonNegativeIntStringSchema, CidStringSchema).optional(),
         title: z.string().optional(),
         description: z.string().optional(),
         roles: z.record(AuthorAddressSchema, SubplebbitRoleSchema).optional(),
