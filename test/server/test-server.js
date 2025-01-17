@@ -38,16 +38,14 @@ const offlineNodeArgs = {
     apiPort: 15001,
     gatewayPort: 18080,
     swarmPort: 4001,
-    extraCommands: ["bootstrap rm --all"],
-
-    daemonArgs: "--enable-namesys-pubsub --enable-pubsub-experiment"
+    extraCommands: ["bootstrap rm --all"]
 };
 const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
     apiPort: 15002,
     gatewayPort: 18081,
     swarmPort: 4002,
-    daemonArgs: "--enable-pubsub-experiment",
+    daemonArgs: "--enable-pubsub-experiment --enable-namesys-pubsub",
     extraCommands: ["bootstrap rm --all"]
 };
 
@@ -110,7 +108,7 @@ const startIpfsNode = async (nodeArgs) => {
                 env: { IPFS_PATH: nodeArgs.dir }
             });
 
-    const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
+    const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
     console.log(ipfsCmd);
     const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
     ipfsProcess.stderr.on("data", console.error);
@@ -309,7 +307,7 @@ const setupMockDelegatedRouter = async () => {
         res.setHeader("Expires", "0");
 
         const providerList = { Providers: [] };
-        for (const ipfsNode of [offlineNodeArgs]) {
+        for (const ipfsNode of [offlineNodeArgs, pubsubNodeArgs]) {
             const idRes = await fetch(`http://localhost:${ipfsNode.apiPort}/api/v0/id`, { method: "POST" }).then((res) => res.json());
             providerList.Providers.push({
                 Schema: "peer",

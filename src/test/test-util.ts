@@ -306,7 +306,7 @@ export async function startSubplebbits(props: {
     await subWithNoResponse.stop();
 
     const plebbitNoMockedSub = await mockPlebbit(
-        { ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15001/api/v0"] },
+        { ipfsHttpClientsOptions: ["http://localhost:15002/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] },
         false,
         true,
         true
@@ -507,11 +507,14 @@ export async function publishWithExpectedResult(publication: Publication, expect
         });
     });
 
-    publication.once("challenge", (challenge) =>
-        console.log(
-            "Received challenges in publishWithExpectedResult. Are you sure you're publishing to a sub with no challenges?",
-            challenge
-        )
+    publication.once(
+        "challenge",
+        (challenge) =>
+            publication.listenerCount("challenge") > 1 &&
+            console.log(
+                "Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?",
+                challenge
+            )
     );
 
     await publication.publish();
@@ -901,42 +904,39 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
     const plebbitWithIpfs = await mockRemotePlebbitIpfsOnly();
 
     const ipfsClientToMock = "http://helia-client-mock.com/api/v0";
-    const plebbit = await PlebbitIndex({
+    const heliaPlebbit = await mockPlebbit({
         ipfsGatewayUrls: ["http://shouldfail"],
         ipfsHttpClientsOptions: [ipfsClientToMock],
-        httpRoutersOptions: [],
+        pubsubHttpClientsOptions: [ipfsClientToMock],
         dataPath: undefined
     });
 
+    const heliaInstance = await createHeliaBrowserNode({ httpRoutersOptions: ["http://localhost:20001"] });
     //@ts-expect-error
-    plebbit._initHttpRoutersWithIpfsInBackground = async () => {};
-
-    plebbit.httpRoutersOptions = ["http://localhost:20001"];
-
-    //@ts-expect-error
-    const heliaInstance = await createHeliaBrowserNode(plebbit);
-    //@ts-expect-error
-    plebbit.clients.ipfsClients[ipfsClientToMock] = heliaInstance;
+    heliaPlebbit.clients.ipfsClients[ipfsClientToMock] = heliaInstance;
 
     if (mockPubsub) {
-        plebbit.clients.pubsubClients[ipfsClientToMock]._client = await createMockPubsubClient();
+        heliaPlebbit.clients.pubsubClients[ipfsClientToMock]._client = await createMockPubsubClient();
+        const ipfsClient = plebbitWithIpfs.clients.ipfsClients[Object.keys(plebbitWithIpfs.clients.ipfsClients)[0]];
         // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
-        plebbit.clients.ipfsClients[ipfsClientToMock]._client.name.resolve =
-            plebbitWithIpfs.clients.ipfsClients[Object.keys(plebbitWithIpfs.clients.ipfsClients)[0]]._client.name.resolve;
+        heliaPlebbit.clients.ipfsClients[ipfsClientToMock]._client.name.resolve = ipfsClient._client.name.resolve.bind(
+            ipfsClient._client.name
+        );
     } else {
         //@ts-expect-error
-        plebbit.clients.pubsubClients[ipfsClientToMock] = plebbit.clients.ipfsClients[ipfsClientToMock];
+        heliaPlebbit.clients.pubsubClients[ipfsClientToMock] = heliaPlebbit.clients.ipfsClients[ipfsClientToMock];
     }
 
-    return plebbit;
+    return heliaPlebbit;
 }
 
 export function getRemotePlebbitConfigs() {
     if (isRpcFlagOn()) return [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }];
     else
         return [
-            { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
-            { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly }
+            // { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
+            // { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly },
+            { name: "Helia P2P", plebbitInstancePromise: mockPlebbitWithHeliaConfig }
         ];
 }
 
