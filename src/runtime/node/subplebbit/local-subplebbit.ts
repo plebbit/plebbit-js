@@ -582,13 +582,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(`Inserted new CommentModeration in DB`, remeda.omit(modTableRow, ["signature"]));
 
         if (modTableRow.commentModeration.purged) {
-            const transactionName = challengeRequestId.toString() + modTableRow.commentCid + "purge";
-            const trx = await this._dbHandler.createTransaction(transactionName);
             log(
                 "commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs",
                 "comment cid is",
                 modTableRow.commentCid
             );
+            const transactionName = challengeRequestId.toString();
+            const trx = await this._dbHandler.createTransaction(transactionName);
 
             const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid, trx);
             await this._dbHandler.commitTransaction(transactionName);
