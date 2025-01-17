@@ -92,6 +92,19 @@ const startIpfsNode = async (nodeArgs) => {
         execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
     } catch {}
 
+    if (nodeArgs.extraCommands)
+        for (const extraCommand of nodeArgs.extraCommands)
+            execSync(`${ipfsPath} ${extraCommand}`, {
+                stdio: "inherit",
+                env: { IPFS_PATH: nodeArgs.dir }
+            });
+    const ipfsDenyListPath = path.join(nodeArgs.dir, "denylists", "*.deny");
+    if (!fs.existsSync(ipfsDenyListPath)) {
+        if (!fs.existsSync(path.dirname(ipfsDenyListPath))) fs.mkdirSync(path.dirname(ipfsDenyListPath));
+
+        await fs.promises.writeFile(ipfsDenyListPath, "");
+    }
+
     const ipfsConfigPath = path.join(nodeArgs.dir, "config");
     const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
 
@@ -101,13 +114,6 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
     ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map((swarmAddr) => swarmAddr.replace("/4001", "/" + nodeArgs.swarmPort));
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
-
-    if (nodeArgs.extraCommands)
-        for (const extraCommand of nodeArgs.extraCommands)
-            execSync(`${ipfsPath} ${extraCommand}`, {
-                stdio: "inherit",
-                env: { IPFS_PATH: nodeArgs.dir }
-            });
 
     const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
     console.log(ipfsCmd);
