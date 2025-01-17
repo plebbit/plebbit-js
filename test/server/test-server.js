@@ -38,7 +38,7 @@ const offlineNodeArgs = {
     apiPort: 15001,
     gatewayPort: 18080,
     swarmPort: 4001,
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
