@@ -12,7 +12,7 @@ import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client.js";
+import { createMockPubsubClient } from "../../../../dist/node/test/mock-ipfs-client.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -109,7 +109,7 @@ describeSkipIfRpc(`comment.clients.pubsubClients`, async () => {
             pubsubHttpClientsOptions: [offlinePubsubUrl, upPubsubUrl]
         });
 
-        plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
+        plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockPubsubClient(); // Use mock pubsub to be on the same pubsub as the sub
 
         const mockPost = await generateMockPost(signers[0].address, plebbit);
 
@@ -135,7 +135,7 @@ describeSkipIfRpc(`comment.clients.pubsubClients`, async () => {
             pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
         });
 
-        plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
+        plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockPubsubClient(); // Use mock pubsub to be on the same pubsub as the sub
 
         const mockPost = await generateMockPost(signers[0].address, plebbit);
         mockPost._publishToDifferentProviderThresholdSeconds = 5;
@@ -162,7 +162,7 @@ describeSkipIfRpc(`comment.clients.pubsubClients`, async () => {
             pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
         });
 
-        plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
+        plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockPubsubClient(); // Use mock pubsub to be on the same pubsub as the sub
 
         const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
         mockPost._publishToDifferentProviderThresholdSeconds = 5;

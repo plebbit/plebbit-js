@@ -1,4 +1,4 @@
-import { destroyMockIpfsClient } from "../dist/node/test/mock-ipfs-client.js";
+// import { destroyMockIpfsClient } from "../dist/node/test/mock-ipfs-client.js";
 // Root Mocha hook.
 export const mochaHooks = {
     afterAll: () => {
