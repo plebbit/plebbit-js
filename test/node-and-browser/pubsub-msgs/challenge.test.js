@@ -49,7 +49,7 @@ getRemotePlebbitConfigs().map((config) => {
                 challengeverification = msg;
             });
             await publishWithExpectedResult(mockPost, false);
-            expect(challengeverification.challengeErrors).to.deep.equal(["Wrong answer."]);
+            expect(challengeverification.challengeErrors).to.deep.equal({ 0: "Wrong answer." });
             expect(challengeverification.challengeSuccess).to.be.false;
         });
     });
