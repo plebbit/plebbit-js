@@ -64,7 +64,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         const rpcUrl = `ws://localhost:${rpcServerPort}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
@@ -89,7 +89,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         const rpcUrl = `ws://127.0.0.1:${rpcServerPort}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
@@ -114,7 +114,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         const rpcUrl = `ws://localhost:${rpcServerPort}/${authKey}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
@@ -139,7 +139,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         const rpcUrl = `ws://127.0.0.1:${rpcServerPort}/${authKey}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
@@ -166,7 +166,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         rpcServer._getIpFromConnectionRequest = () => "::ffff:192.168.1.80"; // random ip address, trying to emulate a remote device
 
         const rpcUrl = `ws://${lanAddress}:${rpcServerPort}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], httpRoutersOptions: [] });
         clientPlebbit.on("error", () => {});
 
         try {
@@ -197,7 +197,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         rpcServer._getIpFromConnectionRequest = () => "::ffff:192.168.1.80"; // random ip address, trying to emulate a remote device
 
         const rpcUrl = `ws://${lanAddress}:${rpcServerPort}/${authKey}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
@@ -222,7 +222,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         const rpcUrl = `ws://${lanAddress}:${rpcServerPort}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
@@ -247,7 +247,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         const rpcUrl = `ws://${lanAddress}:${rpcServerPort}/${authKey}`;
-        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined, httpRoutersOptions: [] });
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC

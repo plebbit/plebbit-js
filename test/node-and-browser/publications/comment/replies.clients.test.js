@@ -87,7 +87,7 @@ describe(`comment.replies.clients`, async () => {
                 "http://localhost:13417", // This gateway will take 10s to respond
                 "http://localhost:18080" // This one is immediate
             ];
-            const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: gateways });
+            const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: gateways, httpRoutersOptions: [] });
 
             const comment = await multipleGatewayPlebbit.getComment(commentCid);
             comment.update();

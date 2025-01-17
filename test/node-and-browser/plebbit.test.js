@@ -21,7 +21,7 @@ const subplebbitSigner = signers[0];
 
 describe("Plebbit options", async () => {
     it("Plebbit() uses correct default plebbit options", async () => {
-        const defaultPlebbit = await Plebbit();
+        const defaultPlebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
             [
                 "https://ipfsgateway.xyz",
@@ -48,7 +48,7 @@ describe("Plebbit options", async () => {
     it("Plebbit Options is set up correctly when only ipfsHttpClientsOptions is provided", async () => {
         // RPC exception
         const url = "http://localhost:15018/api/v0"; // offline API
-        const options = { ipfsHttpClientsOptions: [url] };
+        const options = { ipfsHttpClientsOptions: [url], httpRoutersOptions: [] };
         const testPlebbit = await Plebbit(options);
         expect(testPlebbit.clients.ipfsClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubClients[url]).to.exist;
@@ -72,7 +72,7 @@ describe("Plebbit options", async () => {
     it(`Plebbit({ipfsHttpClientOptions}) uses specified node even if ipfs node is down`, async () => {
         // RPC exception
         const url = "http://localhost:12323/api/v0"; // Should be offline
-        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url] });
+        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url], httpRoutersOptions: [] });
 
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
             [
@@ -94,7 +94,7 @@ describe("Plebbit options", async () => {
 
     itIfRpc(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
         const rpcUrl = "ws://localhost:39652";
-        const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] });
+        const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], httpRoutersOptions: [] });
         expect(plebbit.plebbitRpcClientsOptions).to.deep.equal([rpcUrl]);
         expect(Object.keys(plebbit.clients.plebbitRpcClients)).to.deep.equal([rpcUrl]);
         expect(plebbit.pubsubHttpClientsOptions).to.be.undefined;
@@ -107,7 +107,7 @@ describe("Plebbit options", async () => {
     });
 
     it(`Plebbit({dataPath: undefined}) sets plebbit.dataPath to undefined`, async () => {
-        const plebbit = await Plebbit({ dataPath: undefined });
+        const plebbit = await Plebbit({ dataPath: undefined, httpRoutersOptions: [] });
         expect(plebbit.dataPath).to.be.undefined;
     });
 
@@ -235,7 +235,7 @@ describe("plebbit.fetchCid", async () => {
             await Promise.all([fileString1, fileString2].map((file) => ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(file)))
         ).map((res) => res.path);
 
-        const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:13415"] });
+        const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:13415"], httpRoutersOptions: [] });
         const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
         expect(fileString1).to.equal(fileString1FromGateway);
 
@@ -289,7 +289,10 @@ describe("plebbit.fetchCid", async () => {
     it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
         // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
         // RPC exception
-        const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"] });
+        const multipleGatewayPlebbit = await Plebbit({
+            ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"],
+            httpRoutersOptions: []
+        });
 
         const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
 
@@ -356,7 +359,8 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
             // RPC exception
             const plebbit = await Plebbit({
                 ipfsHttpClientsOptions: ["http://user:password@localhost:15001/api/v0"],
-                pubsubHttpClientsOptions: ["http://user:password@localhost:15002/api/v0"]
+                pubsubHttpClientsOptions: ["http://user:password@localhost:15002/api/v0"],
+                httpRoutersOptions: []
             });
 
             expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal(["http://localhost:15001/api/v0"]);

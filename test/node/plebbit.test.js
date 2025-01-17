@@ -6,7 +6,7 @@ import { itIfRpc, itSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-uti
 
 describe("await plebbit()", () => {
     it("has default plebbit options", async () => {
-        const plebbit = await Plebbit();
+        const plebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
             [
                 "https://ipfsgateway.xyz",

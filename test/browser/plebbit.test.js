@@ -6,7 +6,7 @@ import { expect } from "chai";
 describe("plebbit", () => {
     it("Plebbit() has default plebbit options", async () => {
         // RPC exception
-        const plebbit = await Plebbit();
+        const plebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
             [
                 "https://ipfsgateway.xyz",
@@ -28,7 +28,7 @@ describe("plebbit", () => {
 
 describe(`Plebbit.subplebbits in browser`, async () => {
     it(`plebbit.subplebbits = [] in browser`, async () => {
-        const plebbit = await Plebbit();
+        const plebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(plebbit.subplebbits).to.deep.equal([]);
     });
 });
