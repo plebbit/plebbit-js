@@ -85,7 +85,7 @@ describeSkipIfRpc(`comment.clients.pubsubClients`, async () => {
     it(`correct order of pubsubClients state when failing to publish a comment and the error is from the pubsub provider`, async () => {
         const offlinePubsubUrl = "http://localhost:13173"; // Should be down
         const offlinePubsubPlebbit = await mockRemotePlebbit({
-            ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+            kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
             pubsubHttpClientsOptions: [offlinePubsubUrl]
         });
 

@@ -74,7 +74,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     getThumbnailUrlOfLink,
-    importSignerIntoIpfsNode,
+    importSignerIntoKuboNode,
     isDirectoryEmptyRecursive,
     listSubplebbits,
     moveSubplebbitDbToDeletedDirectory
@@ -289,11 +289,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
         if (!this.signer.ipfsKey) throw Error("subplebbit.signer.ipfsKey is not defined");
 
-        const ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
-        if (!ipfsNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
-            await importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-                url: this._plebbit.ipfsHttpClientsOptions![0].url!.toString(),
-                headers: this._plebbit.ipfsHttpClientsOptions![0].headers
+        const kuboNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
+        if (!kuboNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
+            await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+                url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
+                headers: this._plebbit.kuboRpcClientsOptions![0].headers
             });
     }
 
@@ -2146,14 +2146,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log.trace(`Attempting to stop the subplebbit (${this.address}) before deleting, if needed`);
         if (this.state === "updating" || this.state === "started") await this.stop();
 
-        const ipfsClient = this._clientsManager.getDefaultIpfs();
-        if (!ipfsClient) throw Error("Ipfs client is not defined");
+        const kuboClient = this._clientsManager.getDefaultIpfs();
+        if (!kuboClient) throw Error("Ipfs client is not defined");
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
-                await ipfsClient._client.key.rm(this.signer.ipnsKeyName);
+                await kuboClient._client.key.rm(this.signer.ipnsKeyName);
             } catch {}
         log(`Deleted subplebbit (${this.address}) successfully`);
 

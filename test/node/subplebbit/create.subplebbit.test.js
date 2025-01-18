@@ -3,7 +3,7 @@ import {
     publishRandomPost,
     publishRandomReply,
     createSubWithNoChallenge,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     jsonifySubplebbitAndRemoveInternalProps,
     waitTillPostInSubplebbitPages
@@ -23,7 +23,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit({});
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     const _createAndValidateSubArgs = async (subArgs) => {
@@ -108,7 +108,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await mockPlebbit({
-            ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
+            kuboRpcClientsOptions: ["http://localhost:15003/api/v0"],
             pubsubHttpClientsOptions: [`http://localhost:15003/api/v0`]
         });
         const startTime = timestamp();

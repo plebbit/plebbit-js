@@ -8,7 +8,7 @@ import {
     itSkipIfRpc,
     itIfRpc,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
     describeIfRpc,
@@ -119,7 +119,7 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const headers = {
             authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
         };
-        const ipfsHttpClientsOptions = [
+        const kuboRpcClientsOptions = [
             {
                 url: "http://localhost:15001/api/v0",
                 headers
@@ -133,7 +133,7 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         ];
 
         const plebbitOptions = {
-            ipfsHttpClientsOptions,
+            kuboRpcClientsOptions,
             pubsubHttpClientsOptions
         };
 
@@ -147,10 +147,10 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
     });
 
     it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
-        const ipfsHttpClientsOptions = [`http://user:password@localhost:15001/api/v0`];
+        const kuboRpcClientsOptions = [`http://user:password@localhost:15001/api/v0`];
         const pubsubHttpClientsOptions = [`http://user:password@localhost:15002/api/v0`];
         const plebbitOptions = {
-            ipfsHttpClientsOptions,
+            kuboRpcClientsOptions,
             pubsubHttpClientsOptions
         };
 
@@ -278,7 +278,7 @@ describe(`subplebbit.startedState`, async () => {
     itSkipIfRpc(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit._plebbit.clients.ipfsClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
+            subplebbit._plebbit.clients.kuboRpcClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
         });
     });
 });
@@ -291,7 +291,7 @@ describe(`subplebbit.updatingState (node)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
@@ -478,22 +478,22 @@ describe(`subplebbit.clients (Local)`, async () => {
         plebbit = await mockPlebbit();
     });
 
-    describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
-        it(`subplebbit.clients.ipfsClients[url] is stopped by default`, async () => {
+    describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
+        it(`subplebbit.clients.kuboRpcClients[url] is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
-            expect(Object.keys(mockSub.clients.ipfsClients).length).to.equal(1);
-            expect(Object.values(mockSub.clients.ipfsClients)[0].state).to.equal("stopped");
+            expect(Object.keys(mockSub.clients.kuboRpcClients).length).to.equal(1);
+            expect(Object.values(mockSub.clients.kuboRpcClients)[0].state).to.equal("stopped");
         });
 
-        it(`subplebbit.clients.ipfsClients.state is publishing-ipns before publishing a new IPNS`, async () => {
+        it(`subplebbit.clients.kuboRpcClients.state is publishing-ipns before publishing a new IPNS`, async () => {
             const sub = await createSubWithNoChallenge({}, plebbit);
 
             let publishStateTime;
             let updateTime;
 
-            const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
+            const ipfsUrl = Object.keys(sub.clients.kuboRpcClients)[0];
 
-            sub.clients.ipfsClients[ipfsUrl].on(
+            sub.clients.kuboRpcClients[ipfsUrl].on(
                 "statechange",
                 (newState) => newState === "publishing-ipns" && (publishStateTime = Date.now())
             );

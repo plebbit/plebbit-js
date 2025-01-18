@@ -24,7 +24,7 @@ const subplebbitAddress = signers[0].address;
 const subWithNoResponseSigner = signers[4]; // this sub will never respond via pubsub
 
 const mockPostToFetchSpecificCommentUpdateCid = (postToUpdate, commentUpdateCid) => {
-    if (postToUpdate.clients.ipfsClients) postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
+    if (postToUpdate.clients.kuboRpcClients) postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
     else {
         // it's gateway tests
         const originalFetch = postToUpdate._clientsManager.fetchFromMultipleGateways.bind(postToUpdate._clientsManager);
@@ -80,7 +80,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(postToUpdate.updatedAt).to.be.undefined; // should not accept the comment update
 
-            if (postToUpdate.clients.ipfsClients) {
+            if (postToUpdate.clients.kuboRpcClients) {
                 expect(error.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
                 expect(error.details.signatureValidity).to.deep.equal({
                     valid: false,

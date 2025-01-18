@@ -2,7 +2,7 @@ import {
     mockPlebbit,
     generateMockPost,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     publishRandomPost,
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
@@ -19,7 +19,7 @@ describe(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     it(`default challenge is captcha-canvas-v3`, async () => {

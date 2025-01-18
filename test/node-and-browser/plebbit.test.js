@@ -10,7 +10,7 @@ import {
     itIfRpc,
     describeIfRpc,
     getRemotePlebbitConfigs,
-    mockRemotePlebbitIpfsOnly
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
@@ -45,14 +45,14 @@ describe("Plebbit options", async () => {
         JSON.stringify(defaultPlebbit); // Will throw an error if circular json
     });
 
-    it("Plebbit Options is set up correctly when only ipfsHttpClientsOptions is provided", async () => {
+    it("Plebbit Options is set up correctly when only kuboRpcClientsOptions is provided", async () => {
         // RPC exception
         const url = "http://localhost:15018/api/v0"; // offline API
-        const options = { ipfsHttpClientsOptions: [url], httpRoutersOptions: [] };
+        const options = { kuboRpcClientsOptions: [url], httpRoutersOptions: [] };
         const testPlebbit = await Plebbit(options);
-        expect(testPlebbit.clients.ipfsClients[url]).to.exist;
+        expect(testPlebbit.clients.kuboRpcClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubClients[url]).to.exist;
-        expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
+        expect(testPlebbit.clients.kuboRpcClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
         expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
             [
                 "https://ipfsgateway.xyz",
@@ -63,7 +63,7 @@ describe("Plebbit options", async () => {
                 "https://gateway.pinata.cloud"
             ].sort()
         );
-        expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
+        expect(Object.keys(testPlebbit.clients.kuboRpcClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
         JSON.stringify(testPlebbit); // Will throw an error if circular json
@@ -72,7 +72,7 @@ describe("Plebbit options", async () => {
     it(`Plebbit({ipfsHttpClientOptions}) uses specified node even if ipfs node is down`, async () => {
         // RPC exception
         const url = "http://localhost:12323/api/v0"; // Should be offline
-        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url], httpRoutersOptions: [] });
+        const plebbit = await Plebbit({ kuboRpcClientsOptions: [url], httpRoutersOptions: [] });
 
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
             [
@@ -85,10 +85,10 @@ describe("Plebbit options", async () => {
             ].sort()
         );
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal([url]);
-        expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal([url]);
+        expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal([url]);
 
         expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url }]);
-        expect(plebbit.ipfsHttpClientsOptions).to.deep.equal([{ url }]);
+        expect(plebbit.kuboRpcClientsOptions).to.deep.equal([{ url }]);
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
@@ -100,7 +100,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.pubsubHttpClientsOptions).to.be.undefined;
         expect(plebbit.chainProviders).to.deep.equal({});
         expect(plebbit.clients.chainProviders).to.deep.equal({});
-        expect(plebbit.clients.ipfsClients).to.deep.equal({});
+        expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
         expect(plebbit.clients.pubsubClients).to.deep.equal({});
         expect(plebbit.clients.ipfsGateways).to.deep.equal({});
         JSON.stringify(plebbit); // Will throw an error if circular json
@@ -216,7 +216,7 @@ describe("plebbit.fetchCid", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit(); // Here this should be alternated for RPC
         gatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
-        ipfsPlebbit = await mockRemotePlebbitIpfsOnly();
+        ipfsPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     it(`Can fetch a cid correctly`, async () => {
@@ -354,20 +354,20 @@ describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
 
 // Skip for firefox since we can't disable CORS on Firefox
 if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
-    describe("Authentication in ipfsHttpClientsOptions and PubsubHttpClientsOptions", async () => {
+    describe("Authentication in kuboRpcClientsOptions and PubsubHttpClientsOptions", async () => {
         it(`Authorization credentials are generated correctly`, async () => {
             // RPC exception
             const plebbit = await Plebbit({
-                ipfsHttpClientsOptions: ["http://user:password@localhost:15001/api/v0"],
+                kuboRpcClientsOptions: ["http://user:password@localhost:15001/api/v0"],
                 pubsubHttpClientsOptions: ["http://user:password@localhost:15002/api/v0"],
                 httpRoutersOptions: []
             });
 
-            expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal(["http://localhost:15001/api/v0"]);
+            expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal(["http://localhost:15001/api/v0"]);
             expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["http://localhost:15002/api/v0"]);
 
             const expectedCred = "Basic dXNlcjpwYXNzd29yZA==";
-            const ipfsCalcOptions = plebbit.clients.ipfsClients["http://localhost:15001/api/v0"]._clientOptions;
+            const ipfsCalcOptions = plebbit.clients.kuboRpcClients["http://localhost:15001/api/v0"]._clientOptions;
             const pubsubCalcOptions = plebbit.clients.pubsubClients["http://localhost:15002/api/v0"]._clientOptions;
 
             expect(ipfsCalcOptions.url).to.equal("http://localhost:15001/api/v0");

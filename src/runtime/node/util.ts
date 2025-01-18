@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
-import type { IpfsClient, NativeFunctions } from "../../types.js";
+import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
@@ -26,7 +26,7 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
 
-const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
+const storedKuboRpcClients: Record<string, ReturnType<typeof createKuboRpcClient>> = {};
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -208,20 +208,24 @@ export async function listSubplebbits(plebbit: Plebbit) {
     return filtered_results;
 }
 
-export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: IpfsClient["_clientOptions"]) {
+export async function importSignerIntoKuboNode(
+    ipnsKeyName: string,
+    ipfsKey: Uint8Array,
+    kuboRpcClientOptions: KuboRpcClient["_clientOptions"]
+) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
     data.append("file", new Blob([ipfsKey]));
-    const nodeUrl = ipfsNode.url;
-    if (!nodeUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
-    const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
+    const kuboRpcUrl = kuboRpcClientOptions.url;
+    if (!kuboRpcUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(kuboRpcClientOptions)}`);
+    const url = `${kuboRpcUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
     const res = await fetch(url, {
         method: "POST",
         body: data,
-        headers: ipfsNode.headers
+        headers: kuboRpcClientOptions.headers
     });
 
     if (res.status !== 200)
@@ -242,27 +246,27 @@ export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: stri
     else await fs.rm(oldPath);
 }
 
-export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
-    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
-    if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
-    const log = Logger("plebbit-js:plebbit:createIpfsClient");
-    log("Creating a new ipfs client on node with options", ipfsHttpClientOptions);
+export function createKuboRpcClient(kuboRpcClientOptions: KuboRpcClient["_clientOptions"]): KuboRpcClient["_client"] {
+    const cacheKey = sha256(deterministicStringify(kuboRpcClientOptions));
+    if (storedKuboRpcClients[cacheKey]) return storedKuboRpcClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
+    log("Creating a new kubo client on node with options", kuboRpcClientOptions);
     const isHttpsAgent =
-        (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
-        ipfsHttpClientOptions?.protocol === "https" ||
-        (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
-        ipfsHttpClientOptions.url?.toString()?.includes("https");
+        (typeof kuboRpcClientOptions.url === "string" && kuboRpcClientOptions.url.startsWith("https")) ||
+        kuboRpcClientOptions?.protocol === "https" ||
+        (kuboRpcClientOptions.url instanceof URL && kuboRpcClientOptions?.url?.protocol === "https:") ||
+        kuboRpcClientOptions.url?.toString()?.includes("https");
     const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
     const onehourMs = 1000 * 60 * 60;
 
-    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
-        ...ipfsHttpClientOptions,
-        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
+    storedKuboRpcClients[cacheKey] = CreateKuboRpcClient({
+        ...kuboRpcClientOptions,
+        agent: kuboRpcClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
         timeout: onehourMs
     });
 
-    return storedIpfsClients[cacheKey];
+    return storedKuboRpcClients[cacheKey];
 }
 
 export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {

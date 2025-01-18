@@ -1,6 +1,6 @@
 import assert from "assert";
 import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
-import { PagesIpfsClient } from "./ipfs-client.js";
+import { PagesKuboRpcClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
 import * as remeda from "remeda";
@@ -15,7 +15,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
     clients: {
         ipfsGateways: { [sortType: string]: { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient } };
-        ipfsClients: { [sortType: string]: { [ipfsClientUrl: string]: PagesIpfsClient } };
+        kuboRpcClients: { [sortType: string]: { [kuboRpcClientUrl: string]: PagesKuboRpcClient } };
         plebbitRpcClients: { [sortType: string]: { [rpcUrl: string]: PagesPlebbitRpcStateClient } };
     };
 
@@ -48,12 +48,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     protected _initIpfsClients() {
-        if (this._plebbit.clients.ipfsClients) {
-            this.clients.ipfsClients = {};
+        if (this._plebbit.clients.kuboRpcClients) {
+            this.clients.kuboRpcClients = {};
             for (const sortType of this.getSortTypes()) {
-                this.clients.ipfsClients[sortType] = {};
-                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
-                    this.clients.ipfsClients[sortType][ipfsUrl] = new PagesIpfsClient("stopped");
+                this.clients.kuboRpcClients[sortType] = {};
+                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
+                    this.clients.kuboRpcClients[sortType][ipfsUrl] = new PagesKuboRpcClient("stopped");
             }
         }
     }
@@ -113,13 +113,13 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     }
 
-    updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[] | undefined) {
+    updateIpfsState(newState: PagesKuboRpcClient["state"], sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
         assert(typeof this._defaultIpfsProviderUrl === "string", "Can't update ipfs state without ipfs client");
         for (const sortType of sortTypes) {
-            if (this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state === newState) continue;
-            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
-            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
+            if (this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state === newState) continue;
+            this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state = newState;
+            this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
         }
     }
 
@@ -200,7 +200,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 export class RepliesPagesClientsManager extends BasePagesClientsManager {
     override clients!: {
         ipfsGateways: Record<ReplySortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
-        ipfsClients: Record<ReplySortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
+        kuboRpcClients: Record<ReplySortName, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<ReplySortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
 
@@ -212,7 +212,7 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
 export class PostsPagesClientsManager extends BasePagesClientsManager {
     override clients!: {
         ipfsGateways: Record<PostSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
-        ipfsClients: Record<PostSortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
+        kuboRpcClients: Record<PostSortName, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<PostSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
 

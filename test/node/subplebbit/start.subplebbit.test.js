@@ -3,7 +3,7 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     itSkipIfRpc,
     itIfRpc,
     resolveWhenConditionIsTrue,
@@ -296,7 +296,7 @@ describe(`Publish loop resiliency`, async () => {
     let plebbit, subplebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -389,7 +389,7 @@ describe(`Publish loop resiliency`, async () => {
 
         for (const resolveAuthorAddresses of [true, false]) {
             subplebbitVerificationCache.clear();
-            const remotePlebbit = await mockRemotePlebbitIpfsOnly({ resolveAuthorAddresses });
+            const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ resolveAuthorAddresses });
             const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address);
             const mockPostInPage = loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === mockPost.cid);
             if (resolveAuthorAddresses) expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);

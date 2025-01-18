@@ -8,7 +8,7 @@ import { describeSkipIfRpc, publishRandomPost, mockGatewayPlebbit, mockPlebbit }
 const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
-    // All tests below use Plebbit instance that doesn't have ipfsClient
+    // All tests below use Plebbit instance that doesn't have clients.kuboRpcClients
     let gatewayPlebbit, plebbit;
 
     before(async () => {

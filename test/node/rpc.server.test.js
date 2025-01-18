@@ -33,7 +33,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         const options = {
             port: rpcServerPort,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -56,7 +56,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -81,7 +81,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -106,7 +106,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -131,7 +131,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -156,7 +156,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -187,7 +187,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -214,7 +214,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
@@ -239,7 +239,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             authKey,
             plebbitOptions: {
-                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                 httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }

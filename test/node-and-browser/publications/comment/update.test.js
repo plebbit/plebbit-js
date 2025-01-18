@@ -2,7 +2,7 @@ import signers from "../../../fixtures/signers.js";
 import {
     publishRandomPost,
     publishRandomReply,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     itSkipIfRpc,
     mockGatewayPlebbit,
     addStringToIpfs,
@@ -118,7 +118,7 @@ getRemotePlebbitConfigs().map((config) => {
 });
 
 const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
-    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
     const postIpfs = cleanUpBeforePublishing((await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid)).toJSONIpfs());
@@ -136,7 +136,7 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
 };
 
 const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
-    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
     const postIpfs = (await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid)).toJSONIpfs();
@@ -149,7 +149,7 @@ const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
 };
 
 const createCommentUpdateWithInvalidSignature = async () => {
-    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
@@ -292,8 +292,8 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         };
 
         const ipfsStates = [];
-        const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
-        createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
+        const kuboRpcUrl = Object.keys(createdComment.clients.kuboRpcClients)[0];
+        createdComment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (state) => ipfsStates.push(state));
 
         const updatingStates = [];
         createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
@@ -471,8 +471,8 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         const ipfsStates = [];
         const updatingStates = [];
         createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
-        createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
+        const kuboRpcUrl = Object.keys(createdComment.clients.kuboRpcClients)[0];
+        createdComment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (state) => ipfsStates.push(state));
 
         let updateHasBeenEmittedWithCommentUpdate = false;
         createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
@@ -615,8 +615,8 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         const ipfsStates = [];
         const updatingStates = [];
         createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
-        createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
+        const kuboRpcUrl = Object.keys(createdComment.clients.kuboRpcClients)[0];
+        createdComment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (state) => ipfsStates.push(state));
 
         let updateHasBeenEmittedWithCommentUpdate = false;
         createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));

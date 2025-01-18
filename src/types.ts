@@ -197,8 +197,8 @@ export interface PubsubSubplebbitStats {
     sessionStats: PubsubStats; // session means in the last 1h
 }
 
-export interface IpfsClient {
-    peers: () => ReturnType<IpfsClient["_client"]["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+export interface KuboRpcClient {
+    peers: () => ReturnType<KuboRpcClient["_client"]["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
@@ -206,15 +206,15 @@ export interface IpfsClient {
     _clientOptions: IpfsHttpClientOptions;
 }
 
-export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
+export type PubsubSubscriptionHandler = Extract<Parameters<KuboRpcClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
 export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
 export interface PubsubClient {
     peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: Pick<IpfsClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
-    _clientOptions: IpfsClient["_clientOptions"];
+    _client: Pick<KuboRpcClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
+    _clientOptions: KuboRpcClient["_clientOptions"];
 }
 
 export interface GatewayClient {

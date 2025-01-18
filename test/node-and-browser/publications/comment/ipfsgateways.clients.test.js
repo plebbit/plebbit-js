@@ -21,7 +21,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         plebbit = await mockRemotePlebbit();
         gatewayPlebbit = await mockGatewayPlebbit();
     });
-    // All tests below use Plebbit instance that doesn't have ipfsClient
+    // All tests below use Plebbit instance that doesn't have clients.kuboRpcClients
     it(`comment.clients.ipfsGateways[url] is stopped by default`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
         expect(Object.keys(mockPost.clients.ipfsGateways).length).to.equal(1);

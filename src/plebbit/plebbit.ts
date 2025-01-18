@@ -1,14 +1,14 @@
 import {
     getDefaultDataPath,
     listSubplebbits as nodeListSubplebbits,
-    createIpfsClient,
+    createKuboRpcClient,
     monitorSubplebbitsDirectory
 } from "../runtime/node/util.js";
 import type {
     StorageInterface,
     ChainProvider,
     GatewayClient,
-    IpfsClient,
+    KuboRpcClient,
     PlebbitEvents,
     PubsubClient,
     ParsedPlebbitOptions,
@@ -109,7 +109,7 @@ import type {
     CommentModerationTypeJson,
     CreateCommentModerationOptions
 } from "../publications/comment-moderation/types.js";
-import { setupIpfsAddressesRewriterAndHttpRouters } from "../runtime/node/setup-ipfs-rewrite-and-http-router.js";
+import { setupKuboAddressesRewriterAndHttpRouters } from "../runtime/node/setup-ipfs-rewrite-and-http-router.js";
 import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
 import {
     CreateSubplebbitEditPublicationOptions,
@@ -120,7 +120,7 @@ import {
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
-    ipfsHttpClientsOptions?: ParsedPlebbitOptions["ipfsHttpClientsOptions"];
+    kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubHttpClientsOptions: ParsedPlebbitOptions["pubsubHttpClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
@@ -137,7 +137,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     // Only Plebbit instance has these props
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
-        ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
+        kuboRpcClients: { [kuboRpcClientUrl: string]: KuboRpcClient };
         pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
@@ -170,16 +170,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.ipfsGatewayUrls = this.parsedPlebbitOptions.ipfsGatewayUrls = this.plebbitRpcClientsOptions
             ? undefined
             : this.parsedPlebbitOptions.ipfsGatewayUrls;
-        this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions = this.plebbitRpcClientsOptions
+        this.kuboRpcClientsOptions = this.parsedPlebbitOptions.kuboRpcClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
-            : this.parsedPlebbitOptions.ipfsHttpClientsOptions;
+            : this.parsedPlebbitOptions.kuboRpcClientsOptions;
 
         // We default for ipfsHttpClientsOptions first, but if it's not defined we use the default from schema
         this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
             : this._userPlebbitOptions.pubsubHttpClientsOptions // did the user provide their own pubsub options
               ? this.parsedPlebbitOptions.pubsubHttpClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
-              : this.parsedPlebbitOptions.ipfsHttpClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
+              : this.parsedPlebbitOptions.kuboRpcClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
 
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
@@ -199,7 +199,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         //@ts-expect-error
         this.clients = {};
 
-        this._initIpfsClientsIfNeeded();
+        this._initKuboRpcClientsIfNeeded();
         this._initPubsubClientsIfNeeded();
         this._initRpcClientsIfNeeded();
         this._initIpfsGatewaysIfNeeded();
@@ -210,15 +210,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
     }
 
-    private _initIpfsClientsIfNeeded() {
-        this.clients.ipfsClients = {};
-        if (!this.ipfsHttpClientsOptions) return;
-        for (const clientOptions of this.ipfsHttpClientsOptions) {
-            const ipfsClient = createIpfsClient(clientOptions);
-            this.clients.ipfsClients[clientOptions.url!.toString()] = {
-                _client: ipfsClient,
+    private _initKuboRpcClientsIfNeeded() {
+        this.clients.kuboRpcClients = {};
+        if (!this.kuboRpcClientsOptions) return;
+        for (const clientOptions of this.kuboRpcClientsOptions) {
+            const kuboRpcClient = createKuboRpcClient(clientOptions);
+            this.clients.kuboRpcClients[clientOptions.url!.toString()] = {
+                _client: kuboRpcClient,
                 _clientOptions: clientOptions,
-                peers: ipfsClient.swarm.peers
+                peers: kuboRpcClient.swarm.peers
             };
         }
     }
@@ -231,13 +231,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if (!this.pubsubHttpClientsOptions) return;
 
         for (const clientOptions of this.pubsubHttpClientsOptions) {
-            const ipfsClient = createIpfsClient(clientOptions);
+            const kuboRpcClient = createKuboRpcClient(clientOptions);
             this.clients.pubsubClients[clientOptions.url!.toString()] = {
-                _client: ipfsClient,
+                _client: kuboRpcClient,
                 _clientOptions: clientOptions,
                 peers: async () => {
-                    const topics = await ipfsClient.pubsub.ls();
-                    const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                    const topics = await kuboRpcClient.pubsub.ls();
+                    const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => kuboRpcClient.pubsub.peers(topic))));
                     const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                     return peers;
                 }
@@ -262,16 +262,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         for (const gatewayUrl of this.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
     }
 
-    private async _initHttpRoutersWithIpfsInBackground() {
+    private async _setupHttpRoutersWithKuboNodeInBackground() {
         const log = Logger("plebbit-js:plebbit:_initHttpRoutersWithIpfsInBackground");
 
-        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && this._canCreateNewLocalSub()) {
+        if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
             // only for node
-            setupIpfsAddressesRewriterAndHttpRouters(this)
+            setupKuboAddressesRewriterAndHttpRouters(this)
                 .then(() =>
                     log(
                         "Set http router options and their proxies successfully on all connected ipfs",
-                        Object.keys(this.clients.ipfsClients)
+                        Object.keys(this.clients.kuboRpcClients)
                     )
                 )
                 .catch((e: Error) => {
@@ -300,7 +300,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             this.subplebbits = []; // subplebbits = [] on browser
         }
 
-        await this._initHttpRoutersWithIpfsInBackground();
+        await this._setupHttpRoutersWithKuboNodeInBackground();
 
         hideClassPrivateProps(this);
     }

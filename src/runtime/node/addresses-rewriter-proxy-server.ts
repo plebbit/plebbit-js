@@ -6,7 +6,7 @@ import { Plebbit } from "../../plebbit/plebbit";
 const debug = Logger("plebbit-js:addresses-rewriter");
 
 type AddressesRewriterOptions = {
-    plebbitOptions: Required<Pick<Plebbit, "ipfsHttpClientsOptions">>;
+    kuboClients: Plebbit["clients"]["kuboRpcClients"][string]["_client"][];
     port: number;
     hostname: string | undefined;
     proxyTargetUrl: string;
@@ -14,16 +14,17 @@ type AddressesRewriterOptions = {
 
 export class AddressesRewriterProxyServer {
     addresses: Record<string, string[]>; // Peer id => addresses
-    plebbitOptions: AddressesRewriterOptions["plebbitOptions"];
+    kuboClients: AddressesRewriterOptions["kuboClients"];
     port: number;
     hostname: string;
     proxyTarget: URL;
     server: ReturnType<(typeof http)["createServer"]>;
 
     private _updateAddressesInterval!: ReturnType<typeof setInterval>;
-    constructor({ plebbitOptions, port, hostname, proxyTargetUrl }: AddressesRewriterOptions) {
+    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl }: AddressesRewriterOptions) {
         this.addresses = {};
-        this.plebbitOptions = plebbitOptions;
+
+        this.kuboClients = kuboClient;
         this.port = port;
         this.hostname = hostname || "127.0.0.1";
         this.proxyTarget = new URL(proxyTargetUrl);
@@ -108,29 +109,25 @@ export class AddressesRewriterProxyServer {
 
     // get up to date listen addresses from kubo every x minutes
     _startUpdateAddressesLoop() {
+        if (!this.kuboClients?.length) throw Error("should have a defined kubo rpc client option to start the address rewriter");
+
         const tryUpdateAddresses = async () => {
-            if (!this.plebbitOptions.ipfsHttpClientsOptions?.length) {
-                throw Error("no plebbitOptions.ipfsHttpClientsOptions");
-            }
-            for (const ipfsHttpClientOptions of this.plebbitOptions.ipfsHttpClientsOptions) {
-                if (!ipfsHttpClientOptions) throw Error("should have a defined ipfs http client option to start the address rewriter");
-                const kuboApiUrl = typeof ipfsHttpClientOptions === "string" ? ipfsHttpClientOptions : ipfsHttpClientOptions.url;
+            for (const kuboClient of this.kuboClients) {
                 try {
-                    const idRes = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then((res) =>
-                        res.json()
-                    );
-                    const swarmAddrsRes = await fetch(`${kuboApiUrl}/swarm/addrs/listen`, {
-                        method: "POST",
-                        headers: ipfsHttpClientOptions.headers
-                    }).then((res) => res.json());
-                    const peerId: string = idRes["ID"];
+                    const idRes = await kuboClient.id();
+                    const swarmAddrsRes = await kuboClient.swarm.addrs();
+
+                    const peerId: string = idRes.id.toString();
                     if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
-                    const addresses: string[] = remeda.unique([...idRes["Addresses"], ...swarmAddrsRes["Strings"]]);
+                    const addresses: string[] = remeda.unique([
+                        ...idRes.addresses.map((addr) => addr.toString()),
+                        ...remeda.flatten(swarmAddrsRes.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
+                    ]);
 
                     this.addresses[peerId] = addresses;
                 } catch (e) {
                     const error = <Error>e;
-                    debug("tryUpdateAddresses error:", error.message, { kuboApiUrl });
+                    debug("tryUpdateAddresses error:", error.message, { kuboConfig: kuboClient.getEndpointConfig() });
                 }
             }
         };

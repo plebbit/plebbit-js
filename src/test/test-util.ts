@@ -32,9 +32,8 @@ import {
 } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
-import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
+import { importSignerIntoKuboNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
-import type { PageTypeJson } from "../pages/types.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 import { Buffer } from "buffer";
@@ -305,7 +304,7 @@ export async function startSubplebbits(props: {
     await subWithNoResponse.stop();
 
     const plebbitNoMockedSub = await mockPlebbit(
-        { ipfsHttpClientsOptions: ["http://localhost:15002/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] },
+        { kuboRpcClientsOptions: ["http://localhost:15002/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] },
         false,
         true,
         true
@@ -331,14 +330,14 @@ export async function fetchTestServerSubs() {
 
 export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
     InputPlebbitOptions,
-    "plebbitRpcClientsOptions" | "ipfsHttpClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions" | "httpRoutersOptions"
+    "plebbitRpcClientsOptions" | "kuboRpcClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions" | "httpRoutersOptions"
 > {
     const shouldUseRPC = isRpcFlagOn();
 
     if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"], httpRoutersOptions: [] };
     else
         return {
-            ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
             pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`],
             httpRoutersOptions: []
         };
@@ -399,16 +398,16 @@ export async function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
 
 export async function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        kuboRpcClientsOptions: ["http://localhost:15003/api/v0"],
         pubsubHttpClientsOptions: ["http://localhost:15003/api/v0"],
         ...plebbitOptions
     }); // use online ipfs node
     return plebbit;
 }
 
-export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: InputPlebbitOptions) {
+export async function mockPlebbitNoDataPathWithOnlyKuboClient(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await mockPlebbit({
-        ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+        kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
         plebbitRpcClientsOptions: undefined,
         dataPath: undefined,
         ...plebbitOptions
@@ -433,7 +432,7 @@ export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await mockRemotePlebbit({
         ipfsGatewayUrls: ["http://localhost:18080"],
         plebbitRpcClientsOptions: undefined,
-        ipfsHttpClientsOptions: undefined,
+        kuboRpcClientsOptions: undefined,
         pubsubHttpClientsOptions: undefined,
         ...plebbitOptions
     });
@@ -885,43 +884,42 @@ export async function publishChallengeVerificationMessageWithEncryption(
 }
 
 export async function addStringToIpfs(content: string): Promise<string> {
-    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
     const cid = (await ipfsClient._client.add(content)).path;
     return cid;
 }
 
 export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: PubsubMessage) {
-    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     await plebbit._clientsManager.pubsubPublish(pubsubTopic, jsonToPublish);
 }
 
 export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
+    const plebbitWithKubo = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
-    const plebbitWithIpfs = await mockRemotePlebbitIpfsOnly();
-
-    const ipfsClientToMock = "http://helia-client-mock.com/api/v0";
+    const kuboRpcClientToMock = "http://helia-client-mock.com/api/v0";
     const heliaPlebbit = await mockPlebbit({
         ipfsGatewayUrls: ["http://shouldfail"],
-        ipfsHttpClientsOptions: [ipfsClientToMock],
-        pubsubHttpClientsOptions: [ipfsClientToMock],
+        kuboRpcClientsOptions: [kuboRpcClientToMock],
+        pubsubHttpClientsOptions: [kuboRpcClientToMock],
         dataPath: undefined
     });
 
     const heliaInstance = await createHeliaBrowserNode({ httpRoutersOptions: ["http://localhost:20001"] });
     //@ts-expect-error
-    heliaPlebbit.clients.ipfsClients[ipfsClientToMock] = heliaInstance;
+    heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock] = heliaInstance;
 
     if (mockPubsub) {
-        heliaPlebbit.clients.pubsubClients[ipfsClientToMock]._client = await createMockPubsubClient();
-        const ipfsClient = plebbitWithIpfs.clients.ipfsClients[Object.keys(plebbitWithIpfs.clients.ipfsClients)[0]];
+        heliaPlebbit.clients.pubsubClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
+        const kuboClient = plebbitWithKubo.clients.kuboRpcClients[Object.keys(plebbitWithKubo.clients.kuboRpcClients)[0]];
         // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
-        heliaPlebbit.clients.ipfsClients[ipfsClientToMock]._client.name.resolve = ipfsClient._client.name.resolve.bind(
-            ipfsClient._client.name
+        heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock]._client.name.resolve = kuboClient._client.name.resolve.bind(
+            kuboClient._client.name
         );
     } else {
         //@ts-expect-error
-        heliaPlebbit.clients.pubsubClients[ipfsClientToMock] = heliaPlebbit.clients.ipfsClients[ipfsClientToMock];
+        heliaPlebbit.clients.pubsubClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
     }
 
     return heliaPlebbit;
@@ -938,14 +936,14 @@ export function getRemotePlebbitConfigs() {
 }
 
 export async function createNewIpns() {
-    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
     const signer = await plebbit.createSigner();
     signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
 
-    await importSignerIntoIpfsNode(signer.address, signer.ipfsKey, {
-        url: plebbit.ipfsHttpClientsOptions![0].url!.toString(),
-        headers: plebbit.ipfsHttpClientsOptions![0].headers
+    await importSignerIntoKuboNode(signer.address, signer.ipfsKey, {
+        url: plebbit.kuboRpcClientsOptions![0].url!.toString(),
+        headers: plebbit.kuboRpcClientsOptions![0].headers
     });
 
     const publishToIpns = async (content: string) => {
@@ -1010,7 +1008,7 @@ export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Pleb
 }
 
 export function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean {
-    return !plebbit._plebbitRpcClient && Object.keys(plebbit.clients.ipfsClients).length === 0;
+    return !plebbit._plebbitRpcClient && Object.keys(plebbit.clients.kuboRpcClients).length === 0;
 }
 
 export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {

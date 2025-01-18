@@ -3,7 +3,7 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { describeSkipIfRpc, mockRemotePlebbitIpfsOnly } from "../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyVote, signVote } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
@@ -13,7 +13,7 @@ import validVoteFixture from "../../fixtures/valid_vote.json" assert { type: "js
 describe("Sign Vote", async () => {
     let plebbit, subplebbit, voteProps, voteSignature;
     before(async () => {
-        plebbit = await mockRemotePlebbitIpfsOnly();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
 
         voteProps = {
@@ -51,7 +51,7 @@ describe("Sign Vote", async () => {
 describeSkipIfRpc("Verify vote", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockRemotePlebbitIpfsOnly();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`Valid vote signature fixture is validated correctly`, async () => {
         const vote = remeda.clone(validVoteFixture);

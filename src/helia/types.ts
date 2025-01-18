@@ -1,15 +1,15 @@
 import type { createHelia } from "helia";
-import type { IpfsClient } from "../types";
+import type { KuboRpcClient } from "../types";
 import type { PubsubRoutingComponents } from "@helia/ipns/routing";
 
-type IpnsForBrowser = Pick<IpfsClient["_client"]["name"], "resolve">;
-export interface IpfsClientForBrowser extends Omit<IpfsClient, "_client"> {
+type IpnsForBrowser = Pick<KuboRpcClient["_client"]["name"], "resolve">;
+export interface IpfsClientForBrowser extends Omit<KuboRpcClient, "_client"> {
     _client: {
-        add: IpfsClient["_client"]["add"];
+        add: KuboRpcClient["_client"]["add"];
         name: IpnsForBrowser;
-        cat: IpfsClient["_client"]["cat"];
-        pubsub: IpfsClient["_client"]["pubsub"];
-        stop: IpfsClient["_client"]["stop"];
+        cat: KuboRpcClient["_client"]["cat"];
+        pubsub: KuboRpcClient["_client"]["pubsub"];
+        stop: KuboRpcClient["_client"]["stop"];
     };
 }
 

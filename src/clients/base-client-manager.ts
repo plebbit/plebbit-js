@@ -76,8 +76,7 @@ export class BaseClientsManager {
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        if (plebbit.clients.ipfsClients)
-            this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
+        if (plebbit.clients.kuboRpcClients) this._defaultIpfsProviderUrl = remeda.keys.strict(plebbit.clients.kuboRpcClients)[0];
         this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
             for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
@@ -95,8 +94,8 @@ export class BaseClientsManager {
 
     getDefaultIpfs() {
         assert(this._defaultIpfsProviderUrl);
-        assert(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
-        return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
+        assert(this._plebbit.clients.kuboRpcClients[this._defaultIpfsProviderUrl]);
+        return this._plebbit.clients.kuboRpcClients[this._defaultIpfsProviderUrl];
     }
 
     // Pubsub methods

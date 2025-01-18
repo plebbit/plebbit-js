@@ -1,12 +1,12 @@
 import io, { Socket } from "socket.io-client";
-import type { IpfsClient, PubsubSubscriptionHandler } from "../types.js";
+import type { KuboRpcClient, PubsubSubscriptionHandler } from "../types.js";
 
 const port = 25963;
 
 let ioClient: Socket;
 
 class MockPubsubHttpClient {
-    public pubsub: IpfsClient["_client"]["pubsub"];
+    public pubsub: KuboRpcClient["_client"]["pubsub"];
     private subscriptions: { topic: string; rawCallback: PubsubSubscriptionHandler; callback: (...args: any[]) => any }[];
 
     constructor(dropRate?: number) {

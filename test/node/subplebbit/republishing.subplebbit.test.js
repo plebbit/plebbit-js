@@ -7,7 +7,7 @@ import {
     generateMockPost,
     waitTillReplyInParentPages,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     describeSkipIfRpc,
     findCommentInPage,
     resolveWhenConditionIsTrue,
@@ -31,7 +31,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
     let postWithExtraProps;
     before(async () => {
         const plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
         await resolveWhenConditionIsTrue(subBeforeMigration, () => typeof subBeforeMigration.updatedAt === "number");
@@ -49,7 +49,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
 
         await subBeforeMigration.stop();
 
-        plebbitDifferentIpfs = await mockPlebbit({ ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"] }); // Different IPFS repo
+        plebbitDifferentIpfs = await mockPlebbit({ kuboRpcClientsOptions: ["http://localhost:15004/api/v0"] }); // Different IPFS repo
 
         subAfterMigration = await createSubWithNoChallenge({ address: subBeforeMigration.address }, plebbitDifferentIpfs);
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);

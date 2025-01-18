@@ -20,31 +20,31 @@ describe(`comment.replies.clients`, async () => {
         commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
         expect(commentCid).to.be.a("string");
     });
-    describeSkipIfRpc(`comment.replies.clients.ipfsClients`, async () => {
-        it(`comment.replies.clients.ipfsClients is {} for gateway plebbit`, async () => {
+    describeSkipIfRpc(`comment.replies.clients.kuboRpcClients`, async () => {
+        it(`comment.replies.clients.kuboRpcClients is {} for gateway plebbit`, async () => {
             const comment = await gatewayPlebbit.getComment(commentCid);
-            const sortTypes = Object.keys(comment.replies.clients.ipfsClients);
+            const sortTypes = Object.keys(comment.replies.clients.kuboRpcClients);
             expect(sortTypes).to.deep.equal(["topAll", "new", "controversialAll", "old"]);
 
-            for (const sortType of sortTypes) expect(comment.replies.clients.ipfsClients[sortType]).to.deep.equal({}); // should be empty
+            for (const sortType of sortTypes) expect(comment.replies.clients.kuboRpcClients[sortType]).to.deep.equal({}); // should be empty
         });
 
-        it(`comment.replies.clients.ipfsClients[sortType][url] is stopped by default`, async () => {
+        it(`comment.replies.clients.kuboRpcClients[sortType][url] is stopped by default`, async () => {
             const comment = await plebbit.getComment(commentCid);
-            const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
-            expect(Object.keys(comment.replies.clients.ipfsClients["new"]).length).to.equal(1);
-            expect(comment.replies.clients.ipfsClients["new"][ipfsUrl].state).to.equal("stopped");
+            const ipfsUrl = Object.keys(comment.clients.kuboRpcClients)[0];
+            expect(Object.keys(comment.replies.clients.kuboRpcClients["new"]).length).to.equal(1);
+            expect(comment.replies.clients.kuboRpcClients["new"][ipfsUrl].state).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await plebbit.getComment(commentCid);
             await comment.update();
             await new Promise((resolve) => comment.once("update", resolve));
-            const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
+            const ipfsUrl = Object.keys(comment.clients.kuboRpcClients)[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates = [];
-            comment.replies.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
+            comment.replies.clients.kuboRpcClients["new"][ipfsUrl].on("statechange", (newState) => {
                 actualStates.push(newState);
             });
 

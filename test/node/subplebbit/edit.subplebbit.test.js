@@ -3,7 +3,7 @@ import {
     mockPlebbit,
     loadAllPages,
     createSubWithNoChallenge,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
     describeIfRpc,
@@ -31,7 +31,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     before(async () => {
         const testEthRpc = `https://testEthRpc-${uuidV4()}.com`;
         plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } }, true, false);
-        remotePlebbit = await mockRemotePlebbitIpfsOnly({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
         subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
         ethAddress = `test-edit-${uuidV4()}.eth`;
 
@@ -348,7 +348,7 @@ describe(`Editing subplebbit.roles`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         sub = await plebbit.createSubplebbit();
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => Boolean(sub.updatedAt));
@@ -440,7 +440,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
             await subplebbit.edit(editArgs);
             expect(subplebbit[keyToEdit]).to.equal(newValue);
             await new Promise((resolve) => subplebbit.once("update", resolve));
-            const remotePlebbit = await mockRemotePlebbitIpfsOnly(); // This plebbit instance won't use RPC
+            const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient(); // This plebbit instance won't use RPC
             const loadedSubplebbit = await remotePlebbit.createSubplebbit({ address: subplebbit.address });
             await loadedSubplebbit.update();
             await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);

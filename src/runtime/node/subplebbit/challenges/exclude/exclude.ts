@@ -241,7 +241,7 @@ const shouldExcludeChallengeCommentCids = async (
         // don't fetch the same comment twice
         const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         const pendingKey =
-            commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.ipfsHttpClientsOptions?.[0].url;
+            commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.kuboRpcClientsOptions?.[0].url;
         while (getCommentPending[pendingKey] === true) {
             await sleep(20);
         }

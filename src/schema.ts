@@ -25,7 +25,7 @@ const IpfsGatewayUrlSchema = z.string().url();
 
 const RpcUrlSchema = z.string().url(); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
 
-const IpfsHttpCreateClientOptionSchema = z.custom<Parameters<typeof CreateKuboRpcClient>[0]>(); // Kubo-rpc-client library will do the validation for us
+const KuboRpcCreateClientOptionSchema = z.custom<Parameters<typeof CreateKuboRpcClient>[0]>(); // Kubo-rpc-client library will do the validation for us
 
 const DirectoryPathSchema = z.string(); // TODO add validation for path
 
@@ -45,17 +45,17 @@ const defaultChainProviders = {
     }
 };
 
-const TransformIpfsHttpClientOptionsSchema = IpfsHttpCreateClientOptionSchema.array()
+const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array()
     .nonempty()
     .transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
 
-const ParsedIpfsHttpClientOptionsSchema = z.custom<z.output<typeof TransformIpfsHttpClientOptionsSchema>>();
+const ParsedKuboRpcClientOptionsSchema = z.custom<z.output<typeof TransformKuboRpcClientOptionsSchema>>();
 
 const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().nonempty().optional(),
-    ipfsHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
+    kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     httpRoutersOptions: z.string().url().array().optional(),
-    pubsubHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
+    pubsubHttpClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),
     chainProviders: z.record(ChainTickerSchema, ChainProviderSchema),
@@ -98,6 +98,6 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
 
 export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used to parse responses from rpc when calling getSettings
-    ipfsHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional(),
-    pubsubHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional()
+    kuboRpcClientsOptions: ParsedKuboRpcClientOptionsSchema.optional(),
+    pubsubHttpClientsOptions: ParsedKuboRpcClientOptionsSchema.optional()
 }).strict();

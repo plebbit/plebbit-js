@@ -20,7 +20,7 @@ describe(`Test publishing pubsub`, async () => {
     });
 
     after(async () => {
-        await plebbit.clients.ipfsClients[Object.keys(plebbit.clients.ipfsClients)[0]]._client.stop();
+        await plebbit.clients.kuboRpcClients[Object.keys(plebbit.clients.kuboRpcClients)[0]]._client.stop();
     });
 
     it(`Can fetch subplebbit`, async () => {
