@@ -14,7 +14,7 @@ import {
     describeIfRpc,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
-import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
+import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client";
 
 import signers from "../../fixtures/signers";
 import path from "path";

@@ -149,7 +149,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
         const challengeError = `Author (${postWithAuthorAddress.author.address}) has failed all EVM challenges, walletFailureReason='PLEB token balance must be greater than 1000.', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='Author has no avatar NFT set'`;
-        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]);
+        expect(challengeVerification.challengeErrors).to.deep.equal({ 0: challengeError });
     });
 
     it(`An author with NFT wallet with over 1000 PLEB should pass the challenge`, async () => {

@@ -30,14 +30,14 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     const twoHoursLateGateway = `http://localhost:14006`; // This gateway will respond immedietly with subplebbitRecordHourOld;
 
     const subAddress = signers[0].address;
-    let plebbit;
+    let plebbitRunningSubs;
 
     const fetchLatestSubplebbitJson = async () => {
-        const subRecord = (await plebbit.getSubplebbit(subAddress)).toJSONIpfs();
+        const subRecord = (await plebbitRunningSubs.getSubplebbit(subAddress)).toJSONIpfs();
         return subRecord;
     };
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbitRunningSubs = await mockPlebbit();
     });
     it(`Updating a subplebbit through a single gateway that is not responding (timeout)`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
@@ -74,8 +74,8 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     });
 
     it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
-        const post = await publishRandomPost(subAddress, plebbit, {}); // Force sub to publish a new update
-        await waitTillPostInSubplebbitPages(post, plebbit);
+        const post = await publishRandomPost(subAddress, plebbitRunningSubs, {}); // Force sub to publish a new update
+        await waitTillPostInSubplebbitPages(post, plebbitRunningSubs);
         // normalWithStallingGateway gateway will return the latest SubplebbitIpfs
 
         // gateway that responds quickly with updatedAt > 2 min => thirtyMinuteLateGateway
@@ -106,8 +106,8 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
             .lessThanOrEqual(timestampHourAgo + bufferSeconds);
     });
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
-        const post = await publishRandomPost(subplebbitAddress, plebbit, {}); // should publish a new record after
-        await waitTillPostInSubplebbitPages(post, plebbit);
+        const post = await publishRandomPost(subplebbitAddress, plebbitRunningSubs, {}); // should publish a new record after
+        await waitTillPostInSubplebbitPages(post, plebbitRunningSubs);
         const customPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
         });
