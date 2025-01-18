@@ -1,4 +1,4 @@
-import type { SubplebbitIpfsType, SubplebbitRole } from "../../../../../subplebbit/types.js";
+import type { SubplebbitIpfsType, SubplebbitRole, Exclude } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { isRequestPubsubPublicationOfPost, isRequestPubsubPublicationOfReply } from "../../../../../util.js";
 
@@ -14,6 +14,8 @@ const testFirstCommentTimestamp = (excludeTime: number | undefined, authorFirstC
 const isVote = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.vote);
 const isReply = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => isRequestPubsubPublicationOfReply(request);
 const isPost = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => isRequestPubsubPublicationOfPost(request);
+const isCommentEdit = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentEdit);
+const isCommentModeration = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentModeration);
 
 // boilerplate function to test if an exclude of a specific publication type passes
 const testType = (
@@ -50,4 +52,26 @@ const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, 
     return false;
 };
 
-export { isVote, isReply, isPost, testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole };
+const testPublicationType = (excludePublicationType: Exclude["publicationType"] | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => {
+  if (excludePublicationType === undefined) {
+    return true
+  }
+  if (excludePublicationType.post && isPost(request)) {
+    return true
+  }
+  if (excludePublicationType.reply && isReply(request)) {
+    return true
+  }
+  if (excludePublicationType.vote && isVote(request)) {
+    return true
+  }
+  if (excludePublicationType.commentEdit && isCommentEdit(request)) {
+    return true
+  }
+  if (excludePublicationType.commentModeration && isCommentModeration(request)) {
+    return true
+  }
+  return false
+}
+
+export { isVote, isReply, isPost, testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole, testPublicationType };

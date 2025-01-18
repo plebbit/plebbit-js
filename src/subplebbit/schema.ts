@@ -113,6 +113,16 @@ export const ChallengeExcludeSubplebbitSchema = z
     })
     .strict();
 
+export const ChallengeExcludePublicationTypeSchema = z
+    .object({
+        post: z.boolean().optional(),
+        reply: z.boolean().optional(),
+        vote: z.boolean().optional(),
+        commentEdit: z.boolean().optional(),
+        commentModeration: z.boolean().optional()
+    })
+    .strict();
+
 export const ChallengeExcludeSchema = z
     .object({
         subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
@@ -126,7 +136,8 @@ export const ChallengeExcludeSchema = z
         role: SubplebbitRoleSchema.shape.role.array().optional(),
         address: AuthorAddressSchema.array().optional(),
         rateLimit: z.number().nonnegative().int().optional(),
-        rateLimitChallengeSuccess: z.boolean().optional()
+        rateLimitChallengeSuccess: z.boolean().optional(),
+        publicationType: ChallengeExcludePublicationTypeSchema.optional()
     })
     .passthrough();
 
