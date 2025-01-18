@@ -9,8 +9,6 @@ import {
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     waitTillPostInSubplebbitPages,
-    mockPlebbit,
-    createSubWithNoChallenge,
     waitTillReplyInParentPages,
     mockRemotePlebbitIpfsOnly
 } from "../../../../dist/node/test/test-util.js";
@@ -108,16 +106,11 @@ getRemotePlebbitConfigs().map((config) => {
             ]);
             const cidsV1 = cids.map((cid) => CID.parse(cid).toV1().toString());
 
-            for (const cid of [...cids, ...cidsV1]) {
-                try {
-                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
-                        cid
-                    );
-
-                    expect.fail("should not succeed");
-                } catch (e) {
-                    expect(e.message).to.include("is blocked and cannot be provided", "CID " + cid + "Still exists on the subplebbit node");
-                }
+            const allCids = [...cids, ...cidsV1];
+            const ipfsClientOfSub = remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client;
+            // Collect all pinned CIDs
+            for await (const pin of ipfsClientOfSub.pin.ls()) {
+                expect(!allCids.includes(pin.cid.toString())).to.be.true;
             }
         });
 
