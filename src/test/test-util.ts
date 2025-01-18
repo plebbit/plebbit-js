@@ -50,7 +50,6 @@ import env from "../version.js";
 import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import { createHeliaBrowserNode } from "../helia/helia-for-plebbit.js";
-import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -898,7 +897,6 @@ export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: Pubs
 }
 
 export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
-    if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
 
     const plebbitWithIpfs = await mockRemotePlebbitIpfsOnly();
 

@@ -17,6 +17,7 @@ import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types
 import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub, IpfsClientForBrowser } from "./types.js";
 import type { NameResolveOptions } from "kubo-rpc-client";
+import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 
 const log = Logger("plebbit-js:helia-browser");
 
@@ -39,6 +40,9 @@ export async function createHeliaBrowserNode(
 ): Promise<IpfsClientForBrowser> {
     if (heliaBrowserClient) return heliaBrowserClient;
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
+
+    if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
+
     const peerId = await createEd25519PeerId();
     const helia = <HeliaWithLibp2pPubsub>await createHelia({
         libp2p: {
