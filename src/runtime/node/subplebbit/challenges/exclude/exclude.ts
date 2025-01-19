@@ -41,9 +41,6 @@ const shouldExcludePublication = (
             !exclude.replyScore &&
             !exclude.firstCommentTimestamp &&
             !exclude.address?.length &&
-            exclude.post === undefined &&
-            exclude.reply === undefined &&
-            exclude.vote === undefined &&
             exclude.publicationType === undefined &&
             exclude.rateLimit === undefined &&
             !exclude.role?.length
