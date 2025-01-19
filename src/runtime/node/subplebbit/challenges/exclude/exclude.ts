@@ -1,7 +1,7 @@
 //@ts-expect-error
 import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
-import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole, testPublicationType } from "./utils.js";
+import { testScore, testFirstCommentTimestamp, testRole, testPublicationType } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
@@ -61,15 +61,6 @@ const shouldExcludePublication = (
             shouldExclude = false;
         }
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.post === "boolean" && !testPost(exclude.post, request)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, request)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
             shouldExclude = false;
         }
         if (!testPublicationType(exclude.publicationType, request)) {
