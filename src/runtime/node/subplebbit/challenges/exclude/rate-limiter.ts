@@ -1,5 +1,5 @@
 import QuickLRU from "quick-lru";
-import { isVote, isReply, isPost, testVote, testReply, testPost } from "./utils.js";
+import { isVote, isReply, isPost, testPublicationType, testVote, testReply, testPost } from "./utils.js";
 import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
@@ -64,14 +64,29 @@ const getRateLimitersToTest = (
     const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote].includes(true)) {
-        addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
+
+    if (exclude.publicationType) {
+        if (testPublicationType(exclude.publicationType, request)) {
+            const publicationType = 
+                isPost(request) ? "post" : 
+                isReply(request) ? "reply" : 
+                isVote(request) ? "vote" : undefined;
+            if (publicationType) {
+                addFilteredRateLimiter(exclude, publication, publicationType, challengeSuccess, filteredRateLimiters);
+            }
+        }
     }
-    if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote].includes(true)) {
-        addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
-    }
-    if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply].includes(true)) {
-        addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
+
+    else {
+        if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote].includes(true)) {
+            addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
+        }
+        if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote].includes(true)) {
+            addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
+        }
+        if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply].includes(true)) {
+            addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
+        }
     }
     return filteredRateLimiters;
 };
@@ -84,7 +99,8 @@ const testRateLimit = (exclude: Exclude, request: DecryptedChallengeRequestMessa
         (exclude.vote === true && !isVote(request)) ||
         (exclude.post === false && isPost(request)) ||
         (exclude.reply === false && isReply(request)) ||
-        (exclude.vote === false && isVote(request))
+        (exclude.vote === false && isVote(request)) ||
+        !testPublicationType(exclude.publicationType, request)
     ) {
         // early exit based on exclude type and publication type
         return true;

@@ -304,9 +304,9 @@ const rateLimitChallegeSubplebbit = {
                 },
                 exclude: [
                     // different rate limit per publication type
-                    { post: true, rateLimit: 0 }, // 0 per hour
-                    { reply: true, rateLimit: 10 }, // 10 per hour
-                    { vote: true, rateLimit: 100 } // 100 per hour
+                    { publicationType: {post: true}, rateLimit: 0 }, // 0 per hour
+                    { publicationType: {reply: true}, rateLimit: 10 }, // 10 per hour
+                    { publicationType: {vote: true}, rateLimit: 100 } // 100 per hour
                 ]
             }
         ]
