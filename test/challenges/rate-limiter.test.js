@@ -82,6 +82,56 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
+    it("1 publicationType.commentEdit true", async () => {
+        const author = { address: getRandomAddress() };
+        const exclude = { rateLimit: 1, publicationType: {commentEdit: true} };
+        const subplebbitChallenges = [{ exclude: [exclude] }];
+        const publicationCommentEdit = { author, commentCid: "Qm...", content: "edited content" };
+        const publicationReply = { author, parentCid: "Qm..." };
+        const publicationVote = { author, commentCid: "Qm...", vote: 0 };
+        const challengeSuccess = true;
+        expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { commentEdit: publicationCommentEdit }, challengeSuccess);
+        expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+    });
+
+    it("1 publicationType.commentModeration true", async () => {
+        const author = { address: getRandomAddress() };
+        const exclude = { rateLimit: 1, publicationType: {commentModeration: true} };
+        const subplebbitChallenges = [{ exclude: [exclude] }];
+        const publicationCommentModeration = { author, commentCid: "Qm...", commentModeration: {locked: true} };
+        const publicationReply = { author, parentCid: "Qm..." };
+        const publicationVote = { author, commentCid: "Qm...", vote: 0 };
+        const challengeSuccess = true;
+        expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { commentModeration: publicationCommentModeration }, challengeSuccess);
+        expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+    });
+
     it("1 publicationType.post true challengeSuccess false", async () => {
         const author = { address: getRandomAddress() };
         const exclude = { rateLimit: 1, publicationType: {post: true }};
