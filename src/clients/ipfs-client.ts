@@ -1,5 +1,5 @@
 import { TypedEmitter } from "tiny-typed-emitter";
-import { GenericClientEvents } from "../types.js";
+import type { GenericClientEvents } from "../types.js";
 import { hideClassPrivateProps } from "../util.js";
 
 // Types
