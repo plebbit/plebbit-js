@@ -96,13 +96,18 @@ Exclude { // all conditions in Exclude are AND, for OR, use another Exclude item
   postReply?: number // exclude if author reply score is greater or equal
   firstCommentTimestamp?: number // exclude if author account age is greater or equal than now - firstCommentTimestamp
   challenges?: number[] // exclude if all challenges with indexes passed, e.g. challenges: [0, 1] excludes if challenges at index 0 AND 1 passed, plural because has to match all
-  post?: boolean // exclude challenge if publication is a post
-  reply?: boolean // exclude challenge if publication is a reply
-  vote?: boolean // exclude challenge if publication is a vote
+  publicationType?: ExcludePublicationType // exclude post, reply, vote, etc.
   role?: string[] // exclude challenge if author.role.role = one of the string, singular because it only has to match 1 role
   address?: string[] // exclude challenge if author.address = one of the string, singular because it only has to match 1 address
   rateLimit?: number // exclude if publication per hour is lower than ratelimit
   rateLimitChallengeSuccess?: boolean // only rate limit if the challengeVerification.challengeSuccess === rateLimitChallengeSuccess
+}
+ExcludePublicationType { // singular because it only has to match 1 publication type
+  post?: boolean // exclude challenge if publication is a post
+  reply?: boolean // exclude challenge if publication is a reply
+  vote?: boolean // exclude challenge if publication is a vote
+  commentEdit?: boolean // exclude challenge if publication is a comment edit
+  commentModeration?: boolean // exclude challenge if publication is a comment moderation
 }
 ExcludeSubplebbit { // singular because it only has to match 1 subplebbit
   addresses: string[] // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'

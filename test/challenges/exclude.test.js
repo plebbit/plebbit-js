@@ -192,13 +192,20 @@ describe("shouldExcludePublication", () => {
         vote: 0,
         author
     };
+    const commentEdit = {
+        commentCid: "Qm...",
+        content: 'edited content',
+        author
+    };
+    const commentModeration = {
+        commentCid: "Qm...",
+        commentModeration: {locked: true},
+        author
+    };
 
-    const commentEdit = remeda.clone(validCommentEditFixture);
-    const commentModeration = remeda.clone(validCommentModerationFixture);
-
-    it("post", () => {
+    it("publicationType.post", () => {
         const subplebbitChallenge = {
-            exclude: [{ post: true }]
+            exclude: [{ publicationType: {post: true} }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(true);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
@@ -207,9 +214,10 @@ describe("shouldExcludePublication", () => {
         expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
     });
 
-    it("reply", () => {
+    it("publicationType.reply", () => {
         const subplebbitChallenge = {
-            exclude: [{ reply: true }]
+            exclude: [{ publicationType: {reply: true} }]
+
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(true);
@@ -218,9 +226,9 @@ describe("shouldExcludePublication", () => {
         expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
     });
 
-    it("vote", () => {
+    it("publicationType.vote", () => {
         const subplebbitChallenge = {
-            exclude: [{ vote: true }]
+            exclude: [{ publicationType: {vote: true} }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
@@ -230,41 +238,41 @@ describe("shouldExcludePublication", () => {
         expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(true);
     });
 
-    it(`commentEdit`, async () => {
+    it("publicationType.vote and publicationType.reply", () => {
         const subplebbitChallenge = {
-            exclude: [{ commentEdit: true }]
+            exclude: [{ publicationType: { vote: true, reply: true } }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(true);
     });
 
-    it(`commentModeration`, async () => {
+    it("publicationType.commentEdit", () => {
         const subplebbitChallenge = {
-            exclude: [{ commentModeration: true }]
-        };
-        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(true);
-    });
-
-    it("vote and reply", () => {
-        const subplebbitChallenge = {
-            exclude: [{ vote: true, reply: true }]
+            exclude: [{ publicationType: {commentEdit: true} }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(true);
+    });
+
+    it("publicationType.commentModeration", () => {
+        const subplebbitChallenge = {
+            exclude: [{ publicationType: {commentModeration: true} }]
+        };
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(true);
     });
 
     // Exclude based on roles
     it("Moderator edits are excluded from challenges", async () => {
         const subplebbitChallenge = {
-            exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: {commentModeration: true}}]
         };
         // high-karma.eth is a mod
         const modAuthor = { address: "high-karma.eth" };
@@ -285,8 +293,7 @@ describe("shouldExcludePublication", () => {
         const voteOfMod = remeda.clone(validVoteFixture);
         voteOfMod.author = modAuthor;
 
-        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit: commentEditOfMod })).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration: commentModerationOfMod })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration: commentEditOfMod })).to.equal(true);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: postOfMod })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: replyOfMod })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { vote: voteOfMod })).to.equal(false);
@@ -370,11 +377,9 @@ describe("shouldExcludePublication", () => {
     it("rateLimit post, reply, vote", () => {
         const subplebbitChallenge = {
             exclude: [
-                { post: true, rateLimit: 1 }, // 1 per hour
-                { reply: true, rateLimit: 1 }, // 1 per hour
-                { vote: true, rateLimit: 1 }, // 1 per hour
-                { commentEdit: true, rateLimit: 1 },
-                { commentModeration: true, rateLimit: 1 }
+                { publicationType: {post: true}, rateLimit: 1 }, // 1 per hour
+                { publicationType: {reply: true}, rateLimit: 1 }, // 1 per hour
+                { publicationType: {vote: true}, rateLimit: 1 } // 1 per hour
             ]
         };
         const subplebbitChallenges = [subplebbitChallenge];
@@ -532,8 +537,8 @@ describe("shouldExcludePublication", () => {
     it("rateLimit post, reply rateLimitChallengeSuccess false", () => {
         const subplebbitChallenge = {
             exclude: [
-                { post: true, rateLimit: 1, rateLimitChallengeSuccess: false }, // 1 per hour
-                { reply: true, rateLimit: 1 } // 1 per hour
+                { publicationType: {post: true}, rateLimit: 1, rateLimitChallengeSuccess: false }, // 1 per hour
+                { publicationType: {reply: true}, rateLimit: 1 } // 1 per hour
             ]
         };
         const subplebbitChallenges = [subplebbitChallenge];

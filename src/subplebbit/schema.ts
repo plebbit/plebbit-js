@@ -118,33 +118,28 @@ export const ChallengeExcludeSubplebbitSchema = z
     })
     .strict();
 
-const excludePublicationFieldSchema = z.literal(true).optional();
-
-const ExcludePublicationSchema = z
+export const ChallengeExcludePublicationTypeSchema = z
     .object({
-        post: excludePublicationFieldSchema,
-        reply: excludePublicationFieldSchema,
-        vote: excludePublicationFieldSchema,
-        commentModeration: excludePublicationFieldSchema,
-        commentEdit: excludePublicationFieldSchema
+        post: z.boolean().optional(),
+        reply: z.boolean().optional(),
+        vote: z.boolean().optional(),
+        commentEdit: z.boolean().optional(),
+        commentModeration: z.boolean().optional()
     })
-    .passthrough()
-    .refine(
-        (args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so
-        messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT
-    );
+    .strict();
+
 export const ChallengeExcludeSchema = z
     .object({
         subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
         firstCommentTimestamp: PlebbitTimestampSchema.optional(),
-        challenges: z.number().nonnegative().int().array().nonempty().optional(),
-        role: SubplebbitRoleSchema.shape.role.array().nonempty().optional(),
-        address: AuthorAddressSchema.array().nonempty().optional(),
+        challenges: z.number().nonnegative().int().array().optional(),
+        role: SubplebbitRoleSchema.shape.role.array().optional(),
+        address: AuthorAddressSchema.array().optional(),
         rateLimit: z.number().nonnegative().int().optional(),
         rateLimitChallengeSuccess: z.boolean().optional(),
-        publication: ExcludePublicationSchema.optional()
+        publicationType: ChallengeExcludePublicationTypeSchema.optional()
     })
     .passthrough();
 

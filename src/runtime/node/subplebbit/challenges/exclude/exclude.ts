@@ -1,21 +1,7 @@
 //@ts-expect-error
 import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
-import {
-    testVote,
-    testReply,
-    testPost,
-    testScore,
-    testFirstCommentTimestamp,
-    testRole,
-    testCommentEdit,
-    testCommentModeration,
-    isPost,
-    isReply,
-    isVote,
-    isCommentEdit,
-    isCommentModeration
-} from "./utils.js";
+import { testScore, testFirstCommentTimestamp, testRole, testPublicationType } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
@@ -56,7 +42,7 @@ const shouldExcludePublication = (
             typeof exclude.publication?.replyScore !== "number" &&
             typeof exclude.firstCommentTimestamp !== "number" &&
             !exclude.address?.length &&
-            exclude.publication === undefined &&
+            exclude.publicationType === undefined &&
             exclude.rateLimit === undefined &&
             !exclude.role?.length
         ) {
@@ -74,11 +60,17 @@ const shouldExcludePublication = (
         if (exclude.publication?.vote && isVote(request)) {
             return true;
         }
-        if (exclude.publication?.commentEdit && isCommentEdit(request)) {
-            return true;
+        if (!testPublicationType(exclude.publicationType, request)) {
+            shouldExclude = false;
         }
-        if (exclude.publication?.commentModeration && isCommentModeration(request)) {
-            return true;
+        if (!testRateLimit(exclude, request)) {
+            shouldExclude = false;
+        }
+        if (exclude.address && !exclude.address.includes(author.address)) {
+            shouldExclude = false;
+        }
+        if (Array.isArray(exclude.role) && !testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
+            shouldExclude = false;
         }
 
         if (testRateLimit(exclude, request)) {

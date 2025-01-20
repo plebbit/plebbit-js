@@ -1,16 +1,5 @@
 import QuickLRU from "quick-lru";
-import {
-    isVote,
-    isReply,
-    isPost,
-    testVote,
-    testReply,
-    testPost,
-    isCommentEdit,
-    isCommentModeration,
-    testCommentEdit,
-    testCommentModeration
-} from "./utils.js";
+import { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType } from "./utils.js";
 import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
@@ -22,10 +11,17 @@ import {
     isRequestPubsubPublicationOfPost,
     isRequestPubsubPublicationOfReply
 } from "../../../../../util.js";
-type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration";
+type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration" ;
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
 const rateLimiters = new QuickLRU<string, RateLimiter>({ maxSize: 50000 });
+
+const getPublicationType = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): PublicationType | undefined => 
+    isPost(request) ? "post" :
+    isReply(request) ? "reply" :
+    isVote(request) ? "vote" :
+    isCommentEdit(request) ? "commentEdit" :
+    isCommentModeration(request) ? "commentModeration" : undefined;
 
 const getRateLimiterName = (
     exclude: Exclude,
@@ -76,20 +72,13 @@ const getRateLimitersToTest = (
     const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (testPost(exclude.publication?.post, request))
-        addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
 
-    if (testReply(exclude.publication?.reply, request))
-        addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
-
-    if (testVote(exclude.publication?.vote, request))
-        addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
-
-    if (testCommentEdit(exclude.publication?.commentEdit, request))
-        addFilteredRateLimiter(exclude, publication, "commentEdit", challengeSuccess, filteredRateLimiters);
-
-    if (testCommentModeration(exclude.publication?.commentModeration, request))
-        addFilteredRateLimiter(exclude, publication, "commentModeration", challengeSuccess, filteredRateLimiters);
+    if (testPublicationType(exclude.publicationType, request)) {
+        const publicationType = getPublicationType(request)
+        if (publicationType) {
+            addFilteredRateLimiter(exclude, publication, publicationType, challengeSuccess, filteredRateLimiters);
+        }
+    }
 
     return filteredRateLimiters;
 };
@@ -99,16 +88,7 @@ const testRateLimit = (exclude: Exclude, request: DecryptedChallengeRequestMessa
 
     if (
         exclude?.rateLimit === undefined ||
-        (exclude.publication?.post === true && !isPost(request)) ||
-        (exclude.reply === true && !isReply(request)) ||
-        (exclude.vote === true && !isVote(request)) ||
-        (exclude.commentEdit === true && !isCommentEdit(request)) ||
-        (exclude.commentModeration === true && !isCommentModeration(request)) ||
-        (exclude.publication?.post === false && isPost(request)) ||
-        (exclude.reply === false && isReply(request)) ||
-        (exclude.commentEdit === false && isCommentEdit(request)) ||
-        (exclude.commentModeration === false && isCommentModeration(request)) ||
-        (exclude.vote === false && isVote(request))
+        !testPublicationType(exclude.publicationType, request)
     ) {
         // early exit based on exclude type and publication type
         return true;
@@ -144,14 +124,9 @@ const getRateLimitersToAddTo = (
         if (exclude?.rateLimit === undefined) {
             continue;
         }
-        if (isRequestPubsubPublicationOfPost(request)) {
-            addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
-        }
-        if (isRequestPubsubPublicationOfReply(request)) {
-            addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
-        }
-        if (request.vote) {
-            addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
+        const publicationType = getPublicationType(request)
+        if (publicationType) {
+            addFilteredRateLimiter(exclude, publication, publicationType, challengeSuccess, filteredRateLimiters);
         }
         if (request.commentEdit) {
             addFilteredRateLimiter(exclude, publication, "commentEdit", challengeSuccess, filteredRateLimiters);
