@@ -36,10 +36,9 @@ const shouldExcludePublication = (
     // if match any of the exclude array, should exclude
     for (const exclude of subplebbitChallenge.exclude) {
         // if doesn't have any author excludes, shouldn't exclude
-        // will come back here later
         if (
             typeof exclude.postScore !== "number" &&
-            typeof exclude.publication?.replyScore !== "number" &&
+            typeof exclude.replyScore !== "number" &&
             typeof exclude.firstCommentTimestamp !== "number" &&
             !exclude.address?.length &&
             exclude.publicationType === undefined &&
@@ -51,14 +50,15 @@ const shouldExcludePublication = (
 
         // if match all of the exclude item properties, should exclude
         // keep separated for easier debugging
-        if (exclude.publication?.post && isPost(request)) {
-            return true;
+        let shouldExclude = true;
+        if (!testScore(exclude.postScore, author.subplebbit?.postScore)) {
+            shouldExclude = false;
         }
-        if (exclude.publication?.reply && isReply(request)) {
-            return true;
+        if (!testScore(exclude.replyScore, author.subplebbit?.replyScore)) {
+            shouldExclude = false;
         }
-        if (exclude.publication?.vote && isVote(request)) {
-            return true;
+        if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
+            shouldExclude = false;
         }
         if (!testPublicationType(exclude.publicationType, request)) {
             shouldExclude = false;
@@ -73,13 +73,8 @@ const shouldExcludePublication = (
             shouldExclude = false;
         }
 
-        if (testRateLimit(exclude, request)) {
-            return true;
-        }
-        if (exclude.address && exclude.address.includes(author.address)) {
-            return true;
-        }
-        if (exclude.role && testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
+        // if one of the exclude item is successful, should exclude author
+        if (shouldExclude) {
             return true;
         }
     }

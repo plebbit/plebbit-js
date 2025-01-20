@@ -89,7 +89,7 @@ export enum messages {
     ERR_INVALID_CREATE_PLEBBIT_WS_SERVER_OPTIONS_SCHEMA = "Invalid create arguments for Plebbit WS RPC server",
     ERR_INVALID_CREATE_PLEBBIT_ARGS_SCHEMA = "User sent arguments with invalid schema in an attempt to create a Plebbit instance",
     ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA = "User provided invalid schema of arguments for plebbit.createSubplebbit while connected to RPC",
-    ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT = "The subplebbit has subplebbit.settings.challenges[x].exclude[y].publication is set to an empty object. You should either choose which publication to exclude or remove exclude.publication",
+    ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT = "The subplebbit has subplebbit.settings.challenges[x].exclude[y].publicationType is set to an empty object. You should either choose which publication to exclude or remove exclude.publicationType",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",

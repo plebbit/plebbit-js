@@ -30,26 +30,29 @@ const isPost = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAutho
 const isCommentEdit = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentEdit);
 const isCommentModeration = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentModeration);
 
-const testPublicationType = (excludePublicationType: Exclude["publicationType"] | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => {
-  if (excludePublicationType === undefined) {
-    return true
-  }
-  if (excludePublicationType.post && isPost(request)) {
-    return true
-  }
-  if (excludePublicationType.reply && isReply(request)) {
-    return true
-  }
-  if (excludePublicationType.vote && isVote(request)) {
-    return true
-  }
-  if (excludePublicationType.commentEdit && isCommentEdit(request)) {
-    return true
-  }
-  if (excludePublicationType.commentModeration && isCommentModeration(request)) {
-    return true
-  }
-  return false
-}
+const testPublicationType = (
+    excludePublicationType: Exclude["publicationType"] | undefined,
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+) => {
+    if (excludePublicationType === undefined) {
+        return true;
+    }
+    if (excludePublicationType.post && isPost(request)) {
+        return true;
+    }
+    if (excludePublicationType.reply && isReply(request)) {
+        return true;
+    }
+    if (excludePublicationType.vote && isVote(request)) {
+        return true;
+    }
+    if (excludePublicationType.commentEdit && isCommentEdit(request)) {
+        return true;
+    }
+    if (excludePublicationType.commentModeration && isCommentModeration(request)) {
+        return true;
+    }
+    return false;
+};
 
 export { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType, testScore, testFirstCommentTimestamp, testRole };

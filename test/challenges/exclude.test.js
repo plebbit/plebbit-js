@@ -193,18 +193,18 @@ describe("shouldExcludePublication", () => {
     };
     const commentEdit = {
         commentCid: "Qm...",
-        content: 'edited content',
+        content: "edited content",
         author
     };
     const commentModeration = {
         commentCid: "Qm...",
-        commentModeration: {locked: true},
+        commentModeration: { locked: true },
         author
     };
 
     it("publicationType.post", () => {
         const subplebbitChallenge = {
-            exclude: [{ publicationType: {post: true} }]
+            exclude: [{ publicationType: { post: true } }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(true);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
@@ -213,8 +213,7 @@ describe("shouldExcludePublication", () => {
 
     it("publicationType.reply", () => {
         const subplebbitChallenge = {
-            exclude: [{ publicationType: {reply: true} }]
-
+            exclude: [{ publicationType: { reply: true } }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(true);
@@ -223,7 +222,7 @@ describe("shouldExcludePublication", () => {
 
     it("publicationType.vote", () => {
         const subplebbitChallenge = {
-            exclude: [{ publicationType: {vote: true} }]
+            exclude: [{ publicationType: { vote: true } }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
@@ -241,19 +240,17 @@ describe("shouldExcludePublication", () => {
 
     it("publicationType.commentEdit", () => {
         const subplebbitChallenge = {
-            exclude: [{ publicationType: {commentEdit: true} }]
+            exclude: [{ publicationType: { commentEdit: true } }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(true);
     });
 
     it("publicationType.commentModeration", () => {
         const subplebbitChallenge = {
-            exclude: [{ publicationType: {commentModeration: true} }]
+            exclude: [{ publicationType: { commentModeration: true } }]
         };
         expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
@@ -264,7 +261,7 @@ describe("shouldExcludePublication", () => {
     // Exclude based on roles
     it("Moderator edits are excluded from challenges", async () => {
         const subplebbitChallenge = {
-            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: {commentModeration: true}}]
+            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
         };
         // high-karma.eth is a mod
         const modAuthor = { address: "high-karma.eth" };
@@ -366,9 +363,9 @@ describe("shouldExcludePublication", () => {
     it("rateLimit post, reply, vote", () => {
         const subplebbitChallenge = {
             exclude: [
-                { publicationType: {post: true}, rateLimit: 1 }, // 1 per hour
-                { publicationType: {reply: true}, rateLimit: 1 }, // 1 per hour
-                { publicationType: {vote: true}, rateLimit: 1 } // 1 per hour
+                { publicationType: { post: true }, rateLimit: 1 }, // 1 per hour
+                { publicationType: { reply: true }, rateLimit: 1 }, // 1 per hour
+                { publicationType: { vote: true }, rateLimit: 1 } // 1 per hour
             ]
         };
         const subplebbitChallenges = [subplebbitChallenge];
@@ -471,8 +468,8 @@ describe("shouldExcludePublication", () => {
     it("rateLimit post, reply rateLimitChallengeSuccess false", () => {
         const subplebbitChallenge = {
             exclude: [
-                { publicationType: {post: true}, rateLimit: 1, rateLimitChallengeSuccess: false }, // 1 per hour
-                { publicationType: {reply: true}, rateLimit: 1 } // 1 per hour
+                { publicationType: { post: true }, rateLimit: 1, rateLimitChallengeSuccess: false }, // 1 per hour
+                { publicationType: { reply: true }, rateLimit: 1 } // 1 per hour
             ]
         };
         const subplebbitChallenges = [subplebbitChallenge];

@@ -118,15 +118,21 @@ export const ChallengeExcludeSubplebbitSchema = z
     })
     .strict();
 
+const excludePublicationFieldSchema = z.literal(true).optional(); // can be true or undefined
+
 export const ChallengeExcludePublicationTypeSchema = z
     .object({
-        post: z.boolean().optional(),
-        reply: z.boolean().optional(),
-        vote: z.boolean().optional(),
-        commentEdit: z.boolean().optional(),
-        commentModeration: z.boolean().optional()
+        post: excludePublicationFieldSchema,
+        reply: excludePublicationFieldSchema,
+        vote: excludePublicationFieldSchema,
+        commentEdit: excludePublicationFieldSchema,
+        commentModeration: excludePublicationFieldSchema
     })
-    .strict();
+    .passthrough()
+    .refine(
+        (args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so
+        messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT
+    );
 
 export const ChallengeExcludeSchema = z
     .object({
