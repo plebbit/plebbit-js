@@ -1,7 +1,7 @@
 import { pubsub as ipnsPubsubRouter, PubsubRoutingComponents } from "@helia/ipns/routing";
 import { CustomProgressEvent } from "progress-events";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { logger } from "@libp2p/logger";
+import Logger from "@plebbit/plebbit-logger";
 import { CID } from "multiformats/cid";
 import { sha256 } from "multiformats/hashes/sha2";
 import { base32 } from "multiformats/bases/base32";
@@ -10,7 +10,7 @@ import { peerIdFromString } from "@libp2p/peer-id";
 import type { Fetch } from "@libp2p/fetch";
 import type { HeliaWithLibp2pPubsub } from "./types";
 
-const log = logger("helia:ipns:routing:pubsub-with-fetch");
+const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
 
 /**
  * converts a binary record key to a pubsub topic key
