@@ -109,7 +109,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await mockPlebbit({
             kuboRpcClientsOptions: ["http://localhost:15003/api/v0"],
-            pubsubHttpClientsOptions: [`http://localhost:15003/api/v0`]
+            pubsubKuboRpcClientsOptions: [`http://localhost:15003/api/v0`]
         });
         const startTime = timestamp();
         const title = `Test online plebbit`;

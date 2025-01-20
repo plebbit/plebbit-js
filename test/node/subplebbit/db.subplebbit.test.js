@@ -21,7 +21,7 @@ const getTemporaryPlebbitOptions = () => {
     return {
         dataPath: tempy.directory(),
         kuboRpcClientsOptions: ["http://localhost:15004/api/v0"],
-        pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+        pubsubKuboRpcClientsOptions: ["http://localhost:15005/api/v0"]
     };
 };
 

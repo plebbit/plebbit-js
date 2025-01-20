@@ -17,7 +17,7 @@ describe("plebbit", () => {
                 "https://gateway.pinata.cloud"
             ].sort()
         );
-        expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
 
         // no dataPath in brower
         expect(plebbit.dataPath).to.equal(undefined);

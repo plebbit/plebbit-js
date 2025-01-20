@@ -358,20 +358,20 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
     it(`Can publish a comment when all pubsub providers are down except one`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
         // We're gonna modify this plebbit instance to throw errors when pubsub publish/subscribe is called for two of its pubsub providers (it uses three)
-        const pubsubProviders = Object.keys(tempPlebbit.clients.pubsubClients);
+        const pubsubProviders = Object.keys(tempPlebbit.clients.pubsubKuboRpcClients);
         expect(pubsubProviders.length).to.equal(3);
 
-        tempPlebbit.clients.pubsubClients[pubsubProviders[0]]._client.pubsub.publish = () => {
+        tempPlebbit.clients.pubsubKuboRpcClients[pubsubProviders[0]]._client.pubsub.publish = () => {
             throw Error("Can't publish");
         };
-        tempPlebbit.clients.pubsubClients[pubsubProviders[0]]._client.pubsub.subscribe = () => {
+        tempPlebbit.clients.pubsubKuboRpcClients[pubsubProviders[0]]._client.pubsub.subscribe = () => {
             throw Error("Can't subscribe");
         };
 
-        tempPlebbit.clients.pubsubClients[pubsubProviders[1]]._client.pubsub.publish = () => {
+        tempPlebbit.clients.pubsubKuboRpcClients[pubsubProviders[1]]._client.pubsub.publish = () => {
             throw Error("Can't publish");
         };
-        tempPlebbit.clients.pubsubClients[pubsubProviders[1]]._client.pubsub.subscribe = () => {
+        tempPlebbit.clients.pubsubKuboRpcClients[pubsubProviders[1]]._client.pubsub.subscribe = () => {
             throw Error("Can't subscribe");
         };
         // Only pubsubProviders [2] is able to publish/subscribe
@@ -384,14 +384,14 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const upPubsubUrl = "http://localhost:15002/api/v0";
         const plebbit = await mockPlebbit(
             {
-                pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+                pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
             },
             true
         );
 
         // make the pubsub provider unresponsive
-        plebbit.clients.pubsubClients[notRespondingPubsubUrl]._client.pubsub.publish = () => {};
-        plebbit.clients.pubsubClients[notRespondingPubsubUrl]._client.pubsub.subscribe = () => {};
+        plebbit.clients.pubsubKuboRpcClients[notRespondingPubsubUrl]._client.pubsub.publish = () => {};
+        plebbit.clients.pubsubKuboRpcClients[notRespondingPubsubUrl]._client.pubsub.subscribe = () => {};
 
         const mockPost = await generateMockPost(signers[0].address, plebbit);
 
@@ -403,7 +403,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
 
         for (const pubsubUrl of Object.keys(expectedStates))
-            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
         await publishWithExpectedResult(mockPost, true);
 
@@ -414,7 +414,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
     it(`comment emits and throws errors if all providers fail to publish`, async () => {
         const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
         const offlinePubsubPlebbit = await mockRemotePlebbit({
-            pubsubHttpClientsOptions: offlinePubsubUrls
+            pubsubKuboRpcClientsOptions: offlinePubsubUrls
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 
@@ -425,8 +425,8 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         expect(emittedError.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
 
         expect(mockPost.publishingState).to.equal("failed");
-        expect(mockPost.clients.pubsubClients[offlinePubsubUrls[0]].state).to.equal("stopped");
-        expect(mockPost.clients.pubsubClients[offlinePubsubUrls[1]].state).to.equal("stopped");
+        expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrls[0]].state).to.equal("stopped");
+        expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrls[1]].state).to.equal("stopped");
     });
     it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
         // First provider waits, second provider fails to publish
@@ -435,7 +435,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
         const offlinePubsubUrl = "http://localhost:23425"; // Will throw errors; can't subscribe or publish
         const offlinePubsubPlebbit = await mockRemotePlebbit({
-            pubsubHttpClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl]
+            pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl]
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
         mockPost._publishToDifferentProviderThresholdSeconds = 5;
@@ -455,7 +455,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const actualStates = { [notRespondingPubsubUrl]: [], [offlinePubsubUrl]: [] };
 
         for (const pubsubUrl of Object.keys(expectedStates))
-            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+            mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
         await mockPost.publish();
 
@@ -619,7 +619,7 @@ describe(`comment.publishingState`, async () => {
         const offlinePubsubUrl = "http://localhost:23425";
         const offlinePubsubPlebbit = await mockRemotePlebbit({
             kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
-            pubsubHttpClientsOptions: [offlinePubsubUrl]
+            pubsubKuboRpcClientsOptions: [offlinePubsubUrl]
         });
         offlinePubsubPlebbit.on("error", () => {});
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
@@ -627,6 +627,6 @@ describe(`comment.publishingState`, async () => {
         await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
 
         expect(mockPost.publishingState).to.equal("failed");
-        expect(mockPost.clients.pubsubClients[offlinePubsubUrl].state).to.equal("stopped");
+        expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].state).to.equal("stopped");
     });
 });

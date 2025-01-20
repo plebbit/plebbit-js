@@ -17,10 +17,10 @@ describe("await plebbit()", () => {
                 "https://gateway.pinata.cloud"
             ].sort()
         );
-        expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
         expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
         expect(plebbit.kuboRpcClientsOptions).to.be.undefined;
-        expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
+        expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
         expect(Object.keys(plebbit.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic", "sol"]);
         expect(Object.keys(plebbit.clients.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic", "sol"]);
 
