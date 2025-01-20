@@ -1,7 +1,5 @@
 import { testRateLimit, addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter";
 import { expect } from "chai";
-import validCommentEditFixture from "../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
-import validCommentModerationFixture from "../fixtures/signatures/commentModeration/valid_comment_moderation.json" assert { type: "json" };
 
 // sometimes use random addresses because the rate limiter
 // is based on author addresses and doesn't reset between tests
@@ -66,33 +64,19 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
         const challengeSuccess = true;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
-
-        // after rate limit
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
-
-        // after rate limit
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
-
-        // after rate limit
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
@@ -157,23 +141,15 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
-
         const challengeSuccess = false;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         // without rateLimitChallengeSuccess set, only successful publications are rate limited
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
     });
 
     it("1 publicationType.post false", async () => {
@@ -184,18 +160,11 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
-
         const challengeSuccess = true;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
-
-        // after rate limit
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
@@ -204,8 +173,6 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(false);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(false);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(false);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(false);
     });
 
     it("1 publicationType.post and publicationType.reply false", async () => {
@@ -216,23 +183,16 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
-
         const challengeSuccess = true;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
         addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(false);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(false);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(false);
     });
 
     it("1 any publication type rateLimitChallengeSuccess true", async () => {
@@ -301,35 +261,22 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
         const challengeSuccess = true;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
-
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess true challengeSuccess false", async () => {
@@ -339,35 +286,22 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentEditFixture, author };
         const challengeSuccess = false;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess false challengeSuccess true", async () => {
@@ -377,35 +311,22 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
         const challengeSuccess = true;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
-
         addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
     });
 
     it("1 publicationType.post true rateLimitChallengeSuccess false challengeSuccess false", async () => {
@@ -415,26 +336,18 @@ describe("testRateLimit", () => {
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
-        const commentEdit = { ...validCommentEditFixture, author };
-        const commentModeration = { ...validCommentModerationFixture, author };
         const challengeSuccess = false;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
-        expect(testRateLimit(exclude, { commentEdit })).to.equal(true);
-        expect(testRateLimit(exclude, { commentModeration })).to.equal(true);
         addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
@@ -472,14 +385,9 @@ describe("testRateLimit", () => {
         expect(testRateLimit(excludePost, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(excludeReply, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(excludeVote, { comment: publicationPost })).to.equal(true);
-        expect(testRateLimit(excludeCommentEdit, { comment: publicationPost })).to.equal(true);
-        expect(testRateLimit(excludeCommentModeration, { comment: publicationPost })).to.equal(true);
-
         expect(testRateLimit(excludePost, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(excludeReply, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(excludeVote, { comment: publicationReply })).to.equal(true);
-        expect(testRateLimit(excludeCommentEdit, { comment: publicationReply })).to.equal(true);
-        expect(testRateLimit(excludeCommentModeration, { comment: publicationReply })).to.equal(true);
 
         // publish one post
         addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
@@ -488,15 +396,11 @@ describe("testRateLimit", () => {
         expect(testRateLimit(excludePost, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(excludeReply, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(excludeVote, { comment: publicationPost })).to.equal(true);
-        expect(testRateLimit(excludeCommentEdit, { comment: publicationPost })).to.equal(true);
-        expect(testRateLimit(excludeCommentModeration, { comment: publicationPost })).to.equal(true);
 
         // test reply publication against all exclude, none fail because no reply published yet
         expect(testRateLimit(excludePost, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(excludeReply, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(excludeVote, { comment: publicationReply })).to.equal(true);
-        expect(testRateLimit(excludeCommentEdit, { comment: publicationReply })).to.equal(true);
-        expect(testRateLimit(excludeCommentModeration, { comment: publicationReply })).to.equal(true);
 
         // publish one reply
         addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
@@ -505,15 +409,11 @@ describe("testRateLimit", () => {
         expect(testRateLimit(excludePost, { comment: publicationPost })).to.equal(false);
         expect(testRateLimit(excludeReply, { comment: publicationPost })).to.equal(true);
         expect(testRateLimit(excludeVote, { comment: publicationPost })).to.equal(true);
-        expect(testRateLimit(excludeCommentEdit, { comment: publicationPost })).to.equal(true);
-        expect(testRateLimit(excludeCommentModeration, { comment: publicationPost })).to.equal(true);
 
         // test reply publication against all exclude, only reply exclude fails
         expect(testRateLimit(excludePost, { comment: publicationReply })).to.equal(true);
         expect(testRateLimit(excludeReply, { comment: publicationReply })).to.equal(false);
         expect(testRateLimit(excludeVote, { comment: publicationReply })).to.equal(true);
-        expect(testRateLimit(excludeCommentEdit, { comment: publicationReply })).to.equal(true);
-        expect(testRateLimit(excludeCommentModeration, { comment: publicationReply })).to.equal(true);
     });
 
     it("same exclude rateLimit publicationType multiple times", async () => {
