@@ -121,7 +121,7 @@ import {
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
-    pubsubHttpClientsOptions: ParsedPlebbitOptions["pubsubHttpClientsOptions"];
+    pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
     browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
@@ -138,7 +138,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
         kuboRpcClients: { [kuboRpcClientUrl: string]: KuboRpcClient };
-        pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
     };
@@ -175,11 +175,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             : this.parsedPlebbitOptions.kuboRpcClientsOptions;
 
         // We default for ipfsHttpClientsOptions first, but if it's not defined we use the default from schema
-        this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions = this.plebbitRpcClientsOptions
+        this.pubsubKuboRpcClientsOptions = this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
-            : this._userPlebbitOptions.pubsubHttpClientsOptions // did the user provide their own pubsub options
-              ? this.parsedPlebbitOptions.pubsubHttpClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
-              : this.parsedPlebbitOptions.kuboRpcClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
+            : this._userPlebbitOptions.pubsubKuboRpcClientsOptions // did the user provide their own pubsub options
+              ? this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
+              : this.parsedPlebbitOptions.kuboRpcClientsOptions || this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions;
 
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
@@ -224,15 +224,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     private _initPubsubClientsIfNeeded() {
-        this.clients.pubsubClients = {};
+        this.clients.pubsubKuboRpcClients = {};
         if (this.browserLibp2pJsPublish)
             //@ts-expect-error
-            this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
-        if (!this.pubsubHttpClientsOptions) return;
+            this.clients.pubsubKuboRpcClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
+        if (!this.pubsubKuboRpcClientsOptions) return;
 
-        for (const clientOptions of this.pubsubHttpClientsOptions) {
+        for (const clientOptions of this.pubsubKuboRpcClientsOptions) {
             const kuboRpcClient = createKuboRpcClient(clientOptions);
-            this.clients.pubsubClients[clientOptions.url!.toString()] = {
+            this.clients.pubsubKuboRpcClients[clientOptions.url!.toString()] = {
                 _client: kuboRpcClient,
                 _clientOptions: clientOptions,
                 peers: async () => {

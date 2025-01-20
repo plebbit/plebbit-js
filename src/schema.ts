@@ -55,7 +55,7 @@ const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().nonempty().optional(),
     kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     httpRoutersOptions: z.string().url().array().optional(),
-    pubsubHttpClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
+    pubsubKuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),
     chainProviders: z.record(ChainTickerSchema, ChainProviderSchema),
@@ -78,7 +78,7 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
         "https://4everland.io",
         "https://gateway.pinata.cloud"
     ]),
-    pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions.default([
+    pubsubKuboRpcClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubKuboRpcClientsOptions.default([
         { url: "https://pubsubprovider.xyz/api/v0" }
     ]),
     httpRoutersOptions: PlebbitUserOptionBaseSchema.shape.httpRoutersOptions.default([
@@ -99,5 +99,5 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
 export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used to parse responses from rpc when calling getSettings
     kuboRpcClientsOptions: ParsedKuboRpcClientOptionsSchema.optional(),
-    pubsubHttpClientsOptions: ParsedKuboRpcClientOptionsSchema.optional()
+    pubsubKuboRpcClientsOptions: ParsedKuboRpcClientOptionsSchema.optional()
 }).strict();

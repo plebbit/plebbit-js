@@ -8,7 +8,7 @@ import { verifyCommentIpfs, verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
 import { FailedToFetchCommentUpdateFromGatewaysError, FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import { CommentKuboRpcClient, GenericKuboRpcClient, PublicationKuboRpcClient, SubplebbitKuboRpcClient } from "./ipfs-client.js";
-import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
+import { GenericKuboPubsubClient, PublicationKuboPubsubClient, SubplebbitKuboPubsubClient } from "./pubsub-client.js";
 import { GenericChainProviderClient } from "./chain-provider-client.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
@@ -46,7 +46,7 @@ export class ClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
         kuboRpcClients: { [kuboRpcClientUrl: string]: GenericKuboRpcClient };
-        pubsubClients: { [pubsubClientUrl: string]: GenericPubsubClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: GenericKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
 
@@ -57,7 +57,7 @@ export class ClientsManager extends BaseClientsManager {
         this.clients = {};
         this._initIpfsGateways();
         this._initKuboRpcClients();
-        this._initPubsubClients();
+        this._initPubsubKuboRpcClients();
         this._initChainProviders();
         hideClassPrivateProps(this);
     }
@@ -72,9 +72,12 @@ export class ClientsManager extends BaseClientsManager {
             this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [kuboRpcUrl]: new GenericKuboRpcClient("stopped") };
     }
 
-    protected _initPubsubClients() {
-        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
-            this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new GenericPubsubClient("stopped") };
+    protected _initPubsubKuboRpcClients() {
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
+            this.clients.pubsubKuboRpcClients = {
+                ...this.clients.pubsubKuboRpcClients,
+                [pubsubUrl]: new GenericKuboPubsubClient("stopped")
+            };
     }
 
     protected _initChainProviders() {
@@ -159,13 +162,13 @@ export class ClientsManager extends BaseClientsManager {
 
     // State methods here
 
-    updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined) {
+    updatePubsubState(newState: GenericKuboPubsubClient["state"], pubsubProvider: string | undefined) {
         pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
         assert(typeof pubsubProvider === "string");
         assert(typeof newState === "string", "Can't update pubsub state to undefined");
-        if (this.clients.pubsubClients[pubsubProvider].state === newState) return;
-        this.clients.pubsubClients[pubsubProvider].state = newState;
-        this.clients.pubsubClients[pubsubProvider].emit("statechange", newState);
+        if (this.clients.pubsubKuboRpcClients[pubsubProvider].state === newState) return;
+        this.clients.pubsubKuboRpcClients[pubsubProvider].state = newState;
+        this.clients.pubsubKuboRpcClients[pubsubProvider].emit("statechange", newState);
     }
 
     updateIpfsState(newState: GenericKuboRpcClient["state"]) {
@@ -473,7 +476,7 @@ export class PublicationClientsManager extends ClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient };
         kuboRpcClients: { [ipfsClientUrl: string]: PublicationKuboRpcClient | CommentKuboRpcClient };
-        pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PublicationKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
@@ -491,9 +494,12 @@ export class PublicationClientsManager extends ClientsManager {
                 this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [ipfsUrl]: new PublicationKuboRpcClient("stopped") };
     }
 
-    protected override _initPubsubClients(): void {
-        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
-            this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
+    protected override _initPubsubKuboRpcClients(): void {
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
+            this.clients.pubsubKuboRpcClients = {
+                ...this.clients.pubsubKuboRpcClients,
+                [pubsubUrl]: new PublicationKuboPubsubClient("stopped")
+            };
     }
 
     protected _initPlebbitRpcClients() {
@@ -547,7 +553,7 @@ export class PublicationClientsManager extends ClientsManager {
         super.updateIpfsState(newState);
     }
 
-    override updatePubsubState(newState: PublicationPubsubClient["state"], pubsubProvider: string | undefined) {
+    override updatePubsubState(newState: PublicationKuboPubsubClient["state"], pubsubProvider: string | undefined) {
         super.updatePubsubState(newState, pubsubProvider);
     }
 
@@ -600,7 +606,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
         kuboRpcClients: { [kuboRpcClientUrl: string]: CommentKuboRpcClient };
-        pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PublicationKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
     };
@@ -1003,7 +1009,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient };
         kuboRpcClients: { [kuboClientUrl: string]: SubplebbitKuboRpcClient };
-        pubsubClients: { [pubsubClientUrl: string]: SubplebbitPubsubClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: SubplebbitKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
     };
@@ -1021,9 +1027,12 @@ export class SubplebbitClientsManager extends ClientsManager {
                 this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [ipfsUrl]: new SubplebbitKuboRpcClient("stopped") };
     }
 
-    protected override _initPubsubClients(): void {
-        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
-            this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new SubplebbitPubsubClient("stopped") };
+    protected override _initPubsubKuboRpcClients(): void {
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
+            this.clients.pubsubKuboRpcClients = {
+                ...this.clients.pubsubKuboRpcClients,
+                [pubsubUrl]: new SubplebbitKuboPubsubClient("stopped")
+            };
     }
 
     protected _initPlebbitRpcClients() {
@@ -1038,7 +1047,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         super.updateIpfsState(newState);
     }
 
-    override updatePubsubState(newState: SubplebbitPubsubClient["state"], pubsubProvider: string | undefined) {
+    override updatePubsubState(newState: SubplebbitKuboPubsubClient["state"], pubsubProvider: string | undefined) {
         super.updatePubsubState(newState, pubsubProvider);
     }
 

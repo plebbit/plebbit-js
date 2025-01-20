@@ -145,7 +145,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
 }
 
 async function _mockSubplebbitPlebbit(signer: SignerType[], plebbitOptions: InputPlebbitOptions) {
-    const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }, true);
+    const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubKuboRpcClientsOptions: ["http://localhost:15002/api/v0"] }, true);
 
     return plebbit;
 }
@@ -304,7 +304,7 @@ export async function startSubplebbits(props: {
     await subWithNoResponse.stop();
 
     const plebbitNoMockedSub = await mockPlebbit(
-        { kuboRpcClientsOptions: ["http://localhost:15002/api/v0"], pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] },
+        { kuboRpcClientsOptions: ["http://localhost:15002/api/v0"], pubsubKuboRpcClientsOptions: ["http://localhost:15002/api/v0"] },
         false,
         true,
         true
@@ -330,7 +330,7 @@ export async function fetchTestServerSubs() {
 
 export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
     InputPlebbitOptions,
-    "plebbitRpcClientsOptions" | "kuboRpcClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions" | "httpRoutersOptions"
+    "plebbitRpcClientsOptions" | "kuboRpcClientsOptions" | "ipfsGatewayUrls" | "pubsubKuboRpcClientsOptions" | "httpRoutersOptions"
 > {
     const shouldUseRPC = isRpcFlagOn();
 
@@ -338,7 +338,11 @@ export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
     else
         return {
             kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
-            pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`],
+            pubsubKuboRpcClientsOptions: [
+                `http://localhost:15002/api/v0`,
+                `http://localhost:42234/api/v0`,
+                `http://localhost:42254/api/v0`
+            ],
             httpRoutersOptions: []
         };
 }
@@ -380,9 +384,9 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
     }
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
-    if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)
-        for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
-            plebbit.clients.pubsubClients[pubsubUrl]._client = createMockPubsubClient();
+    if (!plebbitOptions?.pubsubKuboRpcClientsOptions || forceMockPubsub)
+        for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
+            plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
 
     plebbit.on("error", () => {});
     return plebbit;
@@ -399,7 +403,7 @@ export async function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
 export async function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await PlebbitIndex({
         kuboRpcClientsOptions: ["http://localhost:15003/api/v0"],
-        pubsubHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        pubsubKuboRpcClientsOptions: ["http://localhost:15003/api/v0"],
         ...plebbitOptions
     }); // use online ipfs node
     return plebbit;
@@ -433,7 +437,7 @@ export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
         ipfsGatewayUrls: ["http://localhost:18080"],
         plebbitRpcClientsOptions: undefined,
         kuboRpcClientsOptions: undefined,
-        pubsubHttpClientsOptions: undefined,
+        pubsubKuboRpcClientsOptions: undefined,
         ...plebbitOptions
     });
     return plebbit;
@@ -902,16 +906,16 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
     const heliaPlebbit = await mockPlebbit({
         ipfsGatewayUrls: ["http://shouldfail"],
         kuboRpcClientsOptions: [kuboRpcClientToMock],
-        pubsubHttpClientsOptions: [kuboRpcClientToMock],
+        pubsubKuboRpcClientsOptions: [kuboRpcClientToMock],
         dataPath: undefined
     });
 
-    const heliaInstance = await createHeliaBrowserNode({ httpRoutersOptions: ["http://localhost:20001"] });
+    const heliaInstance = await createHeliaNdoe({ httpRoutersOptions: ["http://localhost:20001"] });
     //@ts-expect-error
     heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock] = heliaInstance;
 
     if (mockPubsub) {
-        heliaPlebbit.clients.pubsubClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
+        heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
         const kuboClient = plebbitWithKubo.clients.kuboRpcClients[Object.keys(plebbitWithKubo.clients.kuboRpcClients)[0]];
         // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
         heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock]._client.name.resolve = kuboClient._client.name.resolve.bind(
@@ -919,7 +923,7 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
         );
     } else {
         //@ts-expect-error
-        heliaPlebbit.clients.pubsubClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
+        heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
     }
 
     return heliaPlebbit;
@@ -929,8 +933,8 @@ export function getRemotePlebbitConfigs() {
     if (isRpcFlagOn()) return [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }];
     else
         return [
-            // { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
-            // { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly },
+            { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
+            { name: "IPFS P2P", plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient },
             { name: "Helia P2P", plebbitInstancePromise: mockPlebbitWithHeliaConfig }
         ];
 }

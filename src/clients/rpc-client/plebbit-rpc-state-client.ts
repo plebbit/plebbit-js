@@ -10,17 +10,17 @@ import { hideClassPrivateProps } from "../../util.js";
 type PublicationRpcState =
     | Publication["clients"]["chainProviders"]["eth"][0]["state"]
     | Publication["clients"]["kuboRpcClients"][0]["state"]
-    | Publication["clients"]["pubsubClients"][0]["state"]
+    | Publication["clients"]["pubsubKuboRpcClients"][0]["state"]
     | Publication["clients"]["ipfsGateways"][0]["state"];
 type CommentRpcState =
     | Comment["clients"]["chainProviders"]["eth"][0]["state"]
     | Comment["clients"]["kuboRpcClients"][0]["state"]
-    | Comment["clients"]["pubsubClients"][0]["state"]
+    | Comment["clients"]["pubsubKuboRpcClients"][0]["state"]
     | Comment["clients"]["ipfsGateways"][0]["state"];
 type SubplebbitRpcState =
     | RpcRemoteSubplebbit["clients"]["chainProviders"]["eth"][0]["state"]
     | RpcRemoteSubplebbit["clients"]["kuboRpcClients"][0]["state"]
-    | RpcRemoteSubplebbit["clients"]["pubsubClients"][0]["state"]
+    | RpcRemoteSubplebbit["clients"]["pubsubKuboRpcClients"][0]["state"]
     | RpcRemoteSubplebbit["clients"]["ipfsGateways"][0]["state"];
 
 type PagesRpcState = BasePages["clients"]["kuboRpcClients"][""][""]["state"] | BasePages["clients"]["ipfsGateways"][""][""]["state"];
