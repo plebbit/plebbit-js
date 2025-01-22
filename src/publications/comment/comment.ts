@@ -10,7 +10,6 @@ import { Plebbit } from "../../plebbit/plebbit.js";
 import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdateForChallengeVerification } from "../../signer/signatures.js";
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
-import { CommentClientsManager } from "../../clients/client-manager.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
@@ -35,6 +34,7 @@ import {
 } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import type { SignerType } from "../../signer/types.js";
+import { CommentClientsManager } from "./comment-client-manager.js";
 
 export class Comment
     extends Publication

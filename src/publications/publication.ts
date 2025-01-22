@@ -41,7 +41,6 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
-import { PublicationClientsManager } from "../clients/client-manager.js";
 import * as cborg from "cborg";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
@@ -69,6 +68,7 @@ import {
 import { PublicationPublishingState, PublicationState } from "./types.js";
 import type { SignerType } from "../signer/types.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
+import { PublicationClientsManager } from "./publication-client-manager.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -519,11 +519,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // cache.has will return false if the item is stale
             if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
-                this._clientsManager.fetchSubplebbit(this.subplebbitAddress, cachedSubplebbit);
+                this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
             }
             return cachedSubplebbit;
         } else {
-            const subRes = await this._clientsManager.fetchSubplebbit(this.subplebbitAddress, {});
+            const subRes = await this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
             if (!subRes) throw Error("Should fail properly here");
             return { ...subRes.subplebbit, updateCid: subRes.cid };
         }

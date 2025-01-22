@@ -7,7 +7,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
-import { ResultOfFetchingSubplebbit, SubplebbitClientsManager } from "../clients/client-manager.js";
+import { ResultOfFetchingSubplebbit } from "../clients/client-manager.js";
 import type {
     CreateRemoteSubplebbitOptions,
     SubplebbitIpfsType,
@@ -27,6 +27,7 @@ import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
 import { SignerWithPublicKeyAddress } from "../signer/index.js";
+import { SubplebbitClientsManager } from "./subplebbit-client-manager.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<Partial<SubplebbitIpfsType>, "posts"> {
     // public
@@ -238,7 +239,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this._ipnsLoadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ${this.address} ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
-                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress, { updateCid: this.updateCid });
+                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
                     resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
