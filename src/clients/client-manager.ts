@@ -215,7 +215,7 @@ export class ClientsManager extends BaseClientsManager {
         }
     }
 
-    async fetchUpdateForSubplebbit(subAddress: SubplebbitIpfsType["address"]) {
+    async fetchNewUpdateForSubplebbit(subAddress: SubplebbitIpfsType["address"]) {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
@@ -225,7 +225,7 @@ export class ClientsManager extends BaseClientsManager {
         // Then return SubplebbitIpfs
 
         // only exception is if the ipnsRecord.value (ipfs path) is the same as as curSubplebbit.updateCid
-        // in that case no need to fetch the subplebbitIpfs
+        // in that case no need to fetch the subplebbitIpfs, we will return undefined
         this.preFetchSubplebbitIpns(ipnsName);
         let subRes: ResultOfFetchingSubplebbit;
         if (this._defaultIpfsProviderUrl) subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
@@ -303,46 +303,43 @@ export class ClientsManager extends BaseClientsManager {
         // if all gateways returned the same subplebbit.updateCid
         const gatewayFetches: SubplebbitGatewayFetch = {};
 
-        const throwIfGatewayRespondsWithInvalidSubplebbit: OptionsToLoadFromGateway["validateGatewayResponse"] = async (gatewayRes) => {
-            if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
-            // get ipfs cid of IPNS from header or calculate it
-            const subCid = await calculateIpfsHash(gatewayRes.resText);
-            // TODO need to compare it against updateCid somewhere
-            const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
-                parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
-            );
-            const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
-            if (errorWithinRecord) {
-                delete errorWithinRecord["stack"];
-                throw errorWithinRecord;
-            } else {
-                const gateway = new URL(gatewayRes.res.url).origin;
-                gatewayFetches[gateway].subplebbitRecord = subIpfs;
-                gatewayFetches[gateway].cid = subCid;
-            }
-        };
-
-        const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldConsumeBodyFn"] = async (res: Response) => {
-            const ipnsCidFromGateway = res.headers.get("x-ipfs-roots");
-            const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
-            if (curSubUpdateCid && ipnsCidFromGateway === curSubUpdateCid) {
-                // this gateway responded with a subplebbit IPFS we already have
-                // we will abort and stop it from consuming the body
-                const gateway = new URL(res.url).origin;
-                gatewayFetches[gateway].abortController.abort(
-                    `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}].updateCid. No need to consume body since it's an IPNS record that has been processed already`
-                );
-                return false;
-            }
-            return true;
-        };
-
-        for (const gateway of gatewaysSorted) {
+        for (const gatewayUrl of gatewaysSorted) {
             const abortController = new AbortController();
-            gatewayFetches[gateway] = {
+            const throwIfGatewayRespondsWithInvalidSubplebbit: OptionsToLoadFromGateway["validateGatewayResponse"] = async (gatewayRes) => {
+                if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
+                // get ipfs cid of IPNS from header or calculate it
+                const subCid = await calculateIpfsHash(gatewayRes.resText);
+                // TODO need to compare it against updateCid somewhere
+                const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
+                    parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
+                );
+                const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+                if (errorWithinRecord) {
+                    delete errorWithinRecord["stack"];
+                    throw errorWithinRecord;
+                } else {
+                    gatewayFetches[gatewayUrl].subplebbitRecord = subIpfs;
+                    gatewayFetches[gatewayUrl].cid = subCid;
+                }
+            };
+
+            const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldConsumeBodyFn"] = async (res: Response) => {
+                const ipnsCidFromGateway = res.headers.get("x-ipfs-roots");
+                const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
+                if (curSubUpdateCid && ipnsCidFromGateway === curSubUpdateCid) {
+                    // this gateway responded with a subplebbit IPFS we already have
+                    // we will abort and stop it from consuming the body
+                    gatewayFetches[gatewayUrl].abortController.abort(
+                        `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}].updateCid. No need to consume body since it's an IPNS record that has been processed already`
+                    );
+                    return false;
+                }
+                return true;
+            };
+            gatewayFetches[gatewayUrl] = {
                 abortController,
                 promise: queueLimit(() =>
-                    this._fetchWithGateway(gateway, {
+                    this._fetchWithGateway(gatewayUrl, {
                         recordIpfsType: "ipns",
                         root: ipnsName,
                         recordPlebbitType: "subplebbit",

@@ -163,7 +163,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             this._ipnsLoadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ${subplebbitAddress} for the ${curAttempt}th time`);
                 try {
-                    const update = await this.fetchUpdateForSubplebbit(subplebbitAddress);
+                    const update = await this.fetchNewUpdateForSubplebbit(subplebbitAddress);
                     resolve(update);
                 } catch (e) {
                     this._subplebbit._setUpdatingState("failed");

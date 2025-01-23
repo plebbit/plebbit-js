@@ -251,7 +251,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
 
         if (!updatingSubInstance) {
-            this._plebbit._updatingSubplebbits[this.address] = updatingSubInstance = this;
+            this._plebbit._updatingSubplebbits[this.address] = updatingSubInstance = await this._plebbit.createSubplebbit({
+                address: this.address,
+                ...this._rawSubplebbitIpfs
+            });
             log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
 
             // make sure to it keeps retrying to resolve here
