@@ -186,6 +186,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`subplebbit.update() emits an error if subplebbit record is over 1mb`, async () => {
+            // plebbit-js will emit an error once, mark the invalid cid, and never retry
             const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) }; //2mb
 
             const ipnsObj = await createNewIpns();
@@ -194,10 +195,8 @@ getRemotePlebbitConfigs().map((config) => {
 
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
 
-            let retries = 0;
-            await tempSubplebbit.update();
-            await new Promise((resolve) => {
-                tempSubplebbit.on("error", (err) => {
+            const errorPromise = new Promise((resolve) => {
+                tempSubplebbit.once("error", (err) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         // we're using gateways to fetch
                         expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
@@ -207,11 +206,11 @@ getRemotePlebbitConfigs().map((config) => {
                     } else {
                         expect(err.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
                     }
-                    retries++;
-                    if (retries === 3) resolve();
+                    resolve();
                 });
             });
-
+            await tempSubplebbit.update();
+            await errorPromise;
             await tempSubplebbit.stop();
         });
     });
