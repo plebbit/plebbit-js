@@ -1,4 +1,4 @@
-import { CachedResolve } from "../clients/base-client-manager.js";
+import { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
 import { ClientsManager, ResultOfFetchingSubplebbit } from "../clients/client-manager.js";
 import { CommentIpfsClient, PublicationIpfsClient } from "../clients/ipfs-client.js";
@@ -51,7 +51,7 @@ export class PublicationClientsManager extends ClientsManager {
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         chain: ChainTicker,
         chainProviderUrl: string,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
         const isStartingToPublish = this._publication.publishingState === "stopped" || this._publication.publishingState === "failed";
@@ -65,7 +65,7 @@ export class PublicationClientsManager extends ClientsManager {
         resolvedTextRecord: string,
         chain: ChainTicker,
         chainProviderUrl: string,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ): void {
         // TODO should check for regex of ipns eventually
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);

@@ -38,8 +38,6 @@ export const domainResolverPromiseCache = new LRUCache<string, Promise<string | 
 
 export const gatewayFetchPromiseCache = new LRUCache<string, Promise<{ resText: string | undefined; res: Response }>>({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
 
-export const p2pIpnsPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 200 }); // cache key will be ipnsName and the result will be a promise of cid
-
 export const p2pCidPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 50, ttl: 60 * 1000 }); // cache key will be cid and the result will be a promise of content of cid
 
 // Caches for signature validation

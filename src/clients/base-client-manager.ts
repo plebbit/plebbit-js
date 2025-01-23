@@ -15,7 +15,7 @@ import Logger from "@plebbit/plebbit-logger";
 import type { PubsubMessage } from "../pubsub-messages/types";
 import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
-import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
+import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub.js";
 import last from "it-last";
@@ -43,7 +43,7 @@ type GenericGatewayFetch = {
     };
 };
 
-export type CachedResolve = { timestampSeconds: number; valueOfTextRecord: string | null };
+export type CachedTextRecordResolve = { timestampSeconds: number; valueOfTextRecord: string };
 
 export type OptionsToLoadFromGateway = {
     recordIpfsType: "ipfs" | "ipns";
@@ -482,17 +482,9 @@ export class BaseClientsManager {
         const ipfsClient = this.getDefaultIpfs();
 
         try {
-            let cid: string;
-            if (p2pIpnsPromiseCache.has(ipnsName)) cid = <string>await p2pIpnsPromiseCache.get(ipnsName);
-            else {
-                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName)).then(CidPathSchema.parse); // make sure we're getting a CID
-                p2pIpnsPromiseCache.set(ipnsName, cidPromise);
-                cid = await cidPromise;
-                p2pIpnsPromiseCache.delete(ipnsName);
-            }
+            const cid = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true })).then(CidPathSchema.parse); // make sure we're getting a CID path /ipfs/<cid>, and then parse it to <cid>
             return cid;
         } catch (error) {
-            p2pIpnsPromiseCache.delete(ipnsName);
             if (error instanceof PlebbitError && error.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P") throw error;
             else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error });
         }
@@ -546,7 +538,7 @@ export class BaseClientsManager {
     private async _getCachedTextRecord(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
 
-        const resolveCache: CachedResolve | undefined = await this._plebbit._storage.getItem(cacheKey);
+        const resolveCache: CachedTextRecordResolve | undefined = await this._plebbit._storage.getItem(cacheKey);
         if (remeda.isPlainObject(resolveCache)) {
             const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
             return { stale, ...resolveCache };
@@ -554,7 +546,10 @@ export class BaseClientsManager {
         return undefined;
     }
 
-    private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
+    private async _resolveTextRecordWithCache(
+        address: string,
+        txtRecord: "subplebbit-address" | "plebbit-author-address"
+    ): Promise<string | null> {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
         const chain: ChainTicker | undefined = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
@@ -576,7 +571,7 @@ export class BaseClientsManager {
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         chain: ChainTicker,
         chainProviderUrl: string,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ) {}
 
     postResolveTextRecordSuccess(
@@ -585,7 +580,7 @@ export class BaseClientsManager {
         resolvedTextRecord: string | null,
         chain: ChainTicker,
         chainProviderUrl: string,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ) {}
 
     postResolveTextRecordFailure(
@@ -594,7 +589,7 @@ export class BaseClientsManager {
         chain: ChainTicker,
         chainProviderUrl: string,
         error: Error,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ) {}
 
     private async _resolveTextRecordSingleChainProvider(
@@ -603,7 +598,7 @@ export class BaseClientsManager {
         chain: ChainTicker,
         chainproviderUrl: string,
         chainId: number | undefined,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ): Promise<string | null | { error: PlebbitError }> {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
@@ -710,7 +705,10 @@ export class BaseClientsManager {
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
                         // Only cache valid text records, not null
-                        const resolvedCache: CachedResolve = { timestampSeconds: timestamp(), valueOfTextRecord: resolvedTextRecord };
+                        const resolvedCache: CachedTextRecordResolve = {
+                            timestampSeconds: timestamp(),
+                            valueOfTextRecord: resolvedTextRecord
+                        };
                         const resolvedCacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecordName);
                         await this._plebbit._storage.setItem(resolvedCacheKey, resolvedCache);
                     }

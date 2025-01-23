@@ -11,7 +11,7 @@ import { GenericChainProviderClient } from "./chain-provider-client.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { GenericIpfsGatewayClient } from "./ipfs-gateway-client.js";
 
-import { BaseClientsManager, CachedResolve, OptionsToLoadFromGateway } from "./base-client-manager.js";
+import { BaseClientsManager, CachedTextRecordResolve, OptionsToLoadFromGateway } from "./base-client-manager.js";
 import { subplebbitForPublishingCache } from "../constants.js";
 
 import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js";
@@ -101,7 +101,7 @@ export class ClientsManager extends BaseClientsManager {
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         chain: ChainTicker,
         chainProviderUrl: string,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ) {
         // only update state if there's no cache
         if (!staleCache) {
@@ -116,7 +116,7 @@ export class ClientsManager extends BaseClientsManager {
         resolvedTextRecord: string,
         chain: ChainTicker,
         chainProviderUrl: string,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ): void {
         // only update state if there's no cache
         if (!staleCache) {
@@ -130,7 +130,7 @@ export class ClientsManager extends BaseClientsManager {
         chain: ChainTicker,
         chainProviderUrl: string,
         error: Error,
-        staleCache?: CachedResolve
+        staleCache?: CachedTextRecordResolve
     ) {
         // only update state if there's no cache
         if (!staleCache) {
@@ -215,7 +215,7 @@ export class ClientsManager extends BaseClientsManager {
         }
     }
 
-    async fetchSubplebbit(subAddress: string) {
+    async fetchUpdateForSubplebbit(subAddress: SubplebbitIpfsType["address"]) {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
@@ -236,10 +236,10 @@ export class ClientsManager extends BaseClientsManager {
         if (subRes?.subplebbit) {
             this.postFetchSubplebbitIpfsSuccess(subRes); // We successfully fetched and verified the SubplebbitIpfs
 
-            subplebbitForPublishingCache.set(subRes.subplebbit.address, {
-                ...remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"]),
-                updateCid: subRes.cid
-            });
+            subplebbitForPublishingCache.set(
+                subRes.subplebbit.address,
+                remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
+            );
         }
         return subRes;
     }
@@ -256,8 +256,9 @@ export class ClientsManager extends BaseClientsManager {
         }
         this.postResolveSubplebbitIpnsP2PSuccess(ipnsName, subplebbitCid);
 
+        const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
         // need to check if subplebbitCid === sub.updateCid
-        if (subplebbitCid === curSubplebbit.updateCid) {
+        if (subplebbitCid && subplebbitCid === curSubUpdateCid) {
             log("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
             return undefined;
         }
@@ -323,12 +324,13 @@ export class ClientsManager extends BaseClientsManager {
 
         const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldConsumeBodyFn"] = async (res: Response) => {
             const ipnsCidFromGateway = res.headers.get("x-ipfs-roots");
-            if (curSubplebbit?.updateCid && ipnsCidFromGateway === curSubplebbit.updateCid) {
+            const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
+            if (curSubUpdateCid && ipnsCidFromGateway === curSubUpdateCid) {
                 // this gateway responded with a subplebbit IPFS we already have
                 // we will abort and stop it from consuming the body
                 const gateway = new URL(res.url).origin;
                 gatewayFetches[gateway].abortController.abort(
-                    "Gateway response has the same cid as subplebbit.updateCid. No need to consume body"
+                    `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}].updateCid. No need to consume body since it's an IPNS record that has been processed already`
                 );
                 return false;
             }

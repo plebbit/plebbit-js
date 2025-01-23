@@ -35,6 +35,7 @@ import {
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
+import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 
 export class Comment
     extends Publication
@@ -87,11 +88,11 @@ export class Comment
     updatingState!: CommentUpdatingState;
 
     // private
-    private _updateInterval?: any = undefined;
     _rawCommentUpdate?: CommentUpdateType = undefined;
     _rawCommentIpfs?: CommentIpfsType = undefined;
+    _subplebbitForUpdating?: RemoteSubplebbit = undefined;
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
-    private _loadingOperation?: RetryOperation = undefined;
+    private _commentIpfsloadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
     _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
@@ -424,7 +425,7 @@ export class Comment
 
     private async _retryLoadingCommentIpfs(cid: string, log: Logger): Promise<CommentIpfsType | PlebbitError> {
         return new Promise((resolve) => {
-            this._loadingOperation!.attempt(async (curAttempt) => {
+            this._commentIpfsloadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     this._setUpdatingState("fetching-ipfs");
@@ -435,40 +436,14 @@ export class Comment
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`);
-                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) this._loadingOperation!.retry(<Error>e);
+                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) this._commentIpfsloadingOperation!.retry(<Error>e);
                     else return resolve(<PlebbitError>e);
                 }
             });
         });
     }
 
-    private async _retryLoadingCommentUpdate(
-        log: Logger
-    ): Promise<{ commentUpdate: CommentUpdateType; commentUpdateIpfsPath: string } | PlebbitError | Error> {
-        return new Promise((resolve) => {
-            this._loadingOperation!.attempt(async (curAttempt) => {
-                log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
-                try {
-                    const updateRes = await this._clientsManager.fetchCommentUpdate();
-                    this._setUpdatingState("succeeded");
-                    resolve(updateRes);
-                } catch (e) {
-                    // fetchCommentUpdate could throw a non-retriable error
-                    if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
-                    this._setUpdatingState("failed");
-                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e);
-                    if (this._clientsManager._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e))
-                        // Should we emit an error event or keep retrying?
-                        this._loadingOperation!.retry(<Error>e);
-                    else resolve(<PlebbitError>e);
-                }
-            });
-        });
-    }
-
-    async updateOnce() {
-        const log = Logger("plebbit-js:comment:update");
-        this._loadingOperation = retry.operation({ forever: true, factor: 2 });
+    async _attemptToFetchCommentIpfsIfNeeded(log: Logger) {
         if (this.cid && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
             const newCommentIpfsOrError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
@@ -477,7 +452,7 @@ export class Comment
                 // This is a non-retriable error, it should stop the comment from updating
                 log.error(
                     `Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`,
-                    newCommentIpfsOrError.toString()
+                    newCommentIpfsOrError
                 );
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
@@ -491,22 +466,15 @@ export class Comment
                 this.emit("update", this);
             }
         }
+    }
 
-        const commentUpdateOrError = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
+    async updateOnce() {
+        const log = Logger("plebbit-js:comment:update");
+        this._commentIpfsloadingOperation = retry.operation({ forever: true, factor: 2 });
+        await this._attemptToFetchCommentIpfsIfNeeded(log);
+        await this._commentIpfsloadingOperation.stop();
 
-        this._loadingOperation.stop();
-        if (commentUpdateOrError instanceof Error) {
-            // An error, either a signature or a schema problem
-            // We should emit an error, and keep retrying to load a different record
-            log.error(`Encountered an error while trying to load CommentUpdate of (${this.cid})`, commentUpdateOrError.toString());
-            this.emit("error", commentUpdateOrError);
-            return;
-        } else if (commentUpdateOrError?.commentUpdate && (this.updatedAt || 0) < commentUpdateOrError.commentUpdate.updatedAt) {
-            log(`Comment (${this.cid}) received a new CommentUpdate`);
-            this._initCommentUpdate(commentUpdateOrError.commentUpdate);
-            this._commentUpdateIpfsPath = commentUpdateOrError.commentUpdateIpfsPath;
-            this.emit("update", this);
-        } else log.trace(`Comment (${this.cid}) has no new CommentUpdate`);
+        await this._clientsManager.startCommentUpdateSubplebbitSubscription();
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {
@@ -625,18 +593,12 @@ export class Comment
         if (this._plebbit._plebbitRpcClient) return this._updateViaRpc();
 
         this._updateState("updating");
-        const updateLoop = (async () => {
-            if (this.state === "updating")
-                this.updateOnce()
-                    .catch((e) => log.error("Failed to update comment", e))
-                    .finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
-        }).bind(this);
-        updateLoop();
+
+        this.updateOnce().catch((e) => log.error("Failed to update comment", e));
     }
 
     private async _stopUpdateLoop() {
-        this._loadingOperation?.stop();
-        this._updateInterval = clearTimeout(this._updateInterval);
+        this._commentIpfsloadingOperation?.stop();
         if (this._updateRpcSubscriptionId) {
             await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;

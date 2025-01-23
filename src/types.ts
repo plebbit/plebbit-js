@@ -120,6 +120,8 @@ export interface SubplebbitEvents {
     startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
 
     update: (updatedSubplebbit: RemoteSubplebbit) => void;
+
+    removeListener: (eventName: string, listener: Function) => void;
 }
 
 export interface PublicationEvents {

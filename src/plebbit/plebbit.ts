@@ -320,7 +320,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             subplebbit.removeAllListeners("error");
             await subplebbit.stop();
             if (updateError) throw updateError;
-            if (subplebbit?._ipnsLoadingOperation?.mainError()) throw subplebbit._ipnsLoadingOperation.mainError();
+            if (subplebbit?._clientsManager._ipnsLoadingOperation?.mainError())
+                throw subplebbit._clientsManager._ipnsLoadingOperation.mainError();
             throw Error("Timed out without error. Should not happen" + e);
         }
         subplebbit.removeListener("error", errorListener);

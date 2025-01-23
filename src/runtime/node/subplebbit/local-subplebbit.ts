@@ -186,6 +186,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _publishInterval?: NodeJS.Timeout = undefined;
     private _internalStateUpdateId!: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"];
 
+    private _updateLocalSubTimeout?: NodeJS.Timeout = undefined;
+
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
@@ -2112,7 +2114,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._updateLoopPromise = this._updateOnce();
         this._updateLoopPromise
             .catch((e) => log.error(`Failed to update subplebbit`, e))
-            .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
+            .finally(() => (this._updateLocalSubTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
 
     override async stop() {
@@ -2144,7 +2146,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this._updateLoopPromise;
                 this._updateLoopPromise = undefined;
             }
-            clearTimeout(this._updateTimeout);
+            clearTimeout(this._updateLocalSubTimeout);
             await this._dbHandler.destoryConnection();
             this._setUpdatingState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
