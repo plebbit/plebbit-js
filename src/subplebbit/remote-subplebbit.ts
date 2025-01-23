@@ -70,6 +70,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _plebbit: Plebbit;
     _clientsManager: SubplebbitClientsManager;
     _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
+    _lastInvalidSubplebbitCid?: string = undefined; // a subplebbit cid that's invalid signature/schema/etc
 
     constructor(plebbit: Plebbit) {
         super();
@@ -321,12 +322,13 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
             const updatingSubErrorListener = async (error: PlebbitError) => {
                 if (!this._isRetriableErrorWhenLoading(error)) {
+                    this._lastInvalidSubplebbitCid = error.details.cidOfSubIpns;
                     log.error(
-                        `Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event and abort the current update iteration`,
-                        `Will retry after ${this._plebbit.updateInterval}ms`
+                        `Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event. Marking CID of subplebbit IPNS as invalid`,
+                        error.details.cidOfSubIpns
                     );
-                    await cleanUpUpdatingSubInstance();
                 }
+                this.emit("error", error);
             };
 
             const cleanUpUpdatingSubInstance = async () => {

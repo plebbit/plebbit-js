@@ -187,6 +187,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             log.error(
                 `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and abort updating`
             );
+            this._subplebbit._lastInvalidSubplebbitCid = loadedSubIpfsOrError.details.cidOfSubIpns;
             this._subplebbit.emit("error", <PlebbitError>loadedSubIpfsOrError);
             return;
         } else if (loadedSubIpfsOrError?.subplebbit && (this._subplebbit.updatedAt || 0) < loadedSubIpfsOrError.subplebbit.updatedAt) {

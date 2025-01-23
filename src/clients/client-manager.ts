@@ -191,7 +191,11 @@ export class ClientsManager extends BaseClientsManager {
 
     // fetchSubplebbit should be here
 
-    private async _findErrorInSubplebbitRecord(subJson: SubplebbitIpfsType, ipnsNameOfSub: string): Promise<PlebbitError | undefined> {
+    private async _findErrorInSubplebbitRecord(
+        subJson: SubplebbitIpfsType,
+        ipnsNameOfSub: string,
+        cidOfSubIpns: string
+    ): Promise<PlebbitError | undefined> {
         const subInstanceAddress = this._getSubplebbitAddressFromInstance();
         if (subJson.address !== subInstanceAddress) {
             // Did the gateway supply us with a different subplebbit's ipns
@@ -200,7 +204,8 @@ export class ClientsManager extends BaseClientsManager {
                 addressFromSubplebbitInstance: subInstanceAddress,
                 ipnsName: ipnsNameOfSub,
                 addressFromGateway: subJson.address,
-                subplebbitIpnsFromGateway: subJson
+                subplebbitIpnsFromGateway: subJson,
+                cidOfSubIpns
             });
             return error;
         }
@@ -209,7 +214,8 @@ export class ClientsManager extends BaseClientsManager {
             const error = new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
                 signatureValidity: updateValidity,
                 actualIpnsName: ipnsNameOfSub,
-                subplebbitIpns: subJson
+                subplebbitIpns: subJson,
+                cidOfSubIpns
             });
             return error;
         }
@@ -258,8 +264,13 @@ export class ClientsManager extends BaseClientsManager {
 
         const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
         // need to check if subplebbitCid === sub.updateCid
-        if (subplebbitCid && subplebbitCid === curSubUpdateCid) {
+        if (curSubUpdateCid && subplebbitCid === curSubUpdateCid) {
             log("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
+            return undefined;
+        }
+        const lastInvalidSubCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
+        if (lastInvalidSubCid && subplebbitCid === lastInvalidSubCid) {
+            log("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit._lastInvalidSubplebbitCid. No need to fetch its ipfs");
             return undefined;
         }
         let rawSubJsonString: string;
@@ -276,7 +287,7 @@ export class ClientsManager extends BaseClientsManager {
                 parseJsonWithPlebbitErrorIfFails(rawSubJsonString)
             );
 
-            const errInRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+            const errInRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, subplebbitCid);
 
             if (errInRecord) throw errInRecord;
             return { subplebbit: subIpfs, cid: subplebbitCid };
@@ -313,7 +324,7 @@ export class ClientsManager extends BaseClientsManager {
                 const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
                     parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
                 );
-                const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+                const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, subCid);
                 if (errorWithinRecord) {
                     delete errorWithinRecord["stack"];
                     throw errorWithinRecord;
@@ -331,6 +342,16 @@ export class ClientsManager extends BaseClientsManager {
                     // we will abort and stop it from consuming the body
                     gatewayFetches[gatewayUrl].abortController.abort(
                         `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}].updateCid. No need to consume body since it's an IPNS record that has been processed already`
+                    );
+                    return false;
+                }
+
+                const lastInvalidSubCid =
+                    this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
+                if (lastInvalidSubCid && ipnsCidFromGateway === curSubUpdateCid) {
+                    // this gateway responded with a subplebbit whose record we know to be invalid
+                    gatewayFetches[gatewayUrl].abortController.abort(
+                        `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}]._lastInvalidSubplebbitCid. No need to consume body since it's an invalid record`
                     );
                     return false;
                 }
