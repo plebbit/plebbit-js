@@ -292,6 +292,7 @@ export class ClientsManager extends BaseClientsManager {
             if (errInRecord) throw errInRecord;
             return { subplebbit: subIpfs, cid: subplebbitCid };
         } catch (e) {
+            (<PlebbitError>e).details.cidOfSubIpns = subplebbitCid;
             this.postFetchSubplebbitInvalidRecord(rawSubJsonString, <PlebbitError>e); // should throw here
             throw new Error("postFetchSubplebbitInvalidRecord should throw, but it did not");
         }
@@ -321,9 +322,15 @@ export class ClientsManager extends BaseClientsManager {
                 // get ipfs cid of IPNS from header or calculate it
                 const subCid = await calculateIpfsHash(gatewayRes.resText);
                 // TODO need to compare it against updateCid somewhere
-                const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
-                    parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
-                );
+                let subIpfs: SubplebbitIpfsType;
+                try {
+                    subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
+                        parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
+                    );
+                } catch (e) {
+                    (<PlebbitError>e).details.cidOfSubIpns = subCid;
+                    throw e;
+                }
                 const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, subCid);
                 if (errorWithinRecord) {
                     delete errorWithinRecord["stack"];
