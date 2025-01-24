@@ -518,10 +518,10 @@ export class Comment
             this._subplebbitForUpdating!.on("error", this._updatingSubplebbitErrorListener);
         }
 
-        if (this._subplebbitForUpdating!.state === "stopped") {
+        if (this._subplebbitForUpdating.state === "stopped") {
             await this._subplebbitForUpdating!.update();
         }
-        if (this._subplebbitForUpdating?._rawSubplebbitIpfs)
+        if (this._subplebbitForUpdating._rawSubplebbitIpfs)
             await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating._rawSubplebbitIpfs);
     }
 
@@ -663,10 +663,13 @@ export class Comment
         }
         // clean up _subplebbitForUpdating subscriptions
         if (this._subplebbitForUpdating) {
-            await this._subplebbitForUpdating.stop();
             this._subplebbitForUpdating!.removeListener("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
             this._subplebbitForUpdating!.removeListener("update", this._updatingSubplebbitUpdateListener);
             this._subplebbitForUpdating!.removeListener("error", this._updatingSubplebbitErrorListener);
+
+            // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
+            if (this._subplebbitForUpdating._updatingSubInstanceWithListeners) await this._subplebbitForUpdating.stop();
+            this._subplebbitForUpdating = undefined;
         }
     }
 
@@ -675,7 +678,6 @@ export class Comment
         this._setUpdatingState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();
-        this._subplebbitForUpdating = undefined;
     }
 
     private async _validateSignature() {

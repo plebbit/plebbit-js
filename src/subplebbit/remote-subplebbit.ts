@@ -286,7 +286,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (!this._plebbit._updatingSubplebbits[this.address]) {
             const updatingSub = await this._plebbit.createSubplebbit({
                 address: this.address,
-                ...this._rawSubplebbitIpfs
+                ...this._rawSubplebbitIpfs,
+                updateCid: this.updateCid
             });
             this._plebbit._updatingSubplebbits[this.address] = updatingSub;
             log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
@@ -298,15 +299,16 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             const updatingSubRemoveListenerListener = async (eventName: string, listener: Function) => {
                 const count = updatingSub.listenerCount("update");
 
-                log(`Count for update event listeners in plebbit._updatingSubplebbits`, this.address, "is", count);
-                if (count === 0) await cleanUpUpdatingSubInstance();
+                if (count === 0) {
+                    log.trace(`cleaning up plebbit._updatingSubplebbits`, this.address, "There are no subplebbits using it for updates");
+                    await cleanUpUpdatingSubInstance();
+                }
             };
 
             const cleanUpUpdatingSubInstance = async () => {
                 updatingSub.removeListener("removeListener", updatingSubRemoveListenerListener);
                 await updatingSub.stop();
             };
-
 
             updatingSub.on("removeListener", updatingSubRemoveListenerListener);
 
@@ -349,6 +351,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._setState("stopped");
         if (this._updatingSubInstanceWithListeners) {
             // this instance is subscribed to plebbit._updatingSubplebbit[address]
+            // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingSubInstanceWithListeners.update);
             this._updatingSubInstanceWithListeners.subplebbit.removeListener(
                 "updatingstatechange",
