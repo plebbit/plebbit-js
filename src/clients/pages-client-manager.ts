@@ -180,7 +180,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             root: pageCid,
             recordIpfsType: "ipfs",
             recordPlebbitType: "page-ipfs",
-            validateGatewayResponse: async () => {},
+            validateGatewayResponseFunc: async () => {},
             log
         });
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));

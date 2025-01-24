@@ -42,6 +42,8 @@ export enum messages {
     ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase",
     ERR_GATEWAY_TIMED_OUT_OR_ABORTED = "Fetching from gateway has been aborted/timed out",
     ERR_FAILED_TO_PARSE_CID_FROM_IPNS_GATEWAY_RESPONSE = "Failed to parse the CID of IPNS file from x-ipfs-roots header",
+    ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD = "Aborted the gateway request to load subplebbit record because it will give us an invalid record",
+    ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID = "Aborted the gateway request to load subplebbit record because it will give us the same record we already have",
 
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",

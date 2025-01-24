@@ -182,7 +182,7 @@ export class ClientsManager extends BaseClientsManager {
                 root: cid,
                 recordIpfsType: "ipfs",
                 recordPlebbitType: "generic-ipfs",
-                validateGatewayResponse: async () => {}, // no need to validate body against cid here, fetchFromMultipleGateways already does it
+                validateGatewayResponseFunc: async () => {}, // no need to validate body against cid here, fetchFromMultipleGateways already does it
                 log
             });
             return resObj.resText;
@@ -317,7 +317,9 @@ export class ClientsManager extends BaseClientsManager {
 
         for (const gatewayUrl of gatewaysSorted) {
             const abortController = new AbortController();
-            const throwIfGatewayRespondsWithInvalidSubplebbit: OptionsToLoadFromGateway["validateGatewayResponse"] = async (gatewayRes) => {
+            const throwIfGatewayRespondsWithInvalidSubplebbit: OptionsToLoadFromGateway["validateGatewayResponseFunc"] = async (
+                gatewayRes
+            ) => {
                 if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
                 // get ipfs cid of IPNS from header or calculate it
                 const subCid = await calculateIpfsHash(gatewayRes.resText);
@@ -341,28 +343,30 @@ export class ClientsManager extends BaseClientsManager {
                 }
             };
 
-            const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldConsumeBodyFn"] = async (res: Response) => {
+            const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldAbortRequestFunc"] = async (res: Response) => {
                 const ipnsCidFromGateway = res.headers.get("x-ipfs-roots");
                 const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
                 if (curSubUpdateCid && ipnsCidFromGateway === curSubUpdateCid) {
                     // this gateway responded with a subplebbit IPFS we already have
                     // we will abort and stop it from consuming the body
-                    gatewayFetches[gatewayUrl].abortController.abort(
-                        `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}].updateCid. No need to consume body since it's an IPNS record that has been processed already`
-                    );
-                    return false;
+                    const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID", {
+                        ipnsCidFromGatewayHeaders: ipnsCidFromGateway
+                    });
+                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
+                    return error;
                 }
 
                 const lastInvalidSubCid =
                     this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
-                if (lastInvalidSubCid && ipnsCidFromGateway === curSubUpdateCid) {
+                if (lastInvalidSubCid && ipnsCidFromGateway === lastInvalidSubCid) {
+                    const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD", {
+                        ipnsCidFromGatewayHeaders: ipnsCidFromGateway
+                    });
+
                     // this gateway responded with a subplebbit whose record we know to be invalid
-                    gatewayFetches[gatewayUrl].abortController.abort(
-                        `Gateway response has the same cid as plebbit._updatingSubplebbits[${this._getSubplebbitAddressFromInstance()}]._lastInvalidSubplebbitCid. No need to consume body since it's an invalid record`
-                    );
-                    return false;
+                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
+                    return error;
                 }
-                return true;
             };
             gatewayFetches[gatewayUrl] = {
                 abortController,
@@ -371,8 +375,8 @@ export class ClientsManager extends BaseClientsManager {
                         recordIpfsType: "ipns",
                         root: ipnsName,
                         recordPlebbitType: "subplebbit",
-                        validateGatewayResponse: throwIfGatewayRespondsWithInvalidSubplebbit,
-                        shouldConsumeBodyFn: checkIpnsCidFromGateway,
+                        validateGatewayResponseFunc: throwIfGatewayRespondsWithInvalidSubplebbit,
+                        shouldAbortRequestFunc: checkIpnsCidFromGateway,
                         abortController,
                         log
                     })
