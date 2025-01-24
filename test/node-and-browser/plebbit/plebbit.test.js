@@ -1,8 +1,8 @@
-import Plebbit from "../../dist/node/index.js";
-import signers from "../fixtures/signers.js";
+import Plebbit from "../../../dist/node/index.js";
+import signers from "../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { messages } from "../../dist/node/errors.js";
+import { messages } from "../../../dist/node/errors.js";
 import {
     mockRemotePlebbit,
     loadAllPages,
@@ -11,7 +11,7 @@ import {
     describeIfRpc,
     getRemotePlebbitConfigs,
     mockRemotePlebbitIpfsOnly
-} from "../../dist/node/test/test-util.js";
+} from "../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;

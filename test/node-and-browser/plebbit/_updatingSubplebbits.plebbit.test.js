@@ -1,5 +1,5 @@
-import { getRemotePlebbitConfigs, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
-import signers from "../fixtures/signers";
+import { getRemotePlebbitConfigs, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import signers from "../../fixtures/signers.js";
 import { expect } from "chai";
 
 const subplebbitAddress = signers[0].address;
