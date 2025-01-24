@@ -156,7 +156,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     private async _retryLoadingSubplebbitAddress(
         subplebbitAddress: SubplebbitIpfsType["address"]
-    ): Promise<ResultOfFetchingSubplebbit | PlebbitError> {
+    ): Promise<ResultOfFetchingSubplebbit | PlebbitError | Error> {
         const log = Logger("plebbit-js:remote-subplebbit:update:_retryLoadingSubplebbitIpns");
 
         return new Promise((resolve) => {
@@ -168,12 +168,20 @@ export class SubplebbitClientsManager extends ClientsManager {
                 } catch (e) {
                     this._subplebbit._setUpdatingState("failed");
                     log.error(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, e);
-                    if (e instanceof PlebbitError && !this._subplebbit._isRetriableErrorWhenLoading(e))
+                    if (e instanceof Error && !this._subplebbit._isRetriableErrorWhenLoading(e))
                         resolve(e); // critical error that can't be retried
                     else this._ipnsLoadingOperation!.retry(<Error>e);
                 }
             });
         });
+    }
+
+    private _findInvalidCidInNonRetriableError(err: PlebbitError): string | undefined {
+        const findCidInErr = (err: any) => err.details?.cidOfSubIpns || err.details?.cid;
+        if (err.details.gatewayToError)
+            for (const gateway of Object.keys(err.details.gatewayToError))
+                if (findCidInErr(err.details.gatewayToError[gateway])) return findCidInErr(err.details.gatewayToError[gateway]);
+        return findCidInErr(err);
     }
 
     async updateOnce() {
@@ -185,9 +193,12 @@ export class SubplebbitClientsManager extends ClientsManager {
 
         if (loadedSubIpfsOrError instanceof Error) {
             log.error(
-                `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event mark invalid cid to not be loaded again`
+                `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`
             );
-            this._subplebbit._lastInvalidSubplebbitCid = loadedSubIpfsOrError.details?.cidOfSubIpns || loadedSubIpfsOrError.details?.cid;
+            if (loadedSubIpfsOrError instanceof PlebbitError) {
+                const invalidCid = this._findInvalidCidInNonRetriableError(loadedSubIpfsOrError);
+                if (invalidCid) this._subplebbit._lastInvalidSubplebbitCid = invalidCid;
+            }
             this._subplebbit.emit("error", <PlebbitError>loadedSubIpfsOrError);
             return;
         } else if (loadedSubIpfsOrError?.subplebbit && (this._subplebbit.updatedAt || 0) < loadedSubIpfsOrError.subplebbit.updatedAt) {
@@ -225,7 +236,5 @@ export class SubplebbitClientsManager extends ClientsManager {
     async stopUpdatingLoop() {
         this._ipnsLoadingOperation?.stop();
         clearTimeout(this._updateTimeout);
-
-        this._ipnsLoadingOperation = this._updateTimeout = undefined;
     }
 }

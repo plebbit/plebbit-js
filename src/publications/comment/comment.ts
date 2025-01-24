@@ -2,7 +2,7 @@ import retry, { RetryOperation } from "retry";
 import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyAddress, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
-import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from "../../types.js";
+import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName, SubplebbitEvents } from "../../types.js";
 
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -36,6 +36,7 @@ import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schem
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
+import { plebbitJsChallenges } from "../../runtime/node/subplebbit/challenges/index.js";
 
 export class Comment
     extends Publication
@@ -92,11 +93,16 @@ export class Comment
     _rawCommentIpfs?: CommentIpfsType = undefined;
     _subplebbitForUpdating?: RemoteSubplebbit = undefined;
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
+    _invalidCommentUpdateMfsPaths: string[] = [];
     private _commentIpfsloadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
     _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
     override challengeRequest?: CreateCommentOptions["challengeRequest"];
+
+    private _updatingSubplebbitUpdatingStateListener: SubplebbitEvents["updatingstatechange"];
+    private _updatingSubplebbitUpdateListener: SubplebbitEvents["update"];
+    private _updatingSubplebbitErrorListener: SubplebbitEvents["error"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -114,6 +120,34 @@ export class Comment
             pagesIpfs: undefined,
             parentCid: this.cid
         });
+
+        this._updatingSubplebbitUpdateListener = async () => {
+            // the sub published a new update, let's see if there's a new CommentUpdate
+            // TODO we need to take care eof critical errors of CommentUpdate here
+            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs!);
+        };
+
+        this._updatingSubplebbitErrorListener = async (error: PlebbitError) => {
+            if (!this._subplebbitForUpdating!._isRetriableErrorWhenLoading(error)) {
+                const log = Logger("plebbit-js:comment:update");
+                log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
+                this._setUpdatingState("failed");
+                this.emit("error", error);
+                await this.stop();
+            }
+        };
+
+        this._updatingSubplebbitUpdatingStateListener = async (
+            updatingState: NonNullable<Comment["_subplebbitForUpdating"]>["updatingState"]
+        ) => {
+            const mapper: Partial<Record<typeof updatingState, Comment["updatingState"]>> = {
+                failed: "failed",
+                "fetching-ipfs": "fetching-subplebbit-ipfs",
+                "fetching-ipns": "fetching-subplebbit-ipns",
+                "resolving-address": "resolving-subplebbit-address"
+            };
+            if (mapper[updatingState]) this._setUpdatingState(mapper[updatingState]);
+        };
         hideClassPrivateProps(this);
     }
 
@@ -446,26 +480,49 @@ export class Comment
     async _attemptToFetchCommentIpfsIfNeeded(log: Logger) {
         if (this.cid && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            const newCommentIpfsOrError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
+            const newCommentIpfsOrNonRetriableError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
 
-            if (newCommentIpfsOrError instanceof Error) {
+            if (newCommentIpfsOrNonRetriableError instanceof Error) {
                 // This is a non-retriable error, it should stop the comment from updating
                 log.error(
                     `Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`,
-                    newCommentIpfsOrError
+                    newCommentIpfsOrNonRetriableError
                 );
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
                 this._setUpdatingState("failed");
                 this._updateState("stopped");
-                this.emit("error", newCommentIpfsOrError);
+                this.emit("error", newCommentIpfsOrNonRetriableError);
                 return;
             } else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
-                this._initIpfsProps(newCommentIpfsOrError);
+                this._initIpfsProps(newCommentIpfsOrNonRetriableError);
                 this.emit("update", this);
             }
         }
+    }
+
+    async startCommentUpdateSubplebbitSubscription() {
+        const log = Logger("plebbit-js:comment:update");
+        if (!this._subplebbitForUpdating) {
+            this._subplebbitForUpdating =
+                this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
+                (await this._plebbit.createSubplebbit({ address: this.subplebbitAddress }));
+
+            // set up listeners here
+
+            this._subplebbitForUpdating!.on("update", this._updatingSubplebbitUpdateListener);
+
+            this._subplebbitForUpdating!.on("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
+
+            this._subplebbitForUpdating!.on("error", this._updatingSubplebbitErrorListener);
+        }
+
+        if (this._subplebbitForUpdating!.state === "stopped") {
+            await this._subplebbitForUpdating!.update();
+        }
+        if (this._subplebbitForUpdating?._rawSubplebbitIpfs)
+            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating._rawSubplebbitIpfs);
     }
 
     async updateOnce() {
@@ -474,7 +531,7 @@ export class Comment
         await this._attemptToFetchCommentIpfsIfNeeded(log);
         await this._commentIpfsloadingOperation.stop();
 
-        await this._clientsManager.startCommentUpdateSubplebbitSubscription();
+        await this.startCommentUpdateSubplebbitSubscription();
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {
@@ -604,6 +661,13 @@ export class Comment
             this._updateRpcSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         }
+        // clean up _subplebbitForUpdating subscriptions
+        if (this._subplebbitForUpdating) {
+            await this._subplebbitForUpdating.stop();
+            this._subplebbitForUpdating!.removeListener("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
+            this._subplebbitForUpdating!.removeListener("update", this._updatingSubplebbitUpdateListener);
+            this._subplebbitForUpdating!.removeListener("error", this._updatingSubplebbitErrorListener);
+        }
     }
 
     override async stop() {
@@ -611,6 +675,7 @@ export class Comment
         this._setUpdatingState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();
+        this._subplebbitForUpdating = undefined;
     }
 
     private async _validateSignature() {

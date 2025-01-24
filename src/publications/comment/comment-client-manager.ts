@@ -161,6 +161,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         const attemptedPaths: string[] = [];
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
+            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
             if (this._comment._commentUpdateIpfsPath) {
                 const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
                 if (folderCid === lastFolderCid) {
@@ -169,12 +170,21 @@ export class CommentClientsManager extends PublicationClientsManager {
                         this._comment.cid,
                         "calculated folder cid has already been used",
                         folderCid,
-                        "will be skipping loading this path"
+                        "will be skipping loading CommentUpdate"
                     );
                     return undefined;
                 }
             }
-            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            if (this._comment._invalidCommentUpdateMfsPaths.includes(path)) {
+                log(
+                    "Comment",
+                    this._comment.cid,
+                    "calculated path is part of comment._invalidCommentUpdateMfsPaths",
+                    path,
+                    "will be skipping loading CommentUpdate"
+                );
+                return undefined;
+            }
             attemptedPaths.push(path);
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
@@ -186,9 +196,15 @@ export class CommentClientsManager extends PublicationClientsManager {
             } finally {
                 this.updateIpfsState("stopped");
             }
-            const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
-            await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
-            return { commentUpdate, commentUpdateIpfsPath: path };
+            try {
+                const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
+                await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
+                return { commentUpdate, commentUpdateIpfsPath: path };
+            } catch (e) {
+                // there's a problem with the record itself
+                this._comment._invalidCommentUpdateMfsPaths.push(path);
+                throw e;
+            }
         }
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
@@ -246,7 +262,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         let commentUpdate: CommentUpdateType | undefined;
 
-        const validateCommentFromGateway: OptionsToLoadFromGateway["validateGatewayResponse"] = async (res) => {
+        const validateCommentFromGateway: OptionsToLoadFromGateway["validateGatewayResponseFunc"] = async (res) => {
             if (typeof res.resText !== "string") throw Error("Gateway response has no body");
             const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
                 parseJsonWithPlebbitErrorIfFails(res.resText)
@@ -259,6 +275,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
 
             const folderCid = subIpns.postUpdates![timestampRange];
+            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
             if (this._comment._commentUpdateIpfsPath) {
                 const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
                 if (folderCid === lastFolderCid) {
@@ -267,22 +284,22 @@ export class CommentClientsManager extends PublicationClientsManager {
                         this._comment.cid,
                         "calculated folder cid has already been used",
                         folderCid,
-                        "will be skipping loading this path"
+                        "will be skipping loading CommentUpdate"
                     );
                     return undefined;
                 }
             }
-            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
-            if (path === this._comment._commentUpdateIpfsPath) {
+            if (this._comment._invalidCommentUpdateMfsPaths.includes(path)) {
                 log(
-                    "CommentUpdate",
+                    "Comment",
                     this._comment.cid,
-                    "calculated path has already been used",
+                    "calculated path is part of comment._invalidCommentUpdateMfsPaths",
                     path,
-                    "will be skipping loading this path"
+                    "will be skipping loading CommentUpdate"
                 );
-                continue;
+                return undefined;
             }
+
             attemptedPaths.push(path);
 
             try {
@@ -293,7 +310,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     root: folderCid,
                     path: path.replace(`${folderCid}/`, ""),
                     recordPlebbitType: "comment-update",
-                    validateGatewayResponse: validateCommentFromGateway,
+                    validateGatewayResponseFunc: validateCommentFromGateway,
                     log
                 });
                 if (!commentUpdate) throw Error("Failed to load comment update from gateways. This is a critical logic error");
@@ -304,7 +321,11 @@ export class CommentClientsManager extends PublicationClientsManager {
                 if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
                     log.trace(`Failed to fetch CommentUpdate from path (${path}) from gateways. Trying the next timestamp range`);
                     continue;
-                } else throw e;
+                } else {
+                    // non retriable error
+                    this._comment._invalidCommentUpdateMfsPaths.push(path);
+                    throw e;
+                }
             }
         }
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
@@ -348,72 +369,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    async startCommentUpdateSubplebbitSubscription() {
-        const log = Logger("plebbit-js:comment:update");
-        if (!this._comment._subplebbitForUpdating) {
-            if (!this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress])
-                this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress] = await this._plebbit.createSubplebbit({
-                    address: this._comment.subplebbitAddress
-                });
-            this._comment._subplebbitForUpdating = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress];
-
-            // set up listeners here
-            const updateListener = async () => {
-                // the sub published a new update, let's see if there's a new CommentUpdate
-                // TODO we need to take care eof critical errors of CommentUpdate here
-                await this.useSubplebbitUpdateToFetchCommentUpdate(this._comment._subplebbitForUpdating!._rawSubplebbitIpfs!);
-            };
-
-            this._comment._subplebbitForUpdating.on("update", updateListener);
-
-            const subplebbitUpdatingStateListener = async (
-                updatingState: NonNullable<Comment["_subplebbitForUpdating"]>["updatingState"]
-            ) => {
-                const mapper: Partial<Record<typeof updatingState, Comment["updatingState"]>> = {
-                    failed: "failed",
-                    "fetching-ipfs": "fetching-subplebbit-ipfs",
-                    "fetching-ipns": "fetching-subplebbit-ipns",
-                    "resolving-address": "resolving-subplebbit-address"
-                };
-                if (mapper[updatingState]) this._comment._setUpdatingState(mapper[updatingState]);
-            };
-            this._comment._subplebbitForUpdating.on("updatingstatechange", subplebbitUpdatingStateListener);
-
-            const errorListener = async (error: PlebbitError) => {
-                if (!this._comment._subplebbitForUpdating!._isRetriableErrorWhenLoading(error)) {
-                    log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
-                    this._comment._setUpdatingState("failed");
-                    this._comment.emit("error", error);
-                    await this._comment.stop();
-                }
-            };
-
-            this._comment._subplebbitForUpdating.on("error", errorListener);
-
-            const cleanupCommentUpdate = async () => {
-                this._comment._subplebbitForUpdating!.removeListener("updatingstatechange", subplebbitUpdatingStateListener);
-                this._comment._subplebbitForUpdating!.removeListener("update", updateListener);
-                this._comment._subplebbitForUpdating!.removeListener("error", errorListener);
-                this._comment.removeListener("statechange", commentStateListener);
-            };
-
-            const commentStateListener = async (newState: Comment["state"]) => {
-                if (newState === "stopped") {
-                    // user called comment.stop
-                    await cleanupCommentUpdate();
-                }
-            };
-
-            this._comment.on("statechange", commentStateListener);
-        }
-
-        if (this._comment._subplebbitForUpdating.state !== "updating") {
-            await this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress].update();
-        }
-        if (this._comment._subplebbitForUpdating?._rawSubplebbitIpfs)
-            await this.useSubplebbitUpdateToFetchCommentUpdate(this._comment._subplebbitForUpdating._rawSubplebbitIpfs);
-    }
-
     private async _fetchRawCommentCidIpfsP2P(cid: string): Promise<string> {
         this.updateIpfsState("fetching-ipfs");
         let commentRawString: string;
@@ -436,7 +391,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             recordIpfsType: "ipfs",
             recordPlebbitType: "comment",
             root: parentCid,
-            validateGatewayResponse: async () => {},
+            validateGatewayResponseFunc: async () => {},
             log
         });
         return res.resText;

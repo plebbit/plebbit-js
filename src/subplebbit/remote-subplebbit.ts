@@ -71,6 +71,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _clientsManager: SubplebbitClientsManager;
     _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
     _lastInvalidSubplebbitCid?: string = undefined; // a subplebbit cid that's invalid signature/schema/etc
+    _updatingSubInstanceWithListeners?: { subplebbit: RemoteSubplebbit } & Pick<
+        SubplebbitEvents,
+        "error" | "updatingstatechange" | "update"
+    > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
 
     constructor(plebbit: Plebbit) {
         super();
@@ -208,7 +212,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
     // Errors that retrying to load the ipns record will not help
     // Instead we should abort the retries, and emit an error to notify the user to do something about it
-    _isRetriableErrorWhenLoading(err: PlebbitError): boolean {
+    _isRetriableErrorWhenLoading(err: PlebbitError | Error): boolean {
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (
             err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" ||
@@ -246,39 +250,86 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this.emit("update", this);
         }
     }
-            const updatingSubRemoveListenerListener = async (eventName: string, listener: Function) => {
-                const count = updatingSubInstance.listenerCount("update");
 
-                log(`Count for update event listeners in`, this.address, "is", count);
+    private async _initSubInstanceWithListeners() {
+        if (!this._plebbit._updatingSubplebbits[this.address]) throw Error("should be defined at this stage");
+        const log = Logger("plebbit-js:comment:update");
+        const subInstance = this._plebbit._updatingSubplebbits[this.address];
+        return <NonNullable<this["_updatingSubInstanceWithListeners"]>>{
+            subplebbit: subInstance,
+            update: async () => {
+                await this.initSubplebbitIpfsPropsNoMerge(subInstance._rawSubplebbitIpfs!);
+                this.updateCid = subInstance.updateCid;
+                log(
+                    `Remote Subplebbit instance`,
+                    this.address,
+                    `received update event from plebbit._updatingSubplebbits[${this.address}] with updatedAt`,
+                    this.updatedAt,
+                    "that's",
+                    timestamp() - this.updatedAt!,
+                    "seconds old"
+                );
+                this.emit("update", this);
+            },
+            error: async (error: PlebbitError) => {
+                this.emit("error", error);
+            },
+            updatingstatechange: async (newUpdatingState) => {
+                this._setUpdatingState(newUpdatingState);
+            }
+        };
+    }
+
+    private async fetchLatestSubOrSubscribeToEvent() {
+        const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
+
+        if (!this._plebbit._updatingSubplebbits[this.address]) {
+            const updatingSub = await this._plebbit.createSubplebbit({
+                address: this.address,
+                ...this._rawSubplebbitIpfs
+            });
+            this._plebbit._updatingSubplebbits[this.address] = updatingSub;
+            log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
+
+            // make sure to it keeps retrying to resolve here
+            // should only stop when there's no subplebbit instance listening to its events
+            // if it encounters a critical error, it should stop and delete this._plebbit._updatingSubplebbits[this.address]
+
+            const updatingSubRemoveListenerListener = async (eventName: string, listener: Function) => {
+                const count = updatingSub.listenerCount("update");
+
+                log(`Count for update event listeners in plebbit._updatingSubplebbits`, this.address, "is", count);
                 if (count === 0) await cleanUpUpdatingSubInstance();
             };
 
-            const updatingSubErrorListener = async (error: PlebbitError) => {
-                if (!this._isRetriableErrorWhenLoading(error)) {
-                    this._lastInvalidSubplebbitCid = error.details.cidOfSubIpns;
-                    log.error(
-                        `Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event. Marking CID of subplebbit IPNS as invalid`,
-                        error.details.cidOfSubIpns
-                    );
-                }
-                this.emit("error", error);
-            };
-
             const cleanUpUpdatingSubInstance = async () => {
-                await updatingSubInstance.stop();
-                await updatingSubInstance._clientsManager.stopUpdatingLoop();
-                updatingSubInstance.removeListener("error", updatingSubErrorListener);
-                updatingSubInstance.removeListener("removeListener", updatingSubRemoveListenerListener);
-                delete this._plebbit._updatingSubplebbits[this.address];
+                updatingSub.removeListener("removeListener", updatingSubRemoveListenerListener);
+                await updatingSub.stop();
             };
 
-            updatingSubInstance.on("error", updatingSubErrorListener);
 
-            updatingSubInstance.on("removeListener", updatingSubRemoveListenerListener);
+            updatingSub.on("removeListener", updatingSubRemoveListenerListener);
 
-            updatingSubInstance._setState("updating");
-            await updatingSubInstance._clientsManager.startUpdatingLoop();
+            await updatingSub._setState("updating");
+            await updatingSub._clientsManager.startUpdatingLoop();
         }
+
+        this._updatingSubInstanceWithListeners = await this._initSubInstanceWithListeners();
+        this._updatingSubInstanceWithListeners.subplebbit.on("update", this._updatingSubInstanceWithListeners.update);
+
+        this._updatingSubInstanceWithListeners.subplebbit.on(
+            "updatingstatechange",
+            this._updatingSubInstanceWithListeners.updatingstatechange
+        );
+        this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
+
+        // should we subscribe to updatingSubInstance.clients or use it directly?
+        // not sure, will probably revisit later
+        // this.clients.chainProviders = updatingSubInstance.clients.chainProviders;
+        // this.clients.ipfsGateways = updatingSubInstance.clients.ipfsGateways;
+        // this.clients.ipfsClients = updatingSubInstance.clients.ipfsClients;
+
+        // set up clean up for updating sub instance here
     }
 
     async update() {
@@ -288,7 +339,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this._setState("updating");
 
-        this.fetchLatestSubOrSubscribeToEvent().catch((e) => log.error(`Failed to start update loop of subplebbit ${this.address}`, e));
+        await this.fetchLatestSubOrSubscribeToEvent();
     }
 
     async stop() {
@@ -296,6 +347,20 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this._setUpdatingState("stopped");
         this._setState("stopped");
+        if (this._updatingSubInstanceWithListeners) {
+            // this instance is subscribed to plebbit._updatingSubplebbit[address]
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingSubInstanceWithListeners.update);
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener(
+                "updatingstatechange",
+                this._updatingSubInstanceWithListeners.updatingstatechange
+            );
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
+            this._updatingSubInstanceWithListeners = undefined;
+        } else {
+            // this instance is plebbit._updatingSubplebbit[address] itself
+            await this._clientsManager.stopUpdatingLoop();
+            delete this._plebbit._updatingSubplebbits[this.address];
+        }
     }
 
     // functions to be overridden in local subplebbit classes

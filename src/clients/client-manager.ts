@@ -265,12 +265,12 @@ export class ClientsManager extends BaseClientsManager {
         const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
         // need to check if subplebbitCid === sub.updateCid
         if (curSubUpdateCid && subplebbitCid === curSubUpdateCid) {
-            log("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
+            log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
             return undefined;
         }
         const lastInvalidSubCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
         if (lastInvalidSubCid && subplebbitCid === lastInvalidSubCid) {
-            log("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit._lastInvalidSubplebbitCid. No need to fetch its ipfs");
+            log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit._lastInvalidSubplebbitCid. No need to fetch its ipfs");
             return undefined;
         }
         let rawSubJsonString: string;
