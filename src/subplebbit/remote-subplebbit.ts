@@ -228,17 +228,12 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         return true;
     }
 
-    private async fetchLatestSubOrSubscribeToEvent() {
-        const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
-
-        let updatingSubInstance = this._plebbit._updatingSubplebbits[this.address];
-        if (
-            typeof updatingSubInstance?.updatedAt === "number" &&
-            updatingSubInstance._rawSubplebbitIpfs &&
-            (this.updatedAt || 0) < updatingSubInstance.updatedAt
-        ) {
-            await this.initSubplebbitIpfsPropsNoMerge(updatingSubInstance._rawSubplebbitIpfs);
-            this.updateCid = updatingSubInstance.updateCid;
+    async _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
+        const log = Logger("plebbit-js:comment:_setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible");
+        const updatingSub = this._plebbit._updatingSubplebbits[this.address];
+        if (updatingSub?._rawSubplebbitIpfs && (this.updatedAt || 0) < updatingSub._rawSubplebbitIpfs.updatedAt) {
+            await this.initSubplebbitIpfsPropsNoMerge(updatingSub._rawSubplebbitIpfs);
+            this.updateCid = updatingSub.updateCid;
             log(
                 `New Remote Subplebbit instance`,
                 this.address,
@@ -250,69 +245,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             );
             this.emit("update", this);
         }
-
-        if (!updatingSubInstance) {
-            this._plebbit._updatingSubplebbits[this.address] = updatingSubInstance = await this._plebbit.createSubplebbit({
-                address: this.address,
-                ...this._rawSubplebbitIpfs
-            });
-            log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
-
-            // make sure to it keeps retrying to resolve here
-            // should only stop when there's no subplebbit instance listening to its events
-            // if it encounters a critical error, it should stop and delete this._plebbit._updatingSubplebbits[this.address]
-        }
-
-        // this._plebbit._updatingSubplebbits[this.address] is defined at this point, let's subscribe to its events
-
-        const updateListener = async () => {
-            await this.initSubplebbitIpfsPropsNoMerge(updatingSubInstance._rawSubplebbitIpfs!);
-            this.updateCid = updatingSubInstance.updateCid;
-            log(
-                `Remote Subplebbit instance`,
-                this.address,
-                `received update event from plebbit._updatingSubplebbits[${this.address}] with updatedAt`,
-                this.updatedAt,
-                "that's",
-                timestamp() - this.updatedAt!,
-                "seconds old"
-            );
-            this.emit("update", this);
-        };
-        updatingSubInstance.on("update", updateListener);
-
-        const updatingStateListener = async (newUpdatingState: RemoteSubplebbit["updatingState"]) => {
-            this._setUpdatingState(newUpdatingState);
-        };
-        updatingSubInstance.on("updatingstatechange", updatingStateListener);
-
-        // should we subscribe to updatingSubInstance.clients or use it directly?
-        // not sure, will probably revisit later
-        this.clients.chainProviders = updatingSubInstance.clients.chainProviders;
-        this.clients.ipfsGateways = updatingSubInstance.clients.ipfsGateways;
-        this.clients.ipfsClients = updatingSubInstance.clients.ipfsClients;
-
-        const errorListener = async (error: PlebbitError) => {
-            this.emit("error", error);
-        };
-        updatingSubInstance.on("error", errorListener);
-
-        const stateChangeListener = async (newState: RemoteSubplebbit["state"]) => {
-            if (newState === "stopped") {
-                // we're stopping this current subplebbit (not updatingSubInstance), let's clean up our subscriptions
-                updatingSubInstance.removeListener("update", updateListener);
-                updatingSubInstance.removeListener("updatingstatechange", updatingStateListener);
-                updatingSubInstance.removeListener("error", errorListener);
-                updatingSubInstance.removeListener("update", updateListener);
-
-                this.removeListener("statechange", stateChangeListener);
-            }
-        };
-        this.on("statechange", stateChangeListener);
-
-        // set up clean up for updating sub instance here
-
-        if (updatingSubInstance.state !== "updating") {
+    }
             const updatingSubRemoveListenerListener = async (eventName: string, listener: Function) => {
                 const count = updatingSubInstance.listenerCount("update");
 

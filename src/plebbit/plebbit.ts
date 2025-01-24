@@ -535,7 +535,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             if (resParseSubplebbitIpfs.success) {
                 const cleanedRecord = removeUndefinedValuesRecursively(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
                 await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord); // we're setting SubplebbitIpfs
+                if ("updateCid" in options && options.updateCid) subplebbit.updateCid = options.updateCid;
             }
+        }
+        if (!subplebbit._rawSubplebbitIpfs) {
+            // we didn't receive options that we can parse into SubplebbitIpfs
+            // let's try using _updatingSubplebbits
+            await subplebbit._setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible();
         }
     }
 
