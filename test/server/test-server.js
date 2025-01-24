@@ -15,6 +15,8 @@ import PlebbitWsServer from "../../rpc";
 import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+
 import fs from "fs";
 import { removeUndefinedValuesRecursively } from "../../dist/node/util.js";
 
@@ -155,7 +157,7 @@ const setUpMockGateways = async () => {
         else if (req.url.includes("/ipns")) {
             const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]);
             const sub = await plebbit.getSubplebbit(subAddress);
-            res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+            res.setHeader("x-ipfs-roots", sub.updateCid);
             res.end(JSON.stringify(sub.toJSONIpfs()));
         } else res.end(await plebbit.fetchCid(req.url));
     })
@@ -199,19 +201,18 @@ const setUpMockGateways = async () => {
 
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
-    const fetchLatestSubplebbitJson = async () => {
-        const subjsonIpfs = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-
-        const subRecord = cleanUpBeforePublishing(subjsonIpfs);
-        if (subjsonIpfs.posts) subRecord.posts = removeUndefinedValuesRecursively(subjsonIpfs.posts);
-        return subRecord;
+    const fetchLatestSubplebbit = async () => {
+        return await plebbit.getSubplebbit(signers[0].address);
     };
 
     // This gateaway will wait for 11s then respond
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 11000));
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
+        const subRecord = await fetchLatestSubplebbit();
+        res.setHeader("x-ipfs-roots", subRecord.updateCid);
+
+        res.end(JSON.stringify(subRecord._rawSubplebbitIpfs));
     })
         .listen(14000, hostName)
         .on("error", (err) => {
@@ -222,7 +223,10 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
+        const subRecord = await fetchLatestSubplebbit();
+        res.setHeader("x-ipfs-roots", subRecord.updateCid);
+
+        res.end(JSON.stringify(subRecord._rawSubplebbitIpfs));
     })
         .listen(14002, hostName)
         .on("error", (err) => {
@@ -244,10 +248,10 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
+        const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordThirtyMinuteOld.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
-        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordThirtyMinuteOld)));
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
     })
@@ -260,10 +264,10 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
+        const subplebbitRecordHourOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
-        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordHourOld)));
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
@@ -276,12 +280,12 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
-        subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
-        subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
-        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+        const subplebbitRecordTwoHoursOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
+        subplebbitRecordTwoHoursOld.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordTwoHoursOld.signature = await signSubplebbit(subplebbitRecordTwoHoursOld, signers[0]);
+        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordTwoHoursOld)));
 
-        res.end(JSON.stringify(subplebbitRecordHourOld));
+        res.end(JSON.stringify(subplebbitRecordTwoHoursOld));
     })
         .listen(14006, hostName)
         .on("error", (err) => {
