@@ -138,6 +138,8 @@ export interface PublicationEvents {
     // For comment only
     update: (updatedInstance: Comment) => void;
     updatingstatechange: (newState: Comment["updatingState"]) => void;
+
+    removeListener: (eventName: string, listener: Function) => void;
 }
 
 export interface PlebbitEvents {

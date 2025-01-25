@@ -2,7 +2,7 @@ import retry, { RetryOperation } from "retry";
 import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyAddress, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
-import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName, SubplebbitEvents } from "../../types.js";
+import type { AuthorWithOptionalCommentUpdateJson, PublicationEvents, PublicationTypeName, SubplebbitEvents } from "../../types.js";
 
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -36,7 +36,6 @@ import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schem
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
-import { plebbitJsChallenges } from "../../runtime/node/subplebbit/challenges/index.js";
 
 export class Comment
     extends Publication
@@ -104,6 +103,8 @@ export class Comment
     private _updatingSubplebbitUpdateListener: SubplebbitEvents["update"];
     private _updatingSubplebbitErrorListener: SubplebbitEvents["error"];
 
+    private _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> =
+        undefined;
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this._setUpdatingState("stopped");
@@ -124,6 +125,8 @@ export class Comment
         this._updatingSubplebbitUpdateListener = async () => {
             // the sub published a new update, let's see if there's a new CommentUpdate
             // TODO we need to take care eof critical errors of CommentUpdate here
+
+            if (this.state === "stopped") await this.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
             await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs!);
         };
 
@@ -469,7 +472,7 @@ export class Comment
                 } catch (e) {
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`);
+                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
                     if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) this._commentIpfsloadingOperation!.retry(<Error>e);
                     else return resolve(<PlebbitError>e);
                 }
@@ -502,8 +505,15 @@ export class Comment
         }
     }
 
-    async startCommentUpdateSubplebbitSubscription() {
-        const log = Logger("plebbit-js:comment:update");
+    async _attemptInfintelyToLoadCommentIpfs() {
+        const log = Logger("plebbit-js:comment:update:attemptInfintelyToLoadCommentIpfs");
+
+        this._commentIpfsloadingOperation = retry.operation({ forever: true, factor: 2 });
+        await this._attemptToFetchCommentIpfsIfNeeded(log);
+        await this._commentIpfsloadingOperation.stop();
+    }
+
+    async _initSubplebbitForUpdatingIfNeeded() {
         if (!this._subplebbitForUpdating) {
             this._subplebbitForUpdating =
                 this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
@@ -517,21 +527,22 @@ export class Comment
 
             this._subplebbitForUpdating!.on("error", this._updatingSubplebbitErrorListener);
         }
+    }
 
-        if (this._subplebbitForUpdating.state === "stopped") {
+    async startCommentUpdateSubplebbitSubscription() {
+        const log = Logger("plebbit-js:comment:update");
+        await this._initSubplebbitForUpdatingIfNeeded();
+        if (this._subplebbitForUpdating!.state === "stopped") {
             await this._subplebbitForUpdating!.update();
         }
-        if (this._subplebbitForUpdating._rawSubplebbitIpfs)
-            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating._rawSubplebbitIpfs);
+        if (this._subplebbitForUpdating!._rawSubplebbitIpfs)
+            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs);
     }
 
     async updateOnce() {
-        const log = Logger("plebbit-js:comment:update");
-        this._commentIpfsloadingOperation = retry.operation({ forever: true, factor: 2 });
-        await this._attemptToFetchCommentIpfsIfNeeded(log);
-        await this._commentIpfsloadingOperation.stop();
-
-        await this.startCommentUpdateSubplebbitSubscription();
+        await this._attemptInfintelyToLoadCommentIpfs();
+        if (!this._rawCommentIpfs) throw Error("Failed to load comment ipfs, user needs to check error event");
+        await this.startCommentUpdateSubplebbitSubscription(); // can only proceed if commentIpfs has been loaded successfully
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {
@@ -643,15 +654,80 @@ export class Comment
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
+    _useUpdatePropsFromUpdatingCommentIfPossible() {
+        if (!this.cid) throw Error("should have cid at this point");
+        const updatingCommentInstance = this._plebbit._updatingComments[this.cid];
+
+        if (updatingCommentInstance) {
+            if (!this._rawCommentIpfs && updatingCommentInstance._rawCommentIpfs) {
+                this._initIpfsProps(updatingCommentInstance._rawCommentIpfs);
+                this.emit("update", this);
+            }
+            if (updatingCommentInstance._rawCommentUpdate && (this.updatedAt || 0) < updatingCommentInstance._rawCommentUpdate.updatedAt) {
+                this._initCommentUpdate(updatingCommentInstance._rawCommentUpdate);
+                this._commentUpdateIpfsPath = updatingCommentInstance._commentUpdateIpfsPath;
+                this.emit("update", this);
+            }
+        }
+    }
+
+    _useUpdatingCommentFromPlebbit() {
+        const updatingCommentInstance = this._plebbit._updatingComments[this.cid!]!;
+        this._updatingCommentInstance = {
+            comment: updatingCommentInstance,
+            update: () => this._useUpdatePropsFromUpdatingCommentIfPossible(),
+            updatingstatechange: (newState) => this._setUpdatingState(newState),
+            error: (err) => this.emit("error", err)
+        };
+        this._useUpdatePropsFromUpdatingCommentIfPossible();
+
+        updatingCommentInstance.on("update", this._updatingCommentInstance.update);
+        updatingCommentInstance.on("error", this._updatingCommentInstance.error);
+        updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
+    }
+
+    async _setUpNewUpdatingCommentInstance() {
+        // create a new plebbit._updatingComments[this.cid]
+        const log = Logger("plebbit-js:comment:update:_setUpNewUpdatingCommentInstance");
+
+        const updatingCommentInstance = await this._plebbit.createComment(this);
+
+        // updatingCommentInstance should stop if there's nobody listening
+        const updatingCommentRemoveListenerListener = async (eventName: string, listener: Function) => {
+            const count = updatingCommentInstance.listenerCount("update");
+
+            if (count === 0) {
+                log.trace(`cleaning up plebbit._updatingComments`, this.cid, "There are no comments using it for updates");
+                await cleanUpUpdatingCommentInstance();
+            }
+        };
+
+        const cleanUpUpdatingCommentInstance = async () => {
+            updatingCommentInstance.removeListener("removeListener", updatingCommentRemoveListenerListener);
+            await updatingCommentInstance.stop();
+        };
+
+        updatingCommentInstance.on("removeListener", updatingCommentRemoveListenerListener);
+
+        this._plebbit._updatingComments[this.cid!] = updatingCommentInstance;
+
+        this._useUpdatingCommentFromPlebbit();
+        updatingCommentInstance._updateState("updating");
+
+        updatingCommentInstance.updateOnce().catch((e) => log.error("Failed to update comment", e));
+    }
+
     async update() {
         const log = Logger("plebbit-js:comment:update");
         if (this.state === "updating") return; // Do nothing if it's already updating
 
-        if (this._plebbit._plebbitRpcClient) return this._updateViaRpc();
-
+        if (!this.cid) throw Error("Can't call comment.update() without defining cid");
         this._updateState("updating");
 
-        this.updateOnce().catch((e) => log.error("Failed to update comment", e));
+        if (this._plebbit._updatingComments[this.cid]) {
+            this._useUpdatingCommentFromPlebbit();
+        } else if (this._plebbit._plebbitRpcClient) return this._updateViaRpc();
+        else return this._setUpNewUpdatingCommentInstance();
     }
 
     private async _stopUpdateLoop() {
@@ -663,13 +739,25 @@ export class Comment
         }
         // clean up _subplebbitForUpdating subscriptions
         if (this._subplebbitForUpdating) {
-            this._subplebbitForUpdating!.removeListener("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
-            this._subplebbitForUpdating!.removeListener("update", this._updatingSubplebbitUpdateListener);
-            this._subplebbitForUpdating!.removeListener("error", this._updatingSubplebbitErrorListener);
+            // this instance is plebbit._updatingComments[cid] and it's updating
+            this._subplebbitForUpdating.removeListener("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
+            this._subplebbitForUpdating.removeListener("update", this._updatingSubplebbitUpdateListener);
+            this._subplebbitForUpdating.removeListener("error", this._updatingSubplebbitErrorListener);
 
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
             if (this._subplebbitForUpdating._updatingSubInstanceWithListeners) await this._subplebbitForUpdating.stop();
             this._subplebbitForUpdating = undefined;
+            delete this._plebbit._updatingComments[this.cid!];
+        }
+
+        if (this._updatingCommentInstance) {
+            // this instance is subscribed to plebbit._updatingComments[cid]
+
+            this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
+            this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
+            this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
+
+            this._updatingCommentInstance = undefined;
         }
     }
 

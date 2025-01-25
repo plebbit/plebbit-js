@@ -152,7 +152,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
     _stats!: Stats;
     _storage!: StorageInterface;
-    _updatingSubplebbits: Record<SubplebbitIpfsType["address"], Awaited<ReturnType<Plebbit["createSubplebbit"]>>> = {}; // storing
+    _updatingSubplebbits: Record<SubplebbitIpfsType["address"], Awaited<ReturnType<Plebbit["createSubplebbit"]>>> = {}; // storing subplebbit instance that are getting updated rn
+    _updatingComments: Record<string, Awaited<ReturnType<Plebbit["createComment"]>>> = {}; // storing comment instancse that are getting updated rn
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
@@ -333,28 +334,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     async getComment(cid: z.infer<typeof CidStringSchema>): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:getComment");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
+        // getComment is interested in loading CommentIpfs only
         const comment = await this.createComment({ cid: parsedCid });
 
-        // The reason why we override this function is because we don't want update() to load the IPNS
-        // we only want to load the comment ipfs
-        //@ts-expect-error
-        const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
-        //@ts-expect-error
-        comment._retryLoadingCommentUpdate = () => {};
-        const updatePromise = new Promise((resolve) => comment.once("update", resolve));
         let error: PlebbitError | Error | undefined;
-        const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
 
-        await comment.update();
-        await Promise.race([updatePromise, errorPromise]);
+        comment.once("error", (err) => (error = err));
+
+        await comment._attemptInfintelyToLoadCommentIpfs();
+
         await comment.stop();
-        //@ts-expect-error
-        comment._retryLoadingCommentUpdate = originalLoadMethod;
-
         if (error) {
             log.error(`Failed to load comment (${parsedCid}) due to error`, error);
             throw error;
         }
+
+        if (!comment.signature) throw Error("There's a problem with getComment implemention");
+
         return comment;
     }
 
@@ -392,18 +388,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     private async _createCommentInstanceFromAnotherCommentInstance(options: Comment) {
         const commentInstance = new Comment(this);
-        commentInstance._rawCommentIpfs = options._rawCommentIpfs;
-        commentInstance._rawCommentUpdate = options._rawCommentUpdate;
-        commentInstance._pubsubMsgToPublish = options._pubsubMsgToPublish;
 
         Object.assign(
             commentInstance, // we jsonify here to get rid of private and function props
             remeda.omit(JSON.parse(JSON.stringify(options)), ["replies", "clients", "state", "publishingState", "updatingState"])
         );
 
-        if (commentInstance._rawCommentIpfs) commentInstance._initIpfsProps(commentInstance._rawCommentIpfs);
-        else if (commentInstance._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(commentInstance._pubsubMsgToPublish);
-        if (commentInstance._rawCommentUpdate) commentInstance._initCommentUpdate(commentInstance._rawCommentUpdate);
+        if (options._rawCommentIpfs) commentInstance._initIpfsProps(options._rawCommentIpfs);
+        if (options._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(options._pubsubMsgToPublish);
+        if (options._rawCommentUpdate) commentInstance._initCommentUpdate(options._rawCommentUpdate);
         return commentInstance;
     }
 
@@ -514,6 +507,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         } else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
+        if (commentInstance.cid) commentInstance._useUpdatePropsFromUpdatingCommentIfPossible();
 
         return commentInstance;
     }
@@ -941,6 +935,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
 
         await Promise.all(Object.values(this._updatingSubplebbits).map((sub) => sub.stop()));
-        this._updatingSubplebbits = {};
+        await Promise.all(Object.values(this._updatingComments).map((comment) => comment.stop()));
+        this._updatingSubplebbits = this._updatingComments = {};
     }
 }
