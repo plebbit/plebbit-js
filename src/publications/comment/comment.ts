@@ -691,6 +691,22 @@ export class Comment
         updatingCommentInstance.on("update", this._updatingCommentInstance.update);
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
+
+        const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+        for (const clientType of clientKeys)
+            for (const clientUrl of Object.keys(this.clients[clientType])) {
+                if ("state" in this.clients[clientType][clientUrl])
+                    //@ts-expect-error
+                    this.clients[clientType][clientUrl].mirror(updatingCommentInstance.clients[clientType][clientUrl]);
+                else {
+                    for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                        this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
+                            //@ts-expect-error
+                            updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]
+                        );
+                    }
+                }
+            }
     }
 
     async _setUpNewUpdatingCommentInstance() {
@@ -763,6 +779,20 @@ export class Comment
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
             this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
+
+            const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+
+            for (const clientType of clientKeys)
+                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    if ("state" in this.clients[clientType][clientUrl])
+                        //@ts-expect-error
+                        this.clients[clientType][clientUrl].unmirror();
+                    else {
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                            this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+                        }
+                    }
+                }
 
             this._updatingCommentInstance = undefined;
         }

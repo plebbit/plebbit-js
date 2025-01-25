@@ -1,6 +1,6 @@
-import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types.js";
 import { hideClassPrivateProps } from "../util.js";
+import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";
 
 // Types
 type PublicationIpfsState = "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
@@ -10,8 +10,8 @@ type PagesIpfsState = "fetching-ipfs" | "stopped";
 type GenericIpfsState = PublicationIpfsState | CommentIpfsState | SubplebbitIpfsState | PagesIpfsState;
 
 // Client classes
-class BaseIpfsClient<T extends GenericIpfsState> extends TypedEmitter<GenericClientEvents<T>> {
-    state: T;
+class BaseIpfsClient<T extends GenericIpfsState> extends PlebbitTypedEmitter<GenericClientEvents<T>> {
+    override state: T;
 
     constructor(state: T) {
         super();
