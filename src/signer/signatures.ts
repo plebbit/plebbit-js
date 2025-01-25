@@ -81,6 +81,8 @@ import type {
     SubplebbitEditPubsubMessagePublication
 } from "../publications/subplebbit-edit/types.js";
 import { SubplebbitEditPublicationSignedPropertyNames } from "../publications/subplebbit-edit/schema.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -820,12 +822,13 @@ export async function verifyPage(
         );
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
         if ("derivedAddress" in commentSignatureValidity && commentSignatureValidity.derivedAddress) shouldCache = false;
+        const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
         const commentUpdateSignatureValidity = await verifyCommentUpdate(
             pageComment.commentUpdate,
             resolveAuthorAddresses,
             clientsManager,
             subplebbitAddress,
-            { signature: pageComment.comment.signature, cid: pageComment.commentUpdate.cid },
+            { signature: pageComment.comment.signature, cid: calculatedCommentCid },
             overrideAuthorAddressIfInvalid,
             resolveDomainSubAddress
         );
