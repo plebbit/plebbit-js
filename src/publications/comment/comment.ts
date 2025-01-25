@@ -577,9 +577,10 @@ export class Comment
         this._setRpcClientState(rpcState);
     }
 
-    private _isRetriableRpcError(err: Error | PlebbitError) {
+    private _isRetriableLoadingError(err: Error | PlebbitError) {
         // Critical Errors for now are:
         // Invalid signature of CommentIpfs
+        // CommentUpdate will always be retried
         return this._isCommentIpfsErrorRetriable(err);
     }
 
@@ -619,7 +620,7 @@ export class Comment
         const log = Logger("plebbit-js:comment:update:_handleErrorEventFromRpc");
         const err = <PlebbitError>args.params.result;
         log("Received 'error' event from RPC", err);
-        if (!this._isRetriableRpcError(err)) {
+        if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
             this._setUpdatingState("failed");
             this._updateState("stopped");
@@ -677,7 +678,13 @@ export class Comment
             comment: updatingCommentInstance,
             update: () => this._useUpdatePropsFromUpdatingCommentIfPossible(),
             updatingstatechange: (newState) => this._setUpdatingState(newState),
-            error: (err) => this.emit("error", err)
+            error: async (err) => {
+                if (!this._isRetriableLoadingError(err)) {
+                    this._updateState("stopped");
+                    await this._stopUpdateLoop();
+                }
+                this.emit("error", err);
+            }
         };
         this._useUpdatePropsFromUpdatingCommentIfPossible();
 
