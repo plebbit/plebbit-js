@@ -12,7 +12,7 @@ import { Comment } from "./comment.js";
 import * as remeda from "remeda";
 import { commentPostUpdatesParentsPathConfig, postTimestampConfig } from "../../constants.js";
 
-import { CommentIpfsType, CommentUpdateType } from "./types.js";
+import type { CommentIpfsType, CommentUpdateType } from "./types.js";
 import {
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
     parseCommentUpdateSchemaWithPlebbitErrorIfItFails,
