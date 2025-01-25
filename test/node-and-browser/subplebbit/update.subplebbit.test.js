@@ -53,7 +53,7 @@ getRemotePlebbitConfigs().map((config) => {
             await loadedSubplebbit.stop();
         });
 
-        it(`subplebbit.update emits error and retries if signature of subplebbit is invalid`, async () => {
+        it(`subplebbit.update emits error if signature of subplebbit is invalid`, async () => {
             // should emit an error and keep retrying
 
             const ipnsObj = await createNewIpns();
@@ -63,11 +63,8 @@ getRemotePlebbitConfigs().map((config) => {
             await ipnsObj.publishToIpns(JSON.stringify(rawSubplebbitJson));
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
 
-            let retries = 0;
-
-            await tempSubplebbit.update();
-            await new Promise((resolve) => {
-                tempSubplebbit.on("error", (err) => {
+            const errorPromise = new Promise((resolve) => {
+                tempSubplebbit.once("error", (err) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
@@ -75,26 +72,24 @@ getRemotePlebbitConfigs().map((config) => {
                     } else {
                         expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
                     }
-                    retries++;
-                    if (retries === 3) resolve();
+                    resolve();
                 });
             });
 
+            await tempSubplebbit.update();
+            await errorPromise;
             await tempSubplebbit.stop();
         });
 
-        it(`subplebbit.update emits error and retries if schema of subplebbit is invalid `, async () => {
+        it(`subplebbit.update emits error if schema of subplebbit is invalid `, async () => {
             const rawSubplebbitJson = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
             rawSubplebbitJson.lastPostCid = 12345; // This will make schema invalid
 
             const ipnsObj = await createNewIpns();
             await ipnsObj.publishToIpns(JSON.stringify(rawSubplebbitJson));
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
-            let retries = 0;
-
-            await tempSubplebbit.update();
-            await new Promise((resolve) => {
-                tempSubplebbit.on("error", (err) => {
+            const errorPromise = new Promise((resolve) => {
+                tempSubplebbit.once("error", (err) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                         for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
@@ -102,23 +97,23 @@ getRemotePlebbitConfigs().map((config) => {
                     } else {
                         expect(err.code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
                     }
-                    retries++;
-                    if (retries === 3) resolve();
+                    resolve();
                 });
             });
+
+            await tempSubplebbit.update();
+            await errorPromise;
 
             await tempSubplebbit.stop();
         });
 
-        it(`subplebbit.update emits error and retries if subplebbit record is invalid json`, async () => {
+        it(`subplebbit.update emits error if subplebbit record is invalid json`, async () => {
             const ipnsObj = await createNewIpns();
             await ipnsObj.publishToIpns("<html>"); // invalid json
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
 
-            await tempSubplebbit.update();
-            let retries = 0;
-            await new Promise((resolve) => {
-                tempSubplebbit.on("error", (err) => {
+            const errorPromise = new Promise((resolve) => {
+                tempSubplebbit.once("error", (err) => {
                     if (isPlebbitFetchingUsingGateways(plebbit)) {
                         // we're using gateways to fetch
                         expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
@@ -128,20 +123,20 @@ getRemotePlebbitConfigs().map((config) => {
                     } else {
                         expect(err.code).to.equal("ERR_INVALID_JSON");
                     }
-                    retries++;
-                    if (retries === 3) resolve();
+                    resolve();
                 });
             });
+            await tempSubplebbit.update();
+            await errorPromise;
 
             await tempSubplebbit.stop();
         });
 
-        it(`subplebbit.update emits error if address of ENS and ENS address has no subplebbit-address text record`, async () => {
+        it(`subplebbit.update emits error and keeps retrying if address is ENS and ENS address has no subplebbit-address text record`, async () => {
             const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
-            sub.update();
             // Should emit an error and keep on retrying in the next update loop
             let errorCount = 0;
-            await new Promise((resolve) => {
+            const errorPromise = new Promise((resolve) => {
                 sub.on("error", (err) => {
                     expect(err.code).to.equal("ERR_DOMAIN_TXT_RECORD_NOT_FOUND");
                     expect(sub.updatingState).to.equal("failed");
@@ -149,7 +144,8 @@ getRemotePlebbitConfigs().map((config) => {
                     if (errorCount === 3) resolve();
                 });
             });
-
+            await sub.update();
+            await errorPromise;
             await sub.stop();
             await sub.removeAllListeners("error");
         });
@@ -166,7 +162,7 @@ getRemotePlebbitConfigs().map((config) => {
                 updatedHasBeenCalled = true;
             };
 
-            await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval + 1));
+            await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval * 2));
             expect(updatedHasBeenCalled).to.be.false;
         });
 
@@ -180,7 +176,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await subplebbit.update();
 
-            await publishRandomPost(subplebbit.address, plebbit, {});
+            await publishRandomPost(subplebbit.address, plebbit);
             await new Promise((resolve) => subplebbit.once("update", resolve));
             await subplebbit.stop();
         });
