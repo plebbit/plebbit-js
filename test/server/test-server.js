@@ -249,7 +249,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
         const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
-        const subplebbitRecordThirtyMinuteOldIpfs = subplebbitRecordThirtyMinuteOld.toJSONIpfs();
+        const subplebbitRecordThirtyMinuteOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordThirtyMinuteOld.toJSONIpfs()));
         subplebbitRecordThirtyMinuteOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordThirtyMinuteOldIpfs.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOldIpfs, signers[0]);
         res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs)));
@@ -265,8 +265,8 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordHourOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
-        const subplebbitRecordHourOldIpfs = subplebbitRecordHourOld.toJSONIpfs();
+        const latestRecord = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
+        const subplebbitRecordHourOldIpfs = JSON.parse(JSON.stringify(latestRecord.toJSONIpfs()));
 
         subplebbitRecordHourOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOldIpfs.signature = await signSubplebbit(subplebbitRecordHourOldIpfs, signers[0]);
@@ -284,7 +284,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
         const subplebbitRecordTwoHoursOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
-        const subplebbitRecordTwoHoursOldIpfs = subplebbitRecordTwoHoursOld.toJSONIpfs();
+        const subplebbitRecordTwoHoursOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordTwoHoursOld.toJSONIpfs()));
 
         subplebbitRecordTwoHoursOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordTwoHoursOldIpfs.signature = await signSubplebbit(subplebbitRecordTwoHoursOldIpfs, signers[0]);
