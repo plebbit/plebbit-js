@@ -337,21 +337,26 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         // getComment is interested in loading CommentIpfs only
         const comment = await this.createComment({ cid: parsedCid });
 
-        let error: PlebbitError | Error | undefined;
+        let lastUpdateError: Error | undefined;
 
-        comment.once("error", (err) => (error = err));
+        const errorListener = (err: Error) => (lastUpdateError = err);
+        comment.on("error", errorListener);
 
-        await comment._attemptInfintelyToLoadCommentIpfs();
-
-        await comment.stop();
-        if (error) {
-            log.error(`Failed to load comment (${parsedCid}) due to error`, error);
-            throw error;
+        const commentTimeout = this._clientsManager.getGatewayTimeoutMs("comment");
+        try {
+            await pTimeout(comment._attemptInfintelyToLoadCommentIpfs(), {
+                milliseconds: commentTimeout,
+                message: lastUpdateError || new TimeoutError(`plebbit.getComment(${cid}) timed out after ${commentTimeout}ms`)
+            });
+            if (!comment.signature) throw Error("Failed to load CommentIpfs");
+            return comment;
+        } catch (e) {
+            if (lastUpdateError) throw lastUpdateError;
+            throw e;
+        } finally {
+            comment.removeListener("error", errorListener);
+            await comment.stop();
         }
-
-        if (!comment.signature) throw Error("There's a problem with getComment implemention");
-
-        return comment;
     }
 
     private async _initMissingFieldsOfPublicationBeforeSigning(
