@@ -141,15 +141,15 @@ export class Comment
         };
 
         this._updatingSubplebbitUpdatingStateListener = async (
-            updatingState: NonNullable<Comment["_subplebbitForUpdating"]>["updatingState"]
+            subplebbitUpdatingState: NonNullable<Comment["_subplebbitForUpdating"]>["updatingState"]
         ) => {
-            const mapper: Partial<Record<typeof updatingState, Comment["updatingState"]>> = {
+            const mapper: Partial<Record<typeof subplebbitUpdatingState, Comment["updatingState"]>> = {
                 failed: "failed",
                 "fetching-ipfs": "fetching-subplebbit-ipfs",
                 "fetching-ipns": "fetching-subplebbit-ipns",
                 "resolving-address": "resolving-subplebbit-address"
             };
-            if (mapper[updatingState]) this._setUpdatingState(mapper[updatingState]);
+            if (mapper[subplebbitUpdatingState]) this._setUpdatingState(mapper[subplebbitUpdatingState]);
         };
         hideClassPrivateProps(this);
     }
