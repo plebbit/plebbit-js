@@ -44,9 +44,11 @@ getRemotePlebbitConfigs().map((config) => {
             if (isPlebbitFetchingUsingGateways(plebbit)) {
                 expect(error.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                 for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways)) {
-                    expect(error.details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT");
+                    expect(error.details.gatewayToError[gatewayUrl].code).to.equal(
+                        "ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED"
+                    );
                 }
-            } else expect(error.code).to.equal("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT");
+            } else expect(error.code).to.equal("ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED");
             // should not accept the SubplebbitIpfs props
             expect(loadedSubplebbit.updatedAt).to.be.undefined;
             expect(loadedSubplebbit.address).to.equal(ensSubplebbitSigner.address);
