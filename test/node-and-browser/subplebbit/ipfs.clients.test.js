@@ -5,7 +5,9 @@ import {
     describeSkipIfRpc,
     mockGatewayPlebbit,
     mockPlebbit,
-    mockRemotePlebbit
+    mockRemotePlebbit,
+    mockRemotePlebbitIpfsOnly,
+    createNewIpns
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -21,7 +23,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
     before(async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
     });
     it(`subplebbit.clients.ipfsClients is undefined for gateway plebbit`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -45,8 +47,9 @@ describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
 
         sub.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
-        sub.update();
-        await new Promise((resolve) => sub.once("update", resolve));
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await updatePromise;
         await sub.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
@@ -54,7 +57,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
 
     it(`Correct order of ipfsClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
         const sub = await remotePlebbit.getSubplebbit(signers[0].address);
-        await publishRandomPost(sub.address, plebbit, {});
+        await publishRandomPost(sub.address, plebbit);
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
         const actualStates = [];
@@ -63,8 +66,9 @@ describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
 
         sub.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
-        sub.update();
-        await new Promise((resolve) => sub.once("update", resolve));
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await updatePromise;
         await sub.stop();
 
         expect(actualStates.slice(0, 3)).to.deep.equal(expectedStates);

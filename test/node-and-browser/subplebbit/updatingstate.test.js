@@ -21,7 +21,22 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         expect(subplebbit.updatingState).to.equal("stopped");
     });
 
-    it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
+    it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS) and plebbit.createSubplebbit()`, async () => {
+        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+        const recordedStates = [];
+        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.update();
+        await updatePromise;
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+    });
+
+    it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS) and plebbit.getSubplebbit()`, async () => {
         const plebbit = await mockRemotePlebbitIpfsOnly();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
@@ -30,8 +45,9 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, plebbit, {}); // To force trigger an update
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const updatePromiseAfterPublishing = new Promise((resolve) => subplebbit.once("update", resolve));
+        await publishRandomPost(subplebbit.address, plebbit); // To force trigger an update
+        await updatePromiseAfterPublishing;
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
@@ -46,8 +62,9 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, plebbit, {}); // To force trigger an update
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+        await publishRandomPost(subplebbit.address, plebbit); // To force trigger an update
+        await updatePromise;
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
@@ -64,8 +81,9 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, gatewayPlebbit, {}); // To force trigger an update
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+        await publishRandomPost(subplebbit.address, gatewayPlebbit); // To force trigger an update
+        await updatePromise;
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);

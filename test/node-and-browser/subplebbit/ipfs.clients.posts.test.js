@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { mockRemotePlebbit, describeSkipIfRpc, mockGatewayPlebbit, mockPlebbit } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc, mockGatewayPlebbit, mockRemotePlebbitIpfsOnly } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -14,7 +14,7 @@ describeSkipIfRpc(`subplebbit.posts.clients.ipfsClients`, async () => {
 
     before(async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbitIpfsOnly();
     });
 
     it(`subplebbit.posts.clients.ipfsClients is undefined for gateway plebbit`, async () => {
