@@ -18,6 +18,7 @@ import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js"
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { CID } from "kubo-rpc-client";
 
 export type ResultOfFetchingSubplebbit =
     | { subplebbit: SubplebbitIpfsType; cid: string } // when we fetch a new subplebbit only
@@ -324,7 +325,7 @@ export class ClientsManager extends BaseClientsManager {
             ) => {
                 if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
                 // get ipfs cid of IPNS from header or calculate it
-                const subCid = await calculateIpfsHash(gatewayRes.resText);
+                const subCid = await calculateIpfsHash(gatewayRes.resText); // cid v0
                 // TODO need to compare it against updateCid somewhere
                 let subIpfs: SubplebbitIpfsType;
                 try {
@@ -346,7 +347,9 @@ export class ClientsManager extends BaseClientsManager {
             };
 
             const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldAbortRequestFunc"] = async (res: Response) => {
-                const ipnsCidFromGateway = res.headers.get("x-ipfs-roots");
+                const ipnsCidFromGateway = res.headers.get("x-ipfs-roots")
+                    ? CID.parse(res.headers.get("x-ipfs-roots")!).toV0().toString()
+                    : undefined;
                 const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
                 if (curSubUpdateCid && ipnsCidFromGateway === curSubUpdateCid) {
                     // this gateway responded with a subplebbit IPFS we already have
