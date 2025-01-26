@@ -1,7 +1,7 @@
-import signers from "../../fixtures/signers.js";
+import signers from "../../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { loadAllPages, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { loadAllPages, getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -59,8 +59,37 @@ getRemotePlebbitConfigs().map((config) => {
             comment.updateOnce = comment._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
             };
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 2));
             expect(updatedHasBeenCalled).to.be.false;
+        });
+
+        it(`plebbit.getComment should throw immeditely if it finds a non retriable error`, async () => {
+            const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+
+            const commentIpfsOfInvalidSignature = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pages.hot.comments[0].cid)); // comment ipfs
+
+            commentIpfsOfInvalidSignature.content += "1234"; // make signature invalid
+            const commentIpfsInvalidSignatureCid = await addStringToIpfs(JSON.stringify(commentIpfsOfInvalidSignature));
+
+            try {
+                await plebbit.getComment(commentIpfsInvalidSignatureCid);
+                expect.fail("should not succeed");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+            }
+        });
+
+        it(`plebbit.getComment times out if commentCid does not exist`, async () => {
+            const commentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // random cid doesn't exist anywhere
+            const customPlebbit = await config.plebbitInstancePromise();
+            customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 1min to 5s
+
+            try {
+                await customPlebbit.getComment(commentCid);
+                expect.fail("should not succeed");
+            } catch (e) {
+                expect(["TimeoutError", "HTTPError"]).to.include(e.name);
+            }
         });
     });
 });
