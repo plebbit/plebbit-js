@@ -313,20 +313,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         subplebbit.on("error", errorListener);
         try {
             await subplebbit.update();
-            await pTimeout(updatePromise, {
+            await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
                 milliseconds: timeoutMs,
                 message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
             });
+            if (updateError) throw updateError;
         } catch (e) {
-            subplebbit.removeAllListeners("error");
-            await subplebbit.stop();
             if (updateError) throw updateError;
             if (subplebbit?._clientsManager._ipnsLoadingOperation?.mainError())
                 throw subplebbit._clientsManager._ipnsLoadingOperation.mainError();
-            throw Error("Timed out without error. Should not happen" + e);
+            throw e;
+        } finally {
+            subplebbit.removeListener("error", errorListener);
+            await subplebbit.stop();
         }
-        subplebbit.removeListener("error", errorListener);
-        await subplebbit.stop();
 
         return subplebbit;
     }
