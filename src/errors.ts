@@ -102,7 +102,7 @@ export enum messages {
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID = "The author edit of comment (commentUpdate.edit) has an invalid signature",
-    ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT = "The gateway has responded with a subplebbit record that does not correspond to the requested subplebbit",
+    ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED = "The subplebbit record address does not correspond to the requested subplebbit. requestedSubplebbit.address !== providedSubplebbit.address",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
     ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
     ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "comment.content is not set to the latest comment.authorEdit.content",

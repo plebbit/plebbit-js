@@ -217,7 +217,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (
             err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" ||
             err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA" ||
-            err.code === "ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT" ||
+            err.code === "ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED" ||
             err.code === "ERR_OVER_DOWNLOAD_LIMIT" ||
             err.code === "ERR_INVALID_JSON"
         )

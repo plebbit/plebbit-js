@@ -201,7 +201,7 @@ export class ClientsManager extends BaseClientsManager {
         if (subJson.address !== subInstanceAddress) {
             // Did the gateway supply us with a different subplebbit's ipns
 
-            const error = new PlebbitError("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT", {
+            const error = new PlebbitError("ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED", {
                 addressFromSubplebbitInstance: subInstanceAddress,
                 ipnsName: ipnsNameOfSub,
                 addressFromGateway: subJson.address,
