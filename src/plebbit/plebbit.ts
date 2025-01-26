@@ -320,8 +320,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             if (updateError) throw updateError;
         } catch (e) {
             if (updateError) throw updateError;
-            if (subplebbit?._clientsManager._ipnsLoadingOperation?.mainError())
-                throw subplebbit._clientsManager._ipnsLoadingOperation.mainError();
+            if (this._updatingSubplebbits[subplebbit.address]?._clientsManager._ipnsLoadingOperation?.mainError())
+                throw this._updatingSubplebbits[subplebbit.address]!._clientsManager!._ipnsLoadingOperation!.mainError();
             throw e;
         } finally {
             subplebbit.removeListener("error", errorListener);
