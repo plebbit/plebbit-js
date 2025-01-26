@@ -79,7 +79,7 @@ getRemotePlebbitConfigs().map((config) => {
                 await customPlebbit.getSubplebbit(doesNotExistSubplebbitAddress);
                 expect.fail("should not succeed");
             } catch (e) {
-                expect(["TimeoutError", "HTTPError"]).to.include(e.name);
+                expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"]).to.include(e.code);
             }
         });
     });
