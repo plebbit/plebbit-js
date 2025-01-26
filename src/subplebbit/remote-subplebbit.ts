@@ -311,9 +311,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             };
 
             updatingSub.on("removeListener", updatingSubRemoveListenerListener);
-
-            await updatingSub._setState("updating");
-            await updatingSub._clientsManager.startUpdatingLoop();
         }
 
         this._updatingSubInstanceWithListeners = await this._initSubInstanceWithListeners();
@@ -325,13 +322,29 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         );
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
 
-        // should we subscribe to updatingSubInstance.clients or use it directly?
-        // not sure, will probably revisit later
-        // this.clients.chainProviders = updatingSubInstance.clients.chainProviders;
-        // this.clients.ipfsGateways = updatingSubInstance.clients.ipfsGateways;
-        // this.clients.ipfsClients = updatingSubInstance.clients.ipfsClients;
+        const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+        for (const clientType of clientKeys)
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    if ("state" in this.clients[clientType][clientUrl])
+                        //@ts-expect-error
+                        this.clients[clientType][clientUrl].mirror(
+                            this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl]
+                        );
+                    else {
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                            this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
+                                //@ts-expect-error
+                                this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
+                            );
+                        }
+                    }
+                }
 
-        // set up clean up for updating sub instance here
+        if (this._updatingSubInstanceWithListeners.subplebbit.state === "stopped") {
+            this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
+            await this._updatingSubInstanceWithListeners.subplebbit._clientsManager.startUpdatingLoop();
+        }
     }
 
     async update() {
@@ -358,6 +371,22 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 this._updatingSubInstanceWithListeners.updatingstatechange
             );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
+
+            const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+
+            for (const clientType of clientKeys)
+                if (this.clients[clientType])
+                    for (const clientUrl of Object.keys(this.clients[clientType])) {
+                        if ("state" in this.clients[clientType][clientUrl])
+                            //@ts-expect-error
+                            this.clients[clientType][clientUrl].unmirror();
+                        else {
+                            for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                                this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+                            }
+                        }
+                    }
+
             this._updatingSubInstanceWithListeners = undefined;
         } else {
             // this instance is plebbit._updatingSubplebbit[address] itself

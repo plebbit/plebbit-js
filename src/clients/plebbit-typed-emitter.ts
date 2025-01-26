@@ -11,7 +11,11 @@ export class PlebbitTypedEmitter<T extends ListenerSignature<T>> extends TypedEm
         }
 
         // Mirror initial state
-        this.state = sourceClient.state;
+        if (sourceClient.state !== this.state) {
+            this.state = sourceClient.state;
+            //@ts-expect-error
+            this.emit("statechange", this.state);
+        }
 
         // Setup state change listener
         this.stateListener = (newState: string) => {

@@ -260,7 +260,6 @@ export class ClientsManager extends BaseClientsManager {
             this.postResolveSubplebbitIpnsP2PFailure(ipnsName, <PlebbitError>e);
             throw e;
         }
-        this.postResolveSubplebbitIpnsP2PSuccess(ipnsName, subplebbitCid);
 
         const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
         // need to check if subplebbitCid === sub.updateCid
@@ -273,6 +272,9 @@ export class ClientsManager extends BaseClientsManager {
             log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit._lastInvalidSubplebbitCid. No need to fetch its ipfs");
             return undefined;
         }
+
+        this.postResolveSubplebbitIpnsP2PSuccess(ipnsName, subplebbitCid);
+
         let rawSubJsonString: string;
         try {
             rawSubJsonString = await this._fetchCidP2P(subplebbitCid);
