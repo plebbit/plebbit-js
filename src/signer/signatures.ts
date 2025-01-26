@@ -145,7 +145,13 @@ export async function _signJson(
     // we assume here that publication already has been cleaned
     //@ts-expect-error
     const propsToSign = remeda.pick(cleanedPublication, signedPropertyNames);
-    const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
+    let publicationEncoded: ReturnType<(typeof cborg)["encode"]>;
+    try {
+        publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
+    } catch (e) {
+        log.error("Failed to sign json", propsToSign, "because of cborg error", e);
+        throw e;
+    }
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
