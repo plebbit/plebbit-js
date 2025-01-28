@@ -158,7 +158,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     ): Promise<NewCommentUpdate> {
         // only get new CommentUpdates
         // not interested in CommentUpdate we already fetched before
-        const attemptedPaths: string[] = [];
+        const attemptedPathsToLoadErrors: Record<string, Error> = {};
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
@@ -185,13 +185,13 @@ export class CommentClientsManager extends PublicationClientsManager {
                 );
                 return undefined;
             }
-            attemptedPaths.push(path);
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
             try {
                 res = await this._fetchCidP2P(path);
             } catch (e) {
                 log.trace(`Failed to fetch CommentUpdate from path (${path}) with IPFS P2P. Trying the next timestamp range`);
+                attemptedPathsToLoadErrors[path] = <Error>e;
                 continue;
             } finally {
                 this.updateIpfsState("stopped");
@@ -208,7 +208,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
-            attemptedPaths,
+            attemptedPathsToLoadErrors,
             commentCid: this._comment.cid
         });
     }
@@ -258,7 +258,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         parentsPostUpdatePath: string,
         log: Logger
     ): Promise<NewCommentUpdate> {
-        const attemptedPaths: string[] = [];
+        const attemptedPathsToLoadErrors: Record<string, Error> = {};
 
         let commentUpdate: CommentUpdateType | undefined;
 
@@ -300,8 +300,6 @@ export class CommentClientsManager extends PublicationClientsManager {
                 return undefined;
             }
 
-            attemptedPaths.push(path);
-
             try {
                 // Validate the Comment Update within the gateway fetching algo
                 // fetchFromMultipleGateways will throw if all gateways failed to load the record
@@ -319,6 +317,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 // We need to find out if it's loading error, and if it is we just move on to the next timestamp range
                 // If it's a schema or signature error we should stop and throw
                 if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
+                    attemptedPathsToLoadErrors[path] = <Error>e;
                     log.trace(`Failed to fetch CommentUpdate from path (${path}) from gateways. Trying the next timestamp range`);
                     continue;
                 } else {
@@ -330,7 +329,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
-            attemptedPaths,
+            attemptedPathsToLoadErrors,
             commentCid: this._comment.cid
         });
     }
