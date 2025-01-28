@@ -6,7 +6,8 @@ import {
     publishRandomPost,
     generateMockPost,
     publishChallengeVerificationMessageWithEncryption,
-    itSkipIfRpc
+    itSkipIfRpc,
+    mockRemotePlebbitIpfsOnly
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -23,13 +24,26 @@ const subplebbitAddress = signers[0].address;
 
 const subWithNoResponseSigner = signers[4]; // this sub will never respond via pubsub
 
-const mockPostToFetchSpecificCommentUpdateCid = (postToUpdate, commentUpdateCid) => {
-    if (postToUpdate.clients.ipfsClients) postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
-    else {
-        // it's gateway tests
-        const originalFetch = postToUpdate._clientsManager.fetchFromMultipleGateways.bind(postToUpdate._clientsManager);
+const mockPostToFetchSpecificCommentUpdateCid = async (postToUpdate, commentUpdateCid) => {
+    if (postToUpdate._plebbit._updatingComments[postToUpdate.cid]) {
+        await postToUpdate.stop();
+        // await postToUpdate._plebbit._updatingComments[postToUpdate.cid].stop();
+        postToUpdate._plebbit._updatingComments[postToUpdate.cid] = undefined;
+    }
+    await postToUpdate._setUpNewUpdatingCommentInstance();
 
-        postToUpdate._clientsManager.fetchFromMultipleGateways = (loadOpts, validateGatewayResponse) => {
+    const actualPostToUpdate = postToUpdate._plebbit._updatingComments[postToUpdate.cid];
+    delete actualPostToUpdate._rawCommentUpdate;
+    delete actualPostToUpdate.updatedAt;
+    if (actualPostToUpdate._subplebbitForUpdating?.updateCid) delete actualPostToUpdate._subplebbitForUpdating.updateCid;
+
+    if (actualPostToUpdate.clients.ipfsClients) actualPostToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
+    else {
+        // actualPostToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
+        // it's gateway tests
+        const originalFetch = actualPostToUpdate._clientsManager.fetchFromMultipleGateways.bind(actualPostToUpdate._clientsManager);
+
+        actualPostToUpdate._clientsManager.fetchFromMultipleGateways = (loadOpts, validateGatewayResponse) => {
             if (loadOpts.recordPlebbitType === "comment-update")
                 return originalFetch(
                     {
@@ -59,24 +73,32 @@ getRemotePlebbitConfigs().map((config) => {
             await post.stop();
         });
 
+        after(async () => {
+            await post.stop();
+        });
+
         itSkipIfRpc(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
             const invalidCommentUpdate = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(invalidCommentUpdate, extraProps);
 
             const invalidCommentUpdateCid = await addStringToIpfs(JSON.stringify(invalidCommentUpdate));
 
+            await mockPostToFetchSpecificCommentUpdateCid(post, invalidCommentUpdateCid);
+
             const postToUpdate = await plebbit.getComment(post.cid);
-
-            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, invalidCommentUpdateCid);
-            // should emit an error because we did not include extraProp in signedPropertyNames
-
+            let updateEmitted = false;
+            postToUpdate.once("update", () => (updateEmitted = true));
             const errorPromise = new Promise((resolve) => postToUpdate.once("error", resolve));
+
+            // should emit an error because we did not include extraProp in signedPropertyNames
 
             await postToUpdate.update();
 
             const error = await errorPromise;
 
             await postToUpdate.stop();
+
+            expect(updateEmitted).to.be.false;
 
             expect(postToUpdate.updatedAt).to.be.undefined; // should not accept the comment update
 
@@ -108,8 +130,8 @@ getRemotePlebbitConfigs().map((config) => {
 
             const commentUpdateWithExtraPropsCid = await addStringToIpfs(JSON.stringify(commentUpdateWithExtraProps));
 
+            await mockPostToFetchSpecificCommentUpdateCid(post, commentUpdateWithExtraPropsCid);
             const postToUpdate = await plebbit.getComment(post.cid);
-            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, commentUpdateWithExtraPropsCid);
 
             await postToUpdate.update();
 
@@ -140,9 +162,9 @@ getRemotePlebbitConfigs().map((config) => {
             );
 
             const commentUpdateWithExtraPropsCid = await addStringToIpfs(JSON.stringify(commentUpdateWithExtraProps));
+            await mockPostToFetchSpecificCommentUpdateCid(post, commentUpdateWithExtraPropsCid);
 
             const postToUpdate = await plebbit.getComment(post.cid);
-            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, commentUpdateWithExtraPropsCid);
 
             await postToUpdate.update();
 
