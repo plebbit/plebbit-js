@@ -35,7 +35,8 @@ const mockPostToFetchSpecificCommentUpdateCid = async (postToUpdate, commentUpda
     const actualPostToUpdate = postToUpdate._plebbit._updatingComments[postToUpdate.cid];
     delete actualPostToUpdate._rawCommentUpdate;
     delete actualPostToUpdate.updatedAt;
-    if (actualPostToUpdate._subplebbitForUpdating?.updateCid) delete actualPostToUpdate._subplebbitForUpdating.updateCid;
+    if (actualPostToUpdate._subplebbitForUpdating?.subplebbit?.updateCid)
+        delete actualPostToUpdate._subplebbitForUpdating?.subplebbit?.updateCid;
 
     if (actualPostToUpdate.clients.ipfsClients) actualPostToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
     else {
