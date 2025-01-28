@@ -90,7 +90,6 @@ export class Comment
     // private
     _rawCommentUpdate?: CommentUpdateType = undefined;
     _rawCommentIpfs?: CommentIpfsType = undefined;
-    _subplebbitForUpdating?: RemoteSubplebbit = undefined;
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
     _invalidCommentUpdateMfsPaths: string[] = [];
     private _commentIpfsloadingOperation?: RetryOperation = undefined;
@@ -99,9 +98,8 @@ export class Comment
     _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
     override challengeRequest?: CreateCommentOptions["challengeRequest"];
 
-    private _updatingSubplebbitUpdatingStateListener: SubplebbitEvents["updatingstatechange"];
-    private _updatingSubplebbitUpdateListener: SubplebbitEvents["update"];
-    private _updatingSubplebbitErrorListener: SubplebbitEvents["error"];
+    private _subplebbitForUpdating?: { subplebbit: RemoteSubplebbit } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> =
+        undefined;
 
     private _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> =
         undefined;
@@ -122,47 +120,6 @@ export class Comment
             parentCid: this.cid
         });
 
-        this._updatingSubplebbitUpdateListener = async () => {
-            // the sub published a new update, let's see if there's a new CommentUpdate
-            // TODO we need to take care eof critical errors of CommentUpdate here
-
-            if (this.state === "stopped")
-                await this.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
-            else await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs!);
-        };
-
-        this._updatingSubplebbitErrorListener = async (error: PlebbitError) => {
-            if (!this._subplebbitForUpdating!._isRetriableErrorWhenLoading(error)) {
-                const log = Logger("plebbit-js:comment:update");
-                log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
-                this._setUpdatingState("failed");
-                this.emit("error", error);
-                await this.stop();
-            }
-        };
-
-        this._updatingSubplebbitUpdatingStateListener = async (
-            subplebbitUpdatingState: NonNullable<Comment["_subplebbitForUpdating"]>["updatingState"]
-        ) => {
-            const mapper: Partial<Record<typeof subplebbitUpdatingState, Comment["updatingState"]>> = {
-                failed: "failed",
-                "fetching-ipfs": "fetching-subplebbit-ipfs",
-                "fetching-ipns": "fetching-subplebbit-ipns",
-                "resolving-address": "resolving-subplebbit-address"
-            };
-            const mappedValue = mapper[subplebbitUpdatingState];
-            if (mappedValue) {
-                this._setUpdatingState(mappedValue);
-                if (
-                    this._clientsManager._defaultIpfsProviderUrl && // we're connected to a kubo client
-                    mappedValue !== "resolving-subplebbit-address" &&
-                    mappedValue !== "resolving-author-address" &&
-                    mappedValue !== "failed" &&
-                    mappedValue !== "succeeded"
-                )
-                    this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
-            }
-        };
         hideClassPrivateProps(this);
     }
 
@@ -527,28 +484,70 @@ export class Comment
 
     async _initSubplebbitForUpdatingIfNeeded() {
         if (!this._subplebbitForUpdating) {
-            this._subplebbitForUpdating =
+            const subplebbit =
                 this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
                 (await this._plebbit.createSubplebbit({ address: this.subplebbitAddress }));
+            this._subplebbitForUpdating = {
+                subplebbit,
+                update: async () => {
+                    // the sub published a new update, let's see if there's a new CommentUpdate
+                    // TODO we need to take care eof critical errors of CommentUpdate here
+
+                    if (this.state === "stopped")
+                        await this.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
+                    else await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(subplebbit._rawSubplebbitIpfs!);
+                },
+                error: async (error: PlebbitError) => {
+                    if (!subplebbit._isRetriableErrorWhenLoading(error)) {
+                        const log = Logger("plebbit-js:comment:update");
+                        log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
+                        this._setUpdatingState("failed");
+                        this.emit("error", error);
+                        await this.stop();
+                    }
+                },
+                updatingstatechange: async (
+                    subplebbitUpdatingState: NonNullable<Comment["_subplebbitForUpdating"]>["subplebbit"]["updatingState"]
+                ) => {
+                    const mapper: Partial<Record<typeof subplebbitUpdatingState, Comment["updatingState"]>> = {
+                        failed: "failed",
+                        "fetching-ipfs": "fetching-subplebbit-ipfs",
+                        "fetching-ipns": "fetching-subplebbit-ipns",
+                        "resolving-address": "resolving-subplebbit-address"
+                    };
+                    const mappedValue = mapper[subplebbitUpdatingState];
+                    if (mappedValue) {
+                        this._setUpdatingState(mappedValue);
+                        if (
+                            this._clientsManager._defaultIpfsProviderUrl && // we're connected to a kubo client
+                            mappedValue !== "resolving-subplebbit-address" &&
+                            mappedValue !== "resolving-author-address" &&
+                            mappedValue !== "failed" &&
+                            mappedValue !== "succeeded"
+                        )
+                            this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
+                    }
+                }
+            };
 
             // set up listeners here
 
-            this._subplebbitForUpdating!.on("update", this._updatingSubplebbitUpdateListener);
+            this._subplebbitForUpdating.subplebbit.on("update", this._subplebbitForUpdating.update);
 
-            this._subplebbitForUpdating!.on("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
+            this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
 
-            this._subplebbitForUpdating!.on("error", this._updatingSubplebbitErrorListener);
+            this._subplebbitForUpdating.subplebbit.on("error", this._subplebbitForUpdating.error);
         }
     }
 
     async startCommentUpdateSubplebbitSubscription() {
         const log = Logger("plebbit-js:comment:update");
         await this._initSubplebbitForUpdatingIfNeeded();
-        if (this._subplebbitForUpdating!.state === "stopped") {
-            await this._subplebbitForUpdating!.update();
+        if (this._subplebbitForUpdating!.subplebbit.state === "stopped") {
+            await this._subplebbitForUpdating!.subplebbit.update();
         }
-        if (this._subplebbitForUpdating!._rawSubplebbitIpfs)
-            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs);
+        if (this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs)
+            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs);
     }
 
     async updateOnce() {
@@ -776,12 +775,13 @@ export class Comment
         // clean up _subplebbitForUpdating subscriptions
         if (this._subplebbitForUpdating) {
             // this instance is plebbit._updatingComments[cid] and it's updating
-            this._subplebbitForUpdating.removeListener("updatingstatechange", this._updatingSubplebbitUpdatingStateListener);
-            this._subplebbitForUpdating.removeListener("update", this._updatingSubplebbitUpdateListener);
-            this._subplebbitForUpdating.removeListener("error", this._updatingSubplebbitErrorListener);
+            this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
+            this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
+            this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
 
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
-            if (this._subplebbitForUpdating._updatingSubInstanceWithListeners) await this._subplebbitForUpdating.stop();
+            if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
+                await this._subplebbitForUpdating.subplebbit.stop();
             this._subplebbitForUpdating = undefined;
             delete this._plebbit._updatingComments[this.cid!];
         }
