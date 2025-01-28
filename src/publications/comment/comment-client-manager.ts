@@ -359,7 +359,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingState("failed");
             this._comment.emit("error", <PlebbitError>e);
         }
-        if (newCommentUpdate && (this._comment.updatedAt || 0) < newCommentUpdate.commentUpdate.updatedAt) {
+        if (newCommentUpdate && (this._comment._rawCommentUpdate?.updatedAt || 0) < newCommentUpdate.commentUpdate.updatedAt) {
             log(`Comment (${this._comment.cid}) received a new CommentUpdate`);
             this._comment._initCommentUpdate(newCommentUpdate.commentUpdate);
             this._comment._commentUpdateIpfsPath = newCommentUpdate.commentUpdateIpfsPath;

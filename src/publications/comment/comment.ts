@@ -126,8 +126,9 @@ export class Comment
             // the sub published a new update, let's see if there's a new CommentUpdate
             // TODO we need to take care eof critical errors of CommentUpdate here
 
-            if (this.state === "stopped") await this.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
-            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs!);
+            if (this.state === "stopped")
+                await this.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
+            else await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!._rawSubplebbitIpfs!);
         };
 
         this._updatingSubplebbitErrorListener = async (error: PlebbitError) => {
@@ -149,7 +150,18 @@ export class Comment
                 "fetching-ipns": "fetching-subplebbit-ipns",
                 "resolving-address": "resolving-subplebbit-address"
             };
-            if (mapper[subplebbitUpdatingState]) this._setUpdatingState(mapper[subplebbitUpdatingState]);
+            const mappedValue = mapper[subplebbitUpdatingState];
+            if (mappedValue) {
+                this._setUpdatingState(mappedValue);
+                if (
+                    this._clientsManager._defaultIpfsProviderUrl && // we're connected to a kubo client
+                    mappedValue !== "resolving-subplebbit-address" &&
+                    mappedValue !== "resolving-author-address" &&
+                    mappedValue !== "failed" &&
+                    mappedValue !== "succeeded"
+                )
+                    this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
+            }
         };
         hideClassPrivateProps(this);
     }
@@ -694,19 +706,20 @@ export class Comment
 
         const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
-            for (const clientUrl of Object.keys(this.clients[clientType])) {
-                if ("state" in this.clients[clientType][clientUrl])
-                    //@ts-expect-error
-                    this.clients[clientType][clientUrl].mirror(updatingCommentInstance.clients[clientType][clientUrl]);
-                else {
-                    for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
-                        this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
-                            //@ts-expect-error
-                            updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]
-                        );
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    if ("state" in this.clients[clientType][clientUrl])
+                        //@ts-expect-error
+                        this.clients[clientType][clientUrl].mirror(updatingCommentInstance.clients[clientType][clientUrl]);
+                    else {
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                            this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
+                                //@ts-expect-error
+                                updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]
+                            );
+                        }
                     }
                 }
-            }
     }
 
     async _setUpNewUpdatingCommentInstance() {
@@ -783,16 +796,17 @@ export class Comment
             const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
 
             for (const clientType of clientKeys)
-                for (const clientUrl of Object.keys(this.clients[clientType])) {
-                    if ("state" in this.clients[clientType][clientUrl])
-                        //@ts-expect-error
-                        this.clients[clientType][clientUrl].unmirror();
-                    else {
-                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
-                            this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+                if (this.clients[clientType])
+                    for (const clientUrl of Object.keys(this.clients[clientType])) {
+                        if ("state" in this.clients[clientType][clientUrl])
+                            //@ts-expect-error
+                            this.clients[clientType][clientUrl].unmirror();
+                        else {
+                            for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                                this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+                            }
                         }
                     }
-                }
 
             this._updatingCommentInstance = undefined;
         }
