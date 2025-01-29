@@ -214,7 +214,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                 "seconds old"
             );
             this._subplebbit.emit("update", this._subplebbit);
-        }
+        } else if (loadedSubIpfsOrError === undefined) this._subplebbit._setUpdatingState("succeeded"); // we loaded a sub record that we already consumed
     }
 
     async startUpdatingLoop() {
