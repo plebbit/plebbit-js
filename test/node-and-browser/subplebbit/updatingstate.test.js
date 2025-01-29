@@ -6,7 +6,7 @@ import {
     mockGatewayPlebbit,
     itSkipIfRpc,
     mockRemotePlebbitIpfsOnly,
-    waitTillPostInSubplebbitPages
+    publishSubplebbitRecordWithExtraProp
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -84,6 +84,49 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         await publishRandomPost(subplebbit.address, gatewayPlebbit); // To force trigger an update
         await updatePromise;
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+    });
+
+    itSkipIfRpc("updating states is in correct order upon updating with gateway, if the sub doesn't publish any updates", async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
+
+        const newSub = await publishSubplebbitRecordWithExtraProp({});
+
+        const subplebbit = await gatewayPlebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
+
+        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
+        const recordedStates = [];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await subplebbit.update();
+
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await updatePromise;
+        await new Promise((resolve) => setTimeout(resolve, gatewayPlebbit.updateInterval * 5));
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+    });
+    itSkipIfRpc("updating states is in correct order upon updating with ipfs p2p, if the sub doesn't publish any updates", async () => {
+        const gatewayPlebbit = await mockRemotePlebbitIpfsOnly();
+
+        const newSub = await publishSubplebbitRecordWithExtraProp({});
+
+        const subplebbit = await gatewayPlebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
+
+        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
+        const recordedStates = [];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await subplebbit.update();
+
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await updatePromise;
+        await new Promise((resolve) => setTimeout(resolve, gatewayPlebbit.updateInterval * 5));
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
