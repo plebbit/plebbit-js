@@ -98,8 +98,10 @@ export class Comment
     _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
     override challengeRequest?: CreateCommentOptions["challengeRequest"];
 
-    private _subplebbitForUpdating?: { subplebbit: RemoteSubplebbit } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> =
-        undefined;
+    private _subplebbitForUpdating?: {
+        subplebbit: RemoteSubplebbit;
+        ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
+    } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
 
     private _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> =
         undefined;
@@ -530,7 +532,19 @@ export class Comment
                 }
             };
 
-            // set up listeners here
+            if (this._subplebbitForUpdating.subplebbit.clients.ipfsGateways) {
+                const ipfsGatewayListeners: (typeof this._subplebbitForUpdating)["ipfsGatewayListeners"] = {};
+
+                for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways)) {
+                    const ipfsStateListener = (subplebbitNewIpfsState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"]) => {
+                        if (subplebbitNewIpfsState === "fetching-ipns")
+                            this._clientsManager.updateGatewayState("fetching-subplebbit-ipns", gatewayUrl);
+                    };
+                    this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].on("statechange", ipfsStateListener);
+                    ipfsGatewayListeners[gatewayUrl] = ipfsStateListener;
+                }
+                this._subplebbitForUpdating.ipfsGatewayListeners = ipfsGatewayListeners;
+            }
 
             this._subplebbitForUpdating.subplebbit.on("update", this._subplebbitForUpdating.update);
 
@@ -779,8 +793,16 @@ export class Comment
             this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
             this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
 
-            // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
+            if (this._subplebbitForUpdating.ipfsGatewayListeners) {
+                for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners)) {
+                    this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].removeListener(
+                        "statechange",
+                        this._subplebbitForUpdating.ipfsGatewayListeners[gatewayUrl]
+                    );
+                }
+            }
             if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
+                // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
                 await this._subplebbitForUpdating.subplebbit.stop();
             this._subplebbitForUpdating = undefined;
             delete this._plebbit._updatingComments[this.cid!];
