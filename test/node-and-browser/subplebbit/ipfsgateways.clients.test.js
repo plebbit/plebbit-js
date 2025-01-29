@@ -58,4 +58,35 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
         expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
     });
+
+    it(`Correct order of ipfs gateway state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
+        const customPlebbit = await mockGatewayPlebbit();
+
+        const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+
+        const recordedStates = [];
+        const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
+        sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
+
+        // now plebbit._updatingSubplebbits will be defined
+
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await updatePromise;
+
+        const updatingSubInstance = customPlebbit._updatingSubplebbits[sub.address];
+
+        updatingSubInstance._clientsManager.resolveIpnsToCidP2P = () => sub.updateCid; // stop it from loading new IPNS
+
+        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+
+        await sub.stop();
+
+        // should be just ["fetching-ipns", "stopped"]
+        // because it can't find a new record
+        for (let i = 0; i < recordedStates.length; i += 2) {
+            expect(recordedStates[i]).to.equal("fetching-ipns");
+            expect(recordedStates[i + 1]).to.equal("stopped");
+        }
+    });
 });
