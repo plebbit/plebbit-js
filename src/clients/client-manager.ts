@@ -469,6 +469,11 @@ export class ClientsManager extends BaseClientsManager {
         } catch {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
+            const allGatewaysAborted = Object.keys(gatewayFetches)
+                .map((gatewayUrl) => gatewayFetches[gatewayUrl].abortController?.signal?.aborted)
+                .every(Boolean); // all gateway returned old update cids we already consumed
+
+            if (allGatewaysAborted) return undefined;
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({ ipnsName, gatewayToError });
             delete combinedError.stack;
             throw combinedError;
