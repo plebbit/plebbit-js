@@ -249,15 +249,18 @@ export class BaseClientsManager {
 
         const handleError = (e: Error | PlebbitError) => {
             if (e instanceof PlebbitError) throw e;
-            if (e instanceof Error && e.message.includes("over limit"))
-                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-            const errorCode =
-                url.includes("/ipfs/") || url.includes(".ipfs.")
-                    ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
-                    : url.includes("/ipns/") || url.includes(".ipns.")
-                      ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-                      : "ERR_FAILED_TO_FETCH_GENERIC";
-            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
+            else if (e instanceof Error && e.message.includes("over limit"))
+                throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+            else if (options.signal?.aborted) throw new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { url });
+            else {
+                const errorCode =
+                    url.includes("/ipfs/") || url.includes(".ipfs.")
+                        ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
+                        : url.includes("/ipns/") || url.includes(".ipns.")
+                          ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
+                          : "ERR_FAILED_TO_FETCH_GENERIC";
+                throw new PlebbitError(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
+            }
 
             // If error is not related to size limit, then throw it again
         };

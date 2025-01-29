@@ -358,6 +358,7 @@ export class ClientsManager extends BaseClientsManager {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
                     gatewayFetches[gatewayUrl].abortController.abort(error.message);
+                    gatewayFetches[gatewayUrl].abortError = error;
                     return error;
                 }
 
@@ -370,6 +371,7 @@ export class ClientsManager extends BaseClientsManager {
 
                     // this gateway responded with a subplebbit whose record we know to be invalid
                     gatewayFetches[gatewayUrl].abortController.abort(error.message);
+                    gatewayFetches[gatewayUrl].abortError = error;
                     return error;
                 }
             };
@@ -470,7 +472,7 @@ export class ClientsManager extends BaseClientsManager {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
             const allGatewaysAborted = Object.keys(gatewayFetches)
-                .map((gatewayUrl) => gatewayFetches[gatewayUrl].abortController?.signal?.aborted)
+                .map((gatewayUrl) => gatewayFetches[gatewayUrl].abortError)
                 .every(Boolean); // all gateway returned old update cids we already consumed
 
             if (allGatewaysAborted) return undefined;
@@ -537,6 +539,7 @@ type SubplebbitGatewayFetch = {
         cid?: SubplebbitJson["updateCid"];
         subplebbitRecord?: SubplebbitIpfsType;
         error?: PlebbitError;
+        abortError?: PlebbitError; // why did we decide to abort consuming the body of gateway request? Mostly because it's a cid we already consumed
         timeoutId: any;
     };
 };
