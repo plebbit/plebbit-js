@@ -39,13 +39,14 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     before(async () => {
         plebbit = await mockPlebbit();
     });
-    it(`Updating a subplebbit through a single gateway that is not responding (timeout)`, async () => {
+    it(`plebbit.getSubplebbit times out if a single gateway is not responding (timeout)`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
         customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
         try {
             await customPlebbit.getSubplebbit(subAddress);
             expect.fails("Should not fulfill");
         } catch (e) {
+            expect(e.details.gatewayToError[stallingGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
             expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
         }
     });
