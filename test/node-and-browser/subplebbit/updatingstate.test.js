@@ -96,7 +96,6 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         const subplebbit = await gatewayPlebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
 
-        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -108,7 +107,18 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         await new Promise((resolve) => setTimeout(resolve, gatewayPlebbit.updateInterval * 5));
         await subplebbit.stop();
 
-        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        const expectedFirstUpdateStates = ["fetching-ipns", "succeeded"];
+
+        expect(recordedStates.slice(0, expectedFirstUpdateStates.length)).to.deep.equal(expectedFirstUpdateStates);
+
+        expect(recordedStates[recordedStates.length - 1]).to.equal("stopped");
+        const noNewUpdateStates = recordedStates.slice(expectedFirstUpdateStates.length, recordedStates.length - 1); // should be just 'fetching-ipns' and 'succeeded
+
+        // Check that every pair of states is ["fetching-ipns", "succeeded"]
+        for (let i = 0; i < noNewUpdateStates.length; i += 2) {
+            expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
+            expect(noNewUpdateStates[i + 1]).to.equal("succeeded");
+        }
     });
     itSkipIfRpc("updating states is in correct order upon updating with ipfs p2p, if the sub doesn't publish any updates", async () => {
         const gatewayPlebbit = await mockRemotePlebbitIpfsOnly();
@@ -117,7 +127,6 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         const subplebbit = await gatewayPlebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
 
-        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -129,6 +138,17 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         await new Promise((resolve) => setTimeout(resolve, gatewayPlebbit.updateInterval * 5));
         await subplebbit.stop();
 
-        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        const expectedFirstUpdateStates = ["fetching-ipns", "fetching-ipfs", "succeeded"];
+
+        expect(recordedStates.slice(0, expectedFirstUpdateStates.length)).to.deep.equal(expectedFirstUpdateStates);
+
+        expect(recordedStates[recordedStates.length - 1]).to.equal("stopped");
+        const noNewUpdateStates = recordedStates.slice(expectedFirstUpdateStates.length, recordedStates.length - 1); // should be just 'fetching-ipns' and 'succeeded
+
+        // Check that every pair of states is ["fetching-ipns", "succeeded"]
+        for (let i = 0; i < noNewUpdateStates.length; i += 2) {
+            expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
+            expect(noNewUpdateStates[i + 1]).to.equal("succeeded");
+        }
     });
 });
