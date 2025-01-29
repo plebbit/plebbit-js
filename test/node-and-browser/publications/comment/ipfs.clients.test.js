@@ -1,11 +1,12 @@
-import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     mockRemotePlebbit,
     publishWithExpectedResult,
     mockGatewayPlebbit,
-    describeSkipIfRpc
+    describeSkipIfRpc,
+    resolveWhenConditionIsTrue,
+    mockRemotePlebbitIpfsOnly
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -53,7 +54,7 @@ describeSkipIfRpc(`comment.clients.ipfsClients`, async () => {
         mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => actualStates.push(newState));
 
         await mockPost.update();
-        await new Promise((resolve) => mockPost.on("update", () => typeof mockPost.upvoteCount === "number" && resolve()));
+        await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
         await mockPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
@@ -109,5 +110,51 @@ describeSkipIfRpc(`comment.clients.ipfsClients`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(actualStates).to.deep.equal(expectedStates);
+    });
+
+    it(`Correct order of ipfs clients state when we update a comment but its subplebbit is not publishing new subplebbit records`, async () => {
+        const customPlebbit = await mockRemotePlebbitIpfsOnly();
+
+        const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+
+        // now plebbit._updatingSubplebbits will be defined
+
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await updatePromise;
+
+        const updatingSubInstance = customPlebbit._updatingSubplebbits[sub.address];
+
+        updatingSubInstance._clientsManager.resolveIpnsToCidP2P = () => sub.updateCid; // stop it from loading new IPNS
+
+        const mockPost = await customPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
+
+        const recordedStates = [];
+
+        const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
+
+        mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => recordedStates.push(newState));
+
+        await mockPost.update();
+
+        await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
+
+        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+
+        await mockPost.stop();
+
+        const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-update-ipfs", "stopped"]; // for comment ipfs and comment update
+        expect(recordedStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
+
+        const noNewUpdateStates = recordedStates.slice(expectedFirstStates.length, recordedStates.length); // should be just 'fetching-ipns' and 'succeeded
+
+        // the rest should be just ["fetching-subplebbit-ipns", "stopped"]
+        // because it can't find a new record
+        for (let i = 0; i < noNewUpdateStates.length; i += 2) {
+            expect(noNewUpdateStates[i]).to.equal("fetching-subplebbit-ipns");
+            expect(noNewUpdateStates[i + 1]).to.equal("stopped");
+        }
+
+        await sub.stop();
     });
 });
