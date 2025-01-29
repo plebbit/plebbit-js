@@ -489,6 +489,8 @@ export class Comment
             const subplebbit =
                 this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
                 (await this._plebbit.createSubplebbit({ address: this.subplebbitAddress }));
+
+            let lastUpdatingStateOfSub: RemoteSubplebbit["updatingState"] | undefined;
             this._subplebbitForUpdating = {
                 subplebbit,
                 update: async () => {
@@ -529,6 +531,10 @@ export class Comment
                         )
                             this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
                     }
+                    if (subplebbitUpdatingState === "succeeded" && lastUpdatingStateOfSub !== "fetching-ipfs") {
+                        this._clientsManager.updateIpfsState("stopped");
+                    }
+                    lastUpdatingStateOfSub = remeda.clone(subplebbitUpdatingState);
                 }
             };
 
@@ -804,6 +810,7 @@ export class Comment
             if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
                 // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
                 await this._subplebbitForUpdating.subplebbit.stop();
+
             this._subplebbitForUpdating = undefined;
             delete this._plebbit._updatingComments[this.cid!];
         }
