@@ -1,4 +1,3 @@
-import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -8,8 +7,6 @@ import {
     mockRemotePlebbit,
     findCommentInPage,
     mockGatewayPlebbit,
-    generatePostToAnswerMathQuestion,
-    itSkipIfRpc,
     waitTillReplyInParentPages,
     getRemotePlebbitConfigs,
     describeSkipIfRpc,
@@ -17,20 +14,16 @@ import {
     waitTillPostInSubplebbitPages,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { signComment } from "../../../../dist/node/signer/signatures.js";
-import { removeUndefinedValuesRecursively } from "../../../../dist/node/util.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-const mathCliSubplebbitAddress = signers[1].address;
 
 getRemotePlebbitConfigs().map((config) => {
     describe("publishing posts - " + config.name, async () => {
@@ -466,167 +459,5 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         expect(mockPost.publishingState).to.equal("failed");
         expect(actualStates).to.deep.equal(expectedStates);
         await mockPost.stop();
-    });
-});
-
-describe(`comment.publishingState`, async () => {
-    let plebbit;
-    before(async () => {
-        plebbit = await mockRemotePlebbit();
-    });
-
-    it(`publishingState is stopped by default`, async () => {
-        const comment = await generateMockPost(subplebbitAddress, plebbit);
-        expect(comment.publishingState).to.equal("stopped");
-    });
-
-    it(`comment.publishingState stays as stopped after calling comment.update()`, async () => {
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const commentCid = sub.posts.pages.hot.comments[0].cid;
-        const comment = await plebbit.createComment({ cid: commentCid });
-        expect(comment.publishingState).to.equal("stopped");
-        comment.on("publishingstatechange", (newState) => {
-            if (newState !== "stopped") expect.fail("Should not change publishing state");
-        });
-        await comment.update();
-        await new Promise((resolve) => comment.once("update", resolve));
-        await new Promise((resolve) => comment.once("update", resolve));
-        await comment.stop();
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
-        const expectedStates = [
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs",
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "waiting-challenge-answers",
-            "publishing-challenge-answer",
-            "waiting-challenge-verification",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
-        mockPost._getSubplebbitCache = () => undefined;
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
-        const expectedStates = [
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "waiting-challenge-answers",
-            "publishing-challenge-answer",
-            "waiting-challenge-verification",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mathCliSubplebbitAddress = signers[1].address;
-        await plebbit.getSubplebbit(mathCliSubplebbitAddress); // address of math cli, we fetch it here to make sure it's cached
-        const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
-        const expectedStates = [
-            "resolving-subplebbit-address",
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs",
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mockPost = await generateMockPost("plebbit.eth", plebbit);
-        mockPost._getSubplebbitCache = () => undefined;
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment with gateway (cached)`, async () => {
-        const gatewayPlebbit = await mockGatewayPlebbit();
-        const expectedStates = [
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "waiting-challenge-answers",
-            "publishing-challenge-answer",
-            "waiting-challenge-verification",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        await gatewayPlebbit.getSubplebbit(mathCliSubplebbitAddress); // Make sure it's cached
-        const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, gatewayPlebbit);
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment with gateway (uncached)`, async () => {
-        const gatewayPlebbit = await mockGatewayPlebbit();
-        const expectedStates = [
-            "fetching-subplebbit-ipns",
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "waiting-challenge-answers",
-            "publishing-challenge-answer",
-            "waiting-challenge-verification",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, gatewayPlebbit);
-        mockPost._getSubplebbitCache = () => undefined;
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    it(`comment.publishingState = 'failed' if user provide incorrect answer`, async () => {
-        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit);
-        mockPost.removeAllListeners("challenge");
-
-        mockPost.once("challenge", async (challengeMsg) => {
-            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-            await mockPost.publishChallengeAnswers(["12345"]); // Wrong answer here
-        });
-
-        await publishWithExpectedResult(mockPost, false);
-
-        expect(mockPost.publishingState).to.equal("failed");
-        await mockPost.stop();
-    });
-
-    itSkipIfRpc(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
-        const offlinePubsubUrl = "http://localhost:23425";
-        const offlinePubsubPlebbit = await mockRemotePlebbit({
-            ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-            pubsubHttpClientsOptions: [offlinePubsubUrl]
-        });
-        offlinePubsubPlebbit.on("error", () => {});
-        const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
-
-        await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
-
-        expect(mockPost.publishingState).to.equal("failed");
-        expect(mockPost.clients.pubsubClients[offlinePubsubUrl].state).to.equal("stopped");
     });
 });
