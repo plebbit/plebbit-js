@@ -394,15 +394,10 @@ export class BaseClientsManager {
 
             if (e instanceof PlebbitError) e.details = { ...e.details, url };
 
-            if (e instanceof PlebbitError && e?.details?.fetchError?.includes("AbortError")) {
-                this.postFetchGatewayAborted(gateway, loadOpts);
-                return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e, loadOpts }) };
-            } else {
-                this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
-                if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, loadOpts.recordIpfsType);
-                delete (<PlebbitError>e)!["stack"];
-                return { error: <PlebbitError>e };
-            }
+            this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
+            if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, loadOpts.recordIpfsType);
+            delete (<PlebbitError>e)!["stack"];
+            return { error: <PlebbitError>e };
         }
     }
 
