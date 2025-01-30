@@ -118,7 +118,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
-        this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubClients);
+        this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients);
         hideClassPrivateProps(this);
     }
 

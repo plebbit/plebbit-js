@@ -32,7 +32,7 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit;
 
         before(async () => {
-            plebbit = await mockPlebbit({ pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`] }, true); // Singular pubsub provider to avoid multiple challenge request/answers collision
+            plebbit = await mockPlebbit({ pubsubKuboRpcClientsOptions: [`http://localhost:15002/api/v0`] }, true); // Singular pubsub provider to avoid multiple challenge request/answers collision
         });
         it("can post after answering correctly", async function () {
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
@@ -49,7 +49,7 @@ getRemotePlebbitConfigs().map((config) => {
                 challengeverification = msg;
             });
             await publishWithExpectedResult(mockPost, false);
-            expect(challengeverification.challengeErrors).to.deep.equal(["Wrong answer."]);
+            expect(challengeverification.challengeErrors).to.deep.equal({ 0: "Wrong answer." });
             expect(challengeverification.challengeSuccess).to.be.false;
         });
     });

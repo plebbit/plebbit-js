@@ -8,13 +8,13 @@ import {
     itSkipIfRpc,
     itIfRpc,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
     describeIfRpc,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
-import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
+import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client";
 
 import signers from "../../fixtures/signers";
 import path from "path";
@@ -119,13 +119,13 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const headers = {
             authorization: "Basic " + Buffer.from("username" + ":" + "password").toString("base64")
         };
-        const ipfsHttpClientsOptions = [
+        const kuboRpcClientsOptions = [
             {
                 url: "http://localhost:15001/api/v0",
                 headers
             }
         ];
-        const pubsubHttpClientsOptions = [
+        const pubsubKuboRpcClientsOptions = [
             {
                 url: "http://localhost:15002/api/v0",
                 headers
@@ -133,8 +133,8 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         ];
 
         const plebbitOptions = {
-            ipfsHttpClientsOptions,
-            pubsubHttpClientsOptions
+            kuboRpcClientsOptions,
+            pubsubKuboRpcClientsOptions
         };
 
         const plebbit = await mockPlebbit(plebbitOptions);
@@ -147,11 +147,11 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
     });
 
     it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
-        const ipfsHttpClientsOptions = [`http://user:password@localhost:15001/api/v0`];
-        const pubsubHttpClientsOptions = [`http://user:password@localhost:15002/api/v0`];
+        const kuboRpcClientsOptions = [`http://user:password@localhost:15001/api/v0`];
+        const pubsubKuboRpcClientsOptions = [`http://user:password@localhost:15002/api/v0`];
         const plebbitOptions = {
-            ipfsHttpClientsOptions,
-            pubsubHttpClientsOptions
+            kuboRpcClientsOptions,
+            pubsubKuboRpcClientsOptions
         };
 
         const plebbit = await mockPlebbit(plebbitOptions);
@@ -278,7 +278,7 @@ describe(`subplebbit.startedState`, async () => {
     itSkipIfRpc(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit._plebbit.clients.ipfsClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
+            subplebbit._plebbit.clients.kuboRpcClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
         });
     });
 });
@@ -291,7 +291,7 @@ describe(`subplebbit.updatingState (node)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
@@ -478,22 +478,22 @@ describe(`subplebbit.clients (Local)`, async () => {
         plebbit = await mockPlebbit();
     });
 
-    describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
-        it(`subplebbit.clients.ipfsClients[url] is stopped by default`, async () => {
+    describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
+        it(`subplebbit.clients.kuboRpcClients[url] is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
-            expect(Object.keys(mockSub.clients.ipfsClients).length).to.equal(1);
-            expect(Object.values(mockSub.clients.ipfsClients)[0].state).to.equal("stopped");
+            expect(Object.keys(mockSub.clients.kuboRpcClients).length).to.equal(1);
+            expect(Object.values(mockSub.clients.kuboRpcClients)[0].state).to.equal("stopped");
         });
 
-        it(`subplebbit.clients.ipfsClients.state is publishing-ipns before publishing a new IPNS`, async () => {
+        it(`subplebbit.clients.kuboRpcClients.state is publishing-ipns before publishing a new IPNS`, async () => {
             const sub = await createSubWithNoChallenge({}, plebbit);
 
             let publishStateTime;
             let updateTime;
 
-            const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
+            const ipfsUrl = Object.keys(sub.clients.kuboRpcClients)[0];
 
-            sub.clients.ipfsClients[ipfsUrl].on(
+            sub.clients.kuboRpcClients[ipfsUrl].on(
                 "statechange",
                 (newState) => newState === "publishing-ipns" && (publishStateTime = Date.now())
             );
@@ -511,23 +511,23 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
     });
 
-    describeSkipIfRpc(`subplebbit.clients.pubsubClients`, async () => {
-        it(`subplebbit.clients.pubsubClients[url].state is stopped by default`, async () => {
+    describeSkipIfRpc(`subplebbit.clients.pubsubKuboRpcClients`, async () => {
+        it(`subplebbit.clients.pubsubKuboRpcClients[url].state is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
-            expect(Object.keys(mockSub.clients.pubsubClients).length).to.equal(3);
-            expect(Object.values(mockSub.clients.pubsubClients)[0].state).to.equal("stopped");
+            expect(Object.keys(mockSub.clients.pubsubKuboRpcClients).length).to.equal(3);
+            expect(Object.values(mockSub.clients.pubsubKuboRpcClients)[0].state).to.equal("stopped");
         });
 
-        it(`correct order of pubsubClients state when receiving a comment while skipping challenge`, async () => {
+        it(`correct order of pubsubKuboRpcClients state when receiving a comment while skipping challenge`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
 
             const expectedStates = ["waiting-challenge-requests", "publishing-challenge-verification", "waiting-challenge-requests"];
 
             const actualStates = [];
 
-            const pubsubUrl = Object.keys(mockSub.clients.pubsubClients)[0];
+            const pubsubUrl = Object.keys(mockSub.clients.pubsubKuboRpcClients)[0];
 
-            mockSub.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockSub.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 
@@ -540,7 +540,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of pubsubClients when receiving a comment while mandating challenge`, async () => {
+        it(`Correct order of pubsubKuboRpcClients when receiving a comment while mandating challenge`, async () => {
             const mockSub = await plebbit.createSubplebbit({});
 
             await mockSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
@@ -555,9 +555,9 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             const actualStates = [];
 
-            const pubsubUrl = Object.keys(mockSub.clients.pubsubClients)[0];
+            const pubsubUrl = Object.keys(mockSub.clients.pubsubKuboRpcClients)[0];
 
-            mockSub.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockSub.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 
@@ -717,8 +717,8 @@ describe.skip(`Challenge exchange resiliency`, async () => {
     let subplebbit, plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        for (const pubsubProviderUrl of Object.keys(plebbit.clients.pubsubClients)) {
-            plebbit.clients.pubsubClients[pubsubProviderUrl]._client = createMockIpfsClient(dropRate);
+        for (const pubsubProviderUrl of Object.keys(plebbit.clients.pubsubKuboRpcClients)) {
+            plebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client = createMockIpfsClient(dropRate);
         }
 
         const subplebbitPlebbit = await mockPlebbit();

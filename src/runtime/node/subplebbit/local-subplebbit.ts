@@ -74,7 +74,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     getThumbnailUrlOfLink,
-    importSignerIntoIpfsNode,
+    importSignerIntoKuboNode,
     isDirectoryEmptyRecursive,
     listSubplebbits,
     moveSubplebbitDbToDeletedDirectory
@@ -303,11 +303,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
         if (!this.signer.ipfsKey) throw Error("subplebbit.signer.ipfsKey is not defined");
 
-        const ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
-        if (!ipfsNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
-            await importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-                url: this._plebbit.ipfsHttpClientsOptions![0].url!.toString(),
-                headers: this._plebbit.ipfsHttpClientsOptions![0].headers
+        const kuboNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
+        if (!kuboNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
+            await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+                url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
+                headers: this._plebbit.kuboRpcClientsOptions![0].headers
             });
     }
 
@@ -596,13 +596,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(`Inserted new CommentModeration in DB`, remeda.omit(modTableRow, ["signature"]));
 
         if (modTableRow.commentModeration.purged) {
-            const transactionName = challengeRequestId.toString() + modTableRow.commentCid + "purge";
-            const trx = await this._dbHandler.createTransaction(transactionName);
             log(
                 "commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs",
                 "comment cid is",
                 modTableRow.commentCid
             );
+            const transactionName = challengeRequestId.toString();
+            const trx = await this._dbHandler.createTransaction(transactionName);
 
             const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid, trx);
             await this._dbHandler.commitTransaction(transactionName);
@@ -1853,7 +1853,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _cleanUpIpfsRepoRarely(force = false) {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        if (Math.random() < 0.001 || force) {
+        if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             try {
                 for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
@@ -2160,14 +2160,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log.trace(`Attempting to stop the subplebbit (${this.address}) before deleting, if needed`);
         if (this.state === "updating" || this.state === "started") await this.stop();
 
-        const ipfsClient = this._clientsManager.getDefaultIpfs();
-        if (!ipfsClient) throw Error("Ipfs client is not defined");
+        const kuboClient = this._clientsManager.getDefaultIpfs();
+        if (!kuboClient) throw Error("Ipfs client is not defined");
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
-                await ipfsClient._client.key.rm(this.signer.ipnsKeyName);
+                await kuboClient._client.key.rm(this.signer.ipnsKeyName);
             } catch {}
         log(`Deleted subplebbit (${this.address}) successfully`);
 

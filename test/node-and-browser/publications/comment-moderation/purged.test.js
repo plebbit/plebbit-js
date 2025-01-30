@@ -9,13 +9,13 @@ import {
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     waitTillPostInSubplebbitPages,
-    mockPlebbit,
-    createSubWithNoChallenge,
     waitTillReplyInParentPages,
-    mockRemotePlebbitIpfsOnly
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
+import { CID } from "kubo-rpc-client";
+
 import * as remeda from "remeda";
 
 const subplebbitAddress = signers[0].address;
@@ -45,7 +45,7 @@ getRemotePlebbitConfigs().map((config) => {
         let remotePlebbitIpfs;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            remotePlebbitIpfs = await mockRemotePlebbitIpfsOnly(); // this instance is connected to the same IPFS node as the sub
+            remotePlebbitIpfs = await mockPlebbitNoDataPathWithOnlyKuboClient(); // this instance is connected to the same IPFS node as the sub
             postToPurge = await publishRandomPost(subplebbitAddress, plebbit, { content: "post to be purged" + Date.now() });
             await postToPurge.update();
             await resolveWhenConditionIsTrue(postToPurge, () => typeof postToPurge.updatedAt === "number");
@@ -63,9 +63,9 @@ getRemotePlebbitConfigs().map((config) => {
 
             for (const cid of [postToPurge.cid, postReply.cid, replyUnderReply.cid]) {
                 const res =
-                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
-                        cid
-                    );
+                    await remotePlebbitIpfs.clients.kuboRpcClients[
+                        Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
+                    ]._client.block.stat(cid);
                 expect(res.size).to.be.a("number");
             }
         });
@@ -97,24 +97,21 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`The whole reply tree including post, replies and their pages should not be stored in the ipfs node of the subplebbit`, async () => {
-            const cids = [
+            const cids = remeda.unique([
                 postToPurge.cid,
                 postReply.cid,
                 replyUnderReply.cid,
                 ...Object.values(postToPurge.replies.pageCids),
                 ...Object.values(postReply.replies.pageCids)
-            ];
+            ]);
+            const cidsV1 = cids.map((cid) => CID.parse(cid).toV1().toString());
 
-            for (const cid of cids) {
-                try {
-                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
-                        cid
-                    );
-
-                    expect.fail("should not succeed");
-                } catch (e) {
-                    expect(e.message).to.include("block was not found locally");
-                }
+            const allCids = [...cids, ...cidsV1];
+            const ipfsClientOfSub =
+                remotePlebbitIpfs.clients.kuboRpcClients[Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]]._client;
+            // Collect all pinned CIDs
+            for await (const pin of ipfsClientOfSub.pin.ls()) {
+                expect(!allCids.includes(pin.cid.toString())).to.be.true;
             }
         });
 

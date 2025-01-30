@@ -12,8 +12,8 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
 
     let plebbit;
 
-    it(`Plebbit({ipfsHttpClientsOptions}) sets correct default http routers`, async () => {
-        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter] });
+    it(`Plebbit({kuboRpcClientsOptions}) sets correct default http routers`, async () => {
+        const plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter] });
         expect(plebbit.httpRoutersOptions).to.deep.equal([
             "https://peers.pleb.bot",
             "https://routing.lol",
@@ -25,19 +25,19 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     });
 
     it(`Plebbit({ipfsHttpClientOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        plebbit = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+        plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
 
         expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
 
-        const ipfsClient = plebbit.clients.ipfsClients[nodeForHttpRouter]._client;
-        const configValueType = await ipfsClient.config.get("Routing.Type");
+        const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const configValueType = await kuboRpcClient.config.get("Routing.Type");
         expect(configValueType).to.equal("custom");
 
-        const configValueMethods = await ipfsClient.config.get("Routing.Methods");
+        const configValueMethods = await kuboRpcClient.config.get("Routing.Methods");
         expect(configValueMethods?.["find-peers"]).to.be.a("object");
 
-        const configValueRouters = await ipfsClient.config.get("Routing.Routers");
+        const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
         expect(configValueRouters?.["HttpRouter1"]).to.be.a("object");
     });
 
@@ -48,16 +48,16 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     });
 
     it(`Routing.Routers should be set to proxy`, async () => {
-        const ipfsClient = plebbit.clients.ipfsClients[nodeForHttpRouter]._client;
-        const configValueRouters = await ipfsClient.config.get("Routing.Routers");
+        const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
         expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
         expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
     });
 
     it(`Can create another plebbit instance with same configs with no problem`, async () => {
-        const anotherInstance = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
-        const ipfsClient = anotherInstance.clients.ipfsClients[nodeForHttpRouter]._client;
-        const configValueRouters = await ipfsClient.config.get("Routing.Routers");
+        const anotherInstance = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+        const kuboRpcClient = anotherInstance.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
         expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
         expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
     });

@@ -4,6 +4,9 @@ import assert from "assert";
 import type { ChainTicker } from "../types.js";
 import { verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
+import { FailedToFetchCommentUpdateFromGatewaysError, FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
+import { CommentKuboRpcClient, GenericKuboRpcClient, PublicationKuboRpcClient, SubplebbitKuboRpcClient } from "./ipfs-client.js";
+import { GenericKuboPubsubClient, PublicationKuboPubsubClient, SubplebbitKuboPubsubClient } from "./pubsub-client.js";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import { GenericIpfsClient } from "./ipfs-client.js";
 import { GenericPubsubClient } from "./pubsub-client.js";
@@ -27,8 +30,8 @@ export type ResultOfFetchingSubplebbit =
 export class ClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
-        ipfsClients: { [ipfsClientUrl: string]: GenericIpfsClient };
-        pubsubClients: { [pubsubClientUrl: string]: GenericPubsubClient };
+        kuboRpcClients: { [kuboRpcClientUrl: string]: GenericKuboRpcClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: GenericKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
     };
 
@@ -38,8 +41,8 @@ export class ClientsManager extends BaseClientsManager {
         //@ts-expect-error
         this.clients = {};
         this._initIpfsGateways();
-        this._initIpfsClients();
-        this._initPubsubClients();
+        this._initKuboRpcClients();
+        this._initPubsubKuboRpcClients();
         this._initChainProviders();
         hideClassPrivateProps(this);
     }
@@ -49,14 +52,17 @@ export class ClientsManager extends BaseClientsManager {
             this.clients.ipfsGateways = { ...this.clients.ipfsGateways, [gatewayUrl]: new GenericIpfsGatewayClient("stopped") };
     }
 
-    protected _initIpfsClients() {
-        for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
-            this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new GenericIpfsClient("stopped") };
+    protected _initKuboRpcClients() {
+        for (const kuboRpcUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
+            this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [kuboRpcUrl]: new GenericKuboRpcClient("stopped") };
     }
 
-    protected _initPubsubClients() {
-        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
-            this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new GenericPubsubClient("stopped") };
+    protected _initPubsubKuboRpcClients() {
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
+            this.clients.pubsubKuboRpcClients = {
+                ...this.clients.pubsubKuboRpcClients,
+                [pubsubUrl]: new GenericKuboPubsubClient("stopped")
+            };
     }
 
     protected _initChainProviders() {
@@ -141,21 +147,21 @@ export class ClientsManager extends BaseClientsManager {
 
     // State methods here
 
-    updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined) {
+    updatePubsubState(newState: GenericKuboPubsubClient["state"], pubsubProvider: string | undefined) {
         pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
         assert(typeof pubsubProvider === "string");
         assert(typeof newState === "string", "Can't update pubsub state to undefined");
-        if (this.clients.pubsubClients[pubsubProvider].state === newState) return;
-        this.clients.pubsubClients[pubsubProvider].state = newState;
-        this.clients.pubsubClients[pubsubProvider].emit("statechange", newState);
+        if (this.clients.pubsubKuboRpcClients[pubsubProvider].state === newState) return;
+        this.clients.pubsubKuboRpcClients[pubsubProvider].state = newState;
+        this.clients.pubsubKuboRpcClients[pubsubProvider].emit("statechange", newState);
     }
 
-    updateIpfsState(newState: GenericIpfsClient["state"]) {
+    updateIpfsState(newState: GenericKuboRpcClient["state"]) {
         assert(this._defaultIpfsProviderUrl);
         assert(typeof newState === "string", "Can't update ipfs state to undefined");
-        if (this.clients.ipfsClients[this._defaultIpfsProviderUrl].state === newState) return;
-        this.clients.ipfsClients[this._defaultIpfsProviderUrl].state = newState;
-        this.clients.ipfsClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
+        if (this.clients.kuboRpcClients[this._defaultIpfsProviderUrl].state === newState) return;
+        this.clients.kuboRpcClients[this._defaultIpfsProviderUrl].state = newState;
+        this.clients.kuboRpcClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
     }
 
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string) {

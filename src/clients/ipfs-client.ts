@@ -1,4 +1,5 @@
-import { GenericClientEvents } from "../types.js";
+import { TypedEmitter } from "tiny-typed-emitter";
+import type { GenericClientEvents } from "../types.js";
 import { hideClassPrivateProps } from "../util.js";
 import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";
 
@@ -10,7 +11,7 @@ type PagesIpfsState = "fetching-ipfs" | "stopped";
 type GenericIpfsState = PublicationIpfsState | CommentIpfsState | SubplebbitIpfsState | PagesIpfsState;
 
 // Client classes
-class BaseIpfsClient<T extends GenericIpfsState> extends PlebbitTypedEmitter<GenericClientEvents<T>> {
+class BaseKuboRpcClient<T extends GenericIpfsState> extends PlebbitTypedEmitter<GenericClientEvents<T>> {
     override state: T;
 
     constructor(state: T) {
@@ -20,12 +21,12 @@ class BaseIpfsClient<T extends GenericIpfsState> extends PlebbitTypedEmitter<Gen
     }
 }
 
-export class GenericIpfsClient extends BaseIpfsClient<GenericIpfsState> {}
+export class GenericKuboRpcClient extends BaseKuboRpcClient<GenericIpfsState> {}
 
-export class PublicationIpfsClient extends BaseIpfsClient<PublicationIpfsState> {}
+export class PublicationKuboRpcClient extends BaseKuboRpcClient<PublicationIpfsState> {}
 
-export class CommentIpfsClient extends BaseIpfsClient<CommentIpfsState> {}
+export class CommentKuboRpcClient extends BaseKuboRpcClient<CommentIpfsState> {}
 
-export class SubplebbitIpfsClient extends BaseIpfsClient<SubplebbitIpfsState> {}
+export class SubplebbitKuboRpcClient extends BaseKuboRpcClient<SubplebbitIpfsState> {}
 
-export class PagesIpfsClient extends BaseIpfsClient<PagesIpfsState> {}
+export class PagesKuboRpcClient extends BaseKuboRpcClient<PagesIpfsState> {}

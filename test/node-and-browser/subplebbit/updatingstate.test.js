@@ -5,7 +5,7 @@ import {
     mockRemotePlebbit,
     mockGatewayPlebbit,
     itSkipIfRpc,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     publishSubplebbitRecordWithExtraProp
 } from "../../../dist/node/test/test-util.js";
 
@@ -37,7 +37,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS) and plebbit.getSubplebbit()`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
@@ -54,7 +54,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating  with IPFS client (ENS)`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.createSubplebbit({ address: "plebbit.eth" });
         const recordedStates = [];
         const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];

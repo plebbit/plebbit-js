@@ -20,8 +20,8 @@ import plebbitVersion from "../../../dist/node/version";
 const getTemporaryPlebbitOptions = () => {
     return {
         dataPath: tempy.directory(),
-        ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
-        pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+        kuboRpcClientsOptions: ["http://localhost:15004/api/v0"],
+        pubsubKuboRpcClientsOptions: ["http://localhost:15005/api/v0"]
     };
 };
 

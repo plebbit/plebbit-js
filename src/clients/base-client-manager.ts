@@ -17,7 +17,6 @@ import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
-import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub.js";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
@@ -28,6 +27,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
+import { createHeliaBrowserNode } from "../runtime/node/helia/helia-for-plebbit.js";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -85,8 +85,7 @@ export class BaseClientsManager {
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        if (plebbit.clients.ipfsClients)
-            this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
+        if (plebbit.clients.kuboRpcClients) this._defaultIpfsProviderUrl = remeda.keys.strict(plebbit.clients.kuboRpcClients)[0];
         this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
             for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
@@ -99,13 +98,13 @@ export class BaseClientsManager {
     }
 
     getDefaultPubsub() {
-        return this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl];
+        return this._plebbit.clients.pubsubKuboRpcClients[this._defaultPubsubProviderUrl];
     }
 
     getDefaultIpfs() {
         assert(this._defaultIpfsProviderUrl);
-        assert(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
-        return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
+        assert(this._plebbit.clients.kuboRpcClients[this._defaultIpfsProviderUrl]);
+        return this._plebbit.clients.kuboRpcClients[this._defaultIpfsProviderUrl];
     }
 
     // Pubsub methods
@@ -114,7 +113,7 @@ export class BaseClientsManager {
         if (this._defaultPubsubProviderUrl !== "browser-libp2p-pubsub")
             throw Error("Default pubsub should be browser-libp2p-pubsub on browser");
         if (!this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl]?._client)
-            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createLibp2pNode();
+            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createHeliaBrowserNode();
     }
 
     async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string) {
@@ -179,7 +178,7 @@ export class BaseClientsManager {
 
     async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
-        await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
+        await this._plebbit.clients.pubsubKuboRpcClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
         this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
             (subPubsubTopic) => subPubsubTopic !== pubsubTopic
         );
@@ -187,7 +186,7 @@ export class BaseClientsManager {
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
-        for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients)) {
+        for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients)) {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
             } catch {}
@@ -207,7 +206,7 @@ export class BaseClientsManager {
         this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
         const timeBefore = Date.now();
         try {
-            await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary);
+            await this._plebbit.clients.pubsubKuboRpcClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary);
             this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
             this._plebbit._stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {

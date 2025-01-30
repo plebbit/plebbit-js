@@ -19,8 +19,8 @@ describe.skip("plebbit.browserLibp2pJsPublish", () => {
     it("Can set browserLibp2pJsPublish in Plebbit correctly", async () => {
         const plebbit = await Plebbit({ browserLibp2pJsPublish: true });
         expect(plebbit.browserLibp2pJsPublish).to.be.true;
-        expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["browser-libp2p-pubsub"]);
-        expect(plebbit.clients.pubsubClients["browser-libp2p-pubsub"]).to.deep.equal({}); // should not be initialized yet, only when we pubsub publish or subscribe
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["browser-libp2p-pubsub"]);
+        expect(plebbit.clients.pubsubKuboRpcClients["browser-libp2p-pubsub"]).to.deep.equal({}); // should not be initialized yet, only when we pubsub publish or subscribe
 
         JSON.stringify(plebbit); // Will throw an error if circular json
     });

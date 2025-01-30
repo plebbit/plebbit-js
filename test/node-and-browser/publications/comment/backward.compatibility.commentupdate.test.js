@@ -103,7 +103,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(postToUpdate.updatedAt).to.be.undefined; // should not accept the comment update
 
-            if (postToUpdate.clients.ipfsClients) {
+            if (postToUpdate.clients.kuboRpcClients) {
                 expect(error.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
                 expect(error.details.signatureValidity).to.deep.equal({
                     valid: false,

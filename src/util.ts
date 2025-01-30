@@ -8,7 +8,7 @@ import * as Digest from "multiformats/hashes/digest";
 import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
-import type { IpfsClient } from "./types.js";
+import type { KuboRpcClient } from "./types.js";
 import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
@@ -239,18 +239,18 @@ export function isIpfsPath(x: string): boolean {
     return x.startsWith("/ipfs/");
 }
 
-export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption: Parameters<typeof CreateKuboRpcClient>[0]): IpfsClient["_clientOptions"] {
-    if (!ipfsRawOption) throw Error("Need to define the ipfs options");
-    if (typeof ipfsRawOption === "string" || ipfsRawOption instanceof URL) {
-        const url = new URL(ipfsRawOption);
+export function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption: Parameters<typeof CreateKuboRpcClient>[0]): KuboRpcClient["_clientOptions"] {
+    if (!kuboRpcRawOption) throw Error("Need to define the ipfs options");
+    if (typeof kuboRpcRawOption === "string" || kuboRpcRawOption instanceof URL) {
+        const url = new URL(kuboRpcRawOption);
         const authorization =
             url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
         return {
-            url: authorization ? url.origin + url.pathname : ipfsRawOption.toString(),
+            url: authorization ? url.origin + url.pathname : kuboRpcRawOption.toString(),
             ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
         };
-    } else if ("bytes" in ipfsRawOption) return { url: ipfsRawOption };
-    else return ipfsRawOption;
+    } else if ("bytes" in kuboRpcRawOption) return { url: kuboRpcRawOption };
+    else return kuboRpcRawOption;
 }
 
 export function hideClassPrivateProps(_this: any) {

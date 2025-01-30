@@ -1072,8 +1072,12 @@ export class DbHandler {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
 
         const purgedCids: string[] = [];
-        await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
-        await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        try {
+            await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
+        } catch {}
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        } catch {}
 
         if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
             // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
@@ -1083,7 +1087,9 @@ export class DbHandler {
                 const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
                 if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
                 if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
-                await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+                try {
+                    await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+                } catch {}
 
                 const comment = await this.queryComment(curCid, trx);
                 curCid = comment?.parentCid;
@@ -1094,7 +1100,9 @@ export class DbHandler {
         const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: cid });
         for (const child of children) purgedCids.push(...(await this.purgeComment(child.cid, trx)));
 
-        await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        } catch {}
         purgedCids.push(cid);
         return remeda.unique(purgedCids);
     }

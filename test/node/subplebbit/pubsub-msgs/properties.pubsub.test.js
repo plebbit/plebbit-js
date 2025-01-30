@@ -133,7 +133,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.challengeRequestId.length).to.equal(38);
         expect(challengeVerifcation.type).to.equal("CHALLENGEVERIFICATION");
-        expect(challengeVerifcation.challengeErrors).to.deep.equal(["Wrong answer."]);
+        expect(challengeVerifcation.challengeErrors).to.deep.equal({ 0: "Wrong answer." });
         expect(challengeVerifcation.challengeSuccess).to.be.false;
         expect(challengeVerifcation.encrypted).to.be.undefined;
         expect(challengeVerifcation.publication).to.be.undefined;

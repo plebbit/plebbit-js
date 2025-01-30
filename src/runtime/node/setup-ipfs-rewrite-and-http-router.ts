@@ -6,37 +6,37 @@ import { PlebbitError } from "../../plebbit-error.js";
 import * as remeda from "remeda";
 import tcpPortUsed from "tcp-port-used";
 
-async function _setHttpRouterOptionsOnIpfsNode(ipfsClient: Plebbit["clients"]["ipfsClients"][string], routingValue: any) {
+async function _setHttpRouterOptionsOnKuboNode(kuboClient: Plebbit["clients"]["kuboRpcClients"][string], routingValue: any) {
     const log = Logger("plebbit-js:plebbit:_init:retrySettingHttpRoutersOnIpfsNodes:setHttpRouterOptionsOnIpfsNode");
     const routingKey = "Routing";
 
     let routingConfigBeforeChanging: typeof routingValue | undefined;
     try {
-        routingConfigBeforeChanging = await ipfsClient._client.config.get(routingKey);
+        routingConfigBeforeChanging = await kuboClient._client.config.get(routingKey);
     } catch (e) {
         const error = new PlebbitError("ERR_FAILED_TO_GET_CONFIG_ON_KUBO_NODE", {
             actualError: e,
-            kuboEndpoint: ipfsClient._clientOptions.url,
+            kuboEndpoint: kuboClient._clientOptions.url,
             configKey: routingKey
         });
         log.error(e);
         throw error;
     }
-    const url = `${ipfsClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(routingValue)}&json=true`;
+    const url = `${kuboClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(routingValue)}&json=true`;
     try {
-        await fetch(url, { method: "POST", headers: ipfsClient._clientOptions.headers });
+        await fetch(url, { method: "POST", headers: kuboClient._clientOptions.headers });
     } catch (e) {
         const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
             fullUrl: url,
             actualError: e,
-            kuboEndpoint: ipfsClient._clientOptions.url,
+            kuboEndpoint: kuboClient._clientOptions.url,
             configKey: routingKey,
             configValueToBeSet: routingValue
         });
         log.error(e);
         throw error;
     }
-    log.trace("Succeeded in setting config key", routingKey, "on node", ipfsClient._clientOptions.url, "to be", routingValue);
+    log.trace("Succeeded in setting config key", routingKey, "on node", kuboClient._clientOptions.url, "to be", routingValue);
 
     const endpointsBefore: string[] = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
         //@ts-expect-error
@@ -47,16 +47,16 @@ async function _setHttpRouterOptionsOnIpfsNode(ipfsClient: Plebbit["clients"]["i
     if (!remeda.isDeepEqual(endpointsBefore.sort(), endpointsAfter.sort())) {
         log(
             "Config on kubo node has been changed. Plebbit-js will send shutdown command to node",
-            ipfsClient._clientOptions.url,
+            kuboClient._clientOptions.url,
             "Clients of plebbit-js should restart ipfs node"
         );
-        const shutdownUrl = `${ipfsClient._clientOptions.url}/shutdown`;
+        const shutdownUrl = `${kuboClient._clientOptions.url}/shutdown`;
         try {
-            await fetch(shutdownUrl, { method: "POST", headers: ipfsClient._clientOptions.headers });
+            await fetch(shutdownUrl, { method: "POST", headers: kuboClient._clientOptions.headers });
         } catch (e) {
             const error = new PlebbitError("ERR_FAILED_TO_SHUTDOWN_KUBO_NODE", {
                 actualError: e,
-                kuboEndpoint: ipfsClient._clientOptions.url,
+                kuboEndpoint: kuboClient._clientOptions.url,
                 shutdownUrl
             });
             log.error(e);
@@ -76,13 +76,13 @@ async function _getStartedProxyUrl(plebbit: Plebbit, httpRouterUrl: string) {
     return undefined;
 }
 
-export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit: Plebbit) {
-    if (!Array.isArray(plebbit.ipfsHttpClientsOptions) || plebbit.ipfsHttpClientsOptions.length <= 0)
+export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit) {
+    if (!Array.isArray(plebbit.kuboRpcClientsOptions) || plebbit.kuboRpcClientsOptions.length <= 0)
         throw Error("need ipfs http client to be defined");
     if (!Array.isArray(plebbit.httpRoutersOptions) || plebbit.httpRoutersOptions.length <= 0)
         throw Error("Need http router options to defined");
 
-    const log = Logger("plebbit-js:node:setupIpfsAddressesRewriterAndHttpRouters");
+    const log = Logger("plebbit-js:node:setupKuboAddressesRewriterAndHttpRouters");
     // Set up http proxies first to rewrite addresses
 
     const httpRouterProxyUrls: string[] = [];
@@ -102,8 +102,7 @@ export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit: Plebbit)
             port++;
 
         const addressesRewriterProxyServer = new AddressesRewriterProxyServer({
-            //@ts-expect-error
-            plebbitOptions: plebbit,
+            kuboClients: Object.values(plebbit.clients.kuboRpcClients).map((kubo) => kubo._client),
             port,
             hostname,
             proxyTargetUrl: httpRouter
@@ -121,7 +120,7 @@ export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit: Plebbit)
     httpRouterProxyUrls.sort(); // make sure it's always the same order
 
     // Set up http routers to use proxies
-    const ipfsClients = plebbit.clients.ipfsClients;
+    const kuboClients = plebbit.clients.kuboRpcClients;
     const httpRoutersConfig: any = {
         HttpRoutersParallel: { Type: "parallel", Parameters: { Routers: [] } },
         HttpRouterNotSupported: { Type: "http", Parameters: { Endpoint: "http://kubohttprouternotsupported" } }
@@ -160,9 +159,9 @@ export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit: Plebbit)
 
     const setHttpRouterOnAllNodes = new Promise((resolve) => {
         settingOptionRetryOption.attempt(async (curAttempt) => {
-            for (const ipfsClient of Object.values(ipfsClients)) {
+            for (const kuboClient of Object.values(kuboClients)) {
                 try {
-                    await _setHttpRouterOptionsOnIpfsNode(ipfsClient, routingValue);
+                    await _setHttpRouterOptionsOnKuboNode(kuboClient, routingValue);
                 } catch (e) {
                     settingOptionRetryOption.retry(<Error>e);
                     return;

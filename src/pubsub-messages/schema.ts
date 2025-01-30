@@ -17,6 +17,7 @@ import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subpleb
 import * as remeda from "remeda";
 import { CommentModerationPubsubMessagePublicationSchema } from "../publications/comment-moderation/schema.js";
 import { SubplebbitEditPubsubMessagePublicationSchema } from "../publications/subplebbit-edit/schema.js";
+import { nonNegativeIntStringSchema } from "../schema.js";
 
 const AcceptedChallengeTypeSchema = z.string().min(1);
 const nonNegativeIntegerStringSchema = z.string().regex(/^\d+$/, "String must be a non-negative integer");
