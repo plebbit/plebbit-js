@@ -522,11 +522,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // cache.has will return false if the item is stale
             if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
-                this._clientsManager.fetchNewUpdateForSubplebbit(this.subplebbitAddress);
+                this._plebbit.getSubplebbit(this.subplebbitAddress); // will update cache in background
             }
             return cachedSubplebbit;
         } else {
-            const subRes = await this._clientsManager.fetchNewUpdateForSubplebbit(this.subplebbitAddress);
+            const subRes = await this._clientsManager.fetchNewUpdateForSubplebbit(this.subplebbitAddress); // should be changed
             if (!subRes) throw Error("Should fail properly here");
             return subRes.subplebbit;
         }
