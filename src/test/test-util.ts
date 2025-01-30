@@ -819,7 +819,6 @@ export async function publishChallengeVerificationMessageWithExtraProps(
         //@ts-expect-error
         challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
         challengeSuccess: false,
-        challengeErrors: [],
         reason: "Random reason",
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
