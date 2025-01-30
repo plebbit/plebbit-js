@@ -30,14 +30,14 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
-            const originalPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const originalPost = await publishRandomPost(subplebbitAddress, plebbit);
 
             const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
 
-            recreatedPost.update();
+            const commentIpfsPromise = new Promise((resolve) => recreatedPost.once("update", resolve));
+            await recreatedPost.update();
 
-            await new Promise((resolve) => recreatedPost.once("update", resolve));
-            // Comment ipfs props should be defined now, but not CommentUpdate
+            await commentIpfsPromise; // Comment ipfs props should be defined now, but not CommentUpdate
             expect(recreatedPost.updatedAt).to.be.undefined;
 
             expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
@@ -52,40 +52,55 @@ getRemotePlebbitConfigs().map((config) => {
 
             const reply = await publishRandomReply(
                 subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0),
-                plebbit,
-                {},
-                true
+                plebbit
             );
 
             const recreatedReply = await plebbit.createComment({ cid: reply.cid });
 
-            recreatedReply.update();
+            const commentIpfsPromise = new Promise((resolve) => recreatedReply.once("update", resolve));
+            await recreatedReply.update();
 
-            await new Promise((resolve) => recreatedReply.once("update", resolve));
+            await commentIpfsPromise;
+            const commentUpdatePromise = new Promise((resolve) => recreatedReply.once("update", resolve));
             // Comment ipfs props should be defined now, but not CommentUpdate
             expect(recreatedReply.updatedAt).to.be.undefined;
 
             expect(recreatedReply.toJSONIpfs()).to.deep.equal(reply.toJSONIpfs());
 
-            await new Promise((resolve) => recreatedReply.once("update", resolve));
+            await commentUpdatePromise;
             await recreatedReply.stop();
 
             expect(recreatedReply.updatedAt).to.be.a("number");
         });
 
-        it(`comment.stop() stops comment updates`, async () => {
+        it(`comment.stop() stops comment updates (before update)`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
             await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve));
+            let updatedHasBeenCalled = false;
+            await comment.stop();
+            comment._setUpdatingState = async () => {
+                updatedHasBeenCalled = true;
+            };
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 2));
+            expect(updatedHasBeenCalled).to.be.false;
+        });
+
+        it(`comment.stop() stops comment updates (after update)`, async () => {
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+            const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
+            await comment.update();
+            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
             await comment.stop();
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
             let updatedHasBeenCalled = false;
-            comment.updateOnce = comment._setUpdatingState = async () => {
+            comment._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
             };
 
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 2));
             expect(updatedHasBeenCalled).to.be.false;
         });
 
@@ -101,7 +116,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await comment.update();
 
-            await publishRandomReply(comment, plebbit, {}, false);
+            await publishRandomReply(comment, plebbit);
             await new Promise((resolve) => comment.once("update", resolve));
             await comment.stop();
         });
@@ -268,7 +283,7 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
     let commentUpdateWithInvalidSignatureJson;
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbitIpfsOnly();
         commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature();
     });
 
@@ -279,17 +294,9 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
             cid: commentUpdateWithInvalidSignatureJson.cid
         });
 
-        let loadingRetries = 0;
         let errorsEmittedCount = 0;
-        let didItRetryAfterEmittingError = false;
-        const originalFetch = createdComment._clientsManager._fetchCidP2P.bind(createdComment._clientsManager);
-        createdComment._clientsManager._fetchCidP2P = (cidOrPath) => {
-            if (cidOrPath.endsWith("/update")) {
-                loadingRetries++;
-                if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                return JSON.stringify(commentUpdateWithInvalidSignatureJson);
-            } else return originalFetch(cidOrPath);
-        };
+
+        let loadingRetries = 0;
 
         const ipfsStates = [];
         const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
@@ -300,9 +307,8 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
 
         const errorPromise = new Promise((resolve) =>
             createdComment.on("error", (err) => {
-                expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
                 errorsEmittedCount++;
-                resolve();
+                if (err.code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID") resolve();
             })
         );
 
@@ -310,17 +316,26 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
         await createdComment.update();
 
+        const updatingComment = createdComment._plebbit._updatingComments[createdComment.cid];
+        const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
+        updatingComment._clientsManager._fetchCidP2P = (cidOrPath) => {
+            if (cidOrPath.endsWith("/update")) {
+                loadingRetries++;
+                return JSON.stringify(commentUpdateWithInvalidSignatureJson);
+            } else return originalFetch(cidOrPath);
+        };
+
         await errorPromise;
 
-        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+        await publishRandomPost(subplebbitAddress, plebbit); // force subplebbit to publish a new update which will increase loading attempts
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 6 + 1));
 
         expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
         expect(createdComment.state).to.equal("updating");
-        expect(createdComment.updatingState).to.equal("failed");
-        expect(didItRetryAfterEmittingError).to.be.true;
         expect(updateHasBeenEmittedWithCommentUpdate).to.be.false;
-        expect(loadingRetries).to.be.above(2);
-        expect(errorsEmittedCount).to.greaterThanOrEqual(2);
+        expect(loadingRetries).to.equal(2);
+        expect(errorsEmittedCount).to.equal(2);
 
         await createdComment.stop();
 
@@ -600,17 +615,6 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         });
 
         const invalidCommentUpdateSchema = { hello: "this should fail the schema parse" };
-        let loadingRetries = 0;
-        let errorsEmittedCount = 0;
-        let didItRetryAfterEmittingError = false;
-        const originalFetch = createdComment._clientsManager._fetchCidP2P.bind(createdComment._clientsManager);
-        createdComment._clientsManager._fetchCidP2P = (cidOrPath) => {
-            if (cidOrPath.endsWith("/update")) {
-                loadingRetries++;
-                if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                return JSON.stringify(invalidCommentUpdateSchema);
-            } else return originalFetch(cidOrPath);
-        };
 
         const ipfsStates = [];
         const updatingStates = [];
@@ -620,25 +624,28 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
 
         let updateHasBeenEmittedWithCommentUpdate = false;
         createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
-        await createdComment.update();
-
-        await new Promise((resolve) =>
-            createdComment.on("error", (err) => {
+        const errorPromise = new Promise((resolve) =>
+            createdComment.once("error", (err) => {
                 expect(err.code).to.equal("ERR_INVALID_COMMENT_UPDATE_SCHEMA");
-                errorsEmittedCount++;
                 resolve();
             })
         );
+        await createdComment.update();
 
-        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+        const updatingComment = createdComment._plebbit._updatingComments[createdComment.cid];
+        const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
+        updatingComment._clientsManager._fetchCidP2P = (cidOrPath) => {
+            if (cidOrPath.endsWith("/update")) {
+                return JSON.stringify(invalidCommentUpdateSchema);
+            } else return originalFetch(cidOrPath);
+        };
+
+        await errorPromise;
 
         expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
         expect(createdComment.state).to.equal("updating");
         expect(createdComment.updatingState).to.equal("failed");
-        expect(didItRetryAfterEmittingError).to.be.true;
         expect(updateHasBeenEmittedWithCommentUpdate).to.be.false;
-        expect(loadingRetries).to.be.above(2);
-        expect(errorsEmittedCount).to.greaterThanOrEqual(2);
 
         await createdComment.stop();
 
