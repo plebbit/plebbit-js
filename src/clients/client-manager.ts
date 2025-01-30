@@ -357,8 +357,9 @@ export class ClientsManager extends BaseClientsManager {
                     const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID", {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
-                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     gatewayFetches[gatewayUrl].abortError = error;
+
+                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     return error;
                 }
 
@@ -368,10 +369,9 @@ export class ClientsManager extends BaseClientsManager {
                     const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD", {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
-
                     // this gateway responded with a subplebbit whose record we know to be invalid
-                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     gatewayFetches[gatewayUrl].abortError = error;
+                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     return error;
                 }
             };
