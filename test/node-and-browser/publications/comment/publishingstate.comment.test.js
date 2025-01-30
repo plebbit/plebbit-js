@@ -6,7 +6,7 @@ import {
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
     itSkipIfRpc,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     mockPlebbit
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
@@ -26,7 +26,7 @@ describe(`comment.publishingState`, async () => {
     });
 
     it(`comment.publishingState stays as stopped after calling comment.update() - IPFS client`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
         const commentCid = sub.posts.pages.hot.comments[0].cid;
         const comment = await plebbit.createComment({ cid: commentCid });
@@ -56,7 +56,7 @@ describe(`comment.publishingState`, async () => {
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const expectedStates = [
             "fetching-subplebbit-ipns",
             "fetching-subplebbit-ipfs",
@@ -79,7 +79,7 @@ describe(`comment.publishingState`, async () => {
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const expectedStates = [
             "publishing-challenge-request",
             "waiting-challenge",
@@ -101,7 +101,7 @@ describe(`comment.publishingState`, async () => {
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
-        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const expectedStates = [
             "resolving-subplebbit-address",
             "fetching-subplebbit-ipns",
@@ -182,8 +182,8 @@ describe(`comment.publishingState`, async () => {
 
     itSkipIfRpc(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
         const offlinePubsubUrl = "http://localhost:23425";
-        const offlinePubsubPlebbit = await mockRemotePlebbitIpfsOnly({
-            pubsubHttpClientsOptions: [offlinePubsubUrl]
+        const offlinePubsubPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({
+            pubsubKuboRpcClientsOptions: [offlinePubsubUrl]
         });
         offlinePubsubPlebbit.on("error", () => {});
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
@@ -191,6 +191,6 @@ describe(`comment.publishingState`, async () => {
         await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
 
         expect(mockPost.publishingState).to.equal("failed");
-        expect(mockPost.clients.pubsubClients[offlinePubsubUrl].state).to.equal("stopped");
+        expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].state).to.equal("stopped");
     });
 });

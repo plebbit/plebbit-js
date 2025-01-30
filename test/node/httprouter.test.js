@@ -24,7 +24,7 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
     });
 
-    it(`Plebbit({ipfsHttpClientOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
+    it(`Plebbit({kuboRpcClientsOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
         plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
 

@@ -6,8 +6,7 @@ import {
     publishRandomPost,
     generateMockPost,
     publishChallengeVerificationMessageWithEncryption,
-    itSkipIfRpc,
-    mockRemotePlebbitIpfsOnly
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -38,7 +37,7 @@ const mockPostToFetchSpecificCommentUpdateCid = async (postToUpdate, commentUpda
     if (actualPostToUpdate._subplebbitForUpdating?.subplebbit?.updateCid)
         delete actualPostToUpdate._subplebbitForUpdating?.subplebbit?.updateCid;
 
-    if (actualPostToUpdate.clients.ipfsClients) actualPostToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
+    if (actualPostToUpdate.clients.kuboRpcClients) actualPostToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
     else {
         // actualPostToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
         // it's gateway tests

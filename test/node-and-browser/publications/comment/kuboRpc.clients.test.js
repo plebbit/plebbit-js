@@ -6,7 +6,7 @@ import {
     mockGatewayPlebbit,
     describeSkipIfRpc,
     resolveWhenConditionIsTrue,
-    mockRemotePlebbitIpfsOnly
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -113,7 +113,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
     });
 
     it(`Correct order of ipfs clients state when we update a comment but its subplebbit is not publishing new subplebbit records`, async () => {
-        const customPlebbit = await mockRemotePlebbitIpfsOnly();
+        const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
@@ -131,9 +131,9 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
 
         const recordedStates = [];
 
-        const ipfsUrl = Object.keys(mockPost.clients.ipfsClients)[0];
+        const kuboRpcUrl = Object.keys(mockPost.clients.kuboRpcClients)[0];
 
-        mockPost.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => recordedStates.push(newState));
+        mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
 

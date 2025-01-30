@@ -35,7 +35,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
         expect(Object.values(mockSub.clients.kuboRpcClients)[0].state).to.equal("stopped");
     });
 
-    it(`Correct order of ipfsClients state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
+    it(`Correct order of kuboRpcClients state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
         const sub = await remotePlebbit.createSubplebbit({ address: signers[0].address });
 
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
@@ -54,7 +54,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
         expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`Correct order of ipfsClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
+    it(`Correct order of kuboRpcClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
         const sub = await remotePlebbit.getSubplebbit(signers[0].address);
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
@@ -80,8 +80,8 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
         const recordedStates = [];
-        const ipfsUrl = Object.keys(sub.clients.ipfsClients)[0];
-        sub.clients.ipfsClients[ipfsUrl].on("statechange", (newState) => recordedStates.push(newState));
+        const kuboRpcUrl = Object.keys(sub.clients.kuboRpcClients)[0];
+        sub.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
 
         // now plebbit._updatingSubplebbits will be defined
 

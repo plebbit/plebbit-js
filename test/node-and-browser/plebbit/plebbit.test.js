@@ -3,7 +3,13 @@ import signers from "../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../../dist/node/errors.js";
-import { mockRemotePlebbit, mockPlebbit, itIfRpc, describeIfRpc, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../../dist/node/test/test-util.js";
+import {
+    mockRemotePlebbit,
+    mockPlebbit,
+    itIfRpc,
+    describeIfRpc,
+    mockPlebbitNoDataPathWithOnlyKuboClient
+} from "../../../dist/node/test/test-util.js";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -59,7 +65,7 @@ describe("Plebbit options", async () => {
         JSON.stringify(testPlebbit); // Will throw an error if circular json
     });
 
-    it(`Plebbit({ipfsHttpClientOptions}) uses specified node even if ipfs node is down`, async () => {
+    it(`Plebbit({kuboRpcClientsOptions}) uses specified node even if ipfs node is down`, async () => {
         // RPC exception
         const url = "http://localhost:12323/api/v0"; // Should be offline
         const plebbit = await Plebbit({ kuboRpcClientsOptions: [url], httpRoutersOptions: [] });

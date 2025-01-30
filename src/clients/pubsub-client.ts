@@ -1,6 +1,6 @@
-import { TypedEmitter } from "tiny-typed-emitter";
 import type { GenericClientEvents } from "../types.js";
 import { hideClassPrivateProps } from "../util.js";
+import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";
 
 // Types
 type PublicationPubsubState =
@@ -20,8 +20,8 @@ type SubplebbitPubsubState =
 type GenericPubsubState = PublicationKuboPubsubClient["state"] | SubplebbitKuboPubsubClient["state"];
 
 // Client classes
-export class GenericKuboPubsubClient extends TypedEmitter<GenericClientEvents<GenericPubsubState>> {
-    state: GenericPubsubState;
+export class GenericKuboPubsubClient extends PlebbitTypedEmitter<GenericClientEvents<GenericPubsubState>> {
+    override state: GenericPubsubState;
 
     constructor(state: GenericKuboPubsubClient["state"]) {
         super();
@@ -30,8 +30,8 @@ export class GenericKuboPubsubClient extends TypedEmitter<GenericClientEvents<Ge
     }
 }
 
-export class PublicationKuboPubsubClient extends TypedEmitter<GenericClientEvents<PublicationPubsubState>> {
-    state: PublicationPubsubState;
+export class PublicationKuboPubsubClient extends PlebbitTypedEmitter<GenericClientEvents<PublicationPubsubState>> {
+    override state: PublicationPubsubState;
 
     constructor(state: PublicationKuboPubsubClient["state"]) {
         super();
@@ -39,8 +39,8 @@ export class PublicationKuboPubsubClient extends TypedEmitter<GenericClientEvent
     }
 }
 
-export class SubplebbitKuboPubsubClient extends TypedEmitter<GenericClientEvents<SubplebbitPubsubState>> {
-    state: SubplebbitPubsubState;
+export class SubplebbitKuboPubsubClient extends PlebbitTypedEmitter<GenericClientEvents<SubplebbitPubsubState>> {
+    override state: SubplebbitPubsubState;
 
     constructor(state: SubplebbitKuboPubsubClient["state"]) {
         super();
