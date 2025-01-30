@@ -27,7 +27,6 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
-import { createHeliaBrowserNode } from "../runtime/node/helia/helia-for-plebbit.js";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -86,9 +85,9 @@ export class BaseClientsManager {
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
         if (plebbit.clients.kuboRpcClients) this._defaultIpfsProviderUrl = remeda.keys.strict(plebbit.clients.kuboRpcClients)[0];
-        this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
+        this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
-            for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
+            for (const provider of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) this.providerSubscriptions[provider] = [];
         }
         hideClassPrivateProps(this);
     }
@@ -109,22 +108,14 @@ export class BaseClientsManager {
 
     // Pubsub methods
 
-    async _initializeLibp2pClientIfNeeded() {
-        if (this._defaultPubsubProviderUrl !== "browser-libp2p-pubsub")
-            throw Error("Default pubsub should be browser-libp2p-pubsub on browser");
-        if (!this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl]?._client)
-            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createHeliaBrowserNode();
-    }
-
     async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string) {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
-        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
 
         const timeBefore = Date.now();
         let error: Error | undefined;
         try {
-            // TODO sshould rewrite this
-            await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
+            // TODO sshould rewrite this to accomodate helia
+            await this._plebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
                 onError: async (err) => {
                     error = err;
                     log.error(
@@ -157,7 +148,6 @@ export class BaseClientsManager {
     }
 
     async pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler) {
-        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
 
@@ -177,7 +167,6 @@ export class BaseClientsManager {
     }
 
     async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler) {
-        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         await this._plebbit.clients.pubsubKuboRpcClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
         this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
             (subPubsubTopic) => subPubsubTopic !== pubsubTopic
@@ -185,7 +174,6 @@ export class BaseClientsManager {
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
-        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients)) {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
@@ -200,7 +188,6 @@ export class BaseClientsManager {
     protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError) {}
 
     async pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string) {
-        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:pubsubPublish");
         const dataBinary = cborg.encode(data);
         this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
@@ -217,7 +204,6 @@ export class BaseClientsManager {
     }
 
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
-        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
         const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-publish");
         const providerToError: Record<string, PlebbitError> = {};
@@ -228,7 +214,7 @@ export class BaseClientsManager {
                 return await this.pubsubPublishOnProvider(pubsubTopic, data, pubsubProviderUrl);
             } catch (e) {
                 log.error(`Failed to publish to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
-                providerToError[pubsubProviderUrl] = <PlebbitError>e;
+            providerToError[pubsubProviderUrl] = <PlebbitError>e;
             }
         }
 

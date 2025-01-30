@@ -1,13 +1,11 @@
 import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../../clients/chain-provider-client.js";
 import { ResultOfFetchingSubplebbit } from "../../clients/client-manager.js";
-import { CommentIpfsClient } from "../../clients/ipfs-client.js";
 import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
-import { PublicationPubsubClient } from "../../clients/pubsub-client.js";
 import { CommentPlebbitRpcStateClient } from "../../clients/rpc-client/plebbit-rpc-state-client.js";
 import { PageIpfs } from "../../pages/types.js";
-import { SubplebbitIpfsType } from "../../subplebbit/types.js";
-import { ChainTicker } from "../../types.js";
+import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
+import type { ChainTicker } from "../../types.js";
 import { Comment } from "./comment.js";
 import * as remeda from "remeda";
 import { commentPostUpdatesParentsPathConfig, postTimestampConfig } from "../../constants.js";
@@ -23,6 +21,8 @@ import { verifyCommentIpfs, verifyCommentUpdate } from "../../signer/signatures.
 import Logger from "@plebbit/plebbit-logger";
 import { getPostUpdateTimestampRange } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
+import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
+import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -30,8 +30,8 @@ type NewCommentUpdate =
 export class CommentClientsManager extends PublicationClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
-        ipfsClients: { [ipfsClientUrl: string]: CommentIpfsClient };
-        pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
+        kuboRpcClients: { [ipfsClientUrl: string]: CommentKuboRpcClient };
+        pubsubKuboRpcClients: { [pubsubClientUrl: string]: PublicationKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
     };
@@ -42,10 +42,10 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._comment = comment;
     }
 
-    protected override _initIpfsClients(): void {
-        if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
-                this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new CommentIpfsClient("stopped") };
+    protected override _initKuboRpcClients(): void {
+        if (this._plebbit.clients.kuboRpcClients)
+            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
+                this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [ipfsUrl]: new CommentKuboRpcClient("stopped") };
     }
 
     protected override _initPlebbitRpcClients() {
@@ -415,7 +415,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         return commentIpfs;
     }
 
-    override updateIpfsState(newState: CommentIpfsClient["state"]) {
+    override updateIpfsState(newState: CommentKuboRpcClient["state"]) {
         super.updateIpfsState(newState);
     }
 

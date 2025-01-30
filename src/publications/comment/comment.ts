@@ -531,9 +531,16 @@ export class Comment
                         )
                             this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
                     }
-                    if (subplebbitUpdatingState === "succeeded" && lastUpdatingStateOfSub !== "fetching-ipfs") {
+                    if (
+                        subplebbitUpdatingState === "succeeded" &&
+                        lastUpdatingStateOfSub !== "fetching-ipfs" &&
+                        this._clientsManager._defaultIpfsProviderUrl
+                    ) {
+                        // we fetched IPNS, but it turned out to be the same record we already processed
                         this._clientsManager.updateIpfsState("stopped");
-                    }
+                    } else if (subplebbitUpdatingState === "succeeded" && this.clients.ipfsGateways)
+                        for (const gatewayUrl of Object.keys(this.clients.ipfsGateways))
+                            this._clientsManager.updateGatewayState("stopped", gatewayUrl);
                     lastUpdatingStateOfSub = remeda.clone(subplebbitUpdatingState);
                 }
             };
@@ -723,7 +730,7 @@ export class Comment
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
 
-        const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
             if (this.clients[clientType])
                 for (const clientUrl of Object.keys(this.clients[clientType])) {
@@ -822,7 +829,7 @@ export class Comment
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
             this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
 
-            const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+            const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
 
             for (const clientType of clientKeys)
                 if (this.clients[clientType])

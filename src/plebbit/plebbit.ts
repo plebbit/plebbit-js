@@ -124,7 +124,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
-    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders!: ParsedPlebbitOptions["chainProviders"];
     parsedPlebbitOptions: ParsedPlebbitOptions;
@@ -190,7 +189,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.publishInterval = this.parsedPlebbitOptions.publishInterval;
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
         this.noData = this.parsedPlebbitOptions.noData;
-        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
         this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
         this.on("subplebbitschange", (newSubs) => {
@@ -202,7 +200,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.clients = {};
 
         this._initKuboRpcClientsIfNeeded();
-        this._initPubsubClientsIfNeeded();
+        this._initKuboPubsubClientsIfNeeded();
         this._initRpcClientsIfNeeded();
         this._initIpfsGatewaysIfNeeded();
         this._initChainProviders();
@@ -225,11 +223,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         }
     }
 
-    private _initPubsubClientsIfNeeded() {
+    private _initKuboPubsubClientsIfNeeded() {
         this.clients.pubsubKuboRpcClients = {};
-        if (this.browserLibp2pJsPublish)
-            //@ts-expect-error
-            this.clients.pubsubKuboRpcClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
         if (!this.pubsubKuboRpcClientsOptions) return;
 
         for (const clientOptions of this.pubsubKuboRpcClientsOptions) {

@@ -1,9 +1,9 @@
 import { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
 import { ClientsManager, ResultOfFetchingSubplebbit } from "../clients/client-manager.js";
-import { CommentIpfsClient, PublicationIpfsClient } from "../clients/ipfs-client.js";
+import { CommentKuboRpcClient, PublicationKuboRpcClient } from "../clients/ipfs-client.js";
 import { CommentIpfsGatewayClient, PublicationIpfsGatewayClient } from "../clients/ipfs-gateway-client.js";
-import { PublicationPubsubClient } from "../clients/pubsub-client.js";
+import { PublicationKuboPubsubClient } from "../clients/pubsub-client.js";
 import { PublicationPlebbitRpcStateClient } from "../clients/rpc-client/plebbit-rpc-state-client.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { ChainTicker } from "../types.js";
@@ -13,8 +13,8 @@ import * as remeda from "remeda";
 export class PublicationClientsManager extends ClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient };
-        ipfsClients: { [ipfsClientUrl: string]: PublicationIpfsClient | CommentIpfsClient };
-        pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
+        kuboRpcClients: { [kuboRpcUrl: string]: PublicationKuboRpcClient | CommentKuboRpcClient };
+        pubsubKuboRpcClients: { [kuboRpcUrl: string]: PublicationKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
@@ -26,15 +26,18 @@ export class PublicationClientsManager extends ClientsManager {
         this._initPlebbitRpcClients();
     }
 
-    protected override _initIpfsClients(): void {
-        if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
-                this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new PublicationIpfsClient("stopped") };
+    protected override _initKuboRpcClients(): void {
+        if (this._plebbit.clients.kuboRpcClients)
+            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
+                this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [ipfsUrl]: new PublicationKuboRpcClient("stopped") };
     }
 
-    protected override _initPubsubClients(): void {
-        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
-            this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
+    protected override _initPubsubKuboRpcClients(): void {
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
+            this.clients.pubsubKuboRpcClients = {
+                ...this.clients.pubsubKuboRpcClients,
+                [pubsubUrl]: new PublicationKuboPubsubClient("stopped")
+            };
     }
 
     protected _initPlebbitRpcClients() {
@@ -84,11 +87,11 @@ export class PublicationClientsManager extends ClientsManager {
         this._publication.emit("error", e);
     }
 
-    override updateIpfsState(newState: PublicationIpfsClient["state"] | CommentIpfsClient["state"]) {
+    override updateIpfsState(newState: PublicationKuboRpcClient["state"] | CommentKuboRpcClient["state"]) {
         super.updateIpfsState(newState);
     }
 
-    override updatePubsubState(newState: PublicationPubsubClient["state"], pubsubProvider: string | undefined) {
+    override updatePubsubState(newState: PublicationKuboPubsubClient["state"], pubsubProvider: string | undefined) {
         super.updatePubsubState(newState, pubsubProvider);
     }
 

@@ -322,7 +322,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         );
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
 
-        const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
             if (this.clients[clientType])
                 for (const clientUrl of Object.keys(this.clients[clientType])) {
@@ -372,7 +372,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
 
-            const clientKeys = ["chainProviders", "ipfsClients", "ipfsGateways"] as const;
+            const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"] as const;
 
             for (const clientType of clientKeys)
                 if (this.clients[clientType])

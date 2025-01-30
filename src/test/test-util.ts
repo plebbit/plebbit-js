@@ -48,7 +48,7 @@ import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../si
 import env from "../version.js";
 import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
-import { createHeliaBrowserNode } from "../helia/helia-for-plebbit.js";
+import { createHeliaNode } from "../helia/helia-for-plebbit.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -910,7 +910,7 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
         dataPath: undefined
     });
 
-    const heliaInstance = await createHeliaNdoe({ httpRoutersOptions: ["http://localhost:20001"] });
+    const heliaInstance = await createHeliaNode({ httpRoutersOptions: ["http://localhost:20001"] });
     //@ts-expect-error
     heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock] = heliaInstance;
 

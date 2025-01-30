@@ -1,4 +1,3 @@
-import { TypedEmitter } from "tiny-typed-emitter";
 import type { GenericClientEvents } from "../types.js";
 import { hideClassPrivateProps } from "../util.js";
 import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";

@@ -35,7 +35,7 @@ function getDelegatedRoutingFields(routers: string[]) {
     return routersObj;
 }
 
-export async function createHeliaBrowserNode(
+export async function createHeliaNode(
     plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">>
 ): Promise<IpfsClientForBrowser> {
     if (heliaBrowserClient) return heliaBrowserClient;

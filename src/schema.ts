@@ -64,7 +64,6 @@ const PlebbitUserOptionBaseSchema = z.object({
     publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
     updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
     noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
-    browserLibp2pJsPublish: z.boolean(), // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
     userAgent: UserAgentSchema
 });
 
@@ -92,7 +91,6 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
     updateInterval: PlebbitUserOptionBaseSchema.shape.updateInterval.default(60000),
     noData: PlebbitUserOptionBaseSchema.shape.noData.default(false),
-    browserLibp2pJsPublish: PlebbitUserOptionBaseSchema.shape.browserLibp2pJsPublish.default(false),
     userAgent: PlebbitUserOptionBaseSchema.shape.userAgent.default(version.USER_AGENT)
 }).strict();
 
