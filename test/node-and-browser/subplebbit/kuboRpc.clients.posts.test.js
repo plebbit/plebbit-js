@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { mockRemotePlebbit, describeSkipIfRpc, mockGatewayPlebbit, mockRemotePlebbitIpfsOnly } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc, mockGatewayPlebbit, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -14,7 +14,7 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
 
     before(async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
-        plebbit = await mockRemotePlebbitIpfsOnly();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     it(`subplebbit.posts.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {

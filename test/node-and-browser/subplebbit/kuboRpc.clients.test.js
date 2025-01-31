@@ -5,7 +5,7 @@ import {
     describeSkipIfRpc,
     mockGatewayPlebbit,
     mockPlebbit,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
 
@@ -22,7 +22,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
     before(async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`subplebbit.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -75,7 +75,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
     });
 
     it(`Correct order of ipfs clients state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
-        const customPlebbit = await mockRemotePlebbitIpfsOnly();
+        const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
