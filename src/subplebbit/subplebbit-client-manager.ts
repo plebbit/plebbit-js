@@ -248,8 +248,16 @@ export class SubplebbitClientsManager extends ClientsManager {
         // in that case no need to fetch the subplebbitIpfs, we will return undefined
         this._subplebbit._setUpdatingState("fetching-ipns");
         let subRes: ResultOfFetchingSubplebbit;
-        if (this._defaultIpfsProviderUrl) subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
-        else subRes = await this._fetchSubplebbitFromGateways(ipnsName);
+        if (this._defaultIpfsProviderUrl) {
+            // we're connected to kubo or helia
+            try {
+                subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
+            } catch (e) {
+                throw e;
+            } finally {
+                this.updateIpfsState("stopped");
+            }
+        } else subRes = await this._fetchSubplebbitFromGateways(ipnsName); // let's use gateways to fetch because we're not connected to kubo or helia
         // States of gateways should be updated by fetchFromMultipleGateways
         // Subplebbit records are verified within _fetchSubplebbitFromGateways
 
@@ -268,22 +276,16 @@ export class SubplebbitClientsManager extends ClientsManager {
     private async _fetchSubplebbitIpnsP2PAndVerify(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         this.updateIpfsState("fetching-ipns");
-        let subplebbitCid: string;
-        try {
-            subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName); // What if this fails
-        } catch (e) {
-            this.updateIpfsState("stopped");
-            throw e;
-        }
+        const latestSubplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
 
         const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
         // need to check if subplebbitCid === sub.updateCid
-        if (curSubUpdateCid && subplebbitCid === curSubUpdateCid) {
+        if (curSubUpdateCid && latestSubplebbitCid === curSubUpdateCid) {
             log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
             return undefined;
         }
         const lastInvalidSubCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
-        if (lastInvalidSubCid && subplebbitCid === lastInvalidSubCid) {
+        if (lastInvalidSubCid && latestSubplebbitCid === lastInvalidSubCid) {
             log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit._lastInvalidSubplebbitCid. No need to fetch its ipfs");
             return undefined;
         }
@@ -291,27 +293,20 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
 
-        let rawSubJsonString: string;
-        try {
-            rawSubJsonString = await this._fetchCidP2P(subplebbitCid);
-        } catch (e) {
-            throw e;
-        } finally {
-            this.updateIpfsState("stopped");
-        }
+        const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid);
 
         try {
             const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
                 parseJsonWithPlebbitErrorIfFails(rawSubJsonString)
             );
 
-            const errInRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, subplebbitCid);
+            const errInRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, latestSubplebbitCid);
 
             if (errInRecord) throw errInRecord;
-            return { subplebbit: subIpfs, cid: subplebbitCid };
+            return { subplebbit: subIpfs, cid: latestSubplebbitCid };
         } catch (e) {
             // invalid subplebbit record
-            (<PlebbitError>e).details.cidOfSubIpns = subplebbitCid;
+            (<PlebbitError>e).details.cidOfSubIpns = latestSubplebbitCid;
             throw <PlebbitError>e;
         }
     }
