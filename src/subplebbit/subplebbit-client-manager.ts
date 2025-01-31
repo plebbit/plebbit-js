@@ -134,46 +134,6 @@ export class SubplebbitClientsManager extends ClientsManager {
         return this._subplebbit.address;
     }
 
-    protected preFetchSubplebbitIpns(subIpnsName: string) {
-        this._subplebbit._setUpdatingState("fetching-ipns");
-    }
-
-    protected preResolveSubplebbitIpnsP2P(subIpnsName: string) {
-        this.updateIpfsState("fetching-ipns");
-    }
-
-    protected postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
-        this.updateIpfsState("fetching-ipfs");
-        this._subplebbit._setUpdatingState("fetching-ipfs");
-    }
-
-    protected postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
-        this.updateIpfsState("stopped");
-        this._subplebbit._setUpdatingState("failed");
-    }
-
-    protected postFetchSubplebbitStringJsonP2PSuccess() {
-        this.updateIpfsState("stopped");
-    }
-    protected postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
-        this.updateIpfsState("stopped");
-        this._subplebbit._setUpdatingState("failed");
-    }
-
-    // for both gateway and IPFS P2P
-
-    protected postFetchSubplebbitIpfsSuccess(subJson: ResultOfFetchingSubplebbit) {
-        this._subplebbit._setUpdatingState("succeeded");
-    }
-
-    // if we're loading a SubplebbitIpfs through RemoteSubplebbit, and the record itself has a problem
-    // Could be invalid json or schema or signature
-    protected postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
-        this._subplebbit._setUpdatingState("failed");
-        this._subplebbit.emit("error", subError);
-        throw subError;
-    }
-
     // functions for updatingSubInstance
 
     private async _retryLoadingSubplebbitAddress(
@@ -193,7 +153,11 @@ export class SubplebbitClientsManager extends ClientsManager {
                         this._subplebbit._setUpdatingState("failed");
                         resolve(e);
                     } else {
+                        // we encountered a retriable error, could be gateways failing to load
+                        // does not include gateways returning an old record
+                        if (e instanceof PlebbitError) e.details.countOfLoadAttempts = curAttempt;
                         this._subplebbit._setUpdatingState("waiting-retry");
+
                         this._subplebbit.emit("waiting-retry", <Error>e);
                         log.error(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, e);
                         this._ipnsLoadingOperation!.retry(<Error>e);
@@ -241,9 +205,10 @@ export class SubplebbitClientsManager extends ClientsManager {
             );
             this._subplebbit.emit("update", this._subplebbit);
         } else if (loadedSubIpfsOrError === undefined) {
-            this._subplebbit._setUpdatingState("waiting-retry"); // we loaded a sub record that we already consumed
+            // we loaded a sub record that we already consumed
+            // we will retry later
+            this._subplebbit._setUpdatingState("waiting-retry");
             this._subplebbit.emit("waiting-retry", new PlebbitError("ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD"));
-            if (this._defaultIpfsProviderUrl) this.updateIpfsState("stopped");
         }
     }
 
@@ -281,7 +246,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
         // only exception is if the ipnsRecord.value (ipfs path) is the same as as curSubplebbit.updateCid
         // in that case no need to fetch the subplebbitIpfs, we will return undefined
-        this.preFetchSubplebbitIpns(ipnsName);
+        this._subplebbit._setUpdatingState("fetching-ipns");
         let subRes: ResultOfFetchingSubplebbit;
         if (this._defaultIpfsProviderUrl) subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
         else subRes = await this._fetchSubplebbitFromGateways(ipnsName);
@@ -289,7 +254,8 @@ export class SubplebbitClientsManager extends ClientsManager {
         // Subplebbit records are verified within _fetchSubplebbitFromGateways
 
         if (subRes?.subplebbit) {
-            this.postFetchSubplebbitIpfsSuccess(subRes); // We successfully fetched and verified the SubplebbitIpfs
+            // we found a new record that is verified
+            this._subplebbit._setUpdatingState("succeeded");
 
             subplebbitForPublishingCache.set(
                 subRes.subplebbit.address,
@@ -301,12 +267,12 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     private async _fetchSubplebbitIpnsP2PAndVerify(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
-        this.preResolveSubplebbitIpnsP2P(ipnsName);
+        this.updateIpfsState("fetching-ipns");
         let subplebbitCid: string;
         try {
             subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName); // What if this fails
         } catch (e) {
-            this.postResolveSubplebbitIpnsP2PFailure(ipnsName, <PlebbitError>e);
+            this.updateIpfsState("stopped");
             throw e;
         }
 
@@ -322,16 +288,17 @@ export class SubplebbitClientsManager extends ClientsManager {
             return undefined;
         }
 
-        this.postResolveSubplebbitIpnsP2PSuccess(ipnsName, subplebbitCid);
+        this.updateIpfsState("fetching-ipfs");
+        this._subplebbit._setUpdatingState("fetching-ipfs");
 
         let rawSubJsonString: string;
         try {
             rawSubJsonString = await this._fetchCidP2P(subplebbitCid);
         } catch (e) {
-            this.postFetchSubplebbitStringJsonP2PFailure(ipnsName, subplebbitCid, <PlebbitError>e);
             throw e;
+        } finally {
+            this.updateIpfsState("stopped");
         }
-        this.postFetchSubplebbitStringJsonP2PSuccess();
 
         try {
             const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
@@ -343,9 +310,9 @@ export class SubplebbitClientsManager extends ClientsManager {
             if (errInRecord) throw errInRecord;
             return { subplebbit: subIpfs, cid: subplebbitCid };
         } catch (e) {
+            // invalid subplebbit record
             (<PlebbitError>e).details.cidOfSubIpns = subplebbitCid;
-            this.postFetchSubplebbitInvalidRecord(rawSubJsonString, <PlebbitError>e); // should throw here
-            throw new Error("postFetchSubplebbitInvalidRecord should throw, but it did not");
+            throw <PlebbitError>e;
         }
     }
 

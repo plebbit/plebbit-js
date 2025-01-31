@@ -322,6 +322,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this._updatingSubInstanceWithListeners.updatingstatechange
         );
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
+        this._updatingSubInstanceWithListeners.subplebbit.on("waiting-retry", this._updatingSubInstanceWithListeners["waiting-retry"]);
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
@@ -373,7 +374,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
             this._updatingSubInstanceWithListeners.subplebbit.removeListener(
-                "error",
+                "waiting-retry",
                 this._updatingSubInstanceWithListeners["waiting-retry"]
             );
 
