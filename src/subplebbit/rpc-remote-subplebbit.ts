@@ -23,6 +23,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             failed: ["stopped"],
             "fetching-ipfs": ["fetching-ipfs"],
             "fetching-ipns": ["fetching-ipns"],
+            "waiting-retry": ["stopped"],
             "publishing-ipns": ["publishing-ipns"],
             "resolving-address": ["resolving-subplebbit-address"],
             stopped: ["stopped"],

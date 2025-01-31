@@ -526,9 +526,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
             }
             return cachedSubplebbit;
         } else {
-            const subRes = await this._clientsManager.fetchNewUpdateForSubplebbit(this.subplebbitAddress); // should be changed
+            // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
+            const subRes = await this._plebbit.getSubplebbit(this.subplebbitAddress); // should be changed
             if (!subRes) throw Error("Should fail properly here");
-            return subRes.subplebbit;
+            return subRes.toJSONIpfs();
         }
     }
 

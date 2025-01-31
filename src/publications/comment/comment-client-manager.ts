@@ -447,57 +447,51 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    protected override preFetchSubplebbitIpns(subIpnsName: string) {
-        if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipns");
-        else this._comment._setUpdatingState("fetching-subplebbit-ipns");
-    }
+    // protected override preFetchSubplebbitIpns(subIpnsName: string) {
+    //     if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipns");
+    //     else this._comment._setUpdatingState("fetching-subplebbit-ipns");
+    // }
 
-    protected override preResolveSubplebbitIpnsP2P(subIpnsName: string) {
-        this.updateIpfsState("fetching-subplebbit-ipns");
-    }
+    // protected override preResolveSubplebbitIpnsP2P(subIpnsName: string) {
+    //     this.updateIpfsState("fetching-subplebbit-ipns");
+    // }
 
-    protected override postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
-        this.updateIpfsState("fetching-subplebbit-ipfs");
-        if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipfs");
-        else this._comment._setUpdatingState("fetching-subplebbit-ipfs");
-    }
+    // protected override postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
+    //     this.updateIpfsState("fetching-subplebbit-ipfs");
+    //     if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipfs");
+    //     else this._comment._setUpdatingState("fetching-subplebbit-ipfs");
+    // }
 
-    protected override postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
-        this.updateIpfsState("stopped");
-        if (this._isPublishing()) {
-            this._comment._updatePublishingState("failed");
-        } else this._comment._setUpdatingState("failed");
-        this._comment.emit("error", err);
-        throw err;
-    }
+    // protected override postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
+    //     this.updateIpfsState("stopped");
+    //     if (this._isPublishing()) {
+    //         this._comment._updatePublishingState("failed");
+    //     } else this._comment._setUpdatingState("failed");
+    //     this._comment.emit("error", err);
+    //     throw err;
+    // }
 
-    protected override postFetchSubplebbitStringJsonP2PSuccess() {
-        // If we're updating, then no it shouldn't be stopped cause we're gonna load comment-update after
-        if (this._isPublishing()) this.updateIpfsState("stopped");
-    }
+    // protected override postFetchSubplebbitStringJsonP2PSuccess() {
+    //     // If we're updating, then no it shouldn't be stopped cause we're gonna load comment-update after
+    //     if (this._isPublishing()) this.updateIpfsState("stopped");
+    // }
 
-    protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
-        return this.postResolveSubplebbitIpnsP2PFailure(subIpnsName, err);
-    }
+    // protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
+    //     return this.postResolveSubplebbitIpnsP2PFailure(subIpnsName, err);
+    // }
 
-    protected override postFetchSubplebbitIpfsSuccess(subJson: ResultOfFetchingSubplebbit) {}
+    // protected override postFetchSubplebbitIpfsSuccess(subJson: ResultOfFetchingSubplebbit) {}
 
-    protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
-        // are we updating or publishing?
-        if (this._isPublishing()) {
-            // we're publishing
-            this._comment._updatePublishingState("failed");
-        } else {
-            // we're updating
-            this._comment._setUpdatingState("failed");
-        }
-        this._comment.emit("error", subError);
-        throw subError;
-    }
-
-    override postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
-        // if we're fetching CommentUpdate, it shouldn't be "stopped" after fetching subplebbit-ipfs
-        if (loadOpts.recordPlebbitType === "subplebbit" && !this._isPublishing()) return;
-        else return super.postFetchGatewaySuccess(gatewayUrl, loadOpts);
-    }
+    // protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
+    //     // are we updating or publishing?
+    //     if (this._isPublishing()) {
+    //         // we're publishing
+    //         this._comment._updatePublishingState("failed");
+    //     } else {
+    //         // we're updating
+    //         this._comment._setUpdatingState("failed");
+    //     }
+    //     this._comment.emit("error", subError);
+    //     throw subError;
+    // }
 }

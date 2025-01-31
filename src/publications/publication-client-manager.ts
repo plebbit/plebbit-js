@@ -70,7 +70,6 @@ export class PublicationClientsManager extends ClientsManager {
         chainProviderUrl: string,
         staleCache?: CachedTextRecordResolve
     ): void {
-        // TODO should check for regex of ipns eventually
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
         if (!resolvedTextRecord) {
             this._publication._updatePublishingState("failed");
@@ -103,39 +102,38 @@ export class PublicationClientsManager extends ClientsManager {
         return this._publication.subplebbitAddress;
     }
 
-    protected override preFetchSubplebbitIpns(subIpnsName: string) {
-        this._publication._updatePublishingState("fetching-subplebbit-ipns");
-    }
+    // protected override preFetchSubplebbitIpns(subIpnsName: string) {
+    //     this._publication._updatePublishingState("fetching-subplebbit-ipns");
+    // }
 
-    protected override preResolveSubplebbitIpnsP2P(subIpnsName: string) {
-        this.updateIpfsState("fetching-subplebbit-ipns");
-    }
+    // protected override preResolveSubplebbitIpnsP2P(subIpnsName: string) {
+    //     this.updateIpfsState("fetching-subplebbit-ipns");
+    // }
 
-    protected override postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
-        this.updateIpfsState("fetching-subplebbit-ipfs");
-        this._publication._updatePublishingState("fetching-subplebbit-ipfs");
-    }
+    // protected override postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
+    //     this.updateIpfsState("fetching-subplebbit-ipfs");
+    //     this._publication._updatePublishingState("fetching-subplebbit-ipfs");
+    // }
 
-    protected override postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
-        this.updateIpfsState("stopped");
-        throw err;
-    }
+    // protected override postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
+    //     this.updateIpfsState("stopped");
+    //     throw err;
+    // }
 
-    protected override postFetchSubplebbitStringJsonP2PSuccess() {
-        this.updateIpfsState("stopped");
-    }
+    // protected override postFetchSubplebbitStringJsonP2PSuccess() {
+    //     this.updateIpfsState("stopped");
+    // }
 
-    protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
-        this.updateIpfsState("stopped");
-        // No need to update publication.publishingState here because it's gonna be updated in publication.publish()
-        throw err;
-    }
+    // protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
+    //     this.updateIpfsState("stopped");
+    //     // No need to update publication.publishingState here because it's gonna be updated in publication.publish()
+    //     throw err;
+    // }
 
-    protected override postFetchSubplebbitIpfsSuccess(subJson: ResultOfFetchingSubplebbit) {}
 
-    protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
-        this._publication._updatePublishingState("failed");
-        this._publication.emit("error", subError);
-        throw subError;
-    }
+    // protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
+    //     this._publication._updatePublishingState("failed");
+    //     this._publication.emit("error", subError);
+    //     throw subError;
+    // }
 }

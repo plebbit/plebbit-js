@@ -129,7 +129,8 @@ export type SubplebbitUpdatingState =
     | "fetching-ipns"
     | "fetching-ipfs"
     | "failed"
-    | "succeeded";
+    | "succeeded"
+    | "waiting-retry"; // if we loaded a record but didn't end up using it
 
 // Internal subplebbit state (in DB)
 

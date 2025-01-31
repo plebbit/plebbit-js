@@ -6,8 +6,6 @@ import Logger from "@plebbit/plebbit-logger";
 
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
-import retry, { RetryOperation } from "retry";
-import { ResultOfFetchingSubplebbit } from "../clients/client-manager.js";
 import type {
     CreateRemoteSubplebbitOptions,
     SubplebbitIpfsType,
@@ -73,7 +71,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _lastInvalidSubplebbitCid?: string = undefined; // a subplebbit cid that's invalid signature/schema/etc
     _updatingSubInstanceWithListeners?: { subplebbit: RemoteSubplebbit } & Pick<
         SubplebbitEvents,
-        "error" | "updatingstatechange" | "update"
+        "error" | "updatingstatechange" | "update" | "waiting-retry"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
 
     constructor(plebbit: Plebbit) {
@@ -276,6 +274,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             },
             updatingstatechange: async (newUpdatingState) => {
                 this._setUpdatingState(newUpdatingState);
+            },
+            "waiting-retry": async (error: Error) => {
+                this.emit("waiting-retry", error);
             }
         };
     }
@@ -371,6 +372,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 this._updatingSubInstanceWithListeners.updatingstatechange
             );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener(
+                "error",
+                this._updatingSubInstanceWithListeners["waiting-retry"]
+            );
 
             const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"] as const;
 

@@ -214,7 +214,7 @@ export class BaseClientsManager {
                 return await this.pubsubPublishOnProvider(pubsubTopic, data, pubsubProviderUrl);
             } catch (e) {
                 log.error(`Failed to publish to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
-            providerToError[pubsubProviderUrl] = <PlebbitError>e;
+                providerToError[pubsubProviderUrl] = <PlebbitError>e;
             }
         }
 
