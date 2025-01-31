@@ -2,23 +2,16 @@ import { Plebbit } from "../plebbit/plebbit.js";
 import { hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
 import type { ChainTicker } from "../types.js";
-import { verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
-import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import { GenericKuboRpcClient } from "./ipfs-client.js";
 import { GenericKuboPubsubClient } from "./pubsub-client.js";
 import { GenericChainProviderClient } from "./chain-provider-client.js";
-import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { GenericIpfsGatewayClient } from "./ipfs-gateway-client.js";
 
 import { BaseClientsManager, CachedTextRecordResolve, OptionsToLoadFromGateway } from "./base-client-manager.js";
-import { subplebbitForPublishingCache } from "../constants.js";
 
 import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
-import pLimit from "p-limit";
-import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
-import { CID } from "kubo-rpc-client";
 
 export type ResultOfFetchingSubplebbit =
     | { subplebbit: SubplebbitIpfsType; cid: string } // when we fetch a new subplebbit only

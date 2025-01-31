@@ -516,6 +516,7 @@ export class Comment
                     const mapper: Partial<Record<typeof subplebbitUpdatingState, Comment["updatingState"]>> = {
                         failed: "failed",
                         "fetching-ipfs": "fetching-subplebbit-ipfs",
+                        "waiting-retry": "waiting-retry",
                         "fetching-ipns": "fetching-subplebbit-ipns",
                         "resolving-address": "resolving-subplebbit-address"
                     };
@@ -527,6 +528,7 @@ export class Comment
                             mappedValue !== "resolving-subplebbit-address" &&
                             mappedValue !== "resolving-author-address" &&
                             mappedValue !== "failed" &&
+                            mappedValue !== "waiting-retry" &&
                             mappedValue !== "succeeded"
                         )
                             this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
@@ -602,6 +604,7 @@ export class Comment
             failed: "stopped",
             succeeded: "stopped",
             "fetching-ipfs": "fetching-ipfs",
+            "waiting-retry": "stopped",
             "fetching-subplebbit-ipfs": "fetching-subplebbit-ipfs",
             "fetching-subplebbit-ipns": "fetching-subplebbit-ipns",
             "fetching-update-ipfs": "fetching-update-ipfs",

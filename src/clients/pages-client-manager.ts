@@ -147,29 +147,26 @@ export class BasePagesClientsManager extends BaseClientsManager {
         log.trace(`Fetching page cid (${pageCid}) using rpc`);
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
-            const page = this._pages._parentCid
+            return this._pages._parentCid
                 ? await this._plebbit._plebbitRpcClient!.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
                 : await this._plebbit._plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
-            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
-
-            return page;
         } catch (e) {
             log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
-            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
             throw e;
+        } finally {
+            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
         }
     }
 
     private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
         this.updateIpfsState("fetching-ipfs", sortTypes);
         try {
-            const page = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid)));
-            this.updateIpfsState("stopped", sortTypes);
-            return page;
+            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid)));
         } catch (e) {
-            this.updateIpfsState("stopped", sortTypes);
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
+        } finally {
+            this.updateIpfsState("stopped", sortTypes);
         }
     }
 

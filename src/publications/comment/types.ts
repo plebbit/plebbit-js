@@ -80,7 +80,8 @@ export type CommentUpdatingState =
     | "fetching-subplebbit-ipns"
     | "fetching-subplebbit-ipfs"
     | "failed"
-    | "succeeded";
+    | "succeeded"
+    | "waiting-retry";
 
 // Native types here
 

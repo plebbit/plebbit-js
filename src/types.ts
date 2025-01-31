@@ -131,6 +131,7 @@ export interface PublicationEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
     error: (error: PlebbitError | Error) => void;
+    "waiting-retry": (err: PlebbitError | Error) => void;
 
     // State changes
     publishingstatechange: (newState: Publication["publishingState"]) => void;
