@@ -1033,6 +1033,68 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
     }
 }
 
+export function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecord: any) {
+    const updatingComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
+
+    if (isPlebbitFetchingUsingGateways(commentToBeMocked._plebbit)) {
+        //@ts-expect-error
+        const originalFetch = commentToBeMocked._clientsManager._fetchWithLimit.bind(createdComment._clientsManager);
+        //@ts-expect-error
+        commentToBeMocked._clientsManager._fetchWithLimit = (...args) => {
+            const url = args[0];
+            if (url.includes("/update")) {
+                return { resText: JSON.stringify(commentUpdateRecord) };
+            } else return originalFetch(...args);
+        };
+    } else {
+        // we're using kubo/helia
+        const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
+        //@ts-expect-error
+        updatingComment._clientsManager._fetchCidP2P = (cidOrPath) => {
+            if (cidOrPath.endsWith("/update")) {
+                return JSON.stringify(commentUpdateRecord);
+            } else return originalFetch(cidOrPath);
+        };
+    }
+}
+
+export async function createCommentUpdateWithInvalidSignature(commentCid: string) {
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+
+    const comment = await plebbit.getComment(commentCid);
+
+    await comment.update();
+
+    await resolveWhenConditionIsTrue(comment, async () => typeof comment.updatedAt === "number");
+
+    const invalidCommentUpdateJson = comment._rawCommentUpdate!;
+    await comment.stop();
+
+    invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
+
+    return invalidCommentUpdateJson;
+}
+
+export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any) {
+    const sub = plebbit._updatingSubplebbits[subAddress];
+    if (!sub) throw Error("Can't mock sub when it's not being updated");
+
+    const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
+    if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
+        const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
+        //@ts-expect-error
+        sub._clientsManager._fetchWithLimit = (...args) => {
+            const url = args[0];
+            if (url.includes("ipns")) {
+                return { resText: JSON.stringify(subplebbitRecord) };
+            } else return originalFetch(...args);
+        };
+    } else {
+        // we're using kubo/helia
+        sub._clientsManager.resolveIpnsToCidP2P = async () => subplebbitRecordCid;
+    }
+}
+
 const skipFunction = (_: any) => {};
 skipFunction.skip = () => {};
 

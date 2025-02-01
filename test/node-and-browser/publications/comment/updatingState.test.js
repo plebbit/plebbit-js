@@ -7,9 +7,13 @@ import {
     mockGatewayPlebbit,
     itSkipIfRpc,
     itIfRpc,
+    mockCommentToReturnSpecificCommentUpdate,
+    mockPlebbitToReturnSpecificSubplebbit,
     generatePostToAnswerMathQuestion,
     mockRpcRemotePlebbit,
-    waitTillPostInSubplebbitPages
+    createCommentUpdateWithInvalidSignature,
+    waitTillPostInSubplebbitPages,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -93,4 +97,90 @@ describe("comment.updatingState", async () => {
     });
 
     it(`Add a test for updatingState with resolving-author-address`);
+
+    it(`updating state is set to failed if we encounter an invalid CommentUpdate record`, async () => {
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
+        const createdComment = await plebbit.createComment({
+            cid: commentUpdateWithInvalidSignatureJson.cid
+        });
+
+        const updatingStates = [];
+        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+
+        const createErrorPromise = () =>
+            new Promise((resolve) =>
+                createdComment.once("error", (err) => {
+                    if (err.code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID") resolve();
+                })
+            );
+
+        await createdComment.update();
+
+        await mockCommentToReturnSpecificCommentUpdate(createdComment, commentUpdateWithInvalidSignatureJson);
+
+        await createErrorPromise();
+
+        await publishRandomPost(subplebbitAddress, plebbit); // force subplebbit to publish a new update which will increase loading attempts
+        await createErrorPromise();
+
+        await createdComment.stop();
+
+        const expectedUpdateStates = [
+            "fetching-ipfs",
+            "succeeded",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "fetching-update-ipfs",
+            "failed"
+        ];
+        expect(updatingStates.slice(0, expectedUpdateStates.length)).to.deep.equal(expectedUpdateStates);
+
+        const restOfUpdatingStates = updatingStates.slice(expectedUpdateStates.length, updatingStates.length);
+        for (let i = 0; i < restOfUpdatingStates.length; i += 2) {
+            if (restOfUpdatingStates[i] === "fetching-subplebbit-ipns" && restOfUpdatingStates[i + 1] === "fetching-subplebbit-ipfs") {
+                expect(restOfUpdatingStates[i + 2]).to.equal("fetching-update-ipfs"); // this should be the second attempt to load invalid CommentUpdate
+                expect(restOfUpdatingStates[i + 3]).to.equal("failed");
+            }
+        }
+        expect(updatingStates[updatingStates.length - 1]).to.equal("stopped");
+    });
+    it(`updating state is set to failed if sub has an invalid Subplebbit record`, async () => {
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+        await sub.update(); // need to update it so that we can mock it below
+        const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
+        const createdComment = await plebbit.createComment({
+            cid: sub.posts.pages.hot.comments[0].cid
+        });
+
+        const updatingStates = [];
+        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+
+        const createErrorPromise = () =>
+            new Promise((resolve) =>
+                createdComment.once("error", (err) => {
+                    if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID") resolve();
+                })
+            );
+        delete createdComment._plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs; // need to delete valid record, so plebbit-js will be forced to reload invalid subplebbit
+        await createdComment.update();
+
+        await mockPlebbitToReturnSpecificSubplebbit(createdComment._plebbit, subplebbitAddress, subInvalidRecord);
+
+        await createErrorPromise();
+
+        await createdComment.stop();
+        await sub.stop();
+
+        const expectedUpdateStates = [
+            "fetching-ipfs",
+            "succeeded",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "failed",
+            "stopped"
+        ];
+        expect(updatingStates).to.deep.equal(expectedUpdateStates);
+    });
 });
