@@ -130,7 +130,10 @@ export class PublicationClientsManager extends ClientsManager {
         subplebbitNewGatewayState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"],
         gatewayUrl: string
     ) {
-        if (subplebbitNewGatewayState === "fetching-ipns") this.updateGatewayState("fetching-subplebbit-ipns", gatewayUrl);
+        this.updateGatewayState(
+            subplebbitNewGatewayState === "fetching-ipns" ? "fetching-subplebbit-ipns" : subplebbitNewGatewayState,
+            gatewayUrl
+        );
     }
 
     async _createSubInstanceWithStateTranslation() {

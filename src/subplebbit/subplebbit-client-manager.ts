@@ -159,7 +159,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                         this._subplebbit._setUpdatingState("waiting-retry");
 
                         this._subplebbit.emit("waiting-retry", <Error>e);
-                        log.error(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, e);
+                        log.trace(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, e);
                         this._ipnsLoadingOperation!.retry(<Error>e);
                     }
                 }
