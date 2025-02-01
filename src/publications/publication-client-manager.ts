@@ -110,6 +110,25 @@ export class PublicationClientsManager extends ClientsManager {
 
     handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]) {
         // will be overridden in comment-client-manager to provide a specific states relevant to comment
+        const mapper: Partial<Record<typeof newUpdatingState, Publication["publishingState"]>> = {
+            failed: "failed",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            stopped: "stopped",
+            "waiting-retry": "stopped",
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            "resolving-address": "resolving-subplebbit-address"
+        };
+        const translatedState = mapper[newUpdatingState];
+        if (translatedState) {
+            this._publication._updatePublishingState(translatedState);
+            if (
+                this._defaultIpfsProviderUrl &&
+                (translatedState === "fetching-subplebbit-ipfs" ||
+                    translatedState === "fetching-subplebbit-ipns" ||
+                    translatedState === "stopped")
+            )
+                this.updateIpfsState(translatedState);
+        }
     }
     handleUpdateEventFromSub() {
         // a new update has been emitted by sub
