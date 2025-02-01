@@ -30,6 +30,10 @@ export class PublicationClientsManager extends ClientsManager {
         super(publication._plebbit);
         this._publication = publication;
         this._initPlebbitRpcClients();
+        this.handleErrorEventFromSub = this.handleErrorEventFromSub.bind(this);
+        this.handleIpfsGatewaySubplebbitState = this.handleIpfsGatewaySubplebbitState.bind(this);
+        this.handleUpdateEventFromSub = this.handleUpdateEventFromSub.bind(this);
+        this.handleUpdatingStateChangeEventFromSub = this.handleUpdatingStateChangeEventFromSub.bind(this);
     }
 
     protected override _initKuboRpcClients(): void {
