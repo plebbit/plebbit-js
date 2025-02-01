@@ -469,7 +469,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         else {
             // we're updating a comment
             const log = Logger("plebbit-js:comment:update");
-            log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
+            log.error(
+                "Comment",
+                this._comment.cid,
+                "received a non retriable error from its subplebbit instance. Will stop comment updating",
+                error
+            );
             this._comment._setUpdatingState("failed");
             this._comment.emit("error", error);
             await this._comment.stop();
@@ -489,7 +494,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         const subUpdatingStateToCommentUpdatingState: Partial<Record<typeof newSubUpdatingState, Comment["updatingState"]>> = {
             failed: "failed",
             "fetching-ipfs": "fetching-subplebbit-ipfs",
-            "waiting-retry": "waiting-retry",
             "fetching-ipns": "fetching-subplebbit-ipns",
             "resolving-address": "resolving-subplebbit-address"
         };
@@ -523,64 +527,5 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
         this._translateSubUpdatingStateToCommentGatewayState(newSubUpdatingState);
         this._translateSubUpdatingStateToCommentKuboState(newSubUpdatingState);
-
-        // if (
-        //     newSubUpdatingState === "succeeded" &&
-        //     lastUpdatingStateOfSub !== "fetching-ipfs" &&
-        //     this._clientsManager._defaultIpfsProviderUrl
-        // ) {
-        //     // we fetched IPNS, but it turned out to be the same record we already processed
-        //     this.updateIpfsState("stopped");
-        // } else if (newSubUpdatingState === "succeeded" && this.clients.ipfsGateways)
-        //     for (const gatewayUrl of Object.keys(this.clients.ipfsGateways)) this._clientsManager.updateGatewayState("stopped", gatewayUrl);
-        // lastUpdatingStateOfSub = remeda.clone(newSubUpdatingState);
     }
-
-    // protected override preFetchSubplebbitIpns(subIpnsName: string) {
-    //     if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipns");
-    //     else this._comment._setUpdatingState("fetching-subplebbit-ipns");
-    // }
-
-    // protected override preResolveSubplebbitIpnsP2P(subIpnsName: string) {
-    //     this.updateIpfsState("fetching-subplebbit-ipns");
-    // }
-
-    // protected override postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
-    //     this.updateIpfsState("fetching-subplebbit-ipfs");
-    //     if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipfs");
-    //     else this._comment._setUpdatingState("fetching-subplebbit-ipfs");
-    // }
-
-    // protected override postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
-    //     this.updateIpfsState("stopped");
-    //     if (this._isPublishing()) {
-    //         this._comment._updatePublishingState("failed");
-    //     } else this._comment._setUpdatingState("failed");
-    //     this._comment.emit("error", err);
-    //     throw err;
-    // }
-
-    // protected override postFetchSubplebbitStringJsonP2PSuccess() {
-    //     // If we're updating, then no it shouldn't be stopped cause we're gonna load comment-update after
-    //     if (this._isPublishing()) this.updateIpfsState("stopped");
-    // }
-
-    // protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
-    //     return this.postResolveSubplebbitIpnsP2PFailure(subIpnsName, err);
-    // }
-
-    // protected override postFetchSubplebbitIpfsSuccess(subJson: ResultOfFetchingSubplebbit) {}
-
-    // protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
-    //     // are we updating or publishing?
-    //     if (this._isPublishing()) {
-    //         // we're publishing
-    //         this._comment._updatePublishingState("failed");
-    //     } else {
-    //         // we're updating
-    //         this._comment._setUpdatingState("failed");
-    //     }
-    //     this._comment.emit("error", subError);
-    //     throw subError;
-    // }
 }

@@ -220,38 +220,4 @@ export class PublicationClientsManager extends ClientsManager {
 
         this._subplebbitForUpdating = undefined;
     }
-
-    // protected override preFetchSubplebbitIpns(subIpnsName: string) {
-    //     this._publication._updatePublishingState("fetching-subplebbit-ipns");
-    // }
-
-    // protected override preResolveSubplebbitIpnsP2P(subIpnsName: string) {
-    //     this.updateIpfsState("fetching-subplebbit-ipns");
-    // }
-
-    // protected override postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string) {
-    //     this.updateIpfsState("fetching-subplebbit-ipfs");
-    //     this._publication._updatePublishingState("fetching-subplebbit-ipfs");
-    // }
-
-    // protected override postResolveSubplebbitIpnsP2PFailure(subIpnsName: string, err: PlebbitError): void {
-    //     this.updateIpfsState("stopped");
-    //     throw err;
-    // }
-
-    // protected override postFetchSubplebbitStringJsonP2PSuccess() {
-    //     this.updateIpfsState("stopped");
-    // }
-
-    // protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
-    //     this.updateIpfsState("stopped");
-    //     // No need to update publication.publishingState here because it's gonna be updated in publication.publish()
-    //     throw err;
-    // }
-
-    // protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
-    //     this._publication._updatePublishingState("failed");
-    //     this._publication.emit("error", subError);
-    //     throw subError;
-    // }
 }

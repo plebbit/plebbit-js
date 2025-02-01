@@ -226,7 +226,7 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    private async _fetchWithLimit(
+    async _fetchWithLimit(
         url: string,
         options: { cache: RequestCache; signal: AbortSignal } & Pick<OptionsToLoadFromGateway, "shouldAbortRequestFunc">
     ): Promise<{ resText: string | undefined; res: Response; abortError?: PlebbitError }> {
