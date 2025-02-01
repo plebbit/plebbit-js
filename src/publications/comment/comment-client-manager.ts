@@ -481,34 +481,44 @@ export class CommentClientsManager extends PublicationClientsManager {
         else if (subplebbitNewGatewayState === "fetching-ipns") this.updateGatewayState("fetching-subplebbit-ipns", gatewayUrl);
     }
 
-    override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
-        if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
-
-        // code below is for handling an updating comment
-        const mapper: Partial<Record<typeof newSubUpdatingState, Comment["updatingState"]>> = {
+    _translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
+        const subUpdatingStateToCommentUpdatingState: Partial<Record<typeof newSubUpdatingState, Comment["updatingState"]>> = {
             failed: "failed",
             "fetching-ipfs": "fetching-subplebbit-ipfs",
             "waiting-retry": "waiting-retry",
             "fetching-ipns": "fetching-subplebbit-ipns",
             "resolving-address": "resolving-subplebbit-address"
         };
-        const mappedValue = mapper[newSubUpdatingState];
-        if (mappedValue) {
-            this._comment._setUpdatingState(mappedValue);
-            if (
-                this._defaultIpfsProviderUrl && // we're connected to a kubo client
-                mappedValue !== "resolving-subplebbit-address" &&
-                mappedValue !== "resolving-author-address" &&
-                mappedValue !== "failed" &&
-                mappedValue !== "waiting-retry" &&
-                mappedValue !== "succeeded"
-            )
-                this.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
-            if (mappedValue === "waiting-retry" && !this._defaultIpfsProviderUrl) {
-                // we're using gateways here, need to set all of them to stopped now
-                for (const gatewayUrl of Object.keys(this.clients.ipfsGateways)) this.updateGatewayState("stopped", gatewayUrl);
-            }
-        }
+        const translatedCommentUpdatingState = subUpdatingStateToCommentUpdatingState[newSubUpdatingState];
+        if (translatedCommentUpdatingState) this._comment._setUpdatingState(translatedCommentUpdatingState);
+    }
+    _translateSubUpdatingStateToCommentKuboState(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
+        if (!this._defaultIpfsProviderUrl) return;
+
+        const subUpdatingStateToCommentKuboState: Partial<
+            Record<typeof newSubUpdatingState, Comment["clients"]["kuboRpcClients"][string]["state"]>
+        > = {
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            "waiting-retry": "stopped",
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            stopped: "stopped",
+            failed: "stopped"
+        };
+        const translatedKuboState = subUpdatingStateToCommentKuboState[newSubUpdatingState];
+        if (translatedKuboState) this.updateIpfsState(translatedKuboState);
+    }
+    _translateSubUpdatingStateToCommentGatewayState(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
+        if (this._defaultIpfsProviderUrl) return;
+        if (newSubUpdatingState === "waiting-retry" || newSubUpdatingState === "failed" || newSubUpdatingState === "stopped")
+            for (const gatewayUrl of Object.keys(this.clients.ipfsGateways)) this.updateGatewayState("stopped", gatewayUrl);
+    }
+
+    override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
+        if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
+
+        this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
+        this._translateSubUpdatingStateToCommentGatewayState(newSubUpdatingState);
+        this._translateSubUpdatingStateToCommentKuboState(newSubUpdatingState);
 
         // if (
         //     newSubUpdatingState === "succeeded" &&
