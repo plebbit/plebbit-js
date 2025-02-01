@@ -191,8 +191,4 @@ export class ClientsManager extends BaseClientsManager {
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns" {
         return "fetching-subplebbit-ipns";
     }
-
-    protected _getSubplebbitAddressFromInstance(): string {
-        throw Error("Should be implemented");
-    }
 }

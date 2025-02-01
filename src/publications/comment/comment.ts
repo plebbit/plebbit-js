@@ -103,8 +103,10 @@ export class Comment
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
     } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
 
-    private _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> =
-        undefined;
+    private _updatingCommentInstance?: { comment: Comment } & Pick<
+        PublicationEvents,
+        "error" | "updatingstatechange" | "update" | "waiting-retry"
+    > = undefined;
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this._setUpdatingState("stopped");
@@ -484,94 +486,10 @@ export class Comment
         await this._commentIpfsloadingOperation.stop();
     }
 
-    async _initSubplebbitForUpdatingIfNeeded() {
-        if (!this._subplebbitForUpdating) {
-            const subplebbit =
-                this._plebbit._updatingSubplebbits[this.subplebbitAddress] ||
-                (await this._plebbit.createSubplebbit({ address: this.subplebbitAddress }));
-
-            let lastUpdatingStateOfSub: RemoteSubplebbit["updatingState"] | undefined;
-            this._subplebbitForUpdating = {
-                subplebbit,
-                update: async () => {
-                    // the sub published a new update, let's see if there's a new CommentUpdate
-                    // TODO we need to take care eof critical errors of CommentUpdate here
-
-                    if (this.state === "stopped")
-                        await this.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
-                    else await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(subplebbit._rawSubplebbitIpfs!);
-                },
-                error: async (error: PlebbitError) => {
-                    if (!subplebbit._isRetriableErrorWhenLoading(error)) {
-                        const log = Logger("plebbit-js:comment:update");
-                        log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
-                        this._setUpdatingState("failed");
-                        this.emit("error", error);
-                        await this.stop();
-                    }
-                },
-                updatingstatechange: async (
-                    subplebbitUpdatingState: NonNullable<Comment["_subplebbitForUpdating"]>["subplebbit"]["updatingState"]
-                ) => {
-                    const mapper: Partial<Record<typeof subplebbitUpdatingState, Comment["updatingState"]>> = {
-                        failed: "failed",
-                        "fetching-ipfs": "fetching-subplebbit-ipfs",
-                        "waiting-retry": "waiting-retry",
-                        "fetching-ipns": "fetching-subplebbit-ipns",
-                        "resolving-address": "resolving-subplebbit-address"
-                    };
-                    const mappedValue = mapper[subplebbitUpdatingState];
-                    if (mappedValue) {
-                        this._setUpdatingState(mappedValue);
-                        if (
-                            this._clientsManager._defaultIpfsProviderUrl && // we're connected to a kubo client
-                            mappedValue !== "resolving-subplebbit-address" &&
-                            mappedValue !== "resolving-author-address" &&
-                            mappedValue !== "failed" &&
-                            mappedValue !== "waiting-retry" &&
-                            mappedValue !== "succeeded"
-                        )
-                            this._clientsManager.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
-                    }
-                    if (
-                        subplebbitUpdatingState === "succeeded" &&
-                        lastUpdatingStateOfSub !== "fetching-ipfs" &&
-                        this._clientsManager._defaultIpfsProviderUrl
-                    ) {
-                        // we fetched IPNS, but it turned out to be the same record we already processed
-                        this._clientsManager.updateIpfsState("stopped");
-                    } else if (subplebbitUpdatingState === "succeeded" && this.clients.ipfsGateways)
-                        for (const gatewayUrl of Object.keys(this.clients.ipfsGateways))
-                            this._clientsManager.updateGatewayState("stopped", gatewayUrl);
-                    lastUpdatingStateOfSub = remeda.clone(subplebbitUpdatingState);
-                }
-            };
-
-            if (this._subplebbitForUpdating.subplebbit.clients.ipfsGateways) {
-                const ipfsGatewayListeners: (typeof this._subplebbitForUpdating)["ipfsGatewayListeners"] = {};
-
-                for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways)) {
-                    const ipfsStateListener = (subplebbitNewIpfsState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"]) => {
-                        if (subplebbitNewIpfsState === "fetching-ipns")
-                            this._clientsManager.updateGatewayState("fetching-subplebbit-ipns", gatewayUrl);
-                    };
-                    this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].on("statechange", ipfsStateListener);
-                    ipfsGatewayListeners[gatewayUrl] = ipfsStateListener;
-                }
-                this._subplebbitForUpdating.ipfsGatewayListeners = ipfsGatewayListeners;
-            }
-
-            this._subplebbitForUpdating.subplebbit.on("update", this._subplebbitForUpdating.update);
-
-            this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
-
-            this._subplebbitForUpdating.subplebbit.on("error", this._subplebbitForUpdating.error);
-        }
-    }
-
     async startCommentUpdateSubplebbitSubscription() {
         const log = Logger("plebbit-js:comment:update");
-        await this._initSubplebbitForUpdatingIfNeeded();
+        if (!this._subplebbitForUpdating) this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
+
         if (this._subplebbitForUpdating!.subplebbit.state === "stopped") {
             await this._subplebbitForUpdating!.subplebbit.update();
         }
@@ -725,12 +643,14 @@ export class Comment
                     await this._stopUpdateLoop();
                 }
                 this.emit("error", err);
-            }
+            },
+            "waiting-retry": (err) => this.emit("waiting-retry", err)
         };
         this._useUpdatePropsFromUpdatingCommentIfPossible();
 
         updatingCommentInstance.on("update", this._updatingCommentInstance.update);
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
+        updatingCommentInstance.on("waiting-retry", this._updatingCommentInstance["waiting-retry"]);
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
@@ -805,22 +725,8 @@ export class Comment
         // clean up _subplebbitForUpdating subscriptions
         if (this._subplebbitForUpdating) {
             // this instance is plebbit._updatingComments[cid] and it's updating
-            this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
-            this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
-            this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
 
-            if (this._subplebbitForUpdating.ipfsGatewayListeners) {
-                for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners)) {
-                    this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].removeListener(
-                        "statechange",
-                        this._subplebbitForUpdating.ipfsGatewayListeners[gatewayUrl]
-                    );
-                }
-            }
-            if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
-                // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
-                await this._subplebbitForUpdating.subplebbit.stop();
-
+            await this._clientsManager.cleanUpUpdatingSubInstance();
             this._subplebbitForUpdating = undefined;
             delete this._plebbit._updatingComments[this.cid!];
         }
@@ -831,6 +737,7 @@ export class Comment
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
             this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
+            this._updatingCommentInstance.comment.removeListener("waiting-retry", this._updatingCommentInstance["waiting-retry"]);
 
             const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
 

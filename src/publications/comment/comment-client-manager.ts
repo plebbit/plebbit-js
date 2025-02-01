@@ -23,6 +23,7 @@ import { getPostUpdateTimestampRange } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
 import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
 import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
+import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -337,15 +338,18 @@ export class CommentClientsManager extends PublicationClientsManager {
     async useSubplebbitUpdateToFetchCommentUpdate(subIpns: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitUpdateToFetchCommentUpdate");
         if (!subIpns) throw Error("Failed to fetch the subplebbit to start the comment update process");
+        if (!subIpns.postUpdates) {
+            log("Sub", subIpns.address, "has no postUpdates field. Will wait for next update for comment", this._comment.cid);
+            return undefined;
+        }
 
         const parentsPostUpdatePath = this._comment._commentUpdateIpfsPath
-            ? this._comment._commentUpdateIpfsPath.replace("/update", "").split("/").slice(1).join("/") // not super sure about this expression
+            ? this._comment._commentUpdateIpfsPath.replace("/update", "").split("/").slice(1).join("/")
             : await this._getParentsPath(subIpns);
         const postCid = this._comment.postCid;
         if (!postCid) throw Error("comment.postCid needs to be defined to fetch comment update");
         const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(postCid);
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
-        if (!subIpns.postUpdates) throw Error("Subplebbit IPNS record has no postUpdates field");
         const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
         this._comment._setUpdatingState("fetching-update-ipfs");
@@ -445,6 +449,64 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment.emit("error", error);
             throw error;
         }
+    }
+
+    // will handling sub states down here
+    override async handleUpdateEventFromSub() {
+        // a new update has been emitted by sub
+        if (this._comment.state === "stopped")
+            await this._comment.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
+        else await this.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs!);
+    }
+
+    override async handleErrorEventFromSub(error: PlebbitError | Error) {
+        // we received a non retriable error from sub instance
+        if (this._comment.state === "publishing") return super.handleErrorEventFromSub(error);
+        else {
+            // we're updating a comment
+            const log = Logger("plebbit-js:comment:update");
+            log.error("Comment received a non retriable error from its subplebbit instance. Will stop comment updating", error);
+            this._comment._setUpdatingState("failed");
+            this._comment.emit("error", error);
+            await this._comment.stop();
+        }
+    }
+
+    override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
+        if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
+
+        // code below is for handling an updating comment
+        const mapper: Partial<Record<typeof newSubUpdatingState, Comment["updatingState"]>> = {
+            failed: "failed",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            "waiting-retry": "waiting-retry",
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            "resolving-address": "resolving-subplebbit-address"
+        };
+        const mappedValue = mapper[newSubUpdatingState];
+        if (mappedValue) {
+            this._comment._setUpdatingState(mappedValue);
+            if (
+                this._defaultIpfsProviderUrl && // we're connected to a kubo client
+                mappedValue !== "resolving-subplebbit-address" &&
+                mappedValue !== "resolving-author-address" &&
+                mappedValue !== "failed" &&
+                mappedValue !== "waiting-retry" &&
+                mappedValue !== "succeeded"
+            )
+                this.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
+        }
+
+        // if (
+        //     newSubUpdatingState === "succeeded" &&
+        //     lastUpdatingStateOfSub !== "fetching-ipfs" &&
+        //     this._clientsManager._defaultIpfsProviderUrl
+        // ) {
+        //     // we fetched IPNS, but it turned out to be the same record we already processed
+        //     this.updateIpfsState("stopped");
+        // } else if (newSubUpdatingState === "succeeded" && this.clients.ipfsGateways)
+        //     for (const gatewayUrl of Object.keys(this.clients.ipfsGateways)) this._clientsManager.updateGatewayState("stopped", gatewayUrl);
+        // lastUpdatingStateOfSub = remeda.clone(newSubUpdatingState);
     }
 
     // protected override preFetchSubplebbitIpns(subIpnsName: string) {

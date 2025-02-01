@@ -130,7 +130,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         }
     }
 
-    protected override _getSubplebbitAddressFromInstance(): string {
+    protected _getSubplebbitAddressFromInstance(): string {
         return this._subplebbit.address;
     }
 
