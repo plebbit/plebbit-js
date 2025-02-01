@@ -472,6 +472,15 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
+    override handleIpfsGatewaySubplebbitState(
+        subplebbitNewGatewayState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"],
+        gatewayUrl: string
+    ) {
+        if (this._comment.state === "publishing") return super.handleIpfsGatewaySubplebbitState(subplebbitNewGatewayState, gatewayUrl);
+        // we're updating
+        else if (subplebbitNewGatewayState === "fetching-ipns") this.updateGatewayState("fetching-subplebbit-ipns", gatewayUrl);
+    }
+
     override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
         if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
 
@@ -495,6 +504,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                 mappedValue !== "succeeded"
             )
                 this.updateIpfsState(mappedValue); // this does not support multiple ipfs clients
+            if (mappedValue === "waiting-retry" && !this._defaultIpfsProviderUrl) {
+                // we're using gateways here, need to set all of them to stopped now
+                for (const gatewayUrl of Object.keys(this.clients.ipfsGateways)) this.updateGatewayState("stopped", gatewayUrl);
+            }
         }
 
         // if (
