@@ -36,7 +36,13 @@ import {
     verifyChallengeMessage,
     verifyChallengeVerification
 } from "../signer/signatures.js";
-import { hideClassPrivateProps, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
+import {
+    awaitSubInstanceForUpdateWithErrorAndTimeout,
+    hideClassPrivateProps,
+    shortifyAddress,
+    throwWithErrorCode,
+    timestamp
+} from "../util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
@@ -65,7 +71,7 @@ import {
     decodeRpcChallengeRequestPubsubMsg,
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
-import { PublicationPublishingState, PublicationState } from "./types.js";
+import type { PublicationPublishingState, PublicationState } from "./types.js";
 import type { SignerType } from "../signer/types.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PublicationClientsManager } from "./publication-client-manager.js";
@@ -522,14 +528,24 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // cache.has will return false if the item is stale
             if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
-                this._plebbit.getSubplebbit(this.subplebbitAddress); // will update cache in background
+                this._plebbit
+                    .getSubplebbit(this.subplebbitAddress)
+                    .catch((e) => log.error("Failed to update cache of subplebbit", this.subplebbitAddress, e)); // will update cache in background, will not update current comment states
             }
             return cachedSubplebbit;
         } else {
             // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
-            const subRes = await this._plebbit.getSubplebbit(this.subplebbitAddress); // should be changed
-            if (!subRes) throw Error("Should fail properly here");
-            return subRes.toJSONIpfs();
+            const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation(); // should be changed
+            let subIpfs: SubplebbitIpfsType;
+            if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
+                const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
+                await awaitSubInstanceForUpdateWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+            } else subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+
+            await this._clientsManager.cleanUpUpdatingSubInstance();
+            if (!subIpfs) throw Error("Should fail properly here");
+            return subIpfs;
         }
     }
 
@@ -715,7 +731,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
         } catch (e) {
             this._updateState("stopped");
             this._updatePublishingState("failed");
-            if (this._clientsManager._defaultIpfsProviderUrl) this._clientsManager.updateIpfsState("stopped");
             throw e;
         }
 

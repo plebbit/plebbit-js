@@ -20,6 +20,10 @@ import type {
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
 } from "./pubsub-messages/types.js";
 import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/schema.js";
+import EventEmitter from "events";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import pTimeout, { TimeoutError } from "p-timeout";
+
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -239,7 +243,9 @@ export function isIpfsPath(x: string): boolean {
     return x.startsWith("/ipfs/");
 }
 
-export function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption: Parameters<typeof CreateKuboRpcClient>[0]): KuboRpcClient["_clientOptions"] {
+export function parseIpfsRawOptionToIpfsOptions(
+    kuboRpcRawOption: Parameters<typeof CreateKuboRpcClient>[0]
+): KuboRpcClient["_clientOptions"] {
     if (!kuboRpcRawOption) throw Error("Need to define the ipfs options");
     if (typeof kuboRpcRawOption === "string" || kuboRpcRawOption instanceof URL) {
         const url = new URL(kuboRpcRawOption);
@@ -289,4 +295,38 @@ export function isRequestPubsubPublicationOfPost(
     request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
 ): request is DecryptedChallengeRequestMessageWithPostSubplebbitAuthor {
     return Boolean(request.comment && !request.comment.parentCid);
+}
+
+export async function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName = "update") {
+    // should add a timeout?
+    if (!(await predicate()))
+        await new Promise((resolve) => {
+            toUpdate.on(eventName, async () => {
+                const conditionStatus = await predicate();
+                if (conditionStatus) resolve(conditionStatus);
+            });
+        });
+}
+
+export async function awaitSubInstanceForUpdateWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {
+    const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+    let updateError: PlebbitError | undefined;
+    const errorListener = (err: PlebbitError) => (updateError = err);
+    subplebbit.on("error", errorListener);
+    try {
+        await subplebbit.update();
+        await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
+            milliseconds: timeoutMs,
+            message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
+        });
+        if (updateError) throw updateError;
+    } catch (e) {
+        if (updateError) throw updateError;
+        if (subplebbit._plebbit._updatingSubplebbits[subplebbit.address]?._clientsManager._ipnsLoadingOperation?.mainError())
+            throw subplebbit._plebbit._updatingSubplebbits[subplebbit.address]!._clientsManager!._ipnsLoadingOperation!.mainError();
+        throw e;
+    } finally {
+        subplebbit.removeListener("error", errorListener);
+        await subplebbit.stop();
+    }
 }

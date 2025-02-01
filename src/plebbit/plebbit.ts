@@ -19,7 +19,13 @@ import type {
     AuthorPubsubType
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import {
+    awaitSubInstanceForUpdateWithErrorAndTimeout,
+    doesDomainAddressHaveCapitalLetter,
+    hideClassPrivateProps,
+    removeUndefinedValuesRecursively,
+    timestamp
+} from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -308,26 +314,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
-        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        let updateError: PlebbitError | undefined;
-        const errorListener = (err: PlebbitError) => (updateError = err);
-        subplebbit.on("error", errorListener);
-        try {
-            await subplebbit.update();
-            await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
-                milliseconds: timeoutMs,
-                message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
-            });
-            if (updateError) throw updateError;
-        } catch (e) {
-            if (updateError) throw updateError;
-            if (this._updatingSubplebbits[subplebbit.address]?._clientsManager._ipnsLoadingOperation?.mainError())
-                throw this._updatingSubplebbits[subplebbit.address]!._clientsManager!._ipnsLoadingOperation!.mainError();
-            throw e;
-        } finally {
-            subplebbit.removeListener("error", errorListener);
-            await subplebbit.stop();
-        }
+        await awaitSubInstanceForUpdateWithErrorAndTimeout(subplebbit, timeoutMs);
 
         return subplebbit;
     }
