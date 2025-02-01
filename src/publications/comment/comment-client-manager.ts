@@ -369,6 +369,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._commentUpdateIpfsPath = newCommentUpdate.commentUpdateIpfsPath;
             this._comment._setUpdatingState("succeeded");
             this._comment.emit("update", this._comment);
+        } else if (newCommentUpdate === undefined) {
+            log.trace(`Comment`, this._comment.cid, "did not receive any new CommentUpdate");
+            this._comment._setUpdatingState("waiting-retry");
+            this._comment.emit("waiting-retry", new PlebbitError("ERR_COMMENT_RECEIVED_ALREADY_PROCESSED_COMMENT_UPDATE"));
         }
     }
 
