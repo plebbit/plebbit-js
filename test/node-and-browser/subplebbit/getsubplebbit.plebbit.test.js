@@ -73,7 +73,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`plebbit.getSubplebbit times out if subplebbit does not load`, async () => {
             const doesNotExistSubplebbitAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zx"; // random sub address, should not be able to resolve this
             const customPlebbit = await config.plebbitInstancePromise();
-            customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
+            customPlebbit._clientsManager.getGatewayTimeoutMs = () => 1 * 1000; // change timeout from 5min to 1s
 
             try {
                 await customPlebbit.getSubplebbit(doesNotExistSubplebbitAddress);
