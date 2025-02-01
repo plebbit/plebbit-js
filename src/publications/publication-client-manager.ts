@@ -108,27 +108,35 @@ export class PublicationClientsManager extends ClientsManager {
         super.updateGatewayState(newState, gateway);
     }
 
-    handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]) {
-        // will be overridden in comment-client-manager to provide a specific states relevant to comment
+    _translateSubUpdatingStateToPublishingState(newUpdatingState: RemoteSubplebbit["updatingState"]) {
         const mapper: Partial<Record<typeof newUpdatingState, Publication["publishingState"]>> = {
             failed: "failed",
             "fetching-ipfs": "fetching-subplebbit-ipfs",
-            stopped: "stopped",
-            "waiting-retry": "stopped",
             "fetching-ipns": "fetching-subplebbit-ipns",
             "resolving-address": "resolving-subplebbit-address"
         };
         const translatedState = mapper[newUpdatingState];
-        if (translatedState) {
-            this._publication._updatePublishingState(translatedState);
-            if (
-                this._defaultIpfsProviderUrl &&
-                (translatedState === "fetching-subplebbit-ipfs" ||
-                    translatedState === "fetching-subplebbit-ipns" ||
-                    translatedState === "stopped")
-            )
-                this.updateIpfsState(translatedState);
-        }
+        if (translatedState) this._publication._updatePublishingState(translatedState);
+    }
+
+    _translateSubUpdatingStateToKuboClientState(newUpdatingState: RemoteSubplebbit["updatingState"]) {
+        if (!this._defaultIpfsProviderUrl) return;
+        const mapper: Partial<Record<typeof newUpdatingState, Publication["clients"]["kuboRpcClients"][string]["state"]>> = {
+            failed: "stopped",
+            stopped: "stopped",
+            succeeded: "stopped",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            "fetching-ipns": "fetching-subplebbit-ipns"
+        };
+        const translatedState = mapper[newUpdatingState];
+        if (translatedState) this.updateIpfsState(translatedState);
+    }
+
+    handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]) {
+        // will be overridden in comment-client-manager to provide a specific states relevant to comment updating
+        // below is for handling translation to publishingState
+        this._translateSubUpdatingStateToPublishingState(newUpdatingState);
+        this._translateSubUpdatingStateToKuboClientState(newUpdatingState);
     }
     handleUpdateEventFromSub() {
         // a new update has been emitted by sub
