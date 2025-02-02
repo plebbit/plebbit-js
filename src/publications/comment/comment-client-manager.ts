@@ -204,6 +204,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             } catch (e) {
                 // there's a problem with the record itself
                 this._comment._invalidCommentUpdateMfsPaths.push(path);
+                if (e instanceof PlebbitError) e.details = { ...e.details, commentUpdatePath: path, commentCid: this._comment.cid };
                 throw e;
             }
         }
@@ -214,7 +215,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         });
     }
 
-    _shouldWeFetchCommentUpdateFromNextTimestamp(err: PlebbitError): boolean {
+    _shouldWeFetchCommentUpdateFromNextTimestamp(err: PlebbitError | Error): boolean {
         // Is there a problem with the record itself, or is this an issue with fetching?
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (
@@ -323,6 +324,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     continue;
                 } else {
                     // non retriable error
+                    // a problem with the record itself, bad signature/schema/etc
                     this._comment._invalidCommentUpdateMfsPaths.push(path);
                     throw e;
                 }
