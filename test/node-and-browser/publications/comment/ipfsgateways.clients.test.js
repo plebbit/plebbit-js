@@ -3,7 +3,9 @@ import {
     generateMockPost,
     publishWithExpectedResult,
     describeSkipIfRpc,
+    mockCommentToReturnSpecificCommentUpdate,
     mockGatewayPlebbit,
+    createCommentUpdateWithInvalidSignature,
     mockRemotePlebbit,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
@@ -100,7 +102,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`Correct order of ipfs clients state when we update a comment but its subplebbit is not publishing new updates`, async () => {
+    it(`Correct order of ipfs gateway  clients state when we update a comment but its subplebbit is not publishing new updates`, async () => {
         const customPlebbit = await mockGatewayPlebbit();
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
@@ -144,5 +146,48 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         }
 
         await sub.stop();
+    });
+
+    it(`Correct order of ipfs gateway states when we update a comment but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
+        const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
+
+        const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
+
+        const createdComment = await gatewayPlebbit.createComment({
+            cid: commentUpdateWithInvalidSignatureJson.cid
+        });
+
+        const ipfsGatewayStates = [];
+        const kuboGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
+        createdComment.clients.ipfsGateways[kuboGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
+
+        const createErrorPromise = () => new Promise((resolve) => createdComment.once("error", resolve));
+        await createdComment.update();
+
+        await mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+
+        await createErrorPromise();
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 3));
+        await createdComment.stop();
+
+        const expectedIpfsGatewayStates = [
+            "fetching-ipfs", // fetching comment-ipfs
+            "stopped",
+            "fetching-subplebbit-ipns", // fetching subplebbit + comment update
+            "fetching-update-ipfs",
+            "stopped"
+        ];
+
+        expect(ipfsGatewayStates.slice(0, expectedIpfsGatewayStates.length)).to.deep.equal(expectedIpfsGatewayStates);
+
+        const restOfIpfsStates = ipfsGatewayStates.slice(expectedIpfsGatewayStates.length, ipfsGatewayStates.length);
+        for (let i = 0; i < restOfIpfsStates.length; i += 2) {
+            if (restOfIpfsStates[i] === "fetching-subplebbit-ipns" && restOfIpfsStates[i + 1] === "fetching-subplebbit-ipfs") {
+                expect(restOfIpfsStates[i + 2]).to.equal("fetching-update-ipfs"); // this should be the second attempt to load invalid CommentUpdate
+                expect(restOfIpfsStates[i + 3]).to.equal("stopped");
+            }
+        }
+        expect(ipfsGatewayStates[ipfsGatewayStates.length - 1]).to.equal("stopped");
     });
 });

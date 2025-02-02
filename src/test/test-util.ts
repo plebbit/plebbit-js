@@ -1033,17 +1033,17 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
     }
 }
 
-export function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecord: any) {
+export function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
     const updatingComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
+    if (!updatingComment) throw Error("Comment should be updating before starting to mock");
 
-    if (isPlebbitFetchingUsingGateways(commentToBeMocked._plebbit)) {
+    if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
+        const originalFetch = updatingComment._clientsManager._fetchWithLimit.bind(updatingComment._clientsManager);
         //@ts-expect-error
-        const originalFetch = commentToBeMocked._clientsManager._fetchWithLimit.bind(createdComment._clientsManager);
-        //@ts-expect-error
-        commentToBeMocked._clientsManager._fetchWithLimit = (...args) => {
+        updatingComment._clientsManager._fetchWithLimit = (...args) => {
             const url = args[0];
             if (url.includes("/update")) {
-                return { resText: JSON.stringify(commentUpdateRecord) };
+                return { resText: commentUpdateRecordString };
             } else return originalFetch(...args);
         };
     } else {
@@ -1052,7 +1052,7 @@ export function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comm
         //@ts-expect-error
         updatingComment._clientsManager._fetchCidP2P = (cidOrPath) => {
             if (cidOrPath.endsWith("/update")) {
-                return JSON.stringify(commentUpdateRecord);
+                return commentUpdateRecordString;
             } else return originalFetch(cidOrPath);
         };
     }
@@ -1079,7 +1079,6 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     const sub = plebbit._updatingSubplebbits[subAddress];
     if (!sub) throw Error("Can't mock sub when it's not being updated");
 
-    const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
         const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
         //@ts-expect-error
@@ -1090,6 +1089,7 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
             } else return originalFetch(...args);
         };
     } else {
+        const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
         // we're using kubo/helia
         sub._clientsManager.resolveIpnsToCidP2P = async () => subplebbitRecordCid;
     }

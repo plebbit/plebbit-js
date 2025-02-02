@@ -181,7 +181,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
             );
         await createdComment.update();
 
-        await mockCommentToReturnSpecificCommentUpdate(createdComment, commentUpdateWithInvalidSignatureJson);
+        await mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
         await createErrorPromise();
 
