@@ -8,7 +8,8 @@ import {
     overrideCommentInstancePropsAndSign,
     setExtraPropOnCommentAndSign,
     disableValidationOfSignatureBeforePublishing,
-    itSkipIfRpc
+    itSkipIfRpc,
+    mockPlebbitToReturnSpecificSubplebbit
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
@@ -35,18 +36,24 @@ describe(`Client side verification`, async () => {
 
     itSkipIfRpc(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockRemotePlebbit();
-        const subJson = (await customPlebbit.getSubplebbit(subplebbitAddress)).toJSONIpfs();
-        subJson.updatedAt += 1; // should invalidate the signature
-        expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
-            valid: false,
-            reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID
-        });
+        const invalidSubRecord = (await customPlebbit.getSubplebbit(subplebbitAddress)).toJSONIpfs();
+        invalidSubRecord.updatedAt += 1; // should invalidate the signature
 
+        const updatingSub = await customPlebbit.getSubplebbit(subplebbitAddress);
+        await updatingSub.update();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, subplebbitAddress, invalidSubRecord);
         const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);
         mockPost._getSubplebbitCache = () => undefined;
-        mockPost._clientsManager._fetchCidP2P = (address) => JSON.stringify(subJson);
 
-        await assert.isRejected(mockPost.publish(), messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID);
+        try {
+            await mockPost.publish();
+            expect.fail("should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+        } finally {
+            await updatingSub.stop();
+        }
     });
 });
 
