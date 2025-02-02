@@ -138,7 +138,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     private async _retryLoadingSubplebbitAddress(
         subplebbitAddress: SubplebbitIpfsType["address"]
-    ): Promise<ResultOfFetchingSubplebbit | PlebbitError | Error> {
+    ): Promise<ResultOfFetchingSubplebbit | { criticalError: Error | PlebbitError }> {
         const log = Logger("plebbit-js:remote-subplebbit:update:_retryLoadingSubplebbitIpns");
 
         return new Promise((resolve) => {
@@ -150,16 +150,14 @@ export class SubplebbitClientsManager extends ClientsManager {
                 } catch (e) {
                     if (e instanceof Error && !this._subplebbit._isRetriableErrorWhenLoading(e)) {
                         // critical error that can't be retried
-                        this._subplebbit._setUpdatingState("failed");
-                        resolve(e);
+                        resolve({ criticalError: e });
                     } else {
                         // we encountered a retriable error, could be gateways failing to load
                         // does not include gateways returning an old record
                         if (e instanceof PlebbitError) e.details.countOfLoadAttempts = curAttempt;
                         this._subplebbit._setUpdatingState("waiting-retry");
-
-                        this._subplebbit.emit("waiting-retry", <Error>e);
                         log.trace(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, e);
+                        this._subplebbit.emit("waiting-retry", <Error>e);
                         this._ipnsLoadingOperation!.retry(<Error>e);
                     }
                 }
@@ -179,21 +177,23 @@ export class SubplebbitClientsManager extends ClientsManager {
         const log = Logger("plebbit-js:remote-subplebbit:update");
 
         this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
-        const loadedSubIpfsOrError = await this._retryLoadingSubplebbitAddress(this._subplebbit.address); // will return undefined if no new sub CID is found
+        const subLoadingRes = await this._retryLoadingSubplebbitAddress(this._subplebbit.address); // will return undefined if no new sub CID is found
         this._ipnsLoadingOperation.stop();
 
-        if (loadedSubIpfsOrError instanceof Error) {
+        if (subLoadingRes && "criticalError" in subLoadingRes) {
             log.error(
                 `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`
             );
-            if (loadedSubIpfsOrError instanceof PlebbitError) {
-                const invalidCid = this._findInvalidCidInNonRetriableError(loadedSubIpfsOrError);
+            this._subplebbit._setUpdatingState("failed");
+
+            if (subLoadingRes instanceof PlebbitError) {
+                const invalidCid = this._findInvalidCidInNonRetriableError(subLoadingRes);
                 if (invalidCid) this._subplebbit._lastInvalidSubplebbitCid = invalidCid;
             }
-            this._subplebbit.emit("error", <PlebbitError>loadedSubIpfsOrError);
-        } else if (loadedSubIpfsOrError?.subplebbit && (this._subplebbit.updatedAt || 0) < loadedSubIpfsOrError.subplebbit.updatedAt) {
-            await this._subplebbit.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError.subplebbit);
-            this._subplebbit.updateCid = loadedSubIpfsOrError.cid;
+            this._subplebbit.emit("error", <PlebbitError>subLoadingRes.criticalError);
+        } else if (subLoadingRes?.subplebbit && (this._subplebbit.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt) {
+            await this._subplebbit.initSubplebbitIpfsPropsNoMerge(subLoadingRes.subplebbit);
+            this._subplebbit.updateCid = subLoadingRes.cid;
             log(
                 `Remote Subplebbit`,
                 this._subplebbit.address,
@@ -204,7 +204,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                 "seconds old"
             );
             this._subplebbit.emit("update", this._subplebbit);
-        } else if (loadedSubIpfsOrError === undefined) {
+        } else if (subLoadingRes === undefined) {
             // we loaded a sub record that we already consumed
             // we will retry later
             this._subplebbit._setUpdatingState("waiting-retry");

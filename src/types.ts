@@ -112,8 +112,8 @@ export interface SubplebbitEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
 
-    error: (error: PlebbitError) => void;
-    "waiting-retry": (err: Error) => void;
+    error: (error: PlebbitError | PlebbitError) => void;
+    "waiting-retry": (err: Error | PlebbitError) => void;
 
     // State changes
     statechange: (newState: RemoteSubplebbit["state"]) => void;
