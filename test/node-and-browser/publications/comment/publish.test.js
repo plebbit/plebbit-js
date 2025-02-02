@@ -233,6 +233,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`publish() can be caught if subplebbit failed to load`, async () => {
             const downSubplebbitAddress = signers[7].address; // an offline sub
             const post = await generateMockPost(downSubplebbitAddress, plebbit);
+            post._clientsManager.getGatewayTimeoutMs = () => 1 * 1000; // need to change time out from 5 minutes to 1s
 
             try {
                 await post.publish();
@@ -241,6 +242,8 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(e.code).to.be.oneOf(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"]);
                 // await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
             }
+            expect(post.publishingState).to.equal("failed");
+            expect(post.state).to.equal("stopped");
         });
 
         it(`Can publish a post whose signature is defined prior to plebbit.createComment()`, async () => {
