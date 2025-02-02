@@ -1079,6 +1079,9 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     const sub = plebbit._updatingSubplebbits[subAddress];
     if (!sub) throw Error("Can't mock sub when it's not being updated");
 
+    delete sub._rawSubplebbitIpfs;
+    delete sub.updatedAt;
+    delete sub.updateCid;
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
         const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
         //@ts-expect-error

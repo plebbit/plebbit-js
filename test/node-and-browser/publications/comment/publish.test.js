@@ -320,17 +320,24 @@ getRemotePlebbitConfigs().map((config) => {
 });
 
 describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub providers`, async () => {
-    it(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
+    it(`comment.publish() can be caught if one of the gateways threw 429 status code and other not responding`, async () => {
         // move
-        const error429Gateway = `http://localhost:13416`;
+        const error429Gateway = `http://localhost:13416`; // this gateway always returns 429 status code
         const normalIpfsGateway = `http://localhost:18080`;
-        const subAddress = signers[7].address;
+        const offlineSubAddress = signers[7].address; // offline sub
         const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] });
-        expect(Object.keys(gatewayPlebbit.clients.ipfsGateways)).to.deep.equal([error429Gateway, normalIpfsGateway]);
+        const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
-        const post = await generateMockPost(subAddress, gatewayPlebbit);
+        post._clientsManager.getGatewayTimeoutMs = () => 3000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
 
-        await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
+        try {
+            await post.publish();
+            expect.fail("should not resolve");
+        } catch (e) {
+            expect(e.code, messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
+            expect(e.details.gatewayToError[error429Gateway].details.status).to.equal(429);
+            expect(e.details.gatewayToError[normalIpfsGateway].details.status).to.equal(500);
+        }
     });
     it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit({
