@@ -539,8 +539,10 @@ export class Comment
     private _isRetriableLoadingError(err: Error | PlebbitError) {
         // Critical Errors for now are:
         // Invalid signature of CommentIpfs
-        // CommentUpdate will always be retried
-        return this._isCommentIpfsErrorRetriable(err);
+        // CommentUpdate will always be retried when a new sub update is loaded
+        if (this._rawCommentIpfs)
+            return true; // if we already loaded CommentIpfs, we should always retry loading CommentUpdate
+        else return this._isCommentIpfsErrorRetriable(err);
     }
 
     private _handleUpdateEventFromRpc(args: any) {

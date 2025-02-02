@@ -362,8 +362,25 @@ export class CommentClientsManager extends PublicationClientsManager {
                 newCommentUpdate = await this._fetchNewCommentUpdateIpfsP2P(subIpns, timestampRanges, parentsPostUpdatePath, log);
             else newCommentUpdate = await this._fetchCommentUpdateFromGateways(subIpns, timestampRanges, parentsPostUpdatePath, log);
         } catch (e) {
-            this._comment._setUpdatingState("failed");
-            this._comment.emit("error", <PlebbitError>e);
+            if (e instanceof Error) {
+                if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
+                    // this is a retriable error
+                    // could be problems loading from the network or gateways
+                    log.trace(`Comment`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
+                    this._comment._setUpdatingState("waiting-retry");
+                    this._comment.emit("waiting-retry", e);
+                } else {
+                    // non retriable error, problem with schema/signature
+                    log.error(
+                        "Received a non retriable error when attempting to load commentUpdate. Will be emitting error",
+                        this._comment.cid!,
+                        e
+                    );
+                    this._comment._setUpdatingState("failed");
+                    this._comment.emit("error", e);
+                }
+            }
+            return;
         }
         if (newCommentUpdate && (this._comment._rawCommentUpdate?.updatedAt || 0) < newCommentUpdate.commentUpdate.updatedAt) {
             log(`Comment (${this._comment.cid}) received a new CommentUpdate`);
@@ -372,7 +389,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingState("succeeded");
             this._comment.emit("update", this._comment);
         } else if (newCommentUpdate === undefined) {
-            log.trace(`Comment`, this._comment.cid, "did not receive any new CommentUpdate");
+            log.trace(`Comment`, this._comment.cid, "loaded an old comment update. Ignoring it");
             this._comment._setUpdatingState("waiting-retry");
             this._comment.emit("waiting-retry", new PlebbitError("ERR_COMMENT_RECEIVED_ALREADY_PROCESSED_COMMENT_UPDATE"));
         }
