@@ -342,6 +342,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!subIpns) throw Error("Failed to fetch the subplebbit to start the comment update process");
         if (!subIpns.postUpdates) {
             log("Sub", subIpns.address, "has no postUpdates field. Will wait for next update for comment", this._comment.cid);
+            this._comment._setUpdatingState("waiting-retry");
+            this._comment.emit("waiting-retry", new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES"));
             return undefined;
         }
 

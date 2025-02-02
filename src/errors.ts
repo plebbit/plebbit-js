@@ -35,6 +35,7 @@ export enum messages {
     ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS = "Failed to fetch IPFS file from gateways(s)",
     ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P = "Failed to resolve IPNS through IPFS P2P. It may have resolved IPNS name to an undefined CID",
     ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES = "Failed to fetch CommentUpdate from all post update timestamp ranges",
+    ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES = "Subplebbit has no postUpdates field and therefore can't fetch a commentUpdate",
     ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",

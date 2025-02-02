@@ -408,7 +408,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         const cleanUp = () => {
             queueLimit.clearQueue();
             Object.values(gatewayFetches).map((gateway) => {
-                if (!gateway.subplebbitRecord && !gateway.error) gateway.abortController.abort();
+                if (!gateway.subplebbitRecord && !gateway.error && !gateway.abortError) gateway.abortController.abort();
                 clearTimeout(gateway.timeoutId);
             });
         };
@@ -483,10 +483,14 @@ export class SubplebbitClientsManager extends ClientsManager {
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
             const allGatewaysAborted = Object.keys(gatewayFetches)
                 .map((gatewayUrl) => gatewayFetches[gatewayUrl].abortError)
-                .every(Boolean); // all gateway returned old update cids we already consumed
+                .every(Boolean);
+            if (allGatewaysAborted) return undefined; // all gateways returned old update cids we already consumed
 
-            if (allGatewaysAborted) return undefined;
-            const combinedError = new FailedToFetchSubplebbitFromGatewaysError({ ipnsName, gatewayToError });
+            const combinedError = new FailedToFetchSubplebbitFromGatewaysError({
+                ipnsName,
+                gatewayToError,
+                subplebbitAddress: this._subplebbit.address
+            });
             delete combinedError.stack;
             throw combinedError;
         }
