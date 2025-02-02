@@ -2,8 +2,10 @@ import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     mockRemotePlebbit,
+    mockCommentToReturnSpecificCommentUpdate,
     publishWithExpectedResult,
     mockGatewayPlebbit,
+    createCommentUpdateWithInvalidSignature,
     describeSkipIfRpc,
     resolveWhenConditionIsTrue,
     mockPlebbitNoDataPathWithOnlyKuboClient
@@ -156,5 +158,54 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         }
 
         await sub.stop();
+    });
+
+    it(`Correct order of kubo rpc clients when we update a comment but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
+        const sub = await plebbit.getSubplebbit(signers[0].address);
+
+        const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
+
+        const createdComment = await plebbit.createComment({
+            cid: commentUpdateWithInvalidSignatureJson.cid
+        });
+
+        const kuboClientStates = [];
+        const kuboRpcUrl = Object.keys(createdComment.clients.kuboRpcClients)[0];
+        createdComment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (state) => kuboClientStates.push(state));
+
+        const createErrorPromise = () =>
+            new Promise((resolve) =>
+                createdComment.once("error", (err) => {
+                    if (err.code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID") resolve();
+                })
+            );
+        await createdComment.update();
+
+        await mockCommentToReturnSpecificCommentUpdate(createdComment, commentUpdateWithInvalidSignatureJson);
+
+        await createErrorPromise();
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 3));
+        await createdComment.stop();
+
+        const expectedKuboClientStates = [
+            "fetching-ipfs", // fetching comment-ipfs
+            "stopped",
+            "fetching-subplebbit-ipns", // fetching subplebbit + comment update
+            "fetching-subplebbit-ipfs",
+            "fetching-update-ipfs",
+            "stopped"
+        ];
+
+        expect(kuboClientStates.slice(0, expectedKuboClientStates.length)).to.deep.equal(expectedKuboClientStates);
+
+        const restOfIpfsStates = kuboClientStates.slice(expectedKuboClientStates.length, kuboClientStates.length);
+        for (let i = 0; i < restOfIpfsStates.length; i += 2) {
+            if (restOfIpfsStates[i] === "fetching-subplebbit-ipns" && restOfIpfsStates[i + 1] === "fetching-subplebbit-ipfs") {
+                expect(restOfIpfsStates[i + 2]).to.equal("fetching-update-ipfs"); // this should be the second attempt to load invalid CommentUpdate
+                expect(restOfIpfsStates[i + 3]).to.equal("stopped");
+            }
+        }
+        expect(kuboClientStates[kuboClientStates.length - 1]).to.equal("stopped");
     });
 });

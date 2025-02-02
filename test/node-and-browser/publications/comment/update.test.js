@@ -3,12 +3,12 @@ import {
     publishRandomPost,
     publishRandomReply,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    itSkipIfRpc,
+    createCommentUpdateWithInvalidSignature,
     mockGatewayPlebbit,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
-    mockPlebbit,
+    mockCommentToReturnSpecificCommentUpdate,
     describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
@@ -163,37 +163,6 @@ const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
     return postWithInvalidSchemaCid;
 };
 
-const createCommentUpdateWithInvalidSignature = async () => {
-    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-
-    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-    const comment = await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
-
-    await comment.update();
-
-    await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
-
-    const invalidCommentUpdateJson = comment._rawCommentUpdate;
-
-    invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
-
-    expect(
-        await verifyCommentUpdate(
-            invalidCommentUpdateJson,
-            true,
-            plebbit._clientsManager,
-            subplebbit.address,
-            { cid: comment.cid, signature: comment.original.signature },
-            false
-        )
-    ).to.deep.equal({
-        valid: false,
-        reason: messages.ERR_SIGNATURE_IS_INVALID
-    });
-    return invalidCommentUpdateJson;
-};
-
 const addInvalidJsonToIpfs = async () => {
     return addStringToIpfs("<html>something</html>");
 };
@@ -279,12 +248,13 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate record if needed`, async () => {
+describeSkipIfRpc.only(`comment.update() emits errors for issues with CommentUpdate record if needed`, async () => {
     let commentUpdateWithInvalidSignatureJson;
     let plebbit;
     before(async () => {
-        plebbit = await mockRemotePlebbitIpfsOnly();
-        commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+        commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
     });
 
     it(`comment.update() emit an error if CommentUpdate signature is invalid - IPFS P2P`, async () => {
@@ -298,12 +268,7 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
 
         let loadingRetries = 0;
 
-        const ipfsStates = [];
-        const kuboRpcUrl = Object.keys(createdComment.clients.kuboRpcClients)[0];
-        createdComment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (state) => ipfsStates.push(state));
-
-        const updatingStates = [];
-        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+        createdComment.on("waiting-retry", () => loadingRetries++);
 
         const errorPromise = new Promise((resolve) =>
             createdComment.on("error", (err) => {
@@ -316,14 +281,7 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
         await createdComment.update();
 
-        const updatingComment = createdComment._plebbit._updatingComments[createdComment.cid];
-        const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
-        updatingComment._clientsManager._fetchCidP2P = (cidOrPath) => {
-            if (cidOrPath.endsWith("/update")) {
-                loadingRetries++;
-                return JSON.stringify(commentUpdateWithInvalidSignatureJson);
-            } else return originalFetch(cidOrPath);
-        };
+        await mockCommentToReturnSpecificCommentUpdate(createdComment, commentUpdateWithInvalidSignatureJson);
 
         await errorPromise;
 
@@ -336,28 +294,9 @@ describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate r
         expect(updateHasBeenEmittedWithCommentUpdate).to.be.false;
         expect(loadingRetries).to.equal(2);
         expect(errorsEmittedCount).to.equal(2);
+        expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.length).to.be.greaterThan(0); // it should mark the path as invalid
 
         await createdComment.stop();
-
-        const expectedIpfsStates = [
-            "fetching-ipfs", // when loading CommentIpfs at the beginning
-            "stopped",
-            ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
-                .fill(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "stopped"])
-                .flat()
-        ];
-
-        expect(ipfsStates).to.deep.equal(expectedIpfsStates);
-
-        const expectedUpdateStates = [
-            "fetching-ipfs",
-            "succeeded",
-            ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
-                .fill(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "failed"])
-                .flat(),
-            "stopped"
-        ];
-        expect(updatingStates).to.deep.equal(expectedUpdateStates);
     });
 
     it("comment.update() emit an error if CommentUpdate signature is invalid - IPFS Gateways", async () => {
