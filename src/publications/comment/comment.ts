@@ -440,14 +440,19 @@ export class Comment
                 try {
                     this._setUpdatingState("fetching-ipfs");
                     const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
-                    this._setUpdatingState("succeeded");
                     resolve(res);
                 } catch (e) {
-                    if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
-                    this._setUpdatingState("failed");
-                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
-                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) this._commentIpfsloadingOperation!.retry(<Error>e);
-                    else return resolve(<PlebbitError>e);
+                    if (e instanceof PlebbitError && e.details) e.details = { ...e.details, commentCid: this.cid, retryCount: curAttempt };
+                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) {
+                        log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
+
+                        this._setUpdatingState("waiting-retry");
+                        this.emit("waiting-retry", <PlebbitError>e);
+                        this._commentIpfsloadingOperation!.retry(<Error>e);
+                    } else {
+                        // a non retriable error
+                        return resolve(<PlebbitError>e);
+                    }
                 }
             });
         });
@@ -472,6 +477,7 @@ export class Comment
                 return;
             } else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
+                this._setUpdatingState("succeeded");
                 this._initIpfsProps(newCommentIpfsOrNonRetriableError);
                 this.emit("update", this);
             }
