@@ -539,11 +539,19 @@ class Publication extends TypedEmitter<PublicationEvents> {
             let subIpfs: SubplebbitIpfsType;
             if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
                 const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
-                await awaitSubInstanceForUpdateWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                try {
+                    await awaitSubInstanceForUpdateWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                    subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+                } catch (e) {
+                    await this._clientsManager.cleanUpUpdatingSubInstance();
+                    throw e;
+                }
+                await this._clientsManager.cleanUpUpdatingSubInstance();
+            } else {
                 subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
-            } else subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+                await this._clientsManager.cleanUpUpdatingSubInstance();
+            }
 
-            await this._clientsManager.cleanUpUpdatingSubInstance();
             if (!subIpfs) throw Error("Should fail properly here");
             return subIpfs;
         }
