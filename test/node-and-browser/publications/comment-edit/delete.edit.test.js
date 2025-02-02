@@ -30,10 +30,10 @@ getRemotePlebbitConfigs().map((config) => {
                 publishRandomPost(subplebbitAddress, plebbit),
                 publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
             ]);
-            postReply = await publishRandomReply(postToDelete, plebbit, {});
-            postToDelete.update();
-            modPostToDelete.update();
-            postReply.update();
+            postReply = await publishRandomReply(postToDelete, plebbit);
+            await postToDelete.update();
+            await modPostToDelete.update();
+            await postReply.update();
         });
 
         after(async () => {
@@ -77,7 +77,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToDelete.deleted).to.be.true;
             expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
             expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.true;
-            expect(postToDelete.reason).to.be.undefined; // .reason is only for mod
+            expect(postToDelete.reason).to.be.undefined; // reason is only for mod
             expect(postToDelete.edit.reason).to.equal("To test delete for author");
             expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("To test delete for author");
             expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
@@ -89,7 +89,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await resolveWhenConditionIsTrue(sub, async () => {
                 const postInPage = await findCommentInPage(postToDelete.cid, sub.posts.pageCids.new, sub.posts);
-                return !Boolean(postInPage);
+                return postInPage === undefined;
             });
 
             await sub.stop();
