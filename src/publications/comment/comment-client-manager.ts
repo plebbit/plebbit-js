@@ -504,9 +504,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._comment.postCid) {
             const postCommentReplyPages = this._plebbit._updatingComments[this._comment.postCid]?._rawCommentUpdate?.replies;
 
-            if (postCommentReplyPages) 
-                return findCommentInPagesRecrusively(postCommentReplyPages, this._comment.cid, this._comment.depth);
-            
+            if (postCommentReplyPages) return findCommentInPagesRecrusively(postCommentReplyPages, this._comment.cid, this._comment.depth);
         }
 
         // need to look for comment recursively in this._subplebbitForUpdating

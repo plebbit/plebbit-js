@@ -439,11 +439,13 @@ export class Comment
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit();
-                    if (commentInPage) return commentInPage.comment;
-
-                    this._setUpdatingState("fetching-ipfs");
-                    const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
-                    resolve(res);
+                    if (commentInPage) {
+                        resolve(commentInPage.comment);
+                    } else {
+                        this._setUpdatingState("fetching-ipfs");
+                        const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
+                        resolve(res);
+                    }
                 } catch (e) {
                     if (e instanceof PlebbitError && e.details) e.details = { ...e.details, commentCid: this.cid, retryCount: curAttempt };
                     if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) {
@@ -499,7 +501,7 @@ export class Comment
         const log = Logger("plebbit-js:comment:update");
         if (!this._subplebbitForUpdating) this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
 
-        if (this._subplebbitForUpdating!.subplebbit.state === "stopped") {
+        if (this._subplebbitForUpdating.subplebbit.state === "stopped") {
             await this._subplebbitForUpdating!.subplebbit.update();
         }
         if (this._subplebbitForUpdating.subplebbit._rawSubplebbitIpfs) await this._clientsManager.handleUpdateEventFromSub();

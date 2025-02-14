@@ -337,6 +337,12 @@ export class SubplebbitClientsManager extends ClientsManager {
                 if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
                 // get ipfs cid of IPNS from header or calculate it
                 const subCid = await calculateIpfsHash(gatewayRes.resText); // cid v0
+                if (subCid !== gatewayRes.res.headers.get("x-ipfs-roots"))
+                    throw new PlebbitError("ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS", {
+                        "header-x-ipfs-roots": gatewayRes.res.headers.get("x-ipfs-roots"),
+                        "calculated-x-ipfs-roots": subCid
+                    });
+
                 let subIpfs: SubplebbitIpfsType;
                 try {
                     subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
