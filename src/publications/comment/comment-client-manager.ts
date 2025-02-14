@@ -24,6 +24,7 @@ import { PublicationClientsManager } from "../publication-client-manager.js";
 import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
 import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
+import { findCommentInPages, findCommentInPagesRecrusively } from "../../pages/util.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -338,6 +339,21 @@ export class CommentClientsManager extends PublicationClientsManager {
         });
     }
 
+    _useLoadedCommentUpdateIfNewInfo(
+        loadedCommentUpdate: NonNullable<NewCommentUpdate> | Pick<NonNullable<NewCommentUpdate>, "commentUpdate">,
+        log: Logger
+    ) {
+        if ((this._comment._rawCommentUpdate?.updatedAt || 0) < loadedCommentUpdate.commentUpdate.updatedAt) {
+            log(`Comment (${this._comment.cid}) received a new CommentUpdate`);
+            this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate);
+            if ("commentUpdateIpfsPath" in loadedCommentUpdate)
+                this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
+            this._comment._setUpdatingState("succeeded");
+            this._comment.emit("update", this._comment);
+            return true;
+        } else return false;
+    }
+
     async useSubplebbitUpdateToFetchCommentUpdate(subIpns: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitUpdateToFetchCommentUpdate");
         if (!subIpns) throw Error("Failed to fetch the subplebbit to start the comment update process");
@@ -385,12 +401,8 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             return;
         }
-        if (newCommentUpdate && (this._comment._rawCommentUpdate?.updatedAt || 0) < newCommentUpdate.commentUpdate.updatedAt) {
-            log(`Comment (${this._comment.cid}) received a new CommentUpdate`);
-            this._comment._initCommentUpdate(newCommentUpdate.commentUpdate);
-            this._comment._commentUpdateIpfsPath = newCommentUpdate.commentUpdateIpfsPath;
-            this._comment._setUpdatingState("succeeded");
-            this._comment.emit("update", this._comment);
+        if (newCommentUpdate) {
+            this._useLoadedCommentUpdateIfNewInfo(newCommentUpdate, log);
         } else if (newCommentUpdate === undefined) {
             log.trace(`Comment`, this._comment.cid, "loaded an old comment update. Ignoring it");
             this._comment._setUpdatingState("waiting-retry");
@@ -477,12 +489,58 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
+    _findCommentUpdateFromUpdatingCommentsSubplebbit() {
+        if (this._comment.depth === 0 && this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts)
+            // this is a post, might be able to find it in subplebbit pages
+            return findCommentInPages(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs.posts, this._comment.cid!);
+
+        if (this._comment.parentCid && this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies) {
+            const parentCommentReplyPages = this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies;
+            if (parentCommentReplyPages) {
+                const pageCommentFromParentComment = findCommentInPages(parentCommentReplyPages, this._comment.cid!);
+                if (pageCommentFromParentComment) return pageCommentFromParentComment;
+            }
+        } else if (this._comment.postCid && this._plebbit._updatingComments[this._comment.postCid]?._rawCommentUpdate?.replies) {
+            const postCommentReplyPages = this._plebbit._updatingComments[this._comment.postCid]?._rawCommentUpdate?.replies;
+
+            if (postCommentReplyPages) {
+                const pageCommentFromPostComment = findCommentInPagesRecrusively(
+                    postCommentReplyPages,
+                    this._comment.cid!,
+                    this._comment.depth!
+                );
+                if (pageCommentFromPostComment) return pageCommentFromPostComment;
+            }
+        }
+
+        if (this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts) {
+            // need to look for comment recursively in this._subplebbitForUpdating
+            return findCommentInPagesRecrusively(
+                this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs.posts,
+                this._comment.cid!,
+                this._comment.depth!
+            );
+        }
+    }
+
     // will handling sub states down here
     override async handleUpdateEventFromSub() {
         // a new update has been emitted by sub
         if (this._comment.state === "stopped")
             await this._comment.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
-        else await this.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs!);
+        else if (this._comment.cid) {
+            // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
+            // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
+            const commentInPage = this._findCommentUpdateFromUpdatingCommentsSubplebbit();
+
+            if (commentInPage) {
+                const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments");
+                const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: commentInPage.commentUpdate }, log);
+                if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
+            }
+            // we didn't manage to find any update from pages, let's fetch an update from post updates
+            await this.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs!);
+        }
     }
 
     override async handleErrorEventFromSub(error: PlebbitError | Error) {

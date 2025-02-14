@@ -181,3 +181,47 @@ export function parseRawPages(
         };
     }
 }
+
+// finding comments within pages
+
+export function findCommentInPages(
+    pageIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs,
+    targetCommentCid: string
+): PageIpfs["comments"][0] | undefined {
+    if (!pageIpfs) return undefined;
+
+    for (const page of Object.values(pageIpfs.pages))
+        for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCommentCid) return pageComment;
+
+    return undefined;
+}
+
+export function findCommentInPagesRecrusively(
+    pages: RepliesPagesTypeIpfs | PostsPagesTypeIpfs,
+    targetCid: string,
+    targetDepth: number,
+    visited = new Set<string>()
+): PageIpfs["comments"][0] | undefined {
+    // Check all pages in the current level
+    for (const [pageCid, page] of Object.entries(pages.pages)) {
+        // Skip if we've visited this page
+        if (visited.has(pageCid)) continue;
+
+        visited.add(pageCid);
+
+        const currentDepth = page.comments[0].comment.depth;
+
+        if (currentDepth === targetDepth) {
+            for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCid) return pageComment;
+        } else if (currentDepth < targetDepth) {
+            for (const pageComment of page.comments) {
+                if (pageComment.commentUpdate.replies?.pages) {
+                    const result = findCommentInPagesRecrusively(pageComment.commentUpdate.replies, targetCid, targetDepth, visited);
+                    if (result) return result;
+                }
+            }
+        }
+    }
+
+    return undefined;
+}
