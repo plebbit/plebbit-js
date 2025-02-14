@@ -54,14 +54,12 @@ getRemotePlebbitConfigs().map((config) => {
         });
         it(`Removed post don't show in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const removedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
-                    if (!removedPostInPage) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const removedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
+                return removedPostInPage === undefined;
+            });
 
             await sub.stop();
 
@@ -124,14 +122,13 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Unremoved post is included in subplebbit.posts with removed=false`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const unremovedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
-                    if (unremovedPostInPage) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const unremovedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
+                return Boolean(unremovedPostInPage);
+            });
+
             await sub.stop();
 
             for (const pageCid of Object.values(sub.posts.pageCids)) {
@@ -180,9 +177,9 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            post = await publishRandomPost(subplebbitAddress, plebbit, {});
-            replyToBeRemoved = await publishRandomReply(post, plebbit, {});
-            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit, {});
+            post = await publishRandomPost(subplebbitAddress, plebbit);
+            replyToBeRemoved = await publishRandomReply(post, plebbit);
+            replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit);
             await Promise.all([replyToBeRemoved.update(), post.update(), new Promise((resolve) => post.once("update", resolve))]);
         });
 
