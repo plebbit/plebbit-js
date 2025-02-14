@@ -95,31 +95,36 @@ getRemotePlebbitConfigs().map((config) => {
             const plebbit = await config.plebbitInstancePromise();
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
-            // await new Promise((resolve) => setTimeout(resolve, 300));
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
 
             const commentCid = sub.posts.pages.hot.comments[0].cid;
             const comment1 = await plebbit.createComment({ cid: commentCid });
             const comment2 = await plebbit.createComment({ cid: commentCid });
 
+            expect(comment1._subplebbitForUpdating).to.be.undefined;
+
             await comment1.update();
             await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
-            expect(comment1._subplebbitForUpdating).to.be.a("object");
+
+            const updatingCommentInstance = plebbit._updatingComments[comment1.cid];
+            expect(updatingCommentInstance).to.exist;
+            expect(updatingCommentInstance._subplebbitForUpdating).to.be.a("object");
             expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1);
 
             await comment2.update();
             await resolveWhenConditionIsTrue(comment2, () => typeof comment2.updatedAt === "number");
-            expect(comment1._subplebbitForUpdating).to.be.a("object");
+            expect(updatingCommentInstance._subplebbitForUpdating).to.be.a("object");
 
-            expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(2);
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1); // should not change
 
             await comment1.stop();
 
-            expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1);
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1); // should not change
 
             await comment2.stop();
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
+            expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
         });
     });
 });
