@@ -502,13 +502,18 @@ export class Comment
         if (this._subplebbitForUpdating!.subplebbit.state === "stopped") {
             await this._subplebbitForUpdating!.subplebbit.update();
         }
-        if (this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs) await this._clientsManager.handleUpdateEventFromSub();
+        if (this._subplebbitForUpdating.subplebbit._rawSubplebbitIpfs) await this._clientsManager.handleUpdateEventFromSub();
     }
 
-    async updateOnce() {
+    async loadCommentIpfsAndStartCommentUpdateSubscription() {
+        const log = Logger("plebbit-js:update:loadCommentIpfsAndStartCommentUpdateSubscription");
         await this._attemptInfintelyToLoadCommentIpfs();
         if (!this._rawCommentIpfs) throw Error("Failed to load comment ipfs, user needs to check error event");
-        await this.startCommentUpdateSubplebbitSubscription(); // can only proceed if commentIpfs has been loaded successfully
+        try {
+            await this.startCommentUpdateSubplebbitSubscription(); // can only proceed if commentIpfs has been loaded successfully
+        } catch (e) {
+            log.error("Failed to start comment update subscription to subplebbit", e);
+        }
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {
@@ -709,7 +714,7 @@ export class Comment
         this._useUpdatingCommentFromPlebbit();
         updatingCommentInstance._updateState("updating");
 
-        updatingCommentInstance.updateOnce().catch((e) => log.error("Failed to update comment", e));
+        updatingCommentInstance.loadCommentIpfsAndStartCommentUpdateSubscription().catch((e) => log.error("Failed to update comment", e));
     }
 
     async update() {

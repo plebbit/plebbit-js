@@ -199,7 +199,7 @@ export function findCommentInPages(
 export function findCommentInPagesRecrusively(
     pages: RepliesPagesTypeIpfs | PostsPagesTypeIpfs,
     targetCid: string,
-    targetDepth: number,
+    targetDepth: number | undefined,
     visited = new Set<string>()
 ): PageIpfs["comments"][0] | undefined {
     // Check all pages in the current level
@@ -211,9 +211,11 @@ export function findCommentInPagesRecrusively(
 
         const currentDepth = page.comments[0].comment.depth;
 
-        if (currentDepth === targetDepth) {
+        if (currentDepth === targetDepth || targetDepth === undefined) {
             for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCid) return pageComment;
-        } else if (currentDepth < targetDepth) {
+        }
+
+        if (targetDepth === undefined || currentDepth < targetDepth) {
             for (const pageComment of page.comments) {
                 if (pageComment.commentUpdate.replies?.pages) {
                     const result = findCommentInPagesRecrusively(pageComment.commentUpdate.replies, targetCid, targetDepth, visited);

@@ -490,33 +490,27 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     _findCommentInPagesOfUpdatingCommentsSubplebbit() {
+        if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
         const updatingSubplebbitPosts = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs?.posts;
-        if (this._comment.depth === 0 && updatingSubplebbitPosts)
-            // this is a post, might be able to find it in subplebbit pages
-            return findCommentInPages(updatingSubplebbitPosts, this._comment.cid!);
+        if (!updatingSubplebbitPosts) return undefined;
 
-        if (this._comment.parentCid && this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies) {
+        if (this._comment.depth === 0 || this._comment.postCid === this._comment.cid)
+            return findCommentInPages(updatingSubplebbitPosts, this._comment.cid);
+
+        if (this._comment.parentCid) {
             const parentCommentReplyPages = this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies;
-            if (parentCommentReplyPages) {
-                const pageCommentFromParentComment = findCommentInPages(parentCommentReplyPages, this._comment.cid!);
-                if (pageCommentFromParentComment) return pageCommentFromParentComment;
-            }
-        } else if (this._comment.postCid && this._plebbit._updatingComments[this._comment.postCid]?._rawCommentUpdate?.replies) {
+            if (parentCommentReplyPages) return findCommentInPages(parentCommentReplyPages, this._comment.cid);
+        }
+        if (this._comment.postCid) {
             const postCommentReplyPages = this._plebbit._updatingComments[this._comment.postCid]?._rawCommentUpdate?.replies;
 
-            if (postCommentReplyPages) {
-                const pageCommentFromPostComment = findCommentInPagesRecrusively(
-                    postCommentReplyPages,
-                    this._comment.cid!,
-                    this._comment.depth!
-                );
-                if (pageCommentFromPostComment) return pageCommentFromPostComment;
-            }
+            if (postCommentReplyPages) 
+                return findCommentInPagesRecrusively(postCommentReplyPages, this._comment.cid, this._comment.depth);
+            
         }
 
-        if (updatingSubplebbitPosts)
-            // need to look for comment recursively in this._subplebbitForUpdating
-            return findCommentInPagesRecrusively(updatingSubplebbitPosts, this._comment.cid!, this._comment.depth!);
+        // need to look for comment recursively in this._subplebbitForUpdating
+        return findCommentInPagesRecrusively(updatingSubplebbitPosts, this._comment.cid, this._comment.depth);
     }
 
     // will handling sub states down here

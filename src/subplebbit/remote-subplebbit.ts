@@ -236,7 +236,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (updatingSub?._rawSubplebbitIpfs && (this.updatedAt || 0) < updatingSub._rawSubplebbitIpfs.updatedAt) {
             await this.initSubplebbitIpfsPropsNoMerge(updatingSub._rawSubplebbitIpfs);
             this.updateCid = updatingSub.updateCid;
-            log(
+            log.trace(
                 `New Remote Subplebbit instance`,
                 this.address,
                 `will use SubplebbitIpfs from plebbit._updatingSubplebbits[${this.address}] with updatedAt`,
