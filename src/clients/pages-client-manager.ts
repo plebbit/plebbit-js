@@ -10,9 +10,9 @@ import Logger from "@plebbit/plebbit-logger";
 import { BasePages } from "../pages/pages.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { hideClassPrivateProps } from "../util.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
-    // pageClients.ipfsGateways['new']['https://ipfs.io']
     clients: {
         ipfsGateways: { [sortType: string]: { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient } };
         kuboRpcClients: { [sortType: string]: { [kuboRpcClientUrl: string]: PagesKuboRpcClient } };
@@ -31,6 +31,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._initPlebbitRpcClients();
 
         if (pages.pageCids) this.updatePageCidsToSortTypes(pages.pageCids);
+        hideClassPrivateProps(this);
     }
 
     protected getSortTypes(): string[] {

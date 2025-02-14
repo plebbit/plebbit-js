@@ -19,7 +19,7 @@ import {
 import { FailedToFetchCommentUpdateFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { verifyCommentIpfs, verifyCommentUpdate } from "../../signer/signatures.js";
 import Logger from "@plebbit/plebbit-logger";
-import { getPostUpdateTimestampRange } from "../../util.js";
+import { getPostUpdateTimestampRange, hideClassPrivateProps } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
 import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
 import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
@@ -41,6 +41,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     constructor(comment: Comment) {
         super(comment);
         this._comment = comment;
+        hideClassPrivateProps(this);
     }
 
     protected override _initKuboRpcClients(): void {
