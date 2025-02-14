@@ -437,6 +437,8 @@ export class Comment
         return new Promise((resolve) => {
             this._commentIpfsloadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
+                const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit();
+                if (commentInPage) return commentInPage.comment;
                 try {
                     this._setUpdatingState("fetching-ipfs");
                     const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);

@@ -489,7 +489,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    _findCommentUpdateFromUpdatingCommentsSubplebbit() {
+    _findCommentInPagesOfUpdatingCommentsSubplebbit() {
         if (this._comment.depth === 0 && this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts)
             // this is a post, might be able to find it in subplebbit pages
             return findCommentInPages(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs.posts, this._comment.cid!);
@@ -531,7 +531,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         else if (this._comment.cid) {
             // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
             // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
-            const commentInPage = this._findCommentUpdateFromUpdatingCommentsSubplebbit();
+            const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit();
 
             if (commentInPage) {
                 const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments");
