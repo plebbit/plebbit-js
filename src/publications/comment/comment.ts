@@ -437,9 +437,10 @@ export class Comment
         return new Promise((resolve) => {
             this._commentIpfsloadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
-                const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit();
-                if (commentInPage) return commentInPage.comment;
                 try {
+                    const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit();
+                    if (commentInPage) return commentInPage.comment;
+
                     this._setUpdatingState("fetching-ipfs");
                     const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
                     resolve(res);
@@ -501,8 +502,7 @@ export class Comment
         if (this._subplebbitForUpdating!.subplebbit.state === "stopped") {
             await this._subplebbitForUpdating!.subplebbit.update();
         }
-        if (this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs)
-            await this._clientsManager.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs);
+        if (this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs) await this._clientsManager.handleUpdateEventFromSub();
     }
 
     async updateOnce() {

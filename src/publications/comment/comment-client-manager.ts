@@ -490,9 +490,10 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     _findCommentInPagesOfUpdatingCommentsSubplebbit() {
-        if (this._comment.depth === 0 && this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts)
+        const updatingSubplebbitPosts = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs?.posts;
+        if (this._comment.depth === 0 && updatingSubplebbitPosts)
             // this is a post, might be able to find it in subplebbit pages
-            return findCommentInPages(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs.posts, this._comment.cid!);
+            return findCommentInPages(updatingSubplebbitPosts, this._comment.cid!);
 
         if (this._comment.parentCid && this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies) {
             const parentCommentReplyPages = this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies;
@@ -513,33 +514,33 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
         }
 
-        if (this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts) {
+        if (updatingSubplebbitPosts)
             // need to look for comment recursively in this._subplebbitForUpdating
-            return findCommentInPagesRecrusively(
-                this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs.posts,
-                this._comment.cid!,
-                this._comment.depth!
-            );
-        }
+            return findCommentInPagesRecrusively(updatingSubplebbitPosts, this._comment.cid!, this._comment.depth!);
     }
 
     // will handling sub states down here
     override async handleUpdateEventFromSub() {
+        const log = Logger("plebbit-js:comment:update");
         // a new update has been emitted by sub
         if (this._comment.state === "stopped")
             await this._comment.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
         else if (this._comment.cid) {
             // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
             // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
-            const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit();
+            try {
+                const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit();
 
-            if (commentInPage) {
-                const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments");
-                const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: commentInPage.commentUpdate }, log);
-                if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
+                if (commentInPage) {
+                    const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments");
+                    const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: commentInPage.commentUpdate }, log);
+                    if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
+                }
+                // we didn't manage to find any update from pages, let's fetch an update from post updates
+                await this.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs!);
+            } catch (e) {
+                log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
             }
-            // we didn't manage to find any update from pages, let's fetch an update from post updates
-            await this.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs!);
         }
     }
 
