@@ -1033,18 +1033,31 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
     }
 }
 
-export function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
+export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
     const updatingComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
     if (!updatingComment) throw Error("Comment should be updating before starting to mock");
 
-    if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
-        const originalFetch = updatingComment._clientsManager._fetchWithLimit.bind(updatingComment._clientsManager);
+    delete updatingComment.updatedAt;
+    delete updatingComment._rawCommentUpdate;
+    //@ts-expect-error
+    delete updatingComment._subplebbitForUpdating?.subplebbit?.updateCid;
+    //@ts-expect-error
+    if (updatingComment._subplebbitForUpdating?.subplebbit?._clientsManager?._oldUpdateCidsFromGateways)
         //@ts-expect-error
-        updatingComment._clientsManager._fetchWithLimit = (...args) => {
-            const url = args[0];
-            if (url.includes("/update")) {
-                return { resText: commentUpdateRecordString };
-            } else return originalFetch(...args);
+        updatingComment._subplebbitForUpdating.subplebbit._clientsManager._oldUpdateCidsFromGateways = [];
+    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
+    if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
+        const originalFetch = updatingComment._clientsManager.fetchFromMultipleGateways.bind(updatingComment._clientsManager);
+
+        updatingComment._clientsManager.fetchFromMultipleGateways = async (...args) => {
+            const commentUpdateCid = await addStringToIpfs(commentUpdateRecordString);
+            if (args[0].recordPlebbitType === "comment-update")
+                return originalFetch({
+                    ...args[0],
+                    root: commentUpdateCid,
+                    path: undefined
+                });
+            else return originalFetch(...args);
         };
     } else {
         // we're using kubo/helia
