@@ -367,7 +367,10 @@ export class BaseClientsManager {
                 resObj = await fetchPromise;
                 if (loadOpts.recordIpfsType === "ipns") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
             }
-            if (resObj.abortError) throw resObj.abortError;
+            if (resObj.abortError) {
+                if (!loadOpts.abortController.signal.aborted) loadOpts.abortController.abort(resObj.abortError.message);
+                throw resObj.abortError;
+            }
 
             await loadOpts.validateGatewayResponseFunc(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, loadOpts);
@@ -501,7 +504,6 @@ export class BaseClientsManager {
             return fileContent;
         };
 
-        // TODO the caching of subplebbit ipns should extend to its signature, it's a waste of processing power to verify a subplebbit multiple times
         try {
             if (p2pCidPromiseCache.has(cid)) return <string>await p2pCidPromiseCache.get(cid);
             else {

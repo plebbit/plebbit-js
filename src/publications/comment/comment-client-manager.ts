@@ -149,7 +149,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         return finalParentsPath;
     }
 
-    private _calculatePathForCommentUpdate(folderCid: string, parentsPostUpdatePath: string) {
+    _calculatePathForCommentUpdate(folderCid: string, parentsPostUpdatePath: string) {
         return `${folderCid}/` + parentsPostUpdatePath + "/update";
     }
 

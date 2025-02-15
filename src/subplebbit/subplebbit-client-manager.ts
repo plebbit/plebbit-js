@@ -374,7 +374,6 @@ export class SubplebbitClientsManager extends ClientsManager {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
 
-                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     return error;
                 }
 
@@ -385,7 +384,6 @@ export class SubplebbitClientsManager extends ClientsManager {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
                     // this gateway responded with a subplebbit whose record we know to be invalid
-                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     return error;
                 }
 
@@ -395,7 +393,6 @@ export class SubplebbitClientsManager extends ClientsManager {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
                     // this gateway responded with a subplebbit whose record we know to be invalid
-                    gatewayFetches[gatewayUrl].abortController.abort(error.message);
                     return error;
                 }
             };
