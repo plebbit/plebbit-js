@@ -155,7 +155,7 @@ getRemotePlebbitConfigs().map((config) => {
             });
         });
 
-        describe(`Loading a comment with author.extraProp`, async () => {
+        describe(`Loading a comment with author.extraProp - ${config.name}`, async () => {
             let postWithExtraAuthorProp;
             const extraProps = { extraProp: "1234" };
 
