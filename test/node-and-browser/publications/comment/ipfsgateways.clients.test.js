@@ -5,6 +5,7 @@ import {
     describeSkipIfRpc,
     mockCommentToReturnSpecificCommentUpdate,
     mockGatewayPlebbit,
+    mockCommentToNotUsePagesForUpdates,
     createCommentUpdateWithInvalidSignature,
     mockRemotePlebbit,
     resolveWhenConditionIsTrue
@@ -34,7 +35,6 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
 
         const mockPost = await gatewayPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
-
         const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"];
 
         const actualStates = [];
@@ -44,7 +44,8 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
         await mockPost.update();
-        await new Promise((resolve) => mockPost.on("update", () => typeof mockPost.upvoteCount === "number" && resolve()));
+        mockCommentToNotUsePagesForUpdates(mockPost);
+        await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
         await mockPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
@@ -64,7 +65,8 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
         await mockPost.update();
-        await new Promise((resolve) => mockPost.once("update", resolve));
+        mockCommentToNotUsePagesForUpdates(mockPost);
+        await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
         await mockPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
@@ -126,6 +128,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         mockPost.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
+        mockCommentToNotUsePagesForUpdates(mockPost);
 
         await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
 
@@ -164,7 +167,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         const createErrorPromise = () => new Promise((resolve) => createdComment.once("error", resolve));
         await createdComment.update();
 
-        await mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+        mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
         await createErrorPromise();
 

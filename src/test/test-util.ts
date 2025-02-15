@@ -1111,6 +1111,13 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     }
 }
 
+export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
+    const updatingComment = comment._plebbit._updatingComments[comment.cid!];
+    if (!updatingComment) throw Error("Comment should be updating before starting to mock");
+
+    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
+}
+
 const skipFunction = (_: any) => {};
 skipFunction.skip = () => {};
 

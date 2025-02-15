@@ -7,6 +7,7 @@ import {
     mockGatewayPlebbit,
     createCommentUpdateWithInvalidSignature,
     describeSkipIfRpc,
+    mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
@@ -56,6 +57,8 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
 
         await mockPost.update();
+        mockCommentToNotUsePagesForUpdates(mockPost);
+
         await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.upvoteCount === "number");
         await mockPost.stop();
 
@@ -76,7 +79,8 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
 
         await mockPost.update();
-        await new Promise((resolve) => mockPost.once("update", resolve));
+        mockCommentToNotUsePagesForUpdates(mockPost);
+        await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
         await mockPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
@@ -138,6 +142,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
+        mockCommentToNotUsePagesForUpdates(mockPost);
 
         await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
 
@@ -180,8 +185,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
                 })
             );
         await createdComment.update();
-
-        await mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+        mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
         await createErrorPromise();
 
