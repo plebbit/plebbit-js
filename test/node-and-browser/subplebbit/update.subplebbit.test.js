@@ -5,7 +5,8 @@ import {
     mockRemotePlebbit,
     getRemotePlebbitConfigs,
     isPlebbitFetchingUsingGateways,
-    createNewIpns
+    createNewIpns,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
@@ -28,8 +29,8 @@ getRemotePlebbitConfigs().map((config) => {
             expect(subplebbit.address).to.equal("plebbit.eth");
             const oldUpdatedAt = remeda.clone(subplebbit.updatedAt);
             await subplebbit.update();
-            await publishRandomPost(subplebbit.address, plebbit, {}); // Invoke an update
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            await publishRandomPost(subplebbit.address, plebbit); // Invoke an update
+            await resolveWhenConditionIsTrue(subplebbit, () => oldUpdatedAt !== subplebbit.updatedAt);
             expect(oldUpdatedAt).to.not.equal(subplebbit.updatedAt);
             expect(subplebbit.address).to.equal("plebbit.eth");
             await subplebbit.stop();

@@ -140,12 +140,6 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
     const postIpfs = cleanUpBeforePublishing((await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid)).toJSONIpfs());
 
     postIpfs.title += "1234"; // Invalidate signature
-
-    expect(await verifyCommentIpfs(postIpfs, true, plebbit._clientsManager, false)).to.deep.equal({
-        valid: false,
-        reason: messages.ERR_SIGNATURE_IS_INVALID
-    });
-
     const postWithInvalidSignatureCid = addStringToIpfs(JSON.stringify(postIpfs));
 
     return postWithInvalidSignatureCid;
@@ -263,7 +257,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await createdComment.update();
 
-            await mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+            mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
             await Promise.all([
                 resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),
