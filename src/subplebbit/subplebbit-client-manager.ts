@@ -10,7 +10,6 @@ import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import * as remeda from "remeda";
 import { SubplebbitIpfsType, SubplebbitJson } from "./types.js";
 import Logger from "@plebbit/plebbit-logger";
-import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import { hideClassPrivateProps, timestamp } from "../util.js";
 import pLimit from "p-limit";
@@ -42,7 +41,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     private _subplebbit: RemoteSubplebbit;
     _ipnsLoadingOperation?: RetryOperation = undefined;
     _updateTimeout?: NodeJS.Timeout = undefined;
-    _oldUpdateCidsFromGateways: string[] = [];
+    _updateCidsAlreadyLoaded: Set<string> = new Set<string>();
 
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
         super(subplebbit._plebbit);
@@ -232,6 +231,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     async stopUpdatingLoop() {
         this._ipnsLoadingOperation?.stop();
         clearTimeout(this._updateTimeout);
+        this._updateCidsAlreadyLoaded.clear();
     }
 
     // fetching subplebbit ipns here
@@ -336,7 +336,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             ) => {
                 if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
                 // get ipfs cid of IPNS from header or calculate it
-                const subCid = await calculateIpfsHash(gatewayRes.resText); // cid v0
+                const subCid = await this.calculateIpfsCid(gatewayRes.resText); // cid v0
                 if (subCid !== gatewayRes.res.headers.get("x-ipfs-roots"))
                     throw new PlebbitError("ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS", {
                         "header-x-ipfs-roots": gatewayRes.res.headers.get("x-ipfs-roots"),

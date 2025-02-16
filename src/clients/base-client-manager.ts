@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit/plebbit.js";
 import assert from "assert";
-import { delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
+import { calculateIpfsCidV0, delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import {
@@ -328,7 +328,7 @@ export class BaseClientsManager {
         return resObj;
     }
 
-    private async _handleIfGatewayRedirectsToSubdomainResolution(
+    private _handleIfGatewayRedirectsToSubdomainResolution(
         gateway: string,
         loadOpts: OptionsToLoadFromGateway,
         res: Response,
@@ -352,21 +352,11 @@ export class BaseClientsManager {
             ? createUrlFromSubdomainResolution(gateway, loadOpts)
             : createUrlFromPathResolution(gateway, loadOpts);
 
-        const timeBefore = Date.now();
-
         this.preFetchGateway(gateway, loadOpts);
-        const cacheKey = url;
-        let isUsingCache = true;
+        const timeBefore = Date.now();
         try {
-            let resObj: Awaited<ReturnType<typeof this._fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid>>;
-            if (gatewayFetchPromiseCache.has(cacheKey)) resObj = await gatewayFetchPromiseCache.get(cacheKey)!;
-            else {
-                isUsingCache = false;
-                const fetchPromise = this._fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid(url, loadOpts);
-                gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
-                resObj = await fetchPromise;
-                if (loadOpts.recordIpfsType === "ipns") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
-            }
+            const resObj = await this._fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid(url, loadOpts);
+
             if (resObj.abortError) {
                 if (!loadOpts.abortController.signal.aborted) loadOpts.abortController.abort(resObj.abortError.message);
                 throw resObj.abortError;
@@ -374,16 +364,19 @@ export class BaseClientsManager {
 
             await loadOpts.validateGatewayResponseFunc(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, loadOpts);
-            if (!isUsingCache) await this._plebbit._stats.recordGatewaySuccess(gateway, loadOpts.recordIpfsType, Date.now() - timeBefore);
-            await this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
+
+            this._plebbit._stats
+                .recordGatewaySuccess(gateway, loadOpts.recordIpfsType, Date.now() - timeBefore)
+                .catch((err) => log.error("Failed to report gateway success", err));
+            this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
             return resObj;
         } catch (e) {
-            gatewayFetchPromiseCache.delete(cacheKey);
-
             if (e instanceof PlebbitError) e.details = { ...e.details, url };
 
             this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
-            if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, loadOpts.recordIpfsType);
+            this._plebbit._stats
+                .recordGatewayFailure(gateway, loadOpts.recordIpfsType)
+                .catch((err) => log.error("failed to report gateway error", err));
             delete (<PlebbitError>e)!["stack"];
             return { error: <PlebbitError>e };
         }
@@ -741,5 +734,10 @@ export class BaseClientsManager {
     // Misc functions
     emitError(e: PlebbitError) {
         this._plebbit.emit("error", e);
+    }
+
+    @measurePerformance(50)
+    calculateIpfsCid(content: string) {
+        return calculateIpfsCidV0(content);
     }
 }

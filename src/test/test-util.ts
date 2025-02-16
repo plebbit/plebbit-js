@@ -1042,9 +1042,9 @@ export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked
     //@ts-expect-error
     delete updatingComment._subplebbitForUpdating?.subplebbit?.updateCid;
     //@ts-expect-error
-    if (updatingComment._subplebbitForUpdating?.subplebbit?._clientsManager?._oldUpdateCidsFromGateways)
+    if (updatingComment._subplebbitForUpdating?.subplebbit?._clientsManager?._updateCidsAlreadyLoaded)
         //@ts-expect-error
-        updatingComment._subplebbitForUpdating.subplebbit._clientsManager._oldUpdateCidsFromGateways = [];
+        updatingComment._subplebbitForUpdating.subplebbit._clientsManager._updateCidsAlreadyLoaded = new Set();
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
     if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
         const originalFetch = updatingComment._clientsManager.fetchFromMultipleGateways.bind(updatingComment._clientsManager);
