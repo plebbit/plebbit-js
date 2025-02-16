@@ -23,6 +23,7 @@ import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/sc
 import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
+import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -329,4 +330,8 @@ export async function awaitSubInstanceForUpdateWithErrorAndTimeout(subplebbit: R
         subplebbit.removeListener("error", errorListener);
         await subplebbit.stop();
     }
+}
+
+export function calculateIpfsCidV0(content: string) {
+    return calculateIpfsCidV0Lib(content);
 }

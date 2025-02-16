@@ -459,7 +459,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         } else commentRawString = await this._fetchCommentIpfsFromGateways(cid);
 
         const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
-        await this._throwIfCommentIpfsIsInvalid(commentIpfs);
+        await this._throwIfCommentIpfsIsInvalid(commentIpfs, cid);
         return commentIpfs;
     }
 

@@ -174,8 +174,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     >;
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
 
-    private _cidsToUnPin: string[] = [];
-    private _mfsPathsToUnPin: string[] = [];
+    private _cidsToUnPin: Set<string> = new Set<string>();
+    private _mfsPathsToUnPin: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger!: boolean;
 
     private _sortHandler!: SortHandler;
@@ -184,7 +184,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _publishLoopPromise?: Promise<void> = undefined;
     private _updateLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
-    private _internalStateUpdateId!: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"];
+    private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
 
     private _updateLocalSubTimeout?: NodeJS.Timeout = undefined;
 
@@ -429,13 +429,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
             );
 
-            this._cidsToUnPin.push(...pageCidsToUnPin);
+            pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         }
 
         const newPostUpdates = await this._calculateNewPostUpdates();
 
         const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
-        if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.push(this.statsCid);
+        if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
 
         await this._updateInstanceStateWithDbState();
 
@@ -474,7 +474,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
-        if (this.updateCid) this._cidsToUnPin.push(this.updateCid); // add old cid of subplebbit to be unpinned
+        if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
 
         this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
 
@@ -608,11 +608,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._dbHandler.commitTransaction(transactionName);
 
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
-            this._cidsToUnPin.push(...purgedCids);
+            purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
 
             const purgedMfsPaths = cidsToPurgeOffIpfsNode.filter((ipfsPath) => ipfsPath.startsWith("/"));
 
-            this._mfsPathsToUnPin.push(...purgedMfsPaths);
+            purgedMfsPaths.forEach((path) => this._mfsPathsToUnPin.add(path));
 
             await this._unpinStaleCids();
 
@@ -1486,9 +1486,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
         log.trace("Wrote comment update", newCommentUpdate.cid, "to database successfully");
-        if (oldIpfsPath && oldIpfsPath !== ipfsPath) {
-            this._mfsPathsToUnPin.push(oldIpfsPath);
-        }
+        if (oldIpfsPath && oldIpfsPath !== ipfsPath) this._mfsPathsToUnPin.add(oldIpfsPath);
     }
 
     private async _calculateNewCommentUpdateAndWriteToFilesystemAndDb(comment: CommentsTableRow): Promise<void> {
@@ -1511,7 +1509,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const pageCidsToUnPin = remeda.unique(
                 Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
             );
-            this._cidsToUnPin.push(...pageCidsToUnPin);
+            pageCidsToUnPin.forEach((pageCid) => this._cidsToUnPin.add(pageCid));
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
@@ -1548,7 +1546,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 ...remeda.pick(storedCommentUpdate, storedCommentUpdate.signature.signedPropertyNames)
             });
             const oldCommentUpdateCid = await calculateIpfsHash(oldCommentUpdateRecord);
-            this._cidsToUnPin.push(oldCommentUpdateCid);
+            this._cidsToUnPin.add(oldCommentUpdateCid);
         }
     }
 
@@ -1690,45 +1688,44 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _unpinStaleCids() {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
-        this._cidsToUnPin = remeda.uniq(this._cidsToUnPin);
-        if (this._cidsToUnPin.length > 0) {
-            const removedCids: string[] = [];
+
+        if (this._cidsToUnPin.size > 0) {
+            const sizeBefore = this._cidsToUnPin.size;
             await Promise.all(
-                this._cidsToUnPin.map(async (cid) => {
+                Array.from(this._cidsToUnPin.values()).map(async (cid) => {
                     try {
                         await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
-                        removedCids.push(cid);
+                        this._cidsToUnPin.delete(cid);
                     } catch (e) {
                         const error = <Error>e;
-                        if (error.message.startsWith("not pinned")) removedCids.push(cid);
+                        if (error.message.startsWith("not pinned")) this._cidsToUnPin.delete(cid);
                         else log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
                     }
                 })
             );
 
-            log(`unpinned ${removedCids.length} stale cids from ipfs node for subplebbit (${this.address})`);
-            this._cidsToUnPin = remeda.difference(this._cidsToUnPin, removedCids);
+            log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }
 
-        this._mfsPathsToUnPin = remeda.uniq(this._mfsPathsToUnPin);
-        if (this._mfsPathsToUnPin.length > 0) {
+        if (this._mfsPathsToUnPin.size > 0) {
             try {
-                await this._clientsManager.getDefaultIpfs()._client.files.rm(this._mfsPathsToUnPin, { recursive: true });
-                log("Removed ", this._mfsPathsToUnPin.length, "files from MFS directory", this._mfsPathsToUnPin);
+                await this._clientsManager
+                    .getDefaultIpfs()
+                    ._client.files.rm(Array.from(this._mfsPathsToUnPin.values()), { recursive: true });
+                log("Removed ", this._mfsPathsToUnPin.size, "files from MFS directory", this._mfsPathsToUnPin);
+                this._mfsPathsToUnPin.clear();
             } catch (e) {
                 const error = <Error>e;
                 if (!error.message.includes("file does not exist")) {
                     log.error("Failed to remove files from MFS", this._mfsPathsToUnPin, e);
                     throw e;
-                }
+                } else this._mfsPathsToUnPin.clear();
             }
 
             for (const ipfsPath of this._mfsPathsToUnPin) {
                 const fullFsPath = path.join(this._getPostUpdatesDirOnFilesystem(), ...ipfsPath.split("/"));
                 await fsPromises.rm(fullFsPath, { force: true });
             }
-
-            this._mfsPathsToUnPin = [];
         }
     }
     private pubsubTopicWithfallback() {
@@ -1794,12 +1791,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const res = await genToArray(
             this._clientsManager.getDefaultIpfs()._client.addAll(globSource(postUpdatesDir, "**/*"), {
-                wrapWithDirectory: true,
-                // @ts-expect-error
-                "to-files": `/${this.address}`
+                wrapWithDirectory: true
             })
         );
 
+        await this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + res[res.length - 1].cid.toString(), "/" + this.address);
         log("Synced", res.length, "file nodes", "of FS post updates to IPFS");
     }
 
@@ -2122,6 +2118,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:stop");
         this._stopHasBeenCalled = true;
         if (this.state === "started") {
+            this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids before stopping", err));
             try {
                 await this._dbHandler.unlockSubStart();
             } catch (e) {

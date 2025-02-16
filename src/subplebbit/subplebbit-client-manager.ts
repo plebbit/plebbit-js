@@ -340,7 +340,8 @@ export class SubplebbitClientsManager extends ClientsManager {
                 if (subCid !== gatewayRes.res.headers.get("x-ipfs-roots"))
                     throw new PlebbitError("ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS", {
                         "header-x-ipfs-roots": gatewayRes.res.headers.get("x-ipfs-roots"),
-                        "calculated-x-ipfs-roots": subCid
+                        "calculated-x-ipfs-roots": subCid,
+                        bodyText: gatewayRes.resText
                     });
 
                 let subIpfs: SubplebbitIpfsType;
@@ -359,6 +360,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                 } else {
                     gatewayFetches[gatewayUrl].subplebbitRecord = subIpfs;
                     gatewayFetches[gatewayUrl].cid = subCid;
+                    this._updateCidsAlreadyLoaded.add(subCid);
                 }
             };
 
@@ -387,7 +389,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                     return error;
                 }
 
-                if (ipnsCidFromGateway && this._oldUpdateCidsFromGateways.includes(ipnsCidFromGateway)) {
+                if (ipnsCidFromGateway && this._updateCidsAlreadyLoaded.has(ipnsCidFromGateway)) {
                     // an old update cid we don't need anymore
                     const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
@@ -510,11 +512,6 @@ export class SubplebbitClientsManager extends ClientsManager {
             delete combinedError.stack;
             throw combinedError;
         }
-
-        const oldSubCids = <string[]>Object.values(gatewayFetches)
-            .filter((gatewayFetch) => Boolean(gatewayFetch.cid))
-            .map((gatewayFetch) => gatewayFetch.cid);
-        this._oldUpdateCidsFromGateways = remeda.unique([...this._oldUpdateCidsFromGateways, ...oldSubCids]);
 
         // TODO add punishment for gateway that returns old ipns record
         // TODO add punishment for gateway that returns invalid subplebbit
