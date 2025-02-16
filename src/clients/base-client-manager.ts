@@ -15,7 +15,7 @@ import Logger from "@plebbit/plebbit-logger";
 import type { PubsubMessage } from "../pubsub-messages/types";
 import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
-import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache } from "../constants.js";
+import { domainResolverPromiseCache, p2pCidPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
@@ -77,7 +77,7 @@ const GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION: Record<string, boolean> = {};
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
 
-    protected _plebbit: Plebbit;
+    _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string; // The URL of the pubsub that is used by default for pubsub
     _defaultIpfsProviderUrl: string | undefined; // The URL of the ipfs node that is used by default for IPFS ipfs/ipns retrieval
     providerSubscriptions: Record<string, string[]> = {}; // To keep track of subscriptions of each provider

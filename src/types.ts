@@ -31,6 +31,7 @@ import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.j
 import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
 import { CommentModerationTableRow } from "./publications/comment-moderation/types.js";
+import { LRUCache } from "lru-cache";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -265,4 +266,9 @@ type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: 
 
 export type JsonOfClass<T> = ExcludeMethods<OmitUnderscoreProps<T>>;
 
-// RPC state
+export type PlebbitMemCaches = {
+    subplebbitVerificationCache: LRUCache<string, boolean>;
+    pageVerificationCache: LRUCache<string, boolean>;
+    commentVerificationCache: LRUCache<string, boolean>;
+    commentUpdateVerificationCache: LRUCache<string, boolean>;
+};

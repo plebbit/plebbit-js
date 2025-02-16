@@ -36,15 +36,7 @@ export const pageCidToSortTypesCache = new LRUCache<string, string[]>({ max: 500
 // Below will be the caches for promises of fetching or resolving
 export const domainResolverPromiseCache = new LRUCache<string, Promise<string | null>>({ ttl: 60 * 1000, max: 50 }); // cache key will be (address + txtRecordName + chain + chainproviderUrl) and value will be the promise of resolving through viem or ethers
 
-export const gatewayFetchPromiseCache = new LRUCache<string, Promise<{ resText: string | undefined; res: Response }>>({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
-
 export const p2pCidPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 50, ttl: 60 * 1000 }); // cache key will be cid and the result will be a promise of content of cid
-
-// Caches for signature validation
-
-export const subplebbitVerificationCache = new LRUCache<string, boolean>({ max: 100, ttl: 5 * 60 * 100 });
-export const pageVerificationCache = new LRUCache<string, boolean>({ max: 300 });
-export const commentUpdateVerificationCache = new LRUCache<string, boolean>({ max: 300 });
 
 // Storing clients of viem here, and re-using them as needed
 export const _viemClients: Record<string, ViemClient> = {}; // Should not be accessed

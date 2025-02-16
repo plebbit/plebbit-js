@@ -438,9 +438,15 @@ export class CommentClientsManager extends PublicationClientsManager {
         return res.resText;
     }
 
-    private async _throwIfCommentIpfsIsInvalid(commentIpfs: CommentIpfsType) {
+    private async _throwIfCommentIpfsIsInvalid(commentIpfs: CommentIpfsType, commentCid: string) {
         // Can potentially throw if resolver if not working
-        const commentIpfsValidation = await verifyCommentIpfs(commentIpfs, this._plebbit.resolveAuthorAddresses, this, true);
+        const commentIpfsValidation = await verifyCommentIpfs({
+            comment: commentIpfs,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this,
+            calculatedCommentCid: commentCid,
+            overrideAuthorAddressIfInvalid: true
+        });
         if (!commentIpfsValidation.valid)
             throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfs, commentIpfsValidation });
     }

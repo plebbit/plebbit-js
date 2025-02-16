@@ -16,7 +16,8 @@ import type {
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
     InputPlebbitOptions,
-    AuthorPubsubType
+    AuthorPubsubType,
+    PlebbitMemCaches
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
 import {
@@ -123,6 +124,7 @@ import {
     SubplebbitEditPublicationOptionsToSign,
     SubplebbitEditPubsubMessagePublication
 } from "../publications/subplebbit-edit/types.js";
+import { LRUCache } from "lru-cache";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -164,6 +166,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
+    _memCaches!: PlebbitMemCaches;
 
     constructor(options: InputPlebbitOptions) {
         super();
@@ -210,10 +213,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this._initRpcClientsIfNeeded();
         this._initIpfsGatewaysIfNeeded();
         this._initChainProviders();
+        this._initMemCaches();
 
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
                 "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
+    }
+
+    _initMemCaches() {
+        this._memCaches = {
+            subplebbitVerificationCache: new LRUCache<string, boolean>({ max: 100, ttl: 5 * 60 * 100 }),
+            pageVerificationCache: new LRUCache<string, boolean>({ max: 300 }),
+            commentVerificationCache: new LRUCache<string, boolean>({ max: 300 }),
+            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 300 })
+        };
     }
 
     private _initKuboRpcClientsIfNeeded() {
@@ -930,5 +943,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         await Promise.all(Object.values(this._updatingSubplebbits).map((sub) => sub.stop()));
         await Promise.all(Object.values(this._updatingComments).map((comment) => comment.stop()));
         this._updatingSubplebbits = this._updatingComments = {};
+
+        Object.values(this._memCaches).forEach((cache) => cache.clear());
     }
 }

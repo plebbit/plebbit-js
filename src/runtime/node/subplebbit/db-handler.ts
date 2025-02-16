@@ -468,12 +468,13 @@ export class DbHandler {
 
             // Purge comments with invalid signature
 
-            const validRes = await verifyCommentIpfs(
-                { ...commentRecord, ...commentRecord.extraProps },
-                false,
-                this._subplebbit._clientsManager,
-                false
-            );
+            const validRes = await verifyCommentIpfs({
+                comment: { ...commentRecord, ...commentRecord.extraProps },
+                resolveAuthorAddresses: false,
+                calculatedCommentCid: commentRecord.cid,
+                clientsManager: this._subplebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             if (!validRes.valid) {
                 log.error(
                     `Comment`,

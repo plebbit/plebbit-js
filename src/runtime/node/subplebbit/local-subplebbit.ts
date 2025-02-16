@@ -775,12 +775,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // The line below will fail with extra props
 
             const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
-            const validity = await verifyCommentIpfs(
-                removeUndefinedValuesRecursively(commentIpfsRecreated),
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                false
-            );
+            const validity = await verifyCommentIpfs({
+                comment: removeUndefinedValuesRecursively(commentIpfsRecreated),
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                calculatedCommentCid: commentCid
+            });
             if (!validity.valid)
                 throw Error(
                     "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"

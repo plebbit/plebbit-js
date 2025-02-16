@@ -291,12 +291,15 @@ export class Comment
             return error;
         }
 
-        const commentIpfsValidity = await verifyCommentIpfs(
-            decryptedVerification.comment,
-            this._plebbit.resolveAuthorAddresses,
-            this._clientsManager,
-            false
-        );
+        const calculatedCid = await calculateIpfsHash(JSON.stringify(decryptedVerification.comment));
+
+        const commentIpfsValidity = await verifyCommentIpfs({
+            comment: decryptedVerification.comment,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            overrideAuthorAddressIfInvalid: false,
+            calculatedCommentCid: calculatedCid
+        });
         if (!commentIpfsValidity.valid) {
             const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT", {
                 reason: commentIpfsValidity.reason,
@@ -317,7 +320,6 @@ export class Comment
             return error;
         }
 
-        const calculatedCid = await calculateIpfsHash(JSON.stringify(decryptedVerification.comment));
         if (calculatedCid !== decryptedVerification.commentUpdate.cid) {
             const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID", {
                 cidSentBySub: decryptedVerification.commentUpdate.cid,
