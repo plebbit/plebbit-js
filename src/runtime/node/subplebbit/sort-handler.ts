@@ -10,12 +10,12 @@ import type {
     ReplySortName,
     SortProps
 } from "../../../pages/types.js";
-import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import type { CommentIpfsWithCidDefined } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import { DOWNLOAD_LIMIT_BYTES } from "../../../clients/base-client-manager.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -45,6 +45,26 @@ export class SortHandler {
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };
+    }
+
+    _chunkComments(allComments: PageIpfs["comments"], pageOptions: PageOptions): PageIpfs["comments"][] {
+        // we're accounting for both pageSize and download limit (1mb)
+        let curPageSize = pageOptions.pageSize;
+        while (curPageSize > 0) {
+            const chunkedComments = remeda.chunk(allComments, curPageSize);
+            const allChunksBelowDownloadLimit = chunkedComments.every(
+                (comments) =>
+                    Buffer.byteLength(
+                        JSON.stringify({
+                            nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx", // random cid, just a place holder
+                            comments
+                        })
+                    ) < DOWNLOAD_LIMIT_BYTES
+            );
+            if (allChunksBelowDownloadLimit) return chunkedComments;
+            else curPageSize--;
+        }
+        throw Error("Failed to chunk comments under 1mb");
     }
 
     // Resolves to sortedComments
@@ -92,7 +112,7 @@ export class SortHandler {
 
         if (commentsSorted.length === 0) return undefined;
 
-        const commentsChunks = remeda.chunk(commentsSorted, options.pageSize);
+        const commentsChunks = this._chunkComments(commentsSorted, options);
 
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
