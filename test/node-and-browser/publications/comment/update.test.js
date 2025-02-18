@@ -123,12 +123,22 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`comment.update() is working as expected after comment.publish()`, async () => {
-            const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const post = await publishRandomPost(subplebbitAddress, plebbit);
             await post.update();
-            await new Promise((resolve) => post.once("update", resolve));
-            if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
             expect(post.updatedAt).to.be.a("number");
             await post.stop();
+        });
+
+        it(`reply can receive comment updates`, async () => {
+            const post = await publishRandomPost(subplebbitAddress, plebbit);
+            const reply = await publishRandomReply(post, plebbit);
+            await reply.update();
+            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+
+            await reply.stop();
+            expect(reply.updatedAt).to.be.a("number");
+            expect(reply.author.subplebbit).to.be.a("object");
         });
     });
 });
