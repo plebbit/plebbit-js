@@ -222,10 +222,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     _initMemCaches() {
         this._memCaches = {
-            subplebbitVerificationCache: new LRUCache<string, boolean>({ max: 100, ttl: 5 * 60 * 100 }),
-            pageVerificationCache: new LRUCache<string, boolean>({ max: 300 }),
-            commentVerificationCache: new LRUCache<string, boolean>({ max: 300 }),
-            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 300 })
+            subplebbitVerificationCache: new LRUCache<string, boolean>({ max: 100 }),
+            pageVerificationCache: new LRUCache<string, boolean>({ max: 1000 }),
+            commentVerificationCache: new LRUCache<string, boolean>({ max: 5000 }),
+            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_00 })
         };
     }
 
