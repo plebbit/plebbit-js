@@ -109,6 +109,20 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
         const parsedPages = commentObj.commentUpdate.replies ? parsePagesIpfs(commentObj.commentUpdate.replies) : undefined;
         const postCid = commentObj.comment.postCid ?? (commentObj.comment.depth === 0 ? commentObj.commentUpdate.cid : undefined);
         if (!postCid) throw Error("Failed to infer postCid from pageIpfs.comments.comment");
+
+        const spoiler =
+            typeof commentObj.commentUpdate.spoiler === "boolean"
+                ? commentObj.commentUpdate.spoiler
+                : typeof commentObj.commentUpdate.edit?.spoiler === "boolean"
+                  ? commentObj.commentUpdate.edit?.spoiler
+                  : commentObj.comment.spoiler;
+
+        const nsfw =
+            typeof commentObj.commentUpdate.nsfw === "boolean"
+                ? commentObj.commentUpdate.nsfw
+                : typeof commentObj.commentUpdate.edit?.nsfw === "boolean"
+                  ? commentObj.commentUpdate.edit?.nsfw
+                  : commentObj.comment.nsfw;
         const finalJson: CommentWithinPageJson = {
             ...commentObj.comment,
             ...commentObj.commentUpdate,
@@ -129,10 +143,8 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
             replies: parsedPages,
             content: commentObj.commentUpdate.edit?.content || commentObj.comment.content,
             reason: commentObj.commentUpdate.reason,
-            spoiler:
-                ("spoiler" in commentObj.commentUpdate && commentObj.commentUpdate.spoiler) ||
-                (commentObj.commentUpdate.edit && "spoiler" in commentObj.commentUpdate.edit && commentObj.commentUpdate.edit.spoiler) ||
-                commentObj.comment.spoiler,
+            spoiler,
+            nsfw,
             flair: commentObj.comment.flair || commentObj.commentUpdate.edit?.flair,
             postCid
         };
