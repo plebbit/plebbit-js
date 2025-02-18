@@ -1,5 +1,6 @@
 import signers from "../../../fixtures/signers.js";
 import {
+    findCommentInPage,
     getRemotePlebbitConfigs,
     publishRandomPost,
     publishWithExpectedResult,
@@ -66,6 +67,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.spoiler).to.be.true;
         });
 
+        it(`spoiler=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.spoiler).to.be.true;
+        });
+
         it(`The new Comment with spoiler=true has valid signature`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
             await recreatedPost.update();
@@ -74,7 +81,12 @@ getRemotePlebbitConfigs().map((config) => {
             await recreatedPost.stop();
             expect(recreatedPost.spoiler).to.be.true;
 
-            const commentIpfsValidity = await verifyCommentIpfs(recreatedPost.toJSONIpfs(), true, recreatedPost._clientsManager, false);
+            const commentIpfsValidity = await verifyCommentIpfs({
+                comment: recreatedPost.toJSONIpfs(),
+                resolveAuthorAddresses: true,
+                clientsManager: recreatedPost._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             expect(commentIpfsValidity).to.deep.equal({ valid: true });
 
             const commentUpdateValidity = await verifyCommentUpdate(
@@ -111,6 +123,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.reason).to.be.undefined;
 
             expect(authorPost.spoiler).to.be.false;
+        });
+
+        it(`spoiler=false appears in getPage`, async () => {
+            const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.spoiler).to.be.false;
         });
     });
 
@@ -152,6 +170,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.spoiler).to.be.true;
         });
 
+        it(`spoiler=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.spoiler).to.be.true;
+        });
+
         it(`Mod can unspoiler their own comment`, async () => {
             const unspoilerEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPost.subplebbitAddress,
@@ -175,6 +199,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.reason).to.be.undefined;
             expect(modPost.edit.reason).to.equal("Mod unspoilering their own comment");
             expect(modPost.spoiler).to.be.false;
+        });
+
+        it(`spoiler=false appears in getPage`, async () => {
+            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.spoiler).to.be.false;
         });
     });
 });
