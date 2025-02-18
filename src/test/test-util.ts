@@ -599,13 +599,20 @@ export function isRunningInBrowser(): boolean {
 
 export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName = "update") {
     // should add a timeout?
-    if (!(await predicate()))
-        await new Promise((resolve) => {
-            toUpdate.on(eventName, async () => {
-                const conditionStatus = await predicate();
-                if (conditionStatus) resolve(conditionStatus);
-            });
-        });
+
+    const listenerPromise = new Promise(async (resolve) => {
+        const listener = async () => {
+            const conditionStatus = await predicate();
+            if (conditionStatus) {
+                resolve(conditionStatus);
+                toUpdate.removeListener(eventName, listener);
+            }
+        };
+        toUpdate.on(eventName, listener);
+        await listener(); // make sure we're checking at least once
+    });
+
+    await listenerPromise;
 }
 
 export async function disableValidationOfSignatureBeforePublishing(publication: Publication) {

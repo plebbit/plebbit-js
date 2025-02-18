@@ -533,7 +533,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit();
 
                 if (commentInPage) {
-                    const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments");
+                    const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
                     const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: commentInPage.commentUpdate }, log);
                     if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
                 }

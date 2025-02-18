@@ -28,7 +28,7 @@ import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
 
-const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
+export const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 

@@ -506,7 +506,7 @@ export async function verifyCommentIpfs(opts: {
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
 }): ReturnType<typeof verifyCommentPubsubMessage> {
-    const cacheKey = sha256(opts.calculatedCommentCid + opts.resolveAuthorAddresses + opts.overrideAuthorAddressIfInvalid);
+    const cacheKey = opts.calculatedCommentCid + Number(opts.resolveAuthorAddresses) + Number(opts.overrideAuthorAddressIfInvalid);
     if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.has(cacheKey)) return { valid: true };
 
     const keysCasted = <(keyof CommentPubsubMessagePublication)[]>opts.comment.signature.signedPropertyNames;
@@ -824,7 +824,7 @@ async function verifyPageComment({
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
     resolveDomainSubAddress: boolean;
-}) {
+}): Promise<ValidationResult> {
     if (pageComment.comment.subplebbitAddress !== subplebbitAddress)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
     if (parentCommentCid !== pageComment.comment.parentCid) return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
@@ -851,7 +851,7 @@ async function verifyPageComment({
     );
     if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
 
-    return { valid: true };
+    return commentSignatureValidity;
 }
 
 export async function verifyPage(
@@ -869,24 +869,21 @@ export async function verifyPage(
     );
     if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
 
-    const pageCommentsValidity = await Promise.all(
-        page.comments.map((pageComment) =>
-            verifyPageComment({
-                pageComment,
-                subplebbitAddress,
-                resolveAuthorAddresses,
-                clientsManager,
-                resolveDomainSubAddress,
-                overrideAuthorAddressIfInvalid,
-                parentCommentCid
-            })
-        )
-    );
+    let shouldCache = true;
 
-    const firstInvalidCommentValidationRes = <{ valid: false; reason: string } | undefined>pageCommentsValidity.find((res) => !res.valid);
-    if (firstInvalidCommentValidationRes) return firstInvalidCommentValidationRes;
-
-    const shouldCache = pageCommentsValidity.every((res) => !("derivedAddress" in res));
+    for (const pageComment of page.comments) {
+        const verifyRes = await verifyPageComment({
+            pageComment,
+            subplebbitAddress,
+            resolveAuthorAddresses,
+            clientsManager,
+            resolveDomainSubAddress,
+            overrideAuthorAddressIfInvalid,
+            parentCommentCid
+        });
+        if (!verifyRes.valid) return verifyRes;
+        if ("derivedAddress" in verifyRes) shouldCache = false;
+    }
 
     if (shouldCache) clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
 
