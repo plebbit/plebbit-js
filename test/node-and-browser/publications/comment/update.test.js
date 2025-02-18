@@ -277,7 +277,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
             expect(createdComment.state).to.equal("updating");
             expect(errors.length).to.equal(2);
-            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.length).to.equal(errors.length); // it should mark the path as invalid
+            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
 
             for (const error of errors) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -316,7 +316,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
             expect(createdComment.state).to.equal("updating");
             expect(errors.length).to.equal(2);
-            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.length).to.equal(errors.length); // it should mark the path as invalid
+            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
 
             for (const error of errors) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -354,7 +354,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
             expect(createdComment.state).to.equal("updating");
             expect(errors.length).to.equal(2);
-            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.length).to.equal(errors.length); // it should mark the path as invalid
+            expect(plebbit._updatingComments[createdComment.cid]._invalidCommentUpdateMfsPaths.size).to.equal(errors.length); // it should mark the path as invalid
 
             for (const error of errors) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
