@@ -748,6 +748,7 @@ export class Comment
             await this._clientsManager.cleanUpUpdatingSubInstance();
             this._subplebbitForUpdating = undefined;
             delete this._plebbit._updatingComments[this.cid!];
+            this._invalidCommentUpdateMfsPaths.clear();
         }
 
         if (this._updatingCommentInstance) {
