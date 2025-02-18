@@ -116,7 +116,7 @@ describeSkipIfRpc(`verify pages`, async () => {
         it(`comment.content (when author has modified comment.content before)`, async () => {
             const invalidPage = remeda.clone(validPageIpfsFixture);
             const commentWithEditIndex = invalidPage.comments.findIndex((pageComment) => pageComment.commentUpdate.edit?.content);
-            expect(commentWithEditIndex).to.be.greaterThanOrEqual(commentWithEditIndex);
+            expect(commentWithEditIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithEditIndex].comment.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
