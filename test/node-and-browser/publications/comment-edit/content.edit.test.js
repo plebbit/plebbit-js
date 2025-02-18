@@ -88,7 +88,7 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
-        it(`The new content should be reflected in subplebbit.posts`, async () => {
+        it(`The new content should be reflected in subplebbit.posts.getPage`, async () => {
             const subplebbit1 = await plebbit.getSubplebbit(commentToBeEdited.subplebbitAddress);
             const subplebbit2 = await plebbit.createSubplebbit(subplebbit1); // we're testing if posts from subplebbit are parsed correctly
             const subplebbit3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(subplebbit1)));

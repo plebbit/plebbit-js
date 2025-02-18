@@ -107,6 +107,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToPin.reason).to.equal("To pin a post");
             expect(postToPin._rawCommentUpdate.reason).to.equal("To pin a post");
         });
+
+        it(`pinned=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(postToPin.subplebbitAddress);
+            const commentInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.pinned).to.be.true;
+        });
         it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
             await sub.update();
@@ -190,6 +196,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(secondPostToPin._rawCommentUpdate.edit).to.be.undefined;
             expect(secondPostToPin.reason).to.equal("To unpin the second post");
             expect(secondPostToPin._rawCommentUpdate.reason).to.equal("To unpin the second post");
+        });
+
+        it(`pinned=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(secondPostToPin.subplebbitAddress);
+            const commentInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.pinned).to.be.false;
         });
         it(`Unpinned posts is sorted like regular posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
@@ -301,6 +313,11 @@ getRemotePlebbitConfigs().map((config) => {
                 for (let i = 0; i < pageComments.length - 1; i++)
                     if (!pageComments[i].pinned && pageComments[i + 1].pinned) expect.fail("Pinned replies should always be on top");
             }
+        });
+
+        it(`pinned=true appears in getPage of parent comment`, async () => {
+            const pinnedReplyInPage = await findCommentInPage(replyToPin.cid, post.replies.pageCids.new, post.replies);
+            expect(pinnedReplyInPage.pinned).to.be.true;
         });
     });
 });

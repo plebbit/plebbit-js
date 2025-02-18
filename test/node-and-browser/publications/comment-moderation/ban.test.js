@@ -4,6 +4,7 @@ import {
     generateMockPost,
     publishRandomPost,
     publishWithExpectedResult,
+    findCommentInPage,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs
 } from "../../../../dist/node/test/test-util.js";
@@ -62,6 +63,12 @@ getRemotePlebbitConfigs().map((config) => {
             );
             expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
             expect(commentToBeBanned.reason).to.equal(reasonOfBan);
+        });
+
+        it(`author.banExpires is included in getPage`, async () => {
+            const sub = await plebbit.getSubplebbit(commentToBeBanned.subplebbitAddress);
+            const postInSubplebbitPage = await findCommentInPage(commentToBeBanned.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInSubplebbitPage.author.subplebbit.banExpiresAt).to.be.a("number");
         });
 
         it(`Regular author can't ban another author`, async () => {

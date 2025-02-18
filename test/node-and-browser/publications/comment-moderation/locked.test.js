@@ -87,17 +87,16 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToBeLocked._rawCommentUpdate.locked).to.be.true;
             expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
         });
+
         it(`subplebbit.posts includes locked post with locked=true`, async () => {
             const sub = await plebbit.createSubplebbit({ address: postToBeLocked.subplebbitAddress });
 
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
-                    if (lockedPostInPage.locked === true) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+                return lockedPostInPage.locked === true;
+            });
 
             await sub.stop();
 
@@ -106,6 +105,12 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(lockedPostInPage.locked).to.be.true;
                 expect(lockedPostInPage.reason).to.equal("To lock an author post");
             }
+        });
+
+        it(`locked=true for author post when it's locked by mod in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
+            const postInSubplebbitPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInSubplebbitPage.locked).to.be.true;
         });
 
         it(`Mod can lock their own post`, async () => {
@@ -125,6 +130,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost._rawCommentUpdate.reason).to.equal("To lock a mod post");
             expect(postToBeLocked._rawCommentUpdate.locked).to.be.true;
             expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
+        });
+
+        it(`locked=true for mod post when it's locked by mod in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const postInSubplebbitPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInSubplebbitPage.locked).to.be.true;
         });
 
         it(`Can't publish a reply on a locked post`, async () => {
@@ -164,6 +175,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To unlock an author post");
             expect(postToBeLocked._rawCommentUpdate.locked).to.be.false;
             expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
+        });
+
+        it(`locked=false in getPage of subplebbit after the mod unlocks it`, async () => {
+            const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
+            const postInSubplebbitPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInSubplebbitPage.locked).to.be.false;
         });
 
         it(`Unlocked post can receive replies`, async () => {
