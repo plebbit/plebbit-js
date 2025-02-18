@@ -13,7 +13,8 @@ import {
     mockRpcRemotePlebbit,
     createCommentUpdateWithInvalidSignature,
     waitTillPostInSubplebbitPages,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    mockCommentToNotUsePagesForUpdates
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -47,6 +48,7 @@ describe("comment.updatingState", async () => {
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
+        mockCommentToNotUsePagesForUpdates(mockPost); // we want to force it to fetch from the network
         await new Promise((resolve) => mockPost.once("update", resolve));
         if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
@@ -63,6 +65,7 @@ describe("comment.updatingState", async () => {
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
+        mockCommentToNotUsePagesForUpdates(mockPost);
 
         await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
