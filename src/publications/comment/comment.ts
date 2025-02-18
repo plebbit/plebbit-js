@@ -91,7 +91,7 @@ export class Comment
     _rawCommentUpdate?: CommentUpdateType = undefined;
     _rawCommentIpfs?: CommentIpfsType = undefined;
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
-    _invalidCommentUpdateMfsPaths: string[] = [];
+    _invalidCommentUpdateMfsPaths: Set<string> = new Set<string>();
     private _commentIpfsloadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;

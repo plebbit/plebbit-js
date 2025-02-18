@@ -178,7 +178,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     return undefined;
                 }
             }
-            if (this._comment._invalidCommentUpdateMfsPaths.includes(path)) {
+            if (this._comment._invalidCommentUpdateMfsPaths.has(path)) {
                 log(
                     "Comment",
                     this._comment.cid,
@@ -205,7 +205,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 return { commentUpdate, commentUpdateIpfsPath: path };
             } catch (e) {
                 // there's a problem with the record itself
-                this._comment._invalidCommentUpdateMfsPaths.push(path);
+                this._comment._invalidCommentUpdateMfsPaths.add(path);
                 if (e instanceof PlebbitError) e.details = { ...e.details, commentUpdatePath: path, commentCid: this._comment.cid };
                 throw e;
             }
@@ -249,13 +249,16 @@ export class CommentClientsManager extends PublicationClientsManager {
             commentIpfsProps,
             true
         );
-        if (!signatureValidity.valid) {
-            // TODO need to make sure comment.updatingState is set to failed
-            // TODO also need to make sure an error is emitted
-            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
-        }
+        if (!signatureValidity.valid)
+            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", {
+                signatureValidity,
+                commentUpdate,
+                commentIpfsProps,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                subplebbitAddress: this._comment.subplebbitAddress,
+                overrideAuthorAddressIfInvalid: true
+            });
     }
-
     async _fetchCommentUpdateFromGateways(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
@@ -293,7 +296,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     return undefined;
                 }
             }
-            if (this._comment._invalidCommentUpdateMfsPaths.includes(path)) {
+            if (this._comment._invalidCommentUpdateMfsPaths.has(path)) {
                 log(
                     "Comment",
                     this._comment.cid,
@@ -327,7 +330,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 } else {
                     // non retriable error
                     // a problem with the record itself, bad signature/schema/etc
-                    this._comment._invalidCommentUpdateMfsPaths.push(path);
+                    this._comment._invalidCommentUpdateMfsPaths.add(path);
                     throw e;
                 }
             }
@@ -495,7 +498,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    _findCommentInPagesOfUpdatingCommentsSubplebbit() {
+    _findCommentInPagesOfUpdatingCommentsSubplebbit(): PageIpfs["comments"][0] | undefined {
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
         const updatingSubplebbitPosts = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs?.posts;
         if (!updatingSubplebbitPosts) return undefined;
