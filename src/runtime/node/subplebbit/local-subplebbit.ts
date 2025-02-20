@@ -161,7 +161,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _defaultSubplebbitChallenges: SubplebbitChallengeSetting[] = [
         {
             name: "captcha-canvas-v3",
-            exclude: [{ role: ["moderator", "admin", "owner"], commentModeration: true }]
+            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
         }
     ];
 
@@ -373,10 +373,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
         if (!this.settings?.challenges) {
             this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges };
-            this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
             this._usingDefaultChallenge = true;
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
+
+        this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
 
         await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
 
