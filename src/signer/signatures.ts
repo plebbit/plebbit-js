@@ -148,7 +148,8 @@ export async function _signJson(
     try {
         publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
     } catch (e) {
-        log.error("Failed to sign json", propsToSign, "because of cborg error", e);
+        (<any>e).objectToEncode = propsToSign;
+        log.error("Failed to sign encode json with cborg", e);
         throw e;
     }
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
