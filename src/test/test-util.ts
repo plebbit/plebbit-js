@@ -1125,6 +1125,16 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
 }
 
+export function mockUpdatingCommentResolvingAuthor(
+    comment: Comment,
+    mockFunction: Comment["_clientsManager"]["resolveAuthorAddressIfNeeded"]
+) {
+    const updatingComment = comment._plebbit._updatingComments[comment.cid!];
+    if (!updatingComment) throw Error("Comment should be updating before starting to mock");
+
+    updatingComment._clientsManager.resolveAuthorAddressIfNeeded = mockFunction;
+}
+
 const skipFunction = (_: any) => {};
 skipFunction.skip = () => {};
 

@@ -6,11 +6,13 @@ const { expect, assert } = chai;
 import { messages } from "../../dist/node/errors.js";
 import {
     mockRemotePlebbit,
+    mockUpdatingCommentResolvingAuthor,
     publishWithExpectedResult,
     publishRandomPost,
     itSkipIfRpc,
     describeSkipIfRpc,
-    mockPlebbit
+    mockPlebbit,
+    resolveWhenConditionIsTrue
 } from "../../dist/node/test/test-util.js";
 import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../../dist/node/resolver.js";
@@ -141,11 +143,13 @@ describe("Comments with Authors as domains", async () => {
         async () => {
             const tempPlebbit = await mockRemotePlebbit();
             const comment = await tempPlebbit.createComment({ cid: mockComments[mockComments.length - 1].cid });
-            comment._clientsManager.resolveAuthorAddressIfNeeded = async (authorAddress) =>
-                authorAddress === "plebbit.eth" ? signers[7].address : authorAddress;
+            const originalResolvingFunction = comment._clientsManager.resolveAuthorAddressIfNeeded.bind(comment._clientsManager);
             // verifyComment in comment.update should overwrite author.address to derived address
             await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve));
+            mockUpdatingCommentResolvingAuthor(comment, (authorAddress) =>
+                authorAddress === "plebbit.eth" ? signers[7].address : originalResolvingFunction
+            );
+            await resolveWhenConditionIsTrue(comment, () => comment.author?.address);
             await comment.stop();
             expect(comment.author.address).to.equal(signers[6].address);
         }
