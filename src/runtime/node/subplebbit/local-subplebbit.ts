@@ -453,10 +453,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
         // posts should not be cleaned up because we want to make sure not to modify authors' posts
         if (subplebbitPosts)
-            newIpns.posts = removeUndefinedValuesRecursively({
+            newIpns.posts = {
                 pageCids: subplebbitPosts.pageCids,
                 pages: remeda.pick(subplebbitPosts.pages, ["hot"])
-            });
+            };
         else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         const signature = await signSubplebbit(newIpns, this.signer);
@@ -1522,10 +1522,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedPages)
-            commentUpdatePriorToSigning.replies = removeUndefinedValuesRecursively({
+            commentUpdatePriorToSigning.replies = {
                 pageCids: generatedPages.pageCids,
                 pages: remeda.pick(generatedPages.pages, ["topAll"])
-            });
+            };
 
         const newCommentUpdate: CommentUpdateType = {
             ...commentUpdatePriorToSigning,
