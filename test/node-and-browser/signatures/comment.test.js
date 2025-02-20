@@ -143,13 +143,13 @@ describeSkipIfRpc("verify Comment", async () => {
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
         const comment = remeda.clone(validCommentFixture);
 
-        const verification = await verifyCommentIpfs(comment, plebbit);
+        const verification = await verifyCommentIpfs({ comment, clientsManager: plebbit._clientsManager });
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
         const comment = remeda.clone(validCommentAvatarFixture);
-        const verification = await verifyCommentIpfs(comment, plebbit, true);
+        const verification = await verifyCommentIpfs({ comment, clientsManager: plebbit._clientsManager, resolveAuthorAddresses: true });
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -202,7 +202,12 @@ describeSkipIfRpc(`Comment with author.address as domain`, async () => {
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
-        const verification = await verifyCommentIpfs(comment, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, false);
+        const verification = await verifyCommentIpfs({
+            comment,
+            resolveAuthorAddresses: tempPlebbit.resolveAuthorAddresses,
+            clientsManager: tempPlebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
 
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
 
