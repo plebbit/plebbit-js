@@ -119,7 +119,7 @@ export const ChallengeExcludeSubplebbitSchema = z
     })
     .strict();
 
-const excludePublicationFieldSchema = z.literal(true).optional(); // can be true or undefined
+const excludePublicationFieldSchema = z.boolean().optional(); // can be true or undefined
 
 export const ChallengeExcludePublicationTypeSchema = z
     .object({
