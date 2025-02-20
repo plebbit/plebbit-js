@@ -183,15 +183,19 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
+            const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+            const commentsWithDifferentPlebbit = await Promise.all(
+                [postToPurge, postReply, replyUnderReply].map((comment) => differentPlebbit.createComment({ cid: comment.cid }))
+            );
             await Promise.all(
-                [postToPurge, postReply, replyUnderReply].map(async (purgedComment) => {
-                    purgedComment.updatedAt = undefined;
+                commentsWithDifferentPlebbit.map(async (purgedComment) => {
                     await purgedComment.update();
 
                     await new Promise((resolve) => setTimeout(resolve, 10000));
                     // we've waiting 10s for the update but it's not defined yet
                     // plebbit-js keeps on retrying to load the comment update, but it's not loading because ipfs node removed it from MFS
-                    expect(purgedComment.updatedAt).to.be.undefined;
+                    expect(purgedComment.updatedAt).to.be.undefined; // should not load comment update
+                    expect(purgedComment.depth).to.be.undefined; // should not load comment ipfs
 
                     await purgedComment.stop();
                 })
