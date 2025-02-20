@@ -8,7 +8,6 @@ import { messages } from "../../../dist/node/errors.js";
 import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing, _signJson } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
 import validSubplebbitFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_ipfs.json" assert { type: "json" };
-import validSubplebbitWithEnsCommentsFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_ipfs_with_ens_comments.json" assert { type: "json" };
 import { removeUndefinedValuesRecursively } from "../../../dist/node/util.js";
 
 // Clients of RPC will trust the response of RPC and won't validate
@@ -87,12 +86,13 @@ describeSkipIfRpc("Verify subplebbit", async () => {
     it(`subplebbit signature is valid if subplebbit.posts has a comment.author.address who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
         // Publish a comment with ENS domain here
 
-        const subIpfs = remeda.clone(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
+        const subIpfs = remeda.clone(validSubplebbitFixture); // This json has only one comment with plebbit.eth
         const commentWithEnsCid = subIpfs.posts.pages.hot.comments.find(
             (commentPage) => commentPage.comment.author.address === "plebbit.eth"
-        ).comment.cid;
+        ).commentUpdate.cid;
+        expect(commentWithEnsCid).to.be.a("string");
 
-        const getLatestComment = () => subIpfs.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
+        const getLatestComment = () => subIpfs.posts.pages.hot.comments.find((comment) => comment.commentUpdate.cid === commentWithEnsCid);
 
         const tempPlebbit = await mockRemotePlebbit();
 
