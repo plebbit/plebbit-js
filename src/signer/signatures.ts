@@ -520,8 +520,9 @@ export async function verifyCommentIpfs(opts: {
     );
 
     if (!validRes.valid) return validRes;
+    const shouldCache = !("derivedAddress" in validRes && opts.overrideAuthorAddressIfInvalid);
 
-    opts.clientsManager._plebbit._memCaches.commentVerificationCache.set(cacheKey, true);
+    if (shouldCache) opts.clientsManager._plebbit._memCaches.commentVerificationCache.set(cacheKey, true);
     return validRes;
 }
 
@@ -870,8 +871,6 @@ export async function verifyPage(
     );
     if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
 
-    let shouldCache = true;
-
     for (const pageComment of page.comments) {
         const verifyRes = await verifyPageComment({
             pageComment,
@@ -883,10 +882,9 @@ export async function verifyPage(
             parentCommentCid
         });
         if (!verifyRes.valid) return verifyRes;
-        if ("derivedAddress" in verifyRes) shouldCache = false;
     }
 
-    if (shouldCache) clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
+    clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
 
     return { valid: true };
 }
