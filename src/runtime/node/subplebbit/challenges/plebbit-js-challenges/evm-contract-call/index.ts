@@ -8,7 +8,6 @@ import type {
 import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
-import { getViemClient } from "../../../../../../constants.js";
 import type { Plebbit } from "../../../../../../plebbit/plebbit.js";
 import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
@@ -101,7 +100,10 @@ const verifyAuthorWalletAddress = async (props: {
     // verify the signature of the wallet
 
     // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
-    const viemClient = await getViemClient(props.plebbit, "eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
+    const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
+        "eth",
+        _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
+    );
 
     const messageToBeSigned: any = {};
     messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
@@ -148,7 +150,10 @@ const verifyAuthorWalletAddress = async (props: {
 
 const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
     if (!props.publication.author.address.endsWith(".eth")) return "Author address is not an ENS domain";
-    const viemClient = await getViemClient(props.plebbit, "eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
+    const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
+        "eth",
+        _getChainProviderWithSafety(props.plebbit, "eth").urls[0]
+    );
 
     const ownerOfAddress = await viemClient.getEnsAddress({
         name: normalize(props.publication.author.address)
@@ -177,7 +182,7 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
     const nftAvatar = props.publication.author.avatar;
     const chainProvider = props.plebbit.chainProviders[<ChainTicker>nftAvatar.chainTicker];
     if (!chainProvider) return "The subplebbit does not support NFTs from this chain";
-    const viemClient = await getViemClient(props.plebbit, <ChainTicker>nftAvatar.chainTicker, chainProvider.urls[0]);
+    const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(<ChainTicker>nftAvatar.chainTicker, chainProvider.urls[0]);
 
     let currentOwner: "0x${string}";
     try {
@@ -238,8 +243,7 @@ const getContractCallResponse = async (props: {
     // TODO res should be cached for each authorWalletAddress at least for 30s
 
     try {
-        const viemClient = await getViemClient(
-            props.plebbit,
+        const viemClient = props.plebbit._domainResolver._createViemClientIfNeeded(
             <ChainTicker>props.chainTicker,
             _getChainProviderWithSafety(props.plebbit, <ChainTicker>props.chainTicker).urls[0]
         );

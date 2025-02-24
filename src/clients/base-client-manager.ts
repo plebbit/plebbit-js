@@ -22,7 +22,6 @@ import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import all from "it-all";
 import * as remeda from "remeda";
-import { resolveTxtRecord } from "../resolver.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
@@ -598,7 +597,13 @@ export class BaseClientsManager {
                 resolvedTextRecord = <string | null>await domainResolverPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
-                const resolvePromise = resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl, chainId);
+                const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(
+                    address,
+                    txtRecordName,
+                    chain,
+                    chainproviderUrl,
+                    chainId
+                );
                 domainResolverPromiseCache.set(cacheKey, resolvePromise);
                 resolvedTextRecord = await resolvePromise;
             }

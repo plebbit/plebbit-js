@@ -125,6 +125,7 @@ import {
     SubplebbitEditPubsubMessagePublication
 } from "../publications/subplebbit-edit/types.js";
 import { LRUCache } from "lru-cache";
+import { DomainResolver } from "../resolver.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -167,6 +168,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
+    _domainResolver: DomainResolver;
 
     constructor(options: InputPlebbitOptions) {
         super();
@@ -200,6 +202,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.noData = this.parsedPlebbitOptions.noData;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
         this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
+        this._domainResolver = new DomainResolver(this);
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
             this._subplebbitschangeEventHasbeenEmitted = true;

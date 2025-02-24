@@ -16,7 +16,6 @@ import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { v4 as uuidV4 } from "uuid";
-import * as resolverClass from "../resolver.js";
 import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, RemoteSubplebbitJson } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
@@ -361,7 +360,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
 
     if (mockResolve) {
         //@ts-expect-error
-        resolverClass.viemClients["eth" + mockEthResolver] = {
+        plebbit._domainResolver._viemClients["eth" + mockEthResolver] = {
             getEnsText: async ({ name, key }) => {
                 log(`Attempting to mock resolve address (${name}) textRecord (${key}) chainProviderUrl (${mockEthResolver})`);
                 if (name === "plebbit.eth" && key === "subplebbit-address")

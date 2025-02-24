@@ -1,11 +1,11 @@
 import { LRUCache } from "lru-cache";
 import type { ChainTicker, LRUStorageConstructor } from "./types.js";
-import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { PublicClient as ViemClient, createPublicClient, http } from "viem";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
 import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
 import type Publication from "./publications/publication.js";
+import { SubplebbitIpfsType } from "./subplebbit/types.js";
 
 export enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT, // InternalSubplebbitType
@@ -26,10 +26,10 @@ export const commentPostUpdatesParentsPathConfig: Omit<LRUStorageConstructor, "p
 };
 
 // Memory caches
-export const subplebbitForPublishingCache = new LRUCache<string, NonNullable<Publication["_subplebbit"]>>({
+export const subplebbitForPublishingCache = new LRUCache<SubplebbitIpfsType["address"], NonNullable<Publication["_subplebbit"]>>({
     max: 100,
     ttl: 600000
-}); // Cache for only 10 mins
+}); // Cache for only 10 mins. Key is address
 
 export const pageCidToSortTypesCache = new LRUCache<string, string[]>({ max: 500 });
 
@@ -41,27 +41,4 @@ export const p2pCidPromiseCache = new LRUCache<string, Promise<string | undefine
 // Storing clients of viem here, and re-using them as needed
 export const _viemClients: Record<string, ViemClient> = {}; // Should not be accessed
 
-export const getViemClient = async (plebbit: Plebbit, chainTicker: ChainTicker, chainProviderUrl: string): Promise<ViemClient> => {
-    const cacheKey = chainTicker + chainProviderUrl;
-    if (_viemClients[cacheKey]) return _viemClients[cacheKey];
-    const log = Logger("plebbit-js:getViemClient");
 
-    log("Creating a new viem instance for chain ticker", chainTicker, "And chain provider url", chainProviderUrl);
-    if (chainTicker === "eth" && chainProviderUrl === "viem") {
-        _viemClients[cacheKey] = createPublicClient({
-            chain: chains.mainnet,
-            transport: http()
-        });
-    } else {
-        // TODO should use viem's extractChain here
-        const chainId = plebbit.chainProviders[chainTicker]?.chainId;
-        const chain = Object.values(chains).find((chain) => chain.id === chainId);
-        if (!chain) throw Error(`Was not able to create viem client for ${chainTicker} due to not being able to find chain id`);
-        //@ts-expect-error
-        _viemClients[cacheKey] = createPublicClient({
-            chain,
-            transport: http(chainProviderUrl)
-        });
-    }
-    return _viemClients[cacheKey];
-};
