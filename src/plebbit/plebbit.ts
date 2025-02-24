@@ -228,7 +228,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             subplebbitVerificationCache: new LRUCache<string, boolean>({ max: 100 }),
             pageVerificationCache: new LRUCache<string, boolean>({ max: 1000 }),
             commentVerificationCache: new LRUCache<string, boolean>({ max: 5000 }),
-            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_00 })
+            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_000 })
         };
     }
 
