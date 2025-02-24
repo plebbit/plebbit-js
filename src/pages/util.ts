@@ -200,7 +200,8 @@ export function findCommentInPages(
     pageIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs,
     targetCommentCid: string
 ): PageIpfs["comments"][0] | undefined {
-    if (!pageIpfs) return undefined;
+    if (!pageIpfs) throw Error("should define page ipfs");
+    if (!targetCommentCid) throw Error("should define target comment cid");
 
     for (const page of Object.values(pageIpfs.pages))
         for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCommentCid) return pageComment;
@@ -214,6 +215,9 @@ export function findCommentInPagesRecrusively(
     targetDepth: number | undefined,
     visited = new Set<string>()
 ): PageIpfs["comments"][0] | undefined {
+    if (!pages) throw Error("should define page ipfs");
+    if (!targetCid) throw Error("should define target comment cid");
+
     // Check all pages in the current level
     for (const [pageCid, page] of Object.entries(pages.pages)) {
         // Skip if we've visited this page

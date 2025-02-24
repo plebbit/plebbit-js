@@ -32,6 +32,7 @@ import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
 import { CommentModerationTableRow } from "./publications/comment-moderation/types.js";
 import { LRUCache } from "lru-cache";
+import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -271,4 +272,5 @@ export type PlebbitMemCaches = {
     pageVerificationCache: LRUCache<string, boolean>;
     commentVerificationCache: LRUCache<string, boolean>;
     commentUpdateVerificationCache: LRUCache<string, boolean>;
+    subplebbitForPublishing: LRUCache<SubplebbitIpfsType["address"], NonNullable<Publication["_subplebbit"]>>;
 };

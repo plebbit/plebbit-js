@@ -37,7 +37,7 @@ import {
     verifyChallengeVerification
 } from "../signer/signatures.js";
 import {
-    awaitSubInstanceForUpdateWithErrorAndTimeout,
+    waitForUpdateInSubInstanceWithErrorAndTimeout,
     hideClassPrivateProps,
     shortifyAddress,
     throwWithErrorCode,
@@ -49,7 +49,6 @@ import { PlebbitError } from "../plebbit-error.js";
 import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
 import * as cborg from "cborg";
 import * as remeda from "remeda";
-import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { CommentIpfsType } from "./comment/types.js";
 import {
@@ -513,7 +512,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     _getSubplebbitCache() {
         return (
-            subplebbitForPublishingCache.get(this.subplebbitAddress, { allowStale: true }) ||
+            this._plebbit._memCaches.subplebbitForPublishing.get(this.subplebbitAddress, { allowStale: true }) ||
             this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs
         );
     }
@@ -526,7 +525,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // We will use the cached subplebbit even though it's stale
             // And in the background we will fetch a new subplebbit and update the cache
             // cache.has will return false if the item is stale
-            if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
+            if (!this._plebbit._memCaches.subplebbitForPublishing.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
                 this._plebbit
                     .getSubplebbit(this.subplebbitAddress)
@@ -535,12 +534,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return cachedSubplebbit;
         } else {
             // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
-            const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation(); // should be changed
+            const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation();
             let subIpfs: SubplebbitIpfsType;
             if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
                 const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
                 try {
-                    await awaitSubInstanceForUpdateWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                    await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
                     subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
                 } catch (e) {
                     await this._clientsManager.cleanUpUpdatingSubInstance();

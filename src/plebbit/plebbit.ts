@@ -21,7 +21,7 @@ import type {
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
 import {
-    awaitSubInstanceForUpdateWithErrorAndTimeout,
+    waitForUpdateInSubInstanceWithErrorAndTimeout,
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
     removeUndefinedValuesRecursively,
@@ -228,7 +228,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             subplebbitVerificationCache: new LRUCache<string, boolean>({ max: 100 }),
             pageVerificationCache: new LRUCache<string, boolean>({ max: 1000 }),
             commentVerificationCache: new LRUCache<string, boolean>({ max: 5000 }),
-            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_000 })
+            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_000 }),
+            subplebbitForPublishing: new LRUCache({
+                max: 100,
+                ttl: 600000
+            })
         };
     }
 
@@ -330,7 +334,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
-        await awaitSubInstanceForUpdateWithErrorAndTimeout(subplebbit, timeoutMs);
+        await waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs);
 
         return subplebbit;
     }

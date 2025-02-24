@@ -15,7 +15,6 @@ import { hideClassPrivateProps, timestamp } from "../util.js";
 import pLimit from "p-limit";
 import { SubplebbitKuboRpcClient } from "../clients/ipfs-client.js";
 import { SubplebbitKuboPubsubClient } from "../clients/pubsub-client.js";
-import { subplebbitForPublishingCache } from "../constants.js";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
 import { CID } from "kubo-rpc-client";
@@ -266,7 +265,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             // we found a new record that is verified
             this._subplebbit._setUpdatingState("succeeded");
 
-            subplebbitForPublishingCache.set(
+            this._plebbit._memCaches.subplebbitForPublishing.set(
                 subRes.subplebbit.address,
                 remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
             );

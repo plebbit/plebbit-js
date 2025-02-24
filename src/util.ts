@@ -309,7 +309,7 @@ export async function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predica
         });
 }
 
-export async function awaitSubInstanceForUpdateWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {
+export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
     let updateError: PlebbitError | undefined;
     const errorListener = (err: PlebbitError) => (updateError = err);
