@@ -125,7 +125,7 @@ import {
     SubplebbitEditPubsubMessagePublication
 } from "../publications/subplebbit-edit/types.js";
 import { LRUCache } from "lru-cache";
-import { DomainResolver } from "../resolver.js";
+import { DomainResolver } from "../domain-resolver.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -942,6 +942,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
         await this._storage.destroy();
         await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
+
+        await this._domainResolver.destroy();
 
         await Promise.all(Object.values(this._updatingSubplebbits).map((sub) => sub.stop()));
         await Promise.all(Object.values(this._updatingComments).map((comment) => comment.stop()));
