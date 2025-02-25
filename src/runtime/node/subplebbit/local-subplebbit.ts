@@ -510,7 +510,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
 
         try {
-            const validation = await verifySubplebbit(recordToPublishRaw, false, this._clientsManager, false, false);
+            const validation = await verifySubplebbit({
+                subplebbit: recordToPublishRaw,
+                subplebbitIpnsName: this.signer.address,
+                resolveAuthorAddresses: false,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             if (!validation.valid) {
                 throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
                     validation,

@@ -99,13 +99,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         staleCache?: CachedTextRecordResolve
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
-        if (
-            this._subplebbit.state === "updating" &&
-            txtRecordName === "subplebbit-address" &&
-            !staleCache &&
-            this._subplebbit.updatingState !== "fetching-ipfs" // we don't state to be resolving-address when verifying signature
-        )
-            this._subplebbit._setUpdatingState("resolving-address");
+        if (txtRecordName === "subplebbit-address" && !staleCache) this._subplebbit._setUpdatingState("resolving-address");
     }
 
     override postResolveTextRecordSuccess(
@@ -117,7 +111,6 @@ export class SubplebbitClientsManager extends ClientsManager {
         staleCache?: CachedTextRecordResolve
     ): void {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
-        // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord && this._subplebbit.state === "updating") {
             this._subplebbit._setUpdatingState("failed");
             const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
