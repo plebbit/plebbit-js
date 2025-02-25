@@ -600,7 +600,8 @@ export async function verifySubplebbit({
                 subplebbit,
                 parentCommentCid: undefined,
                 overrideAuthorAddressIfInvalid,
-                validatePages
+                validatePages: true,
+                validateUpdateSignature: false // no need because we already verified subplebbit signature
             });
 
             if (!pageValidity.valid) {
@@ -705,7 +706,8 @@ export async function verifyCommentUpdate({
                 subplebbit,
                 parentCommentCid: comment.cid,
                 overrideAuthorAddressIfInvalid,
-                validatePages
+                validatePages,
+                validateUpdateSignature
             });
             if (!validity.valid) return validity;
         }
@@ -822,7 +824,8 @@ async function _verifyPageComment({
     resolveAuthorAddresses,
     clientsManager,
     overrideAuthorAddressIfInvalid,
-    validatePages
+    validatePages,
+    validateUpdateSignature
 }: {
     pageComment: PageIpfs["comments"][0];
     subplebbit: BasePages["_subplebbit"];
@@ -831,6 +834,7 @@ async function _verifyPageComment({
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
+    validateUpdateSignature: boolean;
 }): Promise<ValidationResult> {
     if (pageComment.comment.subplebbitAddress !== subplebbit.address)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
@@ -854,7 +858,7 @@ async function _verifyPageComment({
         comment: { signature: pageComment.comment.signature, cid: calculatedCommentCid },
         overrideAuthorAddressIfInvalid,
         validatePages,
-        validateUpdateSignature: false // no need to validate since pageCid is already checked
+        validateUpdateSignature
     });
     if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
 
@@ -869,7 +873,8 @@ export async function verifyPage({
     subplebbit,
     parentCommentCid,
     overrideAuthorAddressIfInvalid,
-    validatePages
+    validatePages,
+    validateUpdateSignature
 }: {
     pageCid: string;
     page: PageIpfs;
@@ -879,6 +884,7 @@ export async function verifyPage({
     parentCommentCid: string | undefined;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
+    validateUpdateSignature: boolean;
 }): Promise<ValidationResult> {
     const cacheKey = sha256(
         pageCid +
@@ -899,7 +905,8 @@ export async function verifyPage({
             clientsManager,
             overrideAuthorAddressIfInvalid,
             parentCommentCid,
-            validatePages
+            validatePages,
+            validateUpdateSignature
         });
         if (!verifyRes.valid) return verifyRes;
     }

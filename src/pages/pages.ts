@@ -69,7 +69,8 @@ export class BasePages {
                 subplebbit: this._subplebbit,
                 parentCommentCid: this._parentCid,
                 overrideAuthorAddressIfInvalid: true,
-                validatePages: true
+                validatePages: true,
+                validateUpdateSignature: false // no need because we verified that page cid matches its content
             };
             const signatureValidity = await verifyPage(verificationOpts);
             if (!signatureValidity.valid)
