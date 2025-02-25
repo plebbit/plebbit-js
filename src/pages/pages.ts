@@ -1,6 +1,6 @@
 import { parsePageIpfs } from "../pages/util.js";
 import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
-import { verifyPage } from "../signer/signatures.js";
+import { verifyPage, verifyPageComment } from "../signer/signatures.js";
 import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
 import { Plebbit } from "../plebbit/plebbit.js";
@@ -87,6 +87,27 @@ export class BasePages {
         assert(typeof this._subplebbit === "string", "Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         return parsePageIpfs(await this._fetchAndVerifyPage(parsedCid));
+    }
+
+    // method below will be present in both subplebbit.posts and comment.replies
+    async validatePage({ comments }: { comments: PageIpfs["comments"] | PageTypeJson["comments"] }) {
+        if (this._plebbit.validatePages)
+            throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
+        for (const pageCommentRaw of comments) {
+            const pageIpfsComment: PageIpfs["comments"][number] = "comment" in pageCommentRaw ? pageCommentRaw : pageCommentRaw.pageComment;
+            const verificationOpts = {
+                pageComment: pageIpfsComment,
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                overrideAuthorAddressIfInvalid: true,
+                parentCommentCid: this._parentCid,
+                subplebbit: this._subplebbit,
+                clientsManager: this._clientsManager,
+                validatePages: false, // it should not go down the replies tree, user should call comment.replies.validatePages if they wanna do that
+                validateUpdateSignature: false // we assume it's been loaded through a page cid, and its cid has already been verified to match
+            };
+            const validation = await verifyPageComment(verificationOpts);
+            if (!validation.valid) throw new PlebbitError("ERR_PAGE_COMMENT_IS_INVALID", { verificationOpts });
+        }
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {

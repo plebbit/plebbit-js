@@ -817,7 +817,7 @@ export async function verifyChallengeVerification(
     return _validateSignatureOfPubsubMsg(verification);
 }
 
-async function _verifyPageComment({
+export async function verifyPageComment({
     pageComment,
     subplebbit,
     parentCommentCid,
@@ -838,7 +838,8 @@ async function _verifyPageComment({
 }): Promise<ValidationResult> {
     if (pageComment.comment.subplebbitAddress !== subplebbit.address)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
-    if (parentCommentCid !== pageComment.comment.parentCid) return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
+    if (parentCommentCid !== pageComment.comment.parentCid)
+        return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
 
     const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
 
@@ -898,7 +899,7 @@ export async function verifyPage({
     if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
 
     for (const pageComment of page.comments) {
-        const verifyRes = await _verifyPageComment({
+        const verifyRes = await verifyPageComment({
             pageComment,
             subplebbit,
             resolveAuthorAddresses,

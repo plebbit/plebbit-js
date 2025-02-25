@@ -144,10 +144,11 @@ export enum messages {
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT = "The subplebbit sent an invalid decryptedChallengeVerification.comment",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE = "The subplebbit sent an invalid decryptedChallengeVerification.commentUpdate",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID = "The sub sent decryptedChallengeVerification with commentUpdate.cid that does not correspond to commentIpfs",
+    ERR_PAGE_COMMENT_IS_INVALID = "validatePage has found a comment within a page that is invalid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
-    ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
+    ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT = "The parent cid of comment in page is not correct",
     ERR_PAGE_SIGNATURE_IS_INVALID = "The signature of one of the comment in the page is invalid",
 
     // Subplebbit rejections of pubsub messages
