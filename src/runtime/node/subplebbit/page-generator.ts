@@ -1,4 +1,4 @@
-import { timestamp } from "../../../util.js";
+import { hideClassPrivateProps, timestamp } from "../../../util.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import type {
@@ -28,10 +28,11 @@ export type PageOptions = {
 type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
 
 export class PageGenerator {
-    subplebbit: LocalSubplebbit;
+    private _subplebbit: LocalSubplebbit;
 
-    constructor(subplebbit: PageGenerator["subplebbit"]) {
-        this.subplebbit = subplebbit;
+    constructor(subplebbit: PageGenerator["_subplebbit"]) {
+        this._subplebbit = subplebbit;
+        hideClassPrivateProps(this);
     }
 
     private async commentChunksToPages(chunks: PageIpfs["comments"][], sortName: PostSortName | ReplySortName): Promise<PageGenerationRes> {
@@ -42,7 +43,7 @@ export class PageGenerator {
         for (let i = chunks.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
-            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+            cids[i] = (await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };
@@ -85,7 +86,7 @@ export class PageGenerator {
         if (sortName === "active") {
             activeScores = {};
             for (const comment of comments)
-                activeScores[comment.commentUpdate.cid] = await this.subplebbit._dbHandler.queryActiveScore({
+                activeScores[comment.commentUpdate.cid] = await this._subplebbit._dbHandler.queryActiveScore({
                     cid: comment.commentUpdate.cid,
                     timestamp: comment.comment.timestamp
                 });
@@ -148,7 +149,7 @@ export class PageGenerator {
             pageSize: 50
         };
         // Sorting posts on a subplebbit level
-        const rawPosts = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
+        const rawPosts = await this._subplebbit._dbHandler.queryCommentsForPages(pageOptions);
 
         if (rawPosts.length === 0) return undefined;
 
@@ -169,7 +170,7 @@ export class PageGenerator {
             pageSize: 50
         };
 
-        const rawReplies = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
+        const rawReplies = await this._subplebbit._dbHandler.queryCommentsForPages(pageOptions);
         if (rawReplies.length === 0) return undefined;
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
