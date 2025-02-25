@@ -119,7 +119,7 @@ export class Comment
             pages: {},
             pageCids: {},
             plebbit: this._plebbit,
-            subplebbitAddress: this.subplebbitAddress,
+            subplebbit: { address: this.subplebbitAddress },
             pagesIpfs: undefined,
             parentCid: this.cid
         });
@@ -261,10 +261,13 @@ export class Comment
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
                     parseRawPages(newReplies)
                 );
+                const subplebbitSignature =
+                    this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs?.signature ||
+                    this.replies._subplebbit.signature;
                 this.replies.updateProps({
                     ...parsedPages,
                     plebbit: this._plebbit,
-                    subplebbitAddress: this.subplebbitAddress,
+                    subplebbit: { address: this.subplebbitAddress, signature: subplebbitSignature },
                     pageCids: newReplies.pageCids,
                     parentCid: this.cid
                 });
@@ -411,7 +414,7 @@ export class Comment
 
     override setSubplebbitAddress(newSubplebbitAddress: string) {
         super.setSubplebbitAddress(newSubplebbitAddress);
-        this.replies._subplebbitAddress = newSubplebbitAddress;
+        this.replies._subplebbit.address = newSubplebbitAddress;
     }
 
     private _isCommentIpfsErrorRetriable(err: PlebbitError | Error): boolean {

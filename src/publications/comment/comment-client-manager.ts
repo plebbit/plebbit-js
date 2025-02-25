@@ -65,11 +65,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         staleCache?: CachedTextRecordResolve
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
-        if (this._comment.state === "updating" && !staleCache) {
-            if (txtRecordName === "subplebbit-address")
-                this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for Subplebbit
-            else if (txtRecordName === "plebbit-author-address") this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
-        }
+        if (this._comment.state === "updating" && !staleCache && txtRecordName === "plebbit-author-address")
+            this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs and author.address is a domain
     }
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, commentCidToLookFor: string) {
@@ -240,23 +237,21 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType) {
         if (!this._comment.cid) throw Error("Can't validate comment update when comment.cid is undefined");
+        if (!this._subplebbitForUpdating?.subplebbit?._rawSubplebbitIpfs) throw Error("Need to have loaded subplebbit before updating");
         const commentIpfsProps = { cid: this._comment.cid, signature: this._comment.signature };
-        const signatureValidity = await verifyCommentUpdate(
-            commentUpdate,
-            this._plebbit.resolveAuthorAddresses,
-            this,
-            this._comment.subplebbitAddress,
-            commentIpfsProps,
-            true
-        );
+        const verifyOptions = {
+            update: commentUpdate,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this,
+            subplebbit: this._subplebbitForUpdating?.subplebbit._rawSubplebbitIpfs,
+            comment: commentIpfsProps,
+            overrideAuthorAddressIfInvalid: true
+        };
+        const signatureValidity = await verifyCommentUpdate(verifyOptions);
         if (!signatureValidity.valid)
             throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", {
                 signatureValidity,
-                commentUpdate,
-                commentIpfsProps,
-                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
-                subplebbitAddress: this._comment.subplebbitAddress,
-                overrideAuthorAddressIfInvalid: true
+                verifyOptions
             });
     }
     async _fetchCommentUpdateFromGateways(
@@ -443,15 +438,16 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     private async _throwIfCommentIpfsIsInvalid(commentIpfs: CommentIpfsType, commentCid: string) {
         // Can potentially throw if resolver if not working
-        const commentIpfsValidation = await verifyCommentIpfs({
+        const verificationOpts = {
             comment: commentIpfs,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
             calculatedCommentCid: commentCid,
             overrideAuthorAddressIfInvalid: true
-        });
+        };
+        const commentIpfsValidation = await verifyCommentIpfs(verificationOpts);
         if (!commentIpfsValidation.valid)
-            throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfs, commentIpfsValidation });
+            throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfsValidation, verificationOpts });
     }
 
     // We're gonna fetch Comment Ipfs, and verify its signature and schema

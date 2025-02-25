@@ -93,7 +93,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             pageCids: {},
             pages: {},
             plebbit: this._plebbit,
-            subplebbitAddress: this.address,
+            subplebbit: remeda.pick(this, ["address", "signature"]),
             pagesIpfs: undefined
         });
         hideClassPrivateProps(this);
@@ -118,7 +118,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 this.posts.updateProps({
                     ...parsedPages,
                     plebbit: this._plebbit,
-                    subplebbitAddress: this.address,
+                    subplebbit: remeda.pick(this, ["address", "signature"]),
                     pageCids: newPosts?.pageCids || {}
                 });
             }
@@ -175,7 +175,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
-        this.posts._subplebbitAddress = this.address;
+        this.posts._subplebbit = remeda.pick(this, ["address", "signature"]);
     }
 
     protected _toJSONIpfsBaseNoPosts() {

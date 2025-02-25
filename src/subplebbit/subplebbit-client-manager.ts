@@ -535,12 +535,18 @@ export class SubplebbitClientsManager extends ClientsManager {
             });
             return error;
         }
-        const updateValidity = await verifySubplebbit(subJson, this._plebbit.resolveAuthorAddresses, this, true);
+        const verificationOpts = {
+            subplebbit: subJson,
+            subplebbitIpnsName: ipnsNameOfSub,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this,
+            overrideAuthorAddressIfInvalid: true
+        };
+        const updateValidity = await verifySubplebbit(verificationOpts);
         if (!updateValidity.valid) {
             const error = new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
                 signatureValidity: updateValidity,
-                actualIpnsName: ipnsNameOfSub,
-                subplebbitIpns: subJson,
+                verificationOpts,
                 cidOfSubIpns
             });
             return error;

@@ -103,50 +103,51 @@ export function oldScore(comment: CommentToSort) {
 }
 
 export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
-    const finalComments = pageIpfs.comments.map((commentObj) => {
+    const finalComments = pageIpfs.comments.map((pageComment) => {
         // This code below is duplicated in comment._initCommentUpdate
         // TODO move it to a shared function
-        const parsedPages = commentObj.commentUpdate.replies ? parsePagesIpfs(commentObj.commentUpdate.replies) : undefined;
-        const postCid = commentObj.comment.postCid ?? (commentObj.comment.depth === 0 ? commentObj.commentUpdate.cid : undefined);
+        const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
+        const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
         if (!postCid) throw Error("Failed to infer postCid from pageIpfs.comments.comment");
 
         const spoiler =
-            typeof commentObj.commentUpdate.spoiler === "boolean"
-                ? commentObj.commentUpdate.spoiler
-                : typeof commentObj.commentUpdate.edit?.spoiler === "boolean"
-                  ? commentObj.commentUpdate.edit?.spoiler
-                  : commentObj.comment.spoiler;
+            typeof pageComment.commentUpdate.spoiler === "boolean"
+                ? pageComment.commentUpdate.spoiler
+                : typeof pageComment.commentUpdate.edit?.spoiler === "boolean"
+                  ? pageComment.commentUpdate.edit?.spoiler
+                  : pageComment.comment.spoiler;
 
         const nsfw =
-            typeof commentObj.commentUpdate.nsfw === "boolean"
-                ? commentObj.commentUpdate.nsfw
-                : typeof commentObj.commentUpdate.edit?.nsfw === "boolean"
-                  ? commentObj.commentUpdate.edit?.nsfw
-                  : commentObj.comment.nsfw;
+            typeof pageComment.commentUpdate.nsfw === "boolean"
+                ? pageComment.commentUpdate.nsfw
+                : typeof pageComment.commentUpdate.edit?.nsfw === "boolean"
+                  ? pageComment.commentUpdate.edit?.nsfw
+                  : pageComment.comment.nsfw;
         const finalJson: CommentWithinPageJson = {
-            ...commentObj.comment,
-            ...commentObj.commentUpdate,
-            signature: commentObj.comment.signature,
+            ...pageComment.comment,
+            ...pageComment.commentUpdate,
+            signature: pageComment.comment.signature,
             author: {
-                ...commentObj.comment.author,
-                ...commentObj.commentUpdate.author,
-                shortAddress: shortifyAddress(commentObj.comment.author.address),
+                ...pageComment.comment.author,
+                ...pageComment.commentUpdate.author,
+                shortAddress: shortifyAddress(pageComment.comment.author.address),
                 flair:
-                    commentObj.commentUpdate?.author?.subplebbit?.flair ||
-                    commentObj.commentUpdate?.edit?.author?.flair ||
-                    commentObj.comment.author.flair
+                    pageComment.commentUpdate?.author?.subplebbit?.flair ||
+                    pageComment.commentUpdate?.edit?.author?.flair ||
+                    pageComment.comment.author.flair
             },
-            shortCid: shortifyCid(commentObj.commentUpdate.cid),
-            shortSubplebbitAddress: shortifyAddress(commentObj.comment.subplebbitAddress),
-            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(commentObj.comment),
-            deleted: commentObj.commentUpdate.edit?.deleted,
+            shortCid: shortifyCid(pageComment.commentUpdate.cid),
+            shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
+            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
+            deleted: pageComment.commentUpdate.edit?.deleted,
             replies: parsedPages,
-            content: commentObj.commentUpdate.edit?.content || commentObj.comment.content,
-            reason: commentObj.commentUpdate.reason,
+            content: pageComment.commentUpdate.edit?.content || pageComment.comment.content,
+            reason: pageComment.commentUpdate.reason,
             spoiler,
             nsfw,
-            flair: commentObj.comment.flair || commentObj.commentUpdate.edit?.flair,
-            postCid
+            flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
+            postCid,
+            pageComment
         };
         return finalJson;
     });

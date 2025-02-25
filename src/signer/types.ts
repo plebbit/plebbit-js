@@ -45,7 +45,7 @@ export type PubsubMsgToSign =
 
 // ---------------------------
 // Verifying
-export type PublicationToVerify =
+export type PlebbitRecordToVerify =
     | PublicationFromDecryptedChallengeRequest
     | SubplebbitIpfsType
     | CommentUpdateType

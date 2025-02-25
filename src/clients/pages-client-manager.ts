@@ -148,8 +148,8 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
             return this._pages._parentCid
-                ? await this._plebbit._plebbitRpcClient!.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
-                : await this._plebbit._plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
+                ? await this._plebbit._plebbitRpcClient!.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbit.address)
+                : await this._plebbit._plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbit.address);
         } catch (e) {
             log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
             throw e;
