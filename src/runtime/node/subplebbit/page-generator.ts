@@ -27,10 +27,10 @@ export type PageOptions = {
 
 type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
 
-export class SortHandler {
+export class PageGenerator {
     subplebbit: LocalSubplebbit;
 
-    constructor(subplebbit: SortHandler["subplebbit"]) {
+    constructor(subplebbit: PageGenerator["subplebbit"]) {
         this.subplebbit = subplebbit;
     }
 
@@ -57,7 +57,7 @@ export class SortHandler {
                 (comments) =>
                     Buffer.byteLength(
                         JSON.stringify({
-                            nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx", // random cid, just a place holder
+                            nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx", // random cid, just a place holder for storage
                             comments
                         })
                     ) < DOWNLOAD_LIMIT_BYTES

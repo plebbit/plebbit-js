@@ -14,7 +14,7 @@ import type {
     SubplebbitRole
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
-import { SortHandler } from "./sort-handler.js";
+import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
@@ -178,7 +178,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _mfsPathsToUnPin: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger!: boolean;
 
-    private _sortHandler!: SortHandler;
+    private _pageGenerator!: PageGenerator;
     _dbHandler!: DbHandler;
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
@@ -271,7 +271,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this._dbHandler) {
             this._dbHandler = new DbHandler(this);
             await this._dbHandler.initDbConfigIfNeeded();
-            this._sortHandler = new SortHandler(this);
+            this._pageGenerator = new PageGenerator(this);
         }
     }
 
@@ -421,7 +421,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const [stats, subplebbitPosts] = await Promise.all([
             this._dbHandler.querySubplebbitStats(undefined),
-            this._sortHandler.generateSubplebbitPosts()
+            this._pageGenerator.generateSubplebbitPosts()
         ]);
 
         if (subplebbitPosts && this.posts?.pageCids) {
@@ -1509,7 +1509,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
             this._dbHandler.queryCalculatedCommentUpdate(comment),
             this._dbHandler.queryStoredCommentUpdate(comment),
-            this._sortHandler.generateRepliesPages(comment)
+            this._pageGenerator.generateRepliesPages(comment)
         ]);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
