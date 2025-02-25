@@ -48,6 +48,7 @@ import env from "../version.js";
 import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import { createHeliaNode } from "../helia/helia-for-plebbit.js";
+import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -1132,6 +1133,12 @@ export function mockUpdatingCommentResolvingAuthor(
     if (!updatingComment) throw Error("Comment should be updating before starting to mock");
 
     updatingComment._clientsManager.resolveAuthorAddressIfNeeded = mockFunction;
+}
+
+export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: string; textRecord: string; value: string }) {
+    const cacheKey = opts.plebbit._clientsManager._getKeyOfCachedDomainTextRecord(opts.domain, opts.textRecord);
+    const valueInCache = <CachedTextRecordResolve>{ timestampSeconds: timestamp(), valueOfTextRecord: opts.value };
+    await opts.plebbit._storage.setItem(cacheKey, valueInCache);
 }
 
 const skipFunction = (_: any) => {};
