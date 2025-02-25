@@ -15,8 +15,6 @@ import Logger from "@plebbit/plebbit-logger";
 import type { PubsubMessage } from "../pubsub-messages/types";
 import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
-import { domainResolverPromiseCache, p2pCidPromiseCache } from "../constants.js";
-import { sha256 } from "js-sha256";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
@@ -497,14 +495,8 @@ export class BaseClientsManager {
         };
 
         try {
-            if (p2pCidPromiseCache.has(cid)) return <string>await p2pCidPromiseCache.get(cid);
-            else {
-                const promise = fetchPromise();
-                p2pCidPromiseCache.set(cid, promise);
-                return await promise;
-            }
+            return await fetchPromise();
         } catch (e) {
-            p2pCidPromiseCache.delete(cid);
             throw e;
         }
     }
@@ -518,7 +510,7 @@ export class BaseClientsManager {
 
     // Resolver methods here
 
-    private _getKeyOfCachedDomainTextRecord(domainAddress: string, txtRecord: string) {
+    _getKeyOfCachedDomainTextRecord(domainAddress: string, txtRecord: string) {
         return `${domainAddress}_${txtRecord}`;
     }
 
@@ -589,24 +581,15 @@ export class BaseClientsManager {
     ): Promise<string | null | { error: PlebbitError }> {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
-        const cacheKey = sha256(address + txtRecordName + chain + chainproviderUrl);
-        let isUsingCache = true;
         try {
-            let resolvedTextRecord: string | null;
-            if (domainResolverPromiseCache.has(cacheKey))
-                resolvedTextRecord = <string | null>await domainResolverPromiseCache.get(cacheKey);
-            else {
-                isUsingCache = false;
-                const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(
-                    address,
-                    txtRecordName,
-                    chain,
-                    chainproviderUrl,
-                    chainId
-                );
-                domainResolverPromiseCache.set(cacheKey, resolvePromise);
-                resolvedTextRecord = await resolvePromise;
-            }
+            const resolvedTextRecord = await this._plebbit._domainResolver.resolveTxtRecord(
+                address,
+                txtRecordName,
+                chain,
+                chainproviderUrl,
+                chainId
+            );
+            const timeAfter = Date.now();
             if (typeof resolvedTextRecord === "string" && !isIpns(resolvedTextRecord))
                 throwWithErrorCode("ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS", {
                     resolvedTextRecord,
@@ -615,11 +598,11 @@ export class BaseClientsManager {
                     chain,
                     chainproviderUrl
                 });
+
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl, staleCache);
-            if (!isUsingCache) await this._plebbit._stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
+            await this._plebbit._stats.recordGatewaySuccess(chainproviderUrl, chain, timeAfter - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
-            domainResolverPromiseCache.delete(cacheKey);
             const parsedError =
                 e instanceof PlebbitError
                     ? e
@@ -632,7 +615,7 @@ export class BaseClientsManager {
                           chainId
                       });
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError, staleCache);
-            if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
+            await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: parsedError };
         }
     }
@@ -694,7 +677,6 @@ export class BaseClientsManager {
                 } else {
                     // result could be either the value of the text record
                     // or null if it doesn't have any value
-                    // TODO abort ongoing resolving
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
                         // Only cache valid text records, not null
@@ -711,7 +693,6 @@ export class BaseClientsManager {
             } catch (e) {
                 if (i === timeouts.length - 1) {
                     log.error(`Failed to resolve address (${address}) text record (${txtRecordName}) using providers `, providersSorted, e);
-                    this.emitError(<PlebbitError>e);
                     throw e;
                 }
             }

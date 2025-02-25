@@ -1553,10 +1553,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
         // This function should be deleted at some point, once the protocol ossifies
-        const validation = await verifyCommentUpdate(newCommentUpdate, false, this._clientsManager, this.address, comment, false, false);
+        const verificationOpts = {
+            update: newCommentUpdate,
+            resolveAuthorAddresses: false,
+            clientsManager: this._clientsManager,
+            subplebbit: this._rawSubplebbitIpfs!,
+            comment,
+            overrideAuthorAddressIfInvalid: false
+        };
+        const validation = await verifyCommentUpdate(verificationOpts);
         if (!validation.valid) {
             log.error(`CommentUpdate (${comment.cid}) signature is invalid due to (${validation.reason}). This is a critical error`);
-            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", validation);
+            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { validation, verificationOpts });
         }
     }
 

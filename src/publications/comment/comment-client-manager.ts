@@ -474,30 +474,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         return this._comment.state === "publishing";
     }
 
-    override postResolveTextRecordSuccess(
-        address: string,
-        txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        resolvedTextRecord: string,
-        chain: ChainTicker,
-        chainProviderUrl: string,
-        staleCache?: CachedTextRecordResolve
-    ): void {
-        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
-        // TODO should check for regex of ipns eventually
-        if (!resolvedTextRecord) {
-            // need to check if publishing or updating
-            if (this._isPublishing()) {
-                this._comment._updatePublishingState("failed");
-            } else this._comment._setUpdatingState("failed");
-            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
-                subplebbitAddress: address,
-                textRecord: txtRecordName
-            });
-            this._comment.emit("error", error);
-            throw error;
-        }
-    }
-
     _findCommentInPagesOfUpdatingCommentsSubplebbit(): PageIpfs["comments"][0] | undefined {
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
         const updatingSubplebbitPosts = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs?.posts;

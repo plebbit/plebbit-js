@@ -4,7 +4,6 @@ import { PagesKuboRpcClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
 import * as remeda from "remeda";
-import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import { BasePages } from "../pages/pages.js";
@@ -74,14 +73,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     override preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void {
         const cid = loadOpts.root;
-        const sortTypes = pageCidToSortTypesCache.get(cid);
+        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(cid);
 
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
 
     override postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
         const cid = loadOpts.root;
-        const sortTypes = pageCidToSortTypesCache.get(cid);
+        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(cid);
 
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
@@ -95,12 +94,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]) {
-        const curSortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
+        const curSortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
         if (!curSortTypes) {
-            pageCidToSortTypesCache.set(pageCid, sortTypes);
+            this._plebbit._memCaches.pageCidToSortTypes.set(pageCid, sortTypes);
         } else {
             const newSortTypes = remeda.unique([...curSortTypes, ...sortTypes]);
-            pageCidToSortTypesCache.set(pageCid, newSortTypes);
+            this._plebbit._memCaches.pageCidToSortTypes.set(pageCid, newSortTypes);
         }
     }
 
@@ -109,7 +108,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string) {
-        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(previousPageCid);
+        const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(previousPageCid);
         if (!Array.isArray(sortTypes)) return;
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     }
@@ -187,7 +186,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
-        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
+        const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
         let page: PageIpfs;
         if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);

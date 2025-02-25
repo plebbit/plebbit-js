@@ -58,40 +58,6 @@ export class PublicationClientsManager extends ClientsManager {
             };
     }
 
-    // Resolver methods here
-    override preResolveTextRecord(
-        address: string,
-        txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: ChainTicker,
-        chainProviderUrl: string,
-        staleCache?: CachedTextRecordResolve
-    ): void {
-        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
-        const isStartingToPublish = this._publication.publishingState === "stopped" || this._publication.publishingState === "failed";
-        if (this._publication.state === "publishing" && txtRecordName === "subplebbit-address" && isStartingToPublish && !staleCache)
-            this._publication._updatePublishingState("resolving-subplebbit-address");
-    }
-
-    override postResolveTextRecordSuccess(
-        address: string,
-        txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        resolvedTextRecord: string,
-        chain: ChainTicker,
-        chainProviderUrl: string,
-        staleCache?: CachedTextRecordResolve
-    ): void {
-        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
-        if (!resolvedTextRecord) {
-            this._publication._updatePublishingState("failed");
-            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
-                subplebbitAddress: address,
-                textRecord: txtRecordName
-            });
-            this._publication.emit("error", error);
-            throw error;
-        }
-    }
-
     override emitError(e: PlebbitError): void {
         this._publication.emit("error", e);
     }

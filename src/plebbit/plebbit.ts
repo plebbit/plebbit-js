@@ -232,7 +232,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             subplebbitForPublishing: new LRUCache({
                 max: 100,
                 ttl: 600000
-            })
+            }),
+            pageCidToSortTypes: new LRUCache<string, string[]>({ max: 5000 })
         };
     }
 
