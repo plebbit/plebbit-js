@@ -2,8 +2,7 @@ import type { LRUStorageConstructor } from "./types.js";
 
 export enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT, // InternalSubplebbitType
-    PERSISTENT_DELETED_SUBPLEBBITS, // These are basically sub db files that we're unable to remove for some reason on windows
-    COMMENTS_WITH_INVALID_SCHEMA // Comments in DB with invalid Comment Ipfs schema and have been moved away from comments
+    PERSISTENT_DELETED_SUBPLEBBITS // These are basically sub db files that we're unable to remove for some reason on windows
 }
 
 // Configs for LRU storage
