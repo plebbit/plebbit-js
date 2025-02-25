@@ -64,6 +64,7 @@ const PlebbitUserOptionBaseSchema = z.object({
     publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
     updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
     noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
+    validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
     userAgent: UserAgentSchema
 });
 
@@ -91,6 +92,7 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
     updateInterval: PlebbitUserOptionBaseSchema.shape.updateInterval.default(60000),
     noData: PlebbitUserOptionBaseSchema.shape.noData.default(false),
+    validatePages: PlebbitUserOptionBaseSchema.shape.validatePages.default(true),
     userAgent: PlebbitUserOptionBaseSchema.shape.userAgent.default(version.USER_AGENT)
 }).strict();
 

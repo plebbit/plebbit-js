@@ -198,7 +198,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             try {
                 const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
-                await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
+                await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate, subIpns);
                 return { commentUpdate, commentUpdateIpfsPath: path };
             } catch (e) {
                 // there's a problem with the record itself
@@ -235,17 +235,18 @@ export class CommentClientsManager extends PublicationClientsManager {
         return true;
     }
 
-    private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType) {
+    private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType, subplebbitIpfs: SubplebbitIpfsType) {
         if (!this._comment.cid) throw Error("Can't validate comment update when comment.cid is undefined");
-        if (!this._subplebbitForUpdating?.subplebbit?._rawSubplebbitIpfs) throw Error("Need to have loaded subplebbit before updating");
         const commentIpfsProps = { cid: this._comment.cid, signature: this._comment.signature };
         const verifyOptions = {
             update: commentUpdate,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
-            subplebbit: this._subplebbitForUpdating?.subplebbit._rawSubplebbitIpfs,
+            subplebbit: subplebbitIpfs,
             comment: commentIpfsProps,
-            overrideAuthorAddressIfInvalid: true
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: this._plebbit.validatePages,
+            validateUpdateSignature: true
         };
         const signatureValidity = await verifyCommentUpdate(verifyOptions);
         if (!signatureValidity.valid)
@@ -269,7 +270,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
                 parseJsonWithPlebbitErrorIfFails(res.resText)
             );
-            await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature);
+            await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature, subIpns);
             commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
         };
 
@@ -339,11 +340,12 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     _useLoadedCommentUpdateIfNewInfo(
         loadedCommentUpdate: NonNullable<NewCommentUpdate> | Pick<NonNullable<NewCommentUpdate>, "commentUpdate">,
+        subplebbit: SubplebbitIpfsType,
         log: Logger
     ) {
         if ((this._comment._rawCommentUpdate?.updatedAt || 0) < loadedCommentUpdate.commentUpdate.updatedAt) {
             log(`Comment (${this._comment.cid}) received a new CommentUpdate`);
-            this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate);
+            this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
                 this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
             this._comment._setUpdatingState("succeeded");
@@ -400,7 +402,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
         if (newCommentUpdate) {
-            this._useLoadedCommentUpdateIfNewInfo(newCommentUpdate, log);
+            this._useLoadedCommentUpdateIfNewInfo(newCommentUpdate, subIpns, log);
         } else if (newCommentUpdate === undefined) {
             log.trace(`Comment`, this._comment.cid, "loaded an old comment update. Ignoring it");
             this._comment._setUpdatingState("waiting-retry");
@@ -499,6 +501,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._comment.state === "stopped")
             await this._comment.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
         else if (this._comment.cid) {
+            const subIpfs = this._subplebbitForUpdating?.subplebbit._rawSubplebbitIpfs;
+            if (!subIpfs) throw Error("Sub IPFS should be defined when an update is emitted");
             // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
             // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
             try {
@@ -506,11 +510,15 @@ export class CommentClientsManager extends PublicationClientsManager {
 
                 if (commentInPage) {
                     const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
-                    const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: commentInPage.commentUpdate }, log);
+                    const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
+                        { commentUpdate: commentInPage.commentUpdate },
+                        subIpfs,
+                        log
+                    );
                     if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
                 }
                 // we didn't manage to find any update from pages, let's fetch an update from post updates
-                await this.useSubplebbitUpdateToFetchCommentUpdate(this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs!);
+                await this.useSubplebbitUpdateToFetchCommentUpdate(subIpfs);
             } catch (e) {
                 log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
             }

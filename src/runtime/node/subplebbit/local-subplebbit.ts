@@ -509,18 +509,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw error;
         }
 
+        const verificationOpts = {
+            subplebbit: recordToPublishRaw,
+            subplebbitIpnsName: this.signer.address,
+            resolveAuthorAddresses: false,
+            clientsManager: this._clientsManager,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: this._plebbit.validatePages
+        };
         try {
-            const validation = await verifySubplebbit({
-                subplebbit: recordToPublishRaw,
-                subplebbitIpnsName: this.signer.address,
-                resolveAuthorAddresses: false,
-                clientsManager: this._clientsManager,
-                overrideAuthorAddressIfInvalid: false
-            });
+            const validation = await verifySubplebbit(verificationOpts);
             if (!validation.valid) {
                 throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
                     validation,
-                    invalidRecord: recordToPublishRaw
+                    verificationOpts
                 });
             }
         } catch (e) {
@@ -1565,7 +1567,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             clientsManager: this._clientsManager,
             subplebbit: this._rawSubplebbitIpfs!,
             comment,
-            overrideAuthorAddressIfInvalid: false
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: this._plebbit.validatePages,
+            validateUpdateSignature: true
         };
         const validation = await verifyCommentUpdate(verificationOpts);
         if (!validation.valid) {

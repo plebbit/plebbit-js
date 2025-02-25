@@ -139,6 +139,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     publishInterval: ParsedPlebbitOptions["publishInterval"];
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
+    validatePages: ParsedPlebbitOptions["validatePages"];
     userAgent: ParsedPlebbitOptions["userAgent"];
     httpRoutersOptions: ParsedPlebbitOptions["httpRoutersOptions"];
 
@@ -200,6 +201,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.publishInterval = this.parsedPlebbitOptions.publishInterval;
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
         this.noData = this.parsedPlebbitOptions.noData;
+        this.validatePages = this.parsedPlebbitOptions.validatePages;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
         this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
         this._domainResolver = new DomainResolver(this);

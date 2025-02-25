@@ -36,6 +36,7 @@ import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schem
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
+import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 
 export class Comment
     extends Publication
@@ -194,7 +195,7 @@ export class Comment
         }
     }
 
-    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson) {
+    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson, subplebbit?: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:_initCommentUpdate");
         if ("depth" in props)
             // CommentWithinPageJson
@@ -239,11 +240,12 @@ export class Comment
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
-        this._updateRepliesPostsInstance(props.replies);
+        this._updateRepliesPostsInstance(props.replies, subplebbit);
     }
 
     _updateRepliesPostsInstance(
-        newReplies: CommentUpdateType["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
+        newReplies: CommentUpdateType["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">,
+        subplebbit?: SubplebbitIpfsType
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
@@ -261,9 +263,7 @@ export class Comment
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
                     parseRawPages(newReplies)
                 );
-                const subplebbitSignature =
-                    this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs?.signature ||
-                    this.replies._subplebbit.signature;
+                const subplebbitSignature = subplebbit?.signature || this.replies._subplebbit.signature;
                 this.replies.updateProps({
                     ...parsedPages,
                     plebbit: this._plebbit,
@@ -641,12 +641,16 @@ export class Comment
         const updatingCommentInstance = this._plebbit._updatingComments[this.cid];
 
         if (updatingCommentInstance) {
+            // TODO maybe we should just copy props with Object.assign? not sure
             if (!this._rawCommentIpfs && updatingCommentInstance._rawCommentIpfs) {
                 this._initIpfsProps(updatingCommentInstance._rawCommentIpfs);
                 this.emit("update", this);
             }
             if (updatingCommentInstance._rawCommentUpdate && (this.updatedAt || 0) < updatingCommentInstance._rawCommentUpdate.updatedAt) {
-                this._initCommentUpdate(updatingCommentInstance._rawCommentUpdate);
+                this._initCommentUpdate(
+                    updatingCommentInstance._rawCommentUpdate,
+                    updatingCommentInstance._subplebbitForUpdating?.subplebbit?._rawSubplebbitIpfs
+                );
                 this._commentUpdateIpfsPath = updatingCommentInstance._commentUpdateIpfsPath;
                 this.emit("update", this);
             }

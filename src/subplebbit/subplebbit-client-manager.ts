@@ -533,7 +533,8 @@ export class SubplebbitClientsManager extends ClientsManager {
             subplebbitIpnsName: ipnsNameOfSub,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
-            overrideAuthorAddressIfInvalid: true
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: this._plebbit.validatePages
         };
         const updateValidity = await verifySubplebbit(verificationOpts);
         if (!updateValidity.valid) {

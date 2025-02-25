@@ -60,23 +60,22 @@ export class BasePages {
 
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        if (!this._plebbit._plebbitRpcClient) {
-            const signatureValidity = await verifyPage({
+        if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) {
+            const verificationOpts = {
                 pageCid,
                 page: pageIpfs,
                 resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
                 clientsManager: this._clientsManager,
                 subplebbit: this._subplebbit,
                 parentCommentCid: this._parentCid,
-                overrideAuthorAddressIfInvalid: true
-            });
+                overrideAuthorAddressIfInvalid: true,
+                validatePages: true
+            };
+            const signatureValidity = await verifyPage(verificationOpts);
             if (!signatureValidity.valid)
                 throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", {
                     signatureValidity,
-                    parentCid: this._parentCid,
-                    subplebbitAddress: this._subplebbit,
-                    pageIpfs,
-                    pageCid
+                    verificationOpts
                 });
         }
 
