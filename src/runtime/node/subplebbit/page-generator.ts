@@ -49,24 +49,101 @@ export class PageGenerator {
         return { [sortName]: { pages: listOfPage, cids } };
     }
 
-    _chunkComments(allComments: PageIpfs["comments"], pageOptions: PageOptions): PageIpfs["comments"][] {
-        // we're accounting for both pageSize and download limit (1mb)
-        let curPageSize = pageOptions.pageSize;
-        while (curPageSize > 0) {
-            const chunkedComments = remeda.chunk(allComments, curPageSize);
-            const allChunksBelowDownloadLimit = chunkedComments.every(
-                (comments) =>
-                    Buffer.byteLength(
-                        JSON.stringify({
-                            nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx", // random cid, just a place holder for storage
-                            comments
-                        })
-                    ) < DOWNLOAD_LIMIT_BYTES
-            );
-            if (allChunksBelowDownloadLimit) return chunkedComments;
-            else curPageSize--;
+    _chunkComments(comments: PageIpfs["comments"]): PageIpfs["comments"][] {
+        // this function is written by AI, looks good to me
+        const BASE_SIZE = 1024 * 1024; // 1MB
+
+        // Calculate overhead with and without nextCid
+        const OBJECT_WRAPPER_WITH_CID =
+            Buffer.byteLength(
+                JSON.stringify(<PageIpfs>{
+                    comments: [],
+                    nextCid: "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx" // random cid as a place holder
+                }),
+                "utf8"
+            ) - 2; // Subtract 2 for empty array "[]"
+
+        const OBJECT_WRAPPER_WITHOUT_CID =
+            Buffer.byteLength(
+                JSON.stringify(<PageIpfs>{
+                    comments: []
+                }),
+                "utf8"
+            ) - 2; // Subtract 2 for empty array "[]"
+
+        // Quick check for small arrays - if everything fits in one page, no nextCid needed
+        const totalSizeWithoutCid = Buffer.byteLength(JSON.stringify(<PageIpfs>{ comments }), "utf8");
+        if (totalSizeWithoutCid <= BASE_SIZE) {
+            return [comments]; // Single page, no chunking needed
         }
-        throw Error("Failed to chunk comments under 1mb");
+
+        const chunks: PageIpfs["comments"][] = [];
+
+        let currentChunk: PageIpfs["comments"] = [];
+        let chunkIndex = 0;
+        let accumulatedSize = OBJECT_WRAPPER_WITH_CID; // Start with the overhead size (including nextCid)
+
+        // Pre-calculate sizes to avoid repeated stringification
+        const commentSizes = new Map<number, number>();
+
+        function getCommentSize(index: number): number {
+            if (!commentSizes.has(index)) {
+                const size = Buffer.byteLength(JSON.stringify(comments[index]), "utf8");
+                commentSizes.set(index, size);
+            }
+            return commentSizes.get(index)!;
+        }
+
+        function getCurrentMaxSize(index: number): number {
+            return BASE_SIZE * Math.pow(2, index);
+        }
+
+        for (let i = 0; i < comments.length; i++) {
+            const commentSize = getCommentSize(i);
+            const maxSize = getCurrentMaxSize(chunkIndex);
+            const isLastItem = i === comments.length - 1;
+
+            // Add comma if needed
+            const commaSize = currentChunk.length > 0 ? 1 : 0;
+
+            // Check if adding this comment would exceed the limit
+            if (accumulatedSize + commaSize + commentSize > maxSize) {
+                if (currentChunk.length > 0) {
+                    // Push current chunk and start a new one
+                    chunks.push(currentChunk);
+                    currentChunk = [];
+
+                    // Reset size calculation for the next chunk
+                    // If this will be the last chunk (we're processing the last item and it will be alone),
+                    // then use size without nextCid
+                    if (isLastItem) {
+                        accumulatedSize = OBJECT_WRAPPER_WITHOUT_CID;
+                    } else {
+                        accumulatedSize = OBJECT_WRAPPER_WITH_CID;
+                    }
+
+                    chunkIndex++;
+                }
+            }
+
+            currentChunk.push(comments[i]);
+            accumulatedSize += commaSize + commentSize;
+        }
+
+        if (currentChunk.length > 0) {
+            // Before pushing the last chunk, adjust its expected size if it's the last page
+            // by removing the nextCid overhead
+            if (chunks.length > 0) {
+                // If we have multiple chunks
+                chunks.push(currentChunk);
+            } else {
+                // If we only have one chunk, it shouldn't have nextCid
+                // But this case should be caught by our initial check
+                chunks.push(currentChunk);
+            }
+        }
+
+        return chunks;
     }
 
     // Resolves to sortedComments
@@ -114,18 +191,9 @@ export class PageGenerator {
 
         if (commentsSorted.length === 0) return undefined;
 
-        const commentsChunks = this._chunkComments(commentsSorted, options);
+        const commentsChunks = this._chunkComments(commentsSorted);
 
         const res = await this.commentChunksToPages(commentsChunks, sortName);
-
-        const listOfPage = Object.values(res)[0]!.pages;
-
-        const expectedNumOfPages = Math.ceil(commentsSorted.length / options.pageSize);
-        assert.equal(
-            listOfPage.length,
-            expectedNumOfPages,
-            `Should generate ${expectedNumOfPages} pages for sort ${sortName} while it generated ${listOfPage.length}`
-        );
 
         return res;
     }

@@ -23,8 +23,8 @@ import env from "../../../version.js";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
-import { PageOptions } from "./sort-handler.js";
-import { SubplebbitStats } from "../../../subplebbit/types.js";
+import type { PageOptions } from "./page-generator.js";
+import type { InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitStats } from "../../../subplebbit/types.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
