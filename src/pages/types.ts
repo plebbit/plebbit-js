@@ -30,6 +30,7 @@ export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 export type SortProps = {
     score: (comment: { comment: CommentIpfsType; commentUpdate: CommentUpdateType }) => number;
     timeframe?: Timeframe;
+    flat?: boolean;
 };
 
 export type PostSort = Record<PostSortName, SortProps>;

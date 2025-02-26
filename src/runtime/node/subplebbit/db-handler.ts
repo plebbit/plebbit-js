@@ -639,7 +639,7 @@ export class DbHandler {
         return maxTimestamp;
     }
 
-    async queryCommentsForPages(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
+    async queryPageComments(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
         // protocolVersion, signature
 
         const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
@@ -673,6 +673,22 @@ export class DbHandler {
         }));
 
         return comments;
+    }
+
+    async queryFlattenedPageReplies(options: PageOptions & { parentCid: string }, trx?: Transaction): Promise<PageIpfs["comments"]> {
+        const firstLevelReplies = await this.queryPageComments(options, trx);
+
+        const children = await Promise.all(
+            firstLevelReplies.map(async (baseComment) => {
+                if (baseComment.commentUpdate.replies)
+                    return [
+                        baseComment,
+                        ...(await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid }))
+                    ];
+                else return [baseComment];
+            })
+        );
+        return firstLevelReplies.concat(...children);
     }
 
     async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined> {

@@ -11,18 +11,16 @@ import type {
     SortProps
 } from "../../../pages/types.js";
 import * as remeda from "remeda";
-import type { CommentIpfsWithCidDefined } from "../../../publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CommentUpdateType } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
-import { DOWNLOAD_LIMIT_BYTES } from "../../../clients/base-client-manager.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
     excludeCommentsWithDifferentSubAddress: boolean;
     parentCid: string | null;
-    pageSize: number;
 };
 
 type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
@@ -213,11 +211,10 @@ export class PageGenerator {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
-            parentCid: null,
-            pageSize: 50
+            parentCid: null
         };
         // Sorting posts on a subplebbit level
-        const rawPosts = await this._subplebbit._dbHandler.queryCommentsForPages(pageOptions);
+        const rawPosts = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
 
         if (rawPosts.length === 0) return undefined;
 
@@ -229,22 +226,32 @@ export class PageGenerator {
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    async generateRepliesPages(comment: Pick<CommentIpfsWithCidDefined, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
-        const pageOptions: PageOptions = {
+    async generateRepliesPages(commentCid: CommentUpdateType["cid"]): Promise<RepliesPagesTypeIpfs | undefined> {
+        const pageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
-            parentCid: comment.cid,
-            pageSize: 50
+            parentCid: commentCid
         };
-
-        const rawReplies = await this._subplebbit._dbHandler.queryCommentsForPages(pageOptions);
-        if (rawReplies.length === 0) return undefined;
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
-        for (const sortName of remeda.keys.strict(REPLIES_SORT_TYPES))
-            sortResults.push(await this.sortComments(rawReplies, sortName, pageOptions));
+        const hierarchalSorts = Object.keys(REPLIES_SORT_TYPES).filter((replySortName) => !REPLIES_SORT_TYPES[replySortName].flat);
+        if (hierarchalSorts.length > 0) {
+            const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+            if (hierarchalReplies.length === 0) return undefined;
+
+            for (const hierarchalSortName of hierarchalSorts)
+                sortResults.push(await this.sortComments(hierarchalReplies, hierarchalSortName, pageOptions));
+        }
+
+        const flatSorts = Object.keys(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
+
+        if (flatSorts.length > 0) {
+            const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies(pageOptions);
+
+            for (const flatSortName of flatSorts) sortResults.push(await this.sortComments(flattenedReplies, flatSortName, pageOptions));
+        }
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }

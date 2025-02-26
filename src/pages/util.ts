@@ -41,18 +41,21 @@ export const POSTS_SORT_TYPES: PostSort = {
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
     topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
     topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
-    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) },
-    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
-    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
-    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
-    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
-    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
-    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
+    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) }
+    // remove it for now, might turn back on
+    // controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
+    // controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
+    // controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
+    // controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
+    // controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
+    // controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
 };
 
 export const REPLIES_SORT_TYPES: ReplySort = {
     ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
-    old: { score: (...args) => oldScore(...args) }
+    old: { score: (...args) => oldScore(...args) },
+    newFlat: { ...POSTS_SORT_TYPES["new"], flat: true },
+    oldFlat: { ...POSTS_SORT_TYPES["old"], flat: true }
 };
 
 type CommentToSort = PageIpfs["comments"][0];
