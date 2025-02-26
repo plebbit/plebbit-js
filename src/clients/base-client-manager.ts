@@ -24,8 +24,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
-
-export const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
+import { measurePerformance } from "../decorator-util.js";
 
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 
@@ -225,15 +224,18 @@ export class BaseClientsManager {
 
     async _fetchWithLimit(
         url: string,
-        options: { cache: RequestCache; signal: AbortSignal } & Pick<OptionsToLoadFromGateway, "shouldAbortRequestFunc">
+        options: { cache: RequestCache; signal: AbortSignal } & Pick<
+            OptionsToLoadFromGateway,
+            "shouldAbortRequestFunc" | "maxFileSizeBytes"
+        >
     ): Promise<{ resText: string | undefined; res: Response; abortError?: PlebbitError }> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
 
         const handleError = (e: Error | PlebbitError) => {
             if (e instanceof PlebbitError) throw e;
             else if (e instanceof Error && e.message.includes("over limit"))
-                throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-            else if (options.signal?.aborted) throw new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { url });
+                throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
+            else if (options.signal?.aborted) throw new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { url, options });
             else {
                 const errorCode =
                     url.includes("/ipfs/") || url.includes(".ipfs.")
@@ -241,7 +243,13 @@ export class BaseClientsManager {
                         : url.includes("/ipns/") || url.includes(".ipns.")
                           ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                           : "ERR_FAILED_TO_FETCH_GENERIC";
-                throw new PlebbitError(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
+                throw new PlebbitError(errorCode, {
+                    url,
+                    status: res?.status,
+                    statusText: res?.statusText,
+                    fetchError: String(e),
+                    options
+                });
             }
 
             // If error is not related to size limit, then throw it again
@@ -254,7 +262,7 @@ export class BaseClientsManager {
                 cache: options.cache,
                 signal: options.signal,
                 //@ts-expect-error, this option is for node-fetch
-                size: DOWNLOAD_LIMIT_BYTES
+                size: options.maxFileSizeBytes
             });
 
             if (res.status !== 200)
@@ -265,6 +273,9 @@ export class BaseClientsManager {
                     return { res, resText: undefined, abortError: abortError };
                 }
             }
+            const sizeHeader = <string | null>res.headers.get("Content-Length");
+            if (sizeHeader && Number(sizeHeader) > options.maxFileSizeBytes)
+                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
 
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
@@ -287,8 +298,8 @@ export class BaseClientsManager {
                     //@ts-ignore
                     if (value) resText += decoder.decode(value);
                     if (done || !value) break;
-                    if (value.length + totalBytesRead > DOWNLOAD_LIMIT_BYTES)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+                    if (value.length + totalBytesRead > options.maxFileSizeBytes)
+                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
                     totalBytesRead += value.length;
                 }
                 return { resText, res };
@@ -321,7 +332,8 @@ export class BaseClientsManager {
         });
         const shouldVerifyBodyAgainstCid = loadOpts.recordIpfsType === "ipfs" && !loadOpts.path;
         if (shouldVerifyBodyAgainstCid && !resObj.resText) throw Error("Can't verify body against cid when there's no body");
-        if (shouldVerifyBodyAgainstCid && resObj.resText) await this._verifyContentIsSameAsCid(resObj.resText, loadOpts.root);
+        if (shouldVerifyBodyAgainstCid && resObj.resText)
+            await this._verifyGatewayResponseMatchesCid(resObj.resText, loadOpts.root, loadOpts);
         return resObj;
     }
 
@@ -478,18 +490,19 @@ export class BaseClientsManager {
     }
 
     // TODO rename this to _fetchPathP2P
-    async _fetchCidP2P(cid: string): Promise<string> {
+    async _fetchCidP2P(cid: string, loadOpts: { maxFileSizeBytes: number }): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
 
         const fetchPromise = async () => {
-            const rawData = await all(ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
+            const rawData = await all(ipfsClient._client.cat(cid, { length: loadOpts.maxFileSizeBytes })); // Limit is 1mb files
             const data = uint8ArrayConcat(rawData);
             const fileContent = uint8ArrayToString(data);
 
             if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
-            if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
+            if (fileContent.length === loadOpts.maxFileSizeBytes) {
                 const calculatedCid: string = await calculateIpfsHash(fileContent);
-                if (calculatedCid !== cid) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+                if (calculatedCid !== cid)
+                    throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, loadOpts, fileContentLength: fileContent.length, calculatedCid });
             }
             return fileContent;
         };
@@ -501,11 +514,16 @@ export class BaseClientsManager {
         }
     }
 
-    private async _verifyContentIsSameAsCid(content: string, cid: string) {
-        const calculatedCid: string = await calculateIpfsHash(content);
-        if (content.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
+    private async _verifyGatewayResponseMatchesCid(
+        gatewayResponseBody: string,
+        cid: string,
+        loadOpts: Pick<OptionsToLoadFromGateway, "maxFileSizeBytes">
+    ) {
+        const calculatedCid: string = await calculateIpfsHash(gatewayResponseBody);
+        if (gatewayResponseBody.length === loadOpts.maxFileSizeBytes && calculatedCid !== cid)
+            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, loadOpts, gatewayResponseBody });
+        if (calculatedCid !== cid)
+            throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid, gatewayResponseBody, loadOpts });
     }
 
     // Resolver methods here

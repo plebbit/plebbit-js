@@ -1,7 +1,5 @@
 import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../../clients/chain-provider-client.js";
-import { ResultOfFetchingSubplebbit } from "../../clients/client-manager.js";
-import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
 import { CommentPlebbitRpcStateClient } from "../../clients/rpc-client/plebbit-rpc-state-client.js";
 import { PageIpfs } from "../../pages/types.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
@@ -25,6 +23,8 @@ import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
 import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import { findCommentInPages, findCommentInPagesRecrusively } from "../../pages/util.js";
+import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
+import { measurePerformance } from "../../decorator-util.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -95,7 +95,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingState("fetching-update-ipfs");
             try {
                 const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
-                    parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid))
+                    parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid, { maxFileSizeBytes: 1024 * 1024 }))
                 );
                 return {
                     comment: commentIpfs,
@@ -188,7 +188,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
             try {
-                res = await this._fetchCidP2P(path);
+                res = await this._fetchCidP2P(path, { maxFileSizeBytes: 1024 * 1024 });
             } catch (e) {
                 log.trace(`Failed to fetch CommentUpdate from path (${path}) with IPFS P2P. Trying the next timestamp range`);
                 attemptedPathsToLoadErrors[path] = <Error>e;
@@ -312,7 +312,8 @@ export class CommentClientsManager extends PublicationClientsManager {
                     path: path.replace(`${folderCid}/`, ""),
                     recordPlebbitType: "comment-update",
                     validateGatewayResponseFunc: validateCommentFromGateway,
-                    log
+                    log,
+                    maxFileSizeBytes: 1024 * 1024
                 });
                 if (!commentUpdate) throw Error("Failed to load comment update from gateways. This is a critical logic error");
                 return { commentUpdate, commentUpdateIpfsPath: path };
@@ -414,7 +415,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         this.updateIpfsState("fetching-ipfs");
         let commentRawString: string;
         try {
-            commentRawString = await this._fetchCidP2P(cid);
+            commentRawString = await this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024 });
         } catch (e) {
             throw e;
         } finally {
@@ -433,7 +434,8 @@ export class CommentClientsManager extends PublicationClientsManager {
             recordPlebbitType: "comment",
             root: parentCid,
             validateGatewayResponseFunc: async () => {},
-            log
+            log,
+            maxFileSizeBytes: 1024 * 1024
         });
         return res.resText;
     }

@@ -286,7 +286,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
 
-        const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid);
+        const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, { maxFileSizeBytes: 1024 * 1024 });
 
         try {
             const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
@@ -400,6 +400,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                         validateGatewayResponseFunc: throwIfGatewayRespondsWithInvalidSubplebbit,
                         shouldAbortRequestFunc: checkIpnsCidFromGateway,
                         abortController,
+                        maxFileSizeBytes: 1024 * 1024,
                         log
                     })
                 ),

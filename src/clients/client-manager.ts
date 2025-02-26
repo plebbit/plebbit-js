@@ -172,7 +172,7 @@ export class ClientsManager extends BaseClientsManager {
         let finalCid = remeda.clone(cid);
         if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
-        if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
+        if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024 });
         else {
             const log = Logger("plebbit-js:clients-manager:fetchCid");
             const resObj = await this.fetchFromMultipleGateways({
@@ -180,7 +180,8 @@ export class ClientsManager extends BaseClientsManager {
                 recordIpfsType: "ipfs",
                 recordPlebbitType: "generic-ipfs",
                 validateGatewayResponseFunc: async () => {}, // no need to validate body against cid here, fetchFromMultipleGateways already does it
-                log
+                log,
+                maxFileSizeBytes: 1024 * 1024
             });
             return resObj.resText;
         }

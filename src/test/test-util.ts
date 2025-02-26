@@ -1070,10 +1070,10 @@ export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked
         // we're using kubo/helia
         const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
         //@ts-expect-error
-        updatingComment._clientsManager._fetchCidP2P = (cidOrPath) => {
-            if (cidOrPath.endsWith("/update")) {
+        updatingComment._clientsManager._fetchCidP2P = (...args) => {
+            if (args[0].endsWith("/update")) {
                 return commentUpdateRecordString;
-            } else return originalFetch(cidOrPath);
+            } else return originalFetch(...args);
         };
     }
 }
