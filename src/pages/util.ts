@@ -55,7 +55,7 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
     old: { score: (...args) => oldScore(...args) },
     newFlat: { ...POSTS_SORT_TYPES["new"], flat: true },
-    oldFlat: { ...POSTS_SORT_TYPES["old"], flat: true }
+    oldFlat: { score: (...args) => oldScore(...args), flat: true }
 };
 
 type CommentToSort = PageIpfs["comments"][0];

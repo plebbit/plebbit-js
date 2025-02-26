@@ -154,7 +154,7 @@ export class PageGenerator {
         const sortProps: SortProps = options.parentCid
             ? REPLIES_SORT_TYPES[<ReplySortName>sortName]
             : POSTS_SORT_TYPES[<PostSortName>sortName];
-        if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] is not defined`);
+        if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] score function is not defined`);
 
         let activeScores: Record<string, number>;
 
