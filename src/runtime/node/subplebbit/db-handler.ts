@@ -37,6 +37,7 @@ import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs } from "../../../pages/types.js";
 import { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
+import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -311,6 +312,19 @@ export class DbHandler {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
 
+    _migrateOldSettings(oldSettings: InternalSubplebbitRecordBeforeFirstUpdateType["settings"]) {
+        // need to remove settings.challenges.exclude.{post, vote, reply}
+        const fieldsToRemove = ["post", "reply", "vote"] as const;
+        const newSettings = remeda.clone(oldSettings);
+        if (Array.isArray(newSettings.challenges))
+            for (const oldChallengeSetting of newSettings.challenges)
+                if (oldChallengeSetting.exclude)
+                    for (const oldExcludeSetting of oldChallengeSetting.exclude)
+                        for (const fieldToMove of fieldsToRemove) delete oldExcludeSetting[fieldToMove];
+
+        return newSettings;
+    }
+
     async _createOrMigrateTablesIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
 
@@ -394,8 +408,14 @@ export class DbHandler {
                         : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
                 const updateCid =
                     ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+
+                const newSettings = this._migrateOldSettings(internalState.settings);
+
+                const newChallenges = newSettings.challenges?.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
                 await this._subplebbit._updateDbInternalState({
                     posts: undefined,
+                    challenges: newChallenges,
+                    settings: newSettings,
                     updateCid,
                     protocolVersion,
                     _usingDefaultChallenge
