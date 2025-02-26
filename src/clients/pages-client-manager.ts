@@ -19,6 +19,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     };
 
     protected _pages: BasePages;
+    _pagesMaxSize: Record<string, number> = {}; // cid => max file size (number of bytes )
 
     constructor(pages: BasePages) {
         super(pages._plebbit);
@@ -158,10 +159,17 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
+    private async _fetchPageWithIpfsP2P(
+        pageCid: string,
+        log: Logger,
+        sortTypes: string[] | undefined,
+        pageMaxSize: number
+    ): Promise<PageIpfs> {
         this.updateIpfsState("fetching-ipfs", sortTypes);
         try {
-            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid)));
+            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(
+                parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize }))
+            );
         } catch (e) {
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
@@ -170,7 +178,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    async _fetchPageFromGateways(pageCid: string, log: Logger): Promise<PageIpfs> {
+    async _fetchPageFromGateways(pageCid: string, log: Logger, pageMaxSize: number): Promise<PageIpfs> {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
         const res = await this.fetchFromMultipleGateways({
@@ -178,6 +186,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             recordIpfsType: "ipfs",
             recordPlebbitType: "page-ipfs",
             validateGatewayResponseFunc: async () => {},
+            maxFileSizeBytes: pageMaxSize,
             log
         });
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
@@ -187,12 +196,18 @@ export class BasePagesClientsManager extends BaseClientsManager {
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
+        const isFirstPage = pageCid in this._pages.pageCids;
+        const pageMaxSize = isFirstPage ? 1024 * 1024 : this._pagesMaxSize[pageCid];
+        if (!pageMaxSize) throw Error("Failed to calculate max page size");
         let page: PageIpfs;
         if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
-        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
-        else page = await this._fetchPageFromGateways(pageCid, log);
+        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes, pageMaxSize);
+        else page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
 
-        if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
+        if (page.nextCid) {
+            this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
+            this._pagesMaxSize[page.nextCid] = pageMaxSize * 2;
+        }
         return page;
     }
 }
