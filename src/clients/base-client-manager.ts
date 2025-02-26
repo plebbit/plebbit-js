@@ -42,6 +42,7 @@ export type CachedTextRecordResolve = { timestampSeconds: number; valueOfTextRec
 
 export type OptionsToLoadFromGateway = {
     recordIpfsType: "ipfs" | "ipns";
+    maxFileSizeBytes: number;
     root: string;
     path?: string;
     recordPlebbitType: LoadType;
