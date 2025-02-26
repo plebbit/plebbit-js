@@ -2051,7 +2051,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!("signature" in internalState)) throw Error("signature should be defined");
             this._rawSubplebbitIpfs = <
                 SubplebbitIpfsType //@ts-expect-error
-            >remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature"]);
+            >remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature", "protocolVersion"]);
         }
     }
 
