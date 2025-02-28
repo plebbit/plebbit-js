@@ -11,7 +11,7 @@ import type {
     SortProps
 } from "../../../pages/types.js";
 import * as remeda from "remeda";
-import type { CommentIpfsWithCidDefined, CommentUpdateType } from "../../../publications/comment/types.js";
+import type { CommentUpdateType } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
@@ -20,6 +20,7 @@ export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
     excludeCommentsWithDifferentSubAddress: boolean;
+    commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[];
     parentCid: string | null;
 };
 
@@ -248,7 +249,10 @@ export class PageGenerator {
         const flatSorts = Object.keys(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
 
         if (flatSorts.length > 0) {
-            const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies(pageOptions);
+            const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({
+                ...pageOptions,
+                commentUpdateFieldsToExclude: ["replies"]
+            });
 
             for (const flatSortName of flatSorts) sortResults.push(await this.sortComments(flattenedReplies, flatSortName, pageOptions));
         }

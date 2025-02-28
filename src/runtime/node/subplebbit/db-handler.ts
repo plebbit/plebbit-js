@@ -662,7 +662,13 @@ export class DbHandler {
     async queryPageComments(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
         // protocolVersion, signature
 
-        const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
+        const commentUpdateColumns = <(keyof CommentUpdateType)[]>(
+            remeda.keys.strict(
+                options.commentUpdateFieldsToExclude
+                    ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
+                    : CommentUpdateSchema.shape
+            )
+        ); // TODO query extra props here as well
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
@@ -695,12 +701,19 @@ export class DbHandler {
         return comments;
     }
 
+    async commentHasReplies(commentCid: string, trx?: Transaction): Promise<boolean> {
+        // very optimized function for finding if a comment has replies
+        const result = await this._baseTransaction(trx)(TABLES.COMMENTS).select("id").where("parentCid", commentCid).first();
+        return Boolean(result);
+    }
+
     async queryFlattenedPageReplies(options: PageOptions & { parentCid: string }, trx?: Transaction): Promise<PageIpfs["comments"]> {
         const firstLevelReplies = await this.queryPageComments(options, trx);
 
         const children = await Promise.all(
             firstLevelReplies.map(async (baseComment) => {
-                if (baseComment.commentUpdate.replies)
+                const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
+                if (commentHasReplies)
                     return [
                         baseComment,
                         ...(await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid }))
