@@ -344,7 +344,7 @@ const _verifyAuthorDomainResolvesToSignatureAddress = async (
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
-            log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid`);
+            log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) does not match signature address (${derivedAddress}). `);
             return { useDerivedAddress: true, derivedAddress, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
         }
     } else {
@@ -911,16 +911,15 @@ export async function verifyPage({
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult> {
     const cacheKey = sha256(
-        pageCid ||
-            JSON.stringify(page) +
-                resolveAuthorAddresses +
-                overrideAuthorAddressIfInvalid +
-                subplebbit.address +
-                subplebbit.signature?.publicKey +
-                JSON.stringify(parentComment) +
-                JSON.stringify(post) +
-                validatePages +
-                validateUpdateSignature
+        (pageCid || JSON.stringify(page)) +
+            resolveAuthorAddresses +
+            overrideAuthorAddressIfInvalid +
+            subplebbit.address +
+            subplebbit.signature?.publicKey +
+            JSON.stringify(parentComment) +
+            JSON.stringify(post) +
+            validatePages +
+            validateUpdateSignature
     );
     if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
 
