@@ -40,8 +40,7 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 
 export class Comment
     extends Publication
-    implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">>
-{
+    implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">> {
     // Only Comment props
     shortCid?: CommentWithinPageJson["shortCid"];
 
@@ -122,7 +121,8 @@ export class Comment
             plebbit: this._plebbit,
             subplebbit: { address: this.subplebbitAddress },
             pagesIpfs: undefined,
-            parentCid: this.cid
+            parentComment: { cid: this.cid, depth: this.depth },
+            postComment: { postCid: this.postCid }
         });
 
         hideClassPrivateProps(this);
@@ -188,6 +188,7 @@ export class Comment
             const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
             if (!postCid) throw Error("There is no way to set comment.postCid");
             this.postCid = postCid;
+            this.replies._postComment = { ...this.replies._postComment, postCid };
             this.previousCid = props.previousCid;
             this.thumbnailUrl = props.thumbnailUrl;
             this.thumbnailUrlHeight = props.thumbnailUrlHeight;
@@ -229,8 +230,8 @@ export class Comment
             typeof props.spoiler === "boolean"
                 ? props.spoiler
                 : typeof props.edit?.spoiler === "boolean"
-                  ? props.edit?.spoiler
-                  : this.spoiler;
+                    ? props.edit?.spoiler
+                    : this.spoiler;
 
         this.nsfw = typeof props.nsfw === "boolean" ? props.nsfw : typeof props.edit?.nsfw === "boolean" ? props.edit?.nsfw : this.nsfw;
         if (props.author) Object.assign(this.author, props.author);
@@ -269,7 +270,8 @@ export class Comment
                     plebbit: this._plebbit,
                     subplebbit: { address: this.subplebbitAddress, signature: subplebbitSignature },
                     pageCids: newReplies.pageCids,
-                    parentCid: this.cid
+                    parentComment: { cid: this.cid, depth: this.depth, postCid: this.postCid },
+                    postComment: { postCid: this.postCid }
                 });
             }
         }
@@ -409,7 +411,7 @@ export class Comment
     setCid(newCid: string) {
         this.cid = newCid;
         this.shortCid = shortifyCid(this.cid);
-        this.replies._parentCid = this.cid;
+        this.replies._parentComment = { ...this.replies._parentComment, cid: this.cid, depth: this.depth, postCid: this.postCid };
     }
 
     override setSubplebbitAddress(newSubplebbitAddress: string) {

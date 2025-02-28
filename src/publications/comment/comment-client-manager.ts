@@ -236,14 +236,14 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType, subplebbitIpfs: SubplebbitIpfsType) {
-        if (!this._comment.cid) throw Error("Can't validate comment update when comment.cid is undefined");
-        const commentIpfsProps = { cid: this._comment.cid, signature: this._comment.signature };
+        if (!this._comment._rawCommentIpfs) throw Error("Can't validate comment update when CommentIpfs hasn't been loaded");
+        if (!this._comment.cid) throw Error("can't validate comment updat when cid is not defined");
         const verifyOptions = {
             update: commentUpdate,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
             subplebbit: subplebbitIpfs,
-            comment: commentIpfsProps,
+            comment: { ...this._comment._rawCommentIpfs, cid: this._comment.cid },
             overrideAuthorAddressIfInvalid: true,
             validatePages: this._plebbit.validatePages,
             validateUpdateSignature: true
@@ -361,7 +361,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!subIpns.postUpdates) {
             log("Sub", subIpns.address, "has no postUpdates field. Will wait for next update for comment", this._comment.cid);
             this._comment._setUpdatingState("waiting-retry");
-            this._comment.emit("waiting-retry", new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES"));
+            this._comment.emit("waiting-retry", new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpns }));
             return undefined;
         }
 

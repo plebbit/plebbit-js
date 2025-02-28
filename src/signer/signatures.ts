@@ -44,6 +44,7 @@ import type { VoteOptionsToSign, VotePubsubMessagePublication, VoteSignature } f
 import type {
     CommentIpfsType,
     CommentIpfsWithCidDefined,
+    CommentIpfsWithCidPostCidDefined,
     CommentOptionsToSign,
     CommentPubsubMessagePublication,
     CommentPubsubMessagPublicationSignature,
@@ -83,6 +84,7 @@ import { SubplebbitEditPublicationSignedPropertyNames } from "../publications/su
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { BasePages } from "../pages/pages.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -598,7 +600,8 @@ export async function verifySubplebbit({
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
-                parentCommentCid: undefined,
+                parentComment: undefined,
+                post: undefined,
                 overrideAuthorAddressIfInvalid,
                 validatePages: true,
                 validateUpdateSignature: false // no need because we already verified subplebbit signature
@@ -653,7 +656,7 @@ export async function verifyCommentUpdate({
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     subplebbit: BasePages["_subplebbit"];
-    comment: Pick<CommentIpfsWithCidDefined, "signature" | "cid">;
+    comment: Pick<CommentIpfsWithCidDefined, "signature" | "cid" | "depth" | "postCid">;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
     validateUpdateSignature: boolean;
@@ -693,10 +696,10 @@ export async function verifyCommentUpdate({
     if (update.replies && validatePages) {
         // Validate update.replies
         const replyPageKeys = remeda.keys.strict(update.replies.pages);
-        for (const replyKey of replyPageKeys) {
-            const pageCid = update.replies.pageCids[replyKey];
+        for (const replySortName of replyPageKeys) {
+            const pageCid = update.replies.pageCids[replySortName];
             if (!pageCid) throw Error("Failed to find page cid of the page");
-            const page = update.replies.pages[replyKey];
+            const page = update.replies.pages[replySortName];
             if (!page) throw Error("Failed to find page to verify within comment update");
             const validity = await verifyPage({
                 pageCid,
@@ -704,10 +707,11 @@ export async function verifyCommentUpdate({
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
-                parentCommentCid: comment.cid,
+                parentComment: comment,
                 overrideAuthorAddressIfInvalid,
                 validatePages,
-                validateUpdateSignature
+                validateUpdateSignature,
+                post: { postCid: comment.postCid }
             });
             if (!validity.valid) return validity;
         }
@@ -820,7 +824,8 @@ export async function verifyChallengeVerification(
 export async function verifyPageComment({
     pageComment,
     subplebbit,
-    parentCommentCid,
+    parentComment,
+    post,
     resolveAuthorAddresses,
     clientsManager,
     overrideAuthorAddressIfInvalid,
@@ -829,7 +834,8 @@ export async function verifyPageComment({
 }: {
     pageComment: PageIpfs["comments"][0];
     subplebbit: BasePages["_subplebbit"];
-    parentCommentCid: string | undefined;
+    parentComment: Partial<Pick<CommentIpfsWithCidPostCidDefined, "cid" | "depth">> | undefined;
+    post: Partial<Pick<CommentIpfsWithCidPostCidDefined, "postCid">> | undefined;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
@@ -838,8 +844,18 @@ export async function verifyPageComment({
 }): Promise<ValidationResult> {
     if (pageComment.comment.subplebbitAddress !== subplebbit.address)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
-    if (parentCommentCid !== pageComment.comment.parentCid)
+
+    if (parentComment?.cid !== pageComment.comment.parentCid)
         return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
+
+    if (pageComment.comment.depth > 0 && !parentComment?.cid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_NESTED_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
+
+    if (typeof parentComment?.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
+
+    if (post?.postCid && pageComment.comment.postCid && pageComment.comment.postCid !== post.postCid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_CORRECT };
 
     const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
 
@@ -856,7 +872,7 @@ export async function verifyPageComment({
         resolveAuthorAddresses,
         clientsManager,
         subplebbit,
-        comment: { signature: pageComment.comment.signature, cid: calculatedCommentCid },
+        comment: { signature: pageComment.comment.signature, cid: calculatedCommentCid, depth: pageComment.comment.depth },
         overrideAuthorAddressIfInvalid,
         validatePages,
         validateUpdateSignature
@@ -872,9 +888,10 @@ export async function verifyPage({
     resolveAuthorAddresses,
     clientsManager,
     subplebbit,
-    parentCommentCid,
+    parentComment,
     overrideAuthorAddressIfInvalid,
     validatePages,
+    post,
     validateUpdateSignature
 }: {
     pageCid: string;
@@ -882,7 +899,8 @@ export async function verifyPage({
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     subplebbit: BasePages["_subplebbit"];
-    parentCommentCid: string | undefined;
+    parentComment: Partial<Pick<CommentIpfsWithCidPostCidDefined, "cid" | "depth">> | undefined;
+    post: Partial<Pick<CommentIpfsWithCidPostCidDefined, "postCid">> | undefined;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
     validateUpdateSignature: boolean;
@@ -893,8 +911,10 @@ export async function verifyPage({
             overrideAuthorAddressIfInvalid +
             subplebbit.address +
             subplebbit.signature?.publicKey +
-            parentCommentCid +
-            validatePages
+            JSON.stringify(parentComment) +
+            JSON.stringify(post) +
+            validatePages +
+            validateUpdateSignature
     );
     if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
 
@@ -904,8 +924,115 @@ export async function verifyPage({
             subplebbit,
             resolveAuthorAddresses,
             clientsManager,
+            post,
             overrideAuthorAddressIfInvalid,
-            parentCommentCid,
+            parentComment,
+            validatePages,
+            validateUpdateSignature
+        });
+        if (!verifyRes.valid) return verifyRes;
+    }
+
+    clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
+
+    return { valid: true };
+}
+
+export async function verifyFlatPageReply({
+    pageComment: pageReply,
+    subplebbit,
+    post,
+    resolveAuthorAddresses,
+    clientsManager,
+    overrideAuthorAddressIfInvalid,
+    validatePages,
+    validateUpdateSignature
+}: {
+    pageComment: PageIpfs["comments"][0];
+    subplebbit: BasePages["_subplebbit"];
+    post: { postCid: CommentIpfsWithCidDefined["cid"] };
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    overrideAuthorAddressIfInvalid: boolean;
+    validatePages: boolean;
+    validateUpdateSignature: boolean;
+}): Promise<ValidationResult> {
+    if (pageReply.comment.subplebbitAddress !== subplebbit.address)
+        return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
+
+    if (pageReply.comment.postCid !== post.postCid) return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_CORRECT };
+
+    if (pageReply.comment.depth === 1 && pageReply.comment.parentCid !== post.postCid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
+
+    if (!pageReply.comment.parentCid) return { valid: false, reason: messages.ERR_REPLY_IN_FLAT_PAGE_HAS_NO_PARENT_CID };
+
+    const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageReply.comment));
+
+    const commentSignatureValidity = await verifyCommentIpfs({
+        comment: pageReply.comment,
+        resolveAuthorAddresses,
+        clientsManager,
+        overrideAuthorAddressIfInvalid,
+        calculatedCommentCid
+    });
+    if (!commentSignatureValidity.valid) return commentSignatureValidity;
+
+    const commentUpdateSignatureValidity = await verifyCommentUpdate({
+        update: pageReply.commentUpdate,
+        resolveAuthorAddresses,
+        clientsManager,
+        subplebbit,
+        comment: { signature: pageReply.comment.signature, cid: calculatedCommentCid, depth: pageReply.comment.depth },
+        overrideAuthorAddressIfInvalid,
+        validatePages,
+        validateUpdateSignature
+    });
+    if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
+
+    return commentSignatureValidity;
+}
+
+export async function verifyPostFlatPage({
+    page,
+    pageCid,
+    resolveAuthorAddresses,
+    clientsManager,
+    subplebbit,
+    post,
+    overrideAuthorAddressIfInvalid,
+    validatePages,
+    validateUpdateSignature
+}: {
+    pageCid: string;
+    page: PageIpfs;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    subplebbit: BasePages["_subplebbit"];
+    post: Pick<CommentIpfsWithCidPostCidDefined, "postCid">;
+    overrideAuthorAddressIfInvalid: boolean;
+    validatePages: boolean;
+    validateUpdateSignature: boolean;
+}): Promise<ValidationResult> {
+    const cacheKey = sha256(
+        pageCid +
+            resolveAuthorAddresses +
+            overrideAuthorAddressIfInvalid +
+            subplebbit.address +
+            subplebbit.signature?.publicKey +
+            JSON.stringify(post) +
+            validatePages
+    );
+    if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
+
+    for (const pageComment of page.comments) {
+        const verifyRes = await verifyFlatPageReply({
+            pageComment,
+            subplebbit,
+            post,
+            resolveAuthorAddresses,
+            clientsManager,
+            overrideAuthorAddressIfInvalid,
             validatePages,
             validateUpdateSignature
         });
