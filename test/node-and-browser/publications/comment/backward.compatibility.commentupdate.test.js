@@ -156,6 +156,8 @@ getRemotePlebbitConfigs().map((config) => {
 
             const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));
 
+            subplebbit.posts.pageCids.new = pageIpfsCid; // just so that it wouldn't throw
+
             const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
 
             const commentInPageJson = fetchedPage.comments[fetchedPage.comments.length - 1];
@@ -187,6 +189,7 @@ getRemotePlebbitConfigs().map((config) => {
             });
 
             const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));
+            subplebbit.posts.pageCids.new = pageIpfsCid; // just so that it wouldn't throw
 
             const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
 
