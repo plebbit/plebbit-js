@@ -43,7 +43,7 @@ const defaultChainProviders = {
         urls: ["web3.js", "https://solana.api.onfinality.io/public"],
         chainId: -1 // no chain ID for solana
     }
-};
+} as const;
 
 const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array()
     .nonempty()
@@ -52,7 +52,7 @@ const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.arra
 const ParsedKuboRpcClientOptionsSchema = z.custom<z.output<typeof TransformKuboRpcClientOptionsSchema>>();
 
 const PlebbitUserOptionBaseSchema = z.object({
-    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().nonempty().optional(),
+    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
     kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     httpRoutersOptions: z.string().url().array().optional(),
     pubsubKuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
@@ -68,16 +68,20 @@ const PlebbitUserOptionBaseSchema = z.object({
     userAgent: UserAgentSchema
 });
 
+const defaultIpfsGatewayUrls = [
+    "https://ipfsgateway.xyz",
+    "https://ipfs.io",
+    "https://dweb.link",
+    "https://flk-ipfs.xyz",
+    "https://4everland.io",
+    "https://gateway.pinata.cloud"
+] as const;
+
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
-    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default([
-        "https://ipfsgateway.xyz",
-        "https://ipfs.io",
-        "https://dweb.link",
-        "https://flk-ipfs.xyz",
-        "https://4everland.io",
-        "https://gateway.pinata.cloud"
-    ]),
+    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls
+        .default([...defaultIpfsGatewayUrls])
+        .transform(val => val === undefined ? [...defaultIpfsGatewayUrls] : val),
     pubsubKuboRpcClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubKuboRpcClientsOptions.default([
         { url: "https://pubsubprovider.xyz/api/v0" }
     ]),
