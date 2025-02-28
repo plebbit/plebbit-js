@@ -180,9 +180,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         this.plebbitRpcClientsOptions = this.parsedPlebbitOptions.plebbitRpcClientsOptions;
 
-        this.ipfsGatewayUrls = this.parsedPlebbitOptions.ipfsGatewayUrls = this.plebbitRpcClientsOptions || !this.parsedPlebbitOptions.ipfsGatewayUrls?.length
-            ? undefined
-            : this.parsedPlebbitOptions.ipfsGatewayUrls;
+        this.ipfsGatewayUrls = this.parsedPlebbitOptions.ipfsGatewayUrls =
+            this.plebbitRpcClientsOptions || !this.parsedPlebbitOptions.ipfsGatewayUrls?.length
+                ? undefined
+                : this.parsedPlebbitOptions.ipfsGatewayUrls;
         this.kuboRpcClientsOptions = this.parsedPlebbitOptions.kuboRpcClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
             : this.parsedPlebbitOptions.kuboRpcClientsOptions;
@@ -191,8 +192,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.pubsubKuboRpcClientsOptions = this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
             : this._userPlebbitOptions.pubsubKuboRpcClientsOptions // did the user provide their own pubsub options
-                ? this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
-                : this.parsedPlebbitOptions.kuboRpcClientsOptions || this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions;
+              ? this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
+              : this.parsedPlebbitOptions.kuboRpcClientsOptions || this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions;
 
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
@@ -917,7 +918,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     async pubsubSubscribe(pubsubTopic: string) {
         const parsedTopic = PubsubTopicSchema.parse(pubsubTopic);
         if (this._pubsubSubscriptions[parsedTopic]) return;
-        const handler = () => { };
+        const handler = () => {};
         await this._clientsManager.pubsubSubscribe(parsedTopic, handler);
         this._pubsubSubscriptions[parsedTopic] = handler;
     }

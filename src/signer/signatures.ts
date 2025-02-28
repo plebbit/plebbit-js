@@ -676,12 +676,12 @@ export async function verifyCommentUpdate({
 
     const cacheKey = sha256(
         update.signature.signature +
-        resolveAuthorAddresses +
-        subplebbit.address +
-        JSON.stringify(comment) +
-        overrideAuthorAddressIfInvalid +
-        validatePages +
-        validateUpdateSignature
+            resolveAuthorAddresses +
+            subplebbit.address +
+            JSON.stringify(comment) +
+            overrideAuthorAddressIfInvalid +
+            validatePages +
+            validateUpdateSignature
     );
 
     if (clientsManager._plebbit._memCaches.commentUpdateVerificationCache.has(cacheKey)) return { valid: true };
@@ -872,7 +872,12 @@ export async function verifyPageComment({
         resolveAuthorAddresses,
         clientsManager,
         subplebbit,
-        comment: { signature: pageComment.comment.signature, cid: calculatedCommentCid, depth: pageComment.comment.depth, postCid: post?.postCid },
+        comment: {
+            signature: pageComment.comment.signature,
+            cid: calculatedCommentCid,
+            depth: pageComment.comment.depth,
+            postCid: post?.postCid
+        },
         overrideAuthorAddressIfInvalid,
         validatePages,
         validateUpdateSignature
@@ -906,15 +911,16 @@ export async function verifyPage({
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult> {
     const cacheKey = sha256(
-        pageCid || JSON.stringify(page) +
-        resolveAuthorAddresses +
-        overrideAuthorAddressIfInvalid +
-        subplebbit.address +
-        subplebbit.signature?.publicKey +
-        JSON.stringify(parentComment) +
-        JSON.stringify(post) +
-        validatePages +
-        validateUpdateSignature
+        pageCid ||
+            JSON.stringify(page) +
+                resolveAuthorAddresses +
+                overrideAuthorAddressIfInvalid +
+                subplebbit.address +
+                subplebbit.signature?.publicKey +
+                JSON.stringify(parentComment) +
+                JSON.stringify(post) +
+                validatePages +
+                validateUpdateSignature
     );
     if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
 
@@ -937,4 +943,3 @@ export async function verifyPage({
 
     return { valid: true };
 }
-

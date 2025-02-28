@@ -67,8 +67,7 @@ export class BasePages {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) {
             const firstDepth = pageIpfs.comments[0].comment.depth;
-            const isUniformDepth =
-                pageIpfs.comments.every(comment => comment.comment.depth === firstDepth);
+            const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === firstDepth);
             const verificationOpts = {
                 pageCid,
                 page: pageIpfs,
@@ -104,11 +103,10 @@ export class BasePages {
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
         // TODO this function should take into consideration a flat page
         // comments could be either of a flat page or nested page
-        const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => "comment" in comment ? comment : comment.pageComment) };
+        const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
         // Check if all comments have the same depth
         const firstDepth = pageIpfs.comments[0].comment.depth;
-        const isUniformDepth =
-            pageIpfs.comments.every(comment => comment.comment.depth === firstDepth);
+        const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === firstDepth);
         const verificationOpts = {
             page: pageIpfs,
             pageCid: undefined,

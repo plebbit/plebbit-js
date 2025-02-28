@@ -81,7 +81,7 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
     ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls
         .default([...defaultIpfsGatewayUrls])
-        .transform(val => val === undefined ? [...defaultIpfsGatewayUrls] : val),
+        .transform((val) => (val === undefined ? [...defaultIpfsGatewayUrls] : val)),
     pubsubKuboRpcClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubKuboRpcClientsOptions.default([
         { url: "https://pubsubprovider.xyz/api/v0" }
     ]),
