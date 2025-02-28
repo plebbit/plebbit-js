@@ -15,6 +15,7 @@ import type { CommentUpdateType } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import type { CommentsTableRow } from "../../../types.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -227,12 +228,12 @@ export class PageGenerator {
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    async generateRepliesPages(commentCid: CommentUpdateType["cid"]): Promise<RepliesPagesTypeIpfs | undefined> {
+    async generateRepliesPages(comment: Pick<CommentsTableRow, "cid" | "depth">): Promise<RepliesPagesTypeIpfs | undefined> {
         const pageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
-            parentCid: commentCid
+            parentCid: comment.cid
         };
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
@@ -248,7 +249,7 @@ export class PageGenerator {
 
         const flatSorts = Object.keys(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
 
-        if (flatSorts.length > 0) {
+        if (flatSorts.length > 0 && comment.depth === 0) {
             const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({
                 ...pageOptions,
                 commentUpdateFieldsToExclude: ["replies"]

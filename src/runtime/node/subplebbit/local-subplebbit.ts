@@ -1509,7 +1509,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
             this._dbHandler.queryCalculatedCommentUpdate(comment),
             this._dbHandler.queryStoredCommentUpdate(comment),
-            this._pageGenerator.generateRepliesPages(comment.cid)
+            this._pageGenerator.generateRepliesPages(comment)
         ]);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
