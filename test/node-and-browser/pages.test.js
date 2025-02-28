@@ -6,7 +6,10 @@ import {
     mockPlebbit,
     addStringToIpfs,
     getRemotePlebbitConfigs,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    publishRandomReply,
+    resolveWhenConditionIsTrue,
+    waitTillReplyInParentPages
 } from "../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
 import { expect } from "chai";
@@ -15,7 +18,7 @@ import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 let subplebbit;
-const subCommentPages = {};
+const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
 const subplebbitAddress = signers[0].address;
 
 // TODO add a test where you load all posts using lastPostCid and compare them with pages
@@ -133,20 +136,28 @@ const testListOfSortedComments = async (sortedComments, sortName, plebbit) => {
 const testPostsSort = async (sortName) => {
     const posts = await loadAllPages(subplebbit.posts.pageCids[sortName], subplebbit.posts);
 
-    subCommentPages[sortName] = posts;
+    subPostsBySortName[sortName] = posts;
 
     await testListOfSortedComments(posts, sortName, subplebbit._plebbit);
     return posts;
 };
 
-const testRepliesSort = async (parentComments, replySortName, plebbit) => {
-    const commentsWithReplies = parentComments.filter((comment) => comment.replyCount > 0);
-    for (const comment of commentsWithReplies) {
-        expect(Object.keys(comment.replies.pageCids).sort()).to.deep.equal(Object.keys(REPLIES_SORT_TYPES).sort());
-        const commentInstance = await plebbit.createComment(comment);
-        const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], commentInstance.replies);
+const testRepliesSort = async (commentsWithReplies, replySortName, plebbit) => {
+    if (commentsWithReplies.length === 0) throw Error("Can't test replies with when parent comment has no replies");
+    for (const commentWithReplies of commentsWithReplies) {
+        if (commentWithReplies.depth === 0)
+            expect(Object.keys(commentWithReplies.replies.pageCids).sort()).to.deep.equal(Object.keys(REPLIES_SORT_TYPES).sort());
+        else
+            expect(Object.keys(commentWithReplies.replies.pageCids).sort()).to.deep.equal(
+                Object.keys(REPLIES_SORT_TYPES)
+                    .filter((sortName) => !sortName.toLowerCase().includes("flat"))
+                    .sort()
+            );
+        const commentInstance = await plebbit.createComment(commentWithReplies);
+        const commentPages = await loadAllPages(commentWithReplies.replies.pageCids[replySortName], commentInstance.replies);
         await testListOfSortedComments(commentPages, replySortName, plebbit);
-        await testRepliesSort(commentPages, replySortName, plebbit);
+        const repliesWithReplies = commentPages.filter((pageComment) => pageComment.replies);
+        if (repliesWithReplies.length > 0) await testRepliesSort(repliesWithReplies, replySortName, plebbit);
     }
 };
 
@@ -155,7 +166,7 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, newPost;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            newPost = await publishRandomPost(subplebbitAddress, plebbit, {}); // After publishing this post the subplebbit should have all pages
+            newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
             await waitTillPostInSubplebbitPages(newPost, plebbit);
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
@@ -187,7 +198,8 @@ getRemotePlebbitConfigs().map((config) => {
                 const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
 
                 for (const pagesGrouped of Object.values(pagesByTimeframe)) {
-                    const pages = pagesGrouped.map(([sortName, _]) => subCommentPages[sortName]);
+                    const pages = pagesGrouped.map(([sortName, _]) => subPostsBySortName[sortName]);
+                    if (pages.length === 1) continue; // there's only a single page under this timeframe, not needed to verify against other pages
                     expect(pages.length).to.be.greaterThanOrEqual(2);
                     expect(pages.map((page) => page.length).every((val, i, arr) => val === arr[0])).to.be.true; // All pages are expected to have the same length
 
@@ -214,15 +226,23 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         describe("comment.replies", async () => {
-            let posts;
+            let postsWithReplies;
+            let postWithNestedReplies;
+            let firstLevelReply, secondLevelReply, thirdLevelReply;
             before(async () => {
-                posts = (await subplebbit.posts.getPage(subplebbit.posts.pageCids.new)).comments;
-                expect(posts.length).to.be.greaterThan(0);
+                postsWithReplies = (await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts)).filter(
+                    (post) => post.replies?.pages?.topAll
+                );
+                expect(postsWithReplies.length).to.be.greaterThan(0);
+                postWithNestedReplies = await publishRandomPost(subplebbitAddress, plebbit);
+                firstLevelReply = await publishRandomReply(postWithNestedReplies, plebbit);
+                secondLevelReply = await publishRandomReply(firstLevelReply, plebbit);
+                thirdLevelReply = await publishRandomReply(secondLevelReply, plebbit);
+                await waitTillReplyInParentPages(thirdLevelReply, plebbit);
             });
 
             it(`Stringified comment.replies still have all props`, async () => {
-                for (const post of posts) {
-                    if (!post.replies) continue;
+                for (const post of postsWithReplies) {
                     const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
                     for (const reply of stringifiedReplies) testCommentFields(reply);
                 }
@@ -230,12 +250,32 @@ getRemotePlebbitConfigs().map((config) => {
 
             Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
                 it(`${sortName} pages under a comment are sorted correctly`, async () =>
-                    await testRepliesSort(posts, sortName, subplebbit._plebbit))
+                    await testRepliesSort(postsWithReplies, sortName, subplebbit._plebbit))
             );
 
+            Object.keys(REPLIES_SORT_TYPES)
+                .filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat)
+                .map((flatSortName) =>
+                    it(`flat sort (${flatSortName}) has no replies field within its comments`, async () => {
+                        const commentInstance = await plebbit.createComment({ cid: postWithNestedReplies.cid });
+                        await commentInstance.update();
+                        await resolveWhenConditionIsTrue(commentInstance, () => typeof commentInstance.updatedAt === "number");
+                        await commentInstance.stop();
+
+                        const flatReplies = await loadAllPages(commentInstance.replies.pageCids[flatSortName], commentInstance.replies);
+                        // Verify all published replies are present in flatReplies
+                        const flatRepliesCids = flatReplies.map((reply) => reply.cid);
+                        expect(flatRepliesCids).to.include(firstLevelReply.cid);
+                        expect(flatRepliesCids).to.include(secondLevelReply.cid);
+                        expect(flatRepliesCids).to.include(thirdLevelReply.cid);
+
+                        expect(flatReplies.length).to.equal(3);
+                        flatReplies.forEach((reply) => expect(reply.replies).to.be.undefined);
+                    })
+                );
+
             it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-                for (const post of posts) {
-                    if (!post.replies) continue;
+                for (const post of postsWithReplies) {
                     const pageCids = Object.values(post.replies.pageCids);
 
                     for (const pageCid of pageCids) {
@@ -260,6 +300,7 @@ describe(`getPage`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
         const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
+        sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
         try {
             await sub.posts.getPage(invalidPageCid);
             expect.fail("Should fail");
@@ -280,6 +321,7 @@ describe(`getPage`, async () => {
         invalidPageIpfs.comments[0].comment.content += "invalidate signature";
 
         const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPageIpfs));
+        sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
 
         try {
             await sub.posts.getPage(invalidPageCid);
