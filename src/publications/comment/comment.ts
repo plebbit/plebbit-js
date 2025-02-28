@@ -40,7 +40,8 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 
 export class Comment
     extends Publication
-    implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">> {
+    implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">>
+{
     // Only Comment props
     shortCid?: CommentWithinPageJson["shortCid"];
 
@@ -230,8 +231,8 @@ export class Comment
             typeof props.spoiler === "boolean"
                 ? props.spoiler
                 : typeof props.edit?.spoiler === "boolean"
-                    ? props.edit?.spoiler
-                    : this.spoiler;
+                  ? props.edit?.spoiler
+                  : this.spoiler;
 
         this.nsfw = typeof props.nsfw === "boolean" ? props.nsfw : typeof props.edit?.nsfw === "boolean" ? props.edit?.nsfw : this.nsfw;
         if (props.author) Object.assign(this.author, props.author);

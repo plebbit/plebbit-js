@@ -199,7 +199,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._challengeAnswerResolveReject = //@ts-expect-error
             this._ongoingChallengeExchanges = //@ts-expect-error
             this._internalStateUpdateId =
-                undefined;
+            undefined;
         hideClassPrivateProps(this);
     }
 

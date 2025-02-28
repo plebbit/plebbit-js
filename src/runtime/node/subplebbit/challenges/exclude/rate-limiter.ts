@@ -11,17 +11,23 @@ import {
     isRequestPubsubPublicationOfPost,
     isRequestPubsubPublicationOfReply
 } from "../../../../../util.js";
-type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration" ;
+type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
 const rateLimiters = new QuickLRU<string, RateLimiter>({ maxSize: 50000 });
 
-const getPublicationType = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): PublicationType | undefined => 
-    isPost(request) ? "post" :
-    isReply(request) ? "reply" :
-    isVote(request) ? "vote" :
-    isCommentEdit(request) ? "commentEdit" :
-    isCommentModeration(request) ? "commentModeration" : undefined;
+const getPublicationType = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): PublicationType | undefined =>
+    isPost(request)
+        ? "post"
+        : isReply(request)
+          ? "reply"
+          : isVote(request)
+            ? "vote"
+            : isCommentEdit(request)
+              ? "commentEdit"
+              : isCommentModeration(request)
+                ? "commentModeration"
+                : undefined;
 
 const getRateLimiterName = (
     exclude: Exclude,
@@ -74,7 +80,7 @@ const getRateLimitersToTest = (
     const filteredRateLimiters: Record<string, RateLimiter> = {};
 
     if (testPublicationType(exclude.publicationType, request)) {
-        const publicationType = getPublicationType(request)
+        const publicationType = getPublicationType(request);
         if (publicationType) {
             addFilteredRateLimiter(exclude, publication, publicationType, challengeSuccess, filteredRateLimiters);
         }
@@ -86,10 +92,7 @@ const getRateLimitersToTest = (
 const testRateLimit = (exclude: Exclude, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => {
     // will come back here later
 
-    if (
-        exclude?.rateLimit === undefined ||
-        !testPublicationType(exclude.publicationType, request)
-    ) {
+    if (exclude?.rateLimit === undefined || !testPublicationType(exclude.publicationType, request)) {
         // early exit based on exclude type and publication type
         return true;
     }
@@ -124,7 +127,7 @@ const getRateLimitersToAddTo = (
         if (exclude?.rateLimit === undefined) {
             continue;
         }
-        const publicationType = getPublicationType(request)
+        const publicationType = getPublicationType(request);
         if (publicationType) {
             addFilteredRateLimiter(exclude, publication, publicationType, challengeSuccess, filteredRateLimiters);
         }

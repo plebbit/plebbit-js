@@ -710,18 +710,20 @@ export class DbHandler {
     async queryFlattenedPageReplies(options: PageOptions & { parentCid: string }, trx?: Transaction): Promise<PageIpfs["comments"]> {
         const firstLevelReplies = await this.queryPageComments(options, trx);
 
-        const children = await Promise.all(
+        const nestedReplies = await Promise.all(
             firstLevelReplies.map(async (baseComment) => {
                 const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
-                if (commentHasReplies)
-                    return [
-                        baseComment,
-                        ...(await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid }))
-                    ];
-                else return [baseComment];
+                if (commentHasReplies) {
+                    // Only get the nested replies, don't include the base comment again
+                    return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                } else {
+                    return []; // No replies to this comment
+                }
             })
         );
-        return firstLevelReplies.concat(...children);
+
+        // Combine first level replies with all nested replies
+        return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
     }
 
     async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined> {
@@ -1115,6 +1117,13 @@ export class DbHandler {
             ...modAuthorEdits,
             firstCommentTimestamp
         };
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        } catch {}
+
+        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
+            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
+
     }
 
     // will return a list of comment cids + comment updates + their pages that got purged
@@ -1125,13 +1134,6 @@ export class DbHandler {
         try {
             await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
         } catch {}
-        try {
-            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        } catch {}
-
-        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
-            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
-
             let curCid: string | undefined = cid;
             while (curCid) {
                 const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
