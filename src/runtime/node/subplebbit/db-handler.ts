@@ -1117,13 +1117,6 @@ export class DbHandler {
             ...modAuthorEdits,
             firstCommentTimestamp
         };
-        try {
-            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        } catch {}
-
-        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
-            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
-
     }
 
     // will return a list of comment cids + comment updates + their pages that got purged
@@ -1134,6 +1127,13 @@ export class DbHandler {
         try {
             await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
         } catch {}
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        } catch {}
+
+        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
+            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
+
             let curCid: string | undefined = cid;
             while (curCid) {
                 const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
