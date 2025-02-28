@@ -43,7 +43,7 @@ const defaultChainProviders = {
         urls: ["web3.js", "https://solana.api.onfinality.io/public"],
         chainId: -1 // no chain ID for solana
     }
-} as const;
+};
 
 const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array()
     .nonempty()
