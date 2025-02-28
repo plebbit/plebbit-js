@@ -24,6 +24,10 @@ export class PublicationClientsManager extends ClientsManager {
     _subplebbitForUpdating?: {
         subplebbit: RemoteSubplebbit;
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
+        chainProviderListeners?: Record<
+            ChainTicker,
+            Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
+        >;
     } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
 
     constructor(publication: Publication) {
@@ -129,6 +133,14 @@ export class PublicationClientsManager extends ClientsManager {
         );
     }
 
+    handleChainProviderSubplebbitState(
+        subplebbitNewChainState: RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["state"],
+        chainTicker: ChainTicker,
+        providerUrl: string
+    ) {
+        this.updateChainProviderState(subplebbitNewChainState, chainTicker, providerUrl);
+    }
+
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
@@ -157,6 +169,30 @@ export class PublicationClientsManager extends ClientsManager {
             this._subplebbitForUpdating.ipfsGatewayListeners = ipfsGatewayListeners;
         }
 
+        // Add chain provider state listeners
+        const chainProviderListeners: Record<
+            ChainTicker,
+            Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
+        > = {};
+
+        for (const chainTicker of Object.keys(this._subplebbitForUpdating.subplebbit.clients.chainProviders) as ChainTicker[]) {
+            chainProviderListeners[chainTicker] = {};
+
+            for (const providerUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.chainProviders[chainTicker])) {
+                const chainStateListener = (
+                    subplebbitNewChainState: RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["state"]
+                ) => this.handleChainProviderSubplebbitState(subplebbitNewChainState, chainTicker, providerUrl);
+
+                this._subplebbitForUpdating.subplebbit.clients.chainProviders[chainTicker][providerUrl].on(
+                    "statechange",
+                    chainStateListener
+                );
+                chainProviderListeners[chainTicker][providerUrl] = chainStateListener;
+            }
+        }
+
+        this._subplebbitForUpdating.chainProviderListeners = chainProviderListeners;
+
         this._subplebbitForUpdating.subplebbit.on("update", this._subplebbitForUpdating.update);
 
         this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
@@ -179,6 +215,18 @@ export class PublicationClientsManager extends ClientsManager {
                     "statechange",
                     this._subplebbitForUpdating.ipfsGatewayListeners[gatewayUrl]
                 );
+
+        // Clean up chain provider listeners
+        if (this._subplebbitForUpdating.chainProviderListeners) {
+            for (const chainTicker of Object.keys(this._subplebbitForUpdating.chainProviderListeners) as ChainTicker[]) {
+                for (const providerUrl of Object.keys(this._subplebbitForUpdating.chainProviderListeners[chainTicker])) {
+                    this._subplebbitForUpdating.subplebbit.clients.chainProviders[chainTicker][providerUrl].removeListener(
+                        "statechange",
+                        this._subplebbitForUpdating.chainProviderListeners[chainTicker][providerUrl]
+                    );
+                }
+            }
+        }
 
         if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
