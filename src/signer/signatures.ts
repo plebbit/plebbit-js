@@ -344,7 +344,9 @@ const _verifyAuthorDomainResolvesToSignatureAddress = async (
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
-            log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) does not match signature address (${derivedAddress}). `);
+            log.error(
+                `author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) does not match signature address (${derivedAddress}). `
+            );
             return { useDerivedAddress: true, derivedAddress, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
         }
     } else {
@@ -530,7 +532,7 @@ export async function verifyCommentIpfs(opts: {
     overrideAuthorAddressIfInvalid: boolean;
 }): ReturnType<typeof verifyCommentPubsubMessage> {
     const cacheKey = opts.calculatedCommentCid + Number(opts.resolveAuthorAddresses) + Number(opts.overrideAuthorAddressIfInvalid);
-    if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.has(cacheKey)) return { valid: true };
+    if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey)) return { valid: true };
 
     const keysCasted = <(keyof CommentPubsubMessagePublication)[]>opts.comment.signature.signedPropertyNames;
 
@@ -586,7 +588,7 @@ export async function verifySubplebbit({
     const cacheKey = sha256(
         subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + validatePages + subplebbitIpnsName
     );
-    if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.has(cacheKey)) return { valid: true };
+    if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey)) return { valid: true };
 
     if (subplebbit.posts?.pages && validatePages)
         for (const pageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
@@ -684,7 +686,7 @@ export async function verifyCommentUpdate({
             validateUpdateSignature
     );
 
-    if (clientsManager._plebbit._memCaches.commentUpdateVerificationCache.has(cacheKey)) return { valid: true };
+    if (clientsManager._plebbit._memCaches.commentUpdateVerificationCache.get(cacheKey)) return { valid: true };
     if (update.edit) {
         if (update.edit.signature.publicKey !== comment.signature.publicKey)
             return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
@@ -921,7 +923,7 @@ export async function verifyPage({
             validatePages +
             validateUpdateSignature
     );
-    if (clientsManager._plebbit._memCaches.pageVerificationCache.has(cacheKey)) return { valid: true };
+    if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey)) return { valid: true };
 
     for (const pageComment of page.comments) {
         const verifyRes = await verifyPageComment({
