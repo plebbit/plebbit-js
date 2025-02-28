@@ -196,9 +196,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
-        const isFirstPage = pageCid in this._pages.pageCids;
+        const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
         const pageMaxSize = isFirstPage ? 1024 * 1024 : this._pagesMaxSize[pageCid];
-        if (!pageMaxSize) throw Error("Failed to calculate max page size");
+        if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page: PageIpfs;
         if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes, pageMaxSize);
