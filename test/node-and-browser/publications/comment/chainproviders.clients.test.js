@@ -7,7 +7,9 @@ import {
     mockPlebbitV2,
     mockCacheOfTextRecord,
     resolveWhenConditionIsTrue,
-    mockPlebbit
+    mockPlebbit,
+    publishRandomReply,
+    waitTillReplyInParentPages
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -96,13 +98,88 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`Correct order of chainProviders state when updating a comment whose author address is a domain - uncached`, async () => {});
+    it(`Correct order of chainProviders state when updating a comment whose author address is a domain - uncached`, async () => {
+        // Create a post with a domain as author address, signed with the correct signer
+        const plebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true });
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {
+            author: { address: "plebbit.eth" },
+            signer: signers[6]
+        });
 
-    it(`Correct order of chainProviders state when updating a comment whose author address is a domain - cached`, async () => {});
+        // Create a new plebbit instance to avoid caching
+        const differentPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true });
+
+        // Clear the cache for the domain
+        await mockCacheOfTextRecord({
+            plebbit: differentPlebbit,
+            domain: "plebbit.eth",
+            textRecord: "plebbit-author-address",
+            value: undefined
+        });
+
+        const updatingPost = await differentPlebbit.createComment({ cid: mockPost.cid });
+
+        const expectedStates = ["resolving-author-address", "stopped"];
+        const actualStates = [];
+
+        const chainProviderUrl = Object.keys(updatingPost.clients.chainProviders.eth)[0];
+
+        updatingPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
+
+        await updatingPost.update();
+
+        await resolveWhenConditionIsTrue(updatingPost, () => typeof updatingPost.updatedAt === "number");
+
+        await updatingPost.stop();
+
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
+
+    it(`Correct order of chainProviders state when updating a comment whose author address is a domain - cached`, async () => {
+        // Create a post with a domain as author address, signed with the correct signer
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {
+            author: { address: "plebbit.eth" },
+            signer: signers[6]
+        });
+
+        // Create a new plebbit instance to avoid caching
+        const differentPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true });
+
+        // Clear the cache for the domain
+        await mockCacheOfTextRecord({
+            plebbit: differentPlebbit,
+            domain: "plebbit.eth",
+            textRecord: "plebbit-author-address",
+            value: signers[6].address
+        });
+
+        const updatingPost = await differentPlebbit.createComment({ cid: mockPost.cid });
+
+        const expectedStates = []; // empty because it's cached
+        const actualStates = [];
+
+        const chainProviderUrl = Object.keys(updatingPost.clients.chainProviders.eth)[0];
+
+        updatingPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
+
+        await updatingPost.update();
+
+        await resolveWhenConditionIsTrue(updatingPost, () => typeof updatingPost.updatedAt === "number");
+
+        await updatingPost.stop();
+
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
 
     it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - uncached`, async () => {
+        const plebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true }); // need to use different plebbit so it won't use the memory cache of subplebbit for publishing
         const mockPost = await generateMockPost("plebbit.eth", plebbit);
-        mockPost._clientsManager._getCachedTextRecord = () => undefined;
+        await mockCacheOfTextRecord({
+            plebbit: mockPost._plebbit,
+            domain: "plebbit.eth",
+            textRecord: "subplebbit-address",
+            value: undefined
+        });
         const expectedStates = ["resolving-subplebbit-address", "stopped"];
 
         const actualStates = [];
@@ -113,13 +190,83 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
 
         await publishWithExpectedResult(mockPost, true);
 
-        // Sometimes we get no states because ENS is already cached
-        if (actualStates.length !== 0) expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
+        expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - cached`, async () => {});
+    it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - cached`, async () => {
+        const mockPost = await generateMockPost("plebbit.eth", plebbit);
+        await mockCacheOfTextRecord({
+            plebbit: mockPost._plebbit,
+            domain: "plebbit.eth",
+            textRecord: "subplebbit-address",
+            value: signers[3].address
+        });
+        const expectedStates = []; // empty because it's cached
 
-    it(`Correct order of chainProviders state when comment has a reply with author.address as domain - uncached`, async () => {});
+        const actualStates = [];
 
-    it(`Correct order of chainProviders state when comment has a reply with author.address as domain - cached`, async () => {});
+        const chainProviderUrl = Object.keys(mockPost.clients.chainProviders.eth)[0];
+
+        mockPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
+
+        await publishWithExpectedResult(mockPost, true);
+
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
+
+    it(`Correct order of chainProviders state when comment has a reply with author.address as domain - uncached`, async () => {
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
+        const reply = await publishRandomReply(mockPost, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+        await waitTillReplyInParentPages(reply, plebbit); // make sure until reply is in mockPost.replies
+
+        const differentPlebbit = await mockPlebbitV2({
+            stubStorage: true, // make sure there's no storage so it won't be cached
+            remotePlebbit: true,
+            mockResolve: true
+        });
+        const loadedPost = await differentPlebbit.createComment({ cid: mockPost.cid });
+        const expectedStates = ["resolving-author-address", "stopped"];
+        const actualStates = [];
+
+        const chainProviderUrl = Object.keys(loadedPost.clients.chainProviders.eth)[0];
+
+        loadedPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
+
+        await loadedPost.update();
+
+        await resolveWhenConditionIsTrue(loadedPost, () => typeof loadedPost.updatedAt === "number");
+
+        await loadedPost.stop();
+
+        expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
+    });
+
+    it(`Correct order of chainProviders state when comment has a reply with author.address as domain - cached`, async () => {
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
+        const reply = await publishRandomReply(mockPost, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+        await waitTillReplyInParentPages(reply, plebbit); // make sure until reply is in mockPost.replies
+
+        const differentPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true, mockResolve: true });
+        await mockCacheOfTextRecord({
+            plebbit: plebbit,
+            domain: "plebbit.eth",
+            textRecord: "plebbit-author-address",
+            value: signers[3].address
+        });
+        const loadedPost = await differentPlebbit.createComment({ cid: mockPost.cid });
+        const expectedStates = [];
+        const actualStates = [];
+
+        const chainProviderUrl = Object.keys(loadedPost.clients.chainProviders.eth)[0];
+
+        loadedPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
+
+        await loadedPost.update();
+
+        await resolveWhenConditionIsTrue(loadedPost, () => typeof loadedPost.updatedAt === "number");
+
+        await loadedPost.stop();
+
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
 });
