@@ -15,19 +15,16 @@ const { expect, assert } = chai;
 
 const fixtureSigner = signers[0];
 
+let defaultIpfsGatewayUrls;
+
 describe("Plebbit options", async () => {
+    before(async () => {
+        const plebbit = await Plebbit({ httpRoutersOptions: [] });
+        defaultIpfsGatewayUrls = plebbit.ipfsGatewayUrls;
+    });
     it("Plebbit() uses correct default plebbit options", async () => {
         const defaultPlebbit = await Plebbit({ httpRoutersOptions: [] });
-        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
-            [
-                "https://ipfsgateway.xyz",
-                "https://ipfs.io",
-                "https://dweb.link",
-                "https://flk-ipfs.xyz",
-                "https://4everland.io",
-                "https://gateway.pinata.cloud"
-            ].sort()
-        );
+        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
         expect(Object.keys(defaultPlebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
         expect(defaultPlebbit.pubsubKuboRpcClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
         expect(defaultPlebbit.pubsubKuboRpcClientsOptions.headers?.authorization).to.be.undefined;
@@ -49,16 +46,7 @@ describe("Plebbit options", async () => {
         expect(testPlebbit.clients.kuboRpcClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubKuboRpcClients[url]).to.exist;
         expect(testPlebbit.clients.kuboRpcClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubKuboRpcClients[url]._client);
-        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
-            [
-                "https://ipfsgateway.xyz",
-                "https://ipfs.io",
-                "https://dweb.link",
-                "https://flk-ipfs.xyz",
-                "https://4everland.io",
-                "https://gateway.pinata.cloud"
-            ].sort()
-        );
+        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
         expect(Object.keys(testPlebbit.clients.kuboRpcClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubKuboRpcClients)).to.deep.equal([url]);
@@ -70,16 +58,7 @@ describe("Plebbit options", async () => {
         const url = "http://localhost:12323/api/v0"; // Should be offline
         const plebbit = await Plebbit({ kuboRpcClientsOptions: [url], httpRoutersOptions: [] });
 
-        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
-            [
-                "https://ipfsgateway.xyz",
-                "https://ipfs.io",
-                "https://dweb.link",
-                "https://flk-ipfs.xyz",
-                "https://4everland.io",
-                "https://gateway.pinata.cloud"
-            ].sort()
-        );
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
         expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal([url]);
         expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal([url]);
 
@@ -114,6 +93,20 @@ describe("Plebbit options", async () => {
             plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"), // random cid
             messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]
         ); // Use the rpc so it would detect it's not loading
+    });
+
+    it(`Plebbit({ipfsGateways: undefined}) uses default gateways`, async () => {
+        const plebbit = await Plebbit({ ipfsGatewayUrls: undefined, httpRoutersOptions: [] });
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
+        expect(plebbit.ipfsGatewayUrls.sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
+        JSON.stringify(plebbit); // Will throw an error if circular json
+    });
+
+    it(`Plebbit({ipfsGateways: []}) sets plebbit instance to not use gateways`, async () => {
+        const plebbit = await Plebbit({ ipfsGatewayUrls: [], httpRoutersOptions: [] });
+        expect(plebbit.clients.ipfsGateways).to.deep.equal({});
+        expect(plebbit.ipfsGatewayUrls).to.be.undefined;
+        JSON.stringify(plebbit); // Will throw an error if circular json
     });
 });
 
