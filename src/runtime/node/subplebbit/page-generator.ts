@@ -247,7 +247,7 @@ export class PageGenerator {
                 sortResults.push(await this.sortComments(hierarchalReplies, hierarchalSortName, pageOptions));
         }
 
-        const flatSorts = Object.keys(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
+        const flatSorts = remeda.keys.strict(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
 
         if (flatSorts.length > 0 && comment.depth === 0) {
             const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({

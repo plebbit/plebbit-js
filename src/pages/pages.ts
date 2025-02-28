@@ -66,13 +66,16 @@ export class BasePages {
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) {
+            const firstDepth = pageIpfs.comments[0].comment.depth;
+            const isUniformDepth =
+                pageIpfs.comments.every(comment => comment.comment.depth === firstDepth);
             const verificationOpts = {
                 pageCid,
                 page: pageIpfs,
                 resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
                 clientsManager: this._clientsManager,
                 subplebbit: this._subplebbit,
-                parentComment: this._parentComment,
+                parentComment: isUniformDepth ? this._parentComment : undefined, // if it's a flat page, we don't need to verify the parent comment
                 post: this._postComment,
                 overrideAuthorAddressIfInvalid: true,
                 validatePages: this._plebbit.validatePages,
@@ -100,22 +103,26 @@ export class BasePages {
         if (this._plebbit.validatePages)
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
         // TODO this function should take into consideration a flat page
-        for (const pageCommentRaw of comments) {
-            const pageIpfsComment: PageIpfs["comments"][number] = "comment" in pageCommentRaw ? pageCommentRaw : pageCommentRaw.pageComment;
-            const verificationOpts = {
-                pageComment: pageIpfsComment,
-                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
-                overrideAuthorAddressIfInvalid: true,
-                parentComment: this._parentComment,
-                post: this._postComment,
-                subplebbit: this._subplebbit,
-                clientsManager: this._clientsManager,
-                validatePages: false, // it should not go down the replies tree, user should call comment.replies.validatePages if they wanna do that
-                validateUpdateSignature: false // we assume it's been loaded through a page cid, and its cid has already been verified to match
-            };
-            const validation = await verifyPageComment(verificationOpts);
-            if (!validation.valid) throw new PlebbitError("ERR_PAGE_COMMENT_IS_INVALID", { validation, verificationOpts });
-        }
+        // comments could be either of a flat page or nested page
+        const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => "comment" in comment ? comment : comment.pageComment) };
+        // Check if all comments have the same depth
+        const firstDepth = pageIpfs.comments[0].comment.depth;
+        const isUniformDepth =
+            pageIpfs.comments.every(comment => comment.comment.depth === firstDepth);
+        const verificationOpts = {
+            page: pageIpfs,
+            pageCid: undefined,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            overrideAuthorAddressIfInvalid: true,
+            parentComment: isUniformDepth ? this._parentComment : undefined,
+            post: this._postComment,
+            subplebbit: this._subplebbit,
+            clientsManager: this._clientsManager,
+            validatePages: false,
+            validateUpdateSignature: false
+        };
+        const validation = await verifyPage(verificationOpts);
+        if (!validation.valid) throw new PlebbitError("ERR_PAGE_COMMENT_IS_INVALID", { validation, verificationOpts });
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
