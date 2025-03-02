@@ -42,7 +42,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
     it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
         const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
-        await publishRandomPost(sub.address, plebbit, {});
+        await publishRandomPost(sub.address, plebbit);
 
         const expectedStates = ["fetching-ipns", "stopped"];
 
@@ -89,4 +89,6 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
             expect(recordedStates[i + 1]).to.equal("stopped");
         }
     });
+
+    it(`Correct order of ipfs gateway states when we update a subplebbit with invalid record`);
 });
