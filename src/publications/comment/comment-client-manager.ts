@@ -237,13 +237,13 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType, subplebbitIpfs: SubplebbitIpfsType) {
         if (!this._comment._rawCommentIpfs) throw Error("Can't validate comment update when CommentIpfs hasn't been loaded");
-        if (!this._comment.cid) throw Error("can't validate comment updat when cid is not defined");
+        if (!this._comment.postCid) throw Error("can't validate comment update when postCid is not defined");
         const verifyOptions = {
             update: commentUpdate,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
             subplebbit: subplebbitIpfs,
-            comment: { ...this._comment._rawCommentIpfs, cid: this._comment.cid },
+            comment: { ...this._comment._rawCommentIpfs, cid: this._comment.cid, postCid: this._comment.postCid },
             overrideAuthorAddressIfInvalid: true,
             validatePages: this._plebbit.validatePages,
             validateUpdateSignature: true

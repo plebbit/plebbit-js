@@ -150,6 +150,8 @@ export enum messages {
     ERR_PAGE_COMMENT_PARENT_DOES_NOT_EXIST_IN_FLAT_PAGE = "The parent of a comment in a flat page does not exist",
     ERR_PAGE_COMMENT_POST_CID_IS_NOT_CORRECT = "The post cid of reply in page is not correct",
     ERR_REPLY_IN_FLAT_PAGE_HAS_NO_PARENT_CID = "Reply in flat page has no parent CID",
+    ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID = "Unable to derive post cid from page comment while verifying page",
+
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
     ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT = "The parent cid of comment in page is not correct",

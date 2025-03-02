@@ -22,7 +22,6 @@ type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> &
     BaseProps & {
         parentComment: Partial<Pick<CommentIpfsWithCidPostCidDefined, "cid" | "postCid" | "depth">> | undefined;
         pagesIpfs?: RepliesPagesTypeIpfs;
-        postComment: Partial<Pick<CommentIpfsWithCidPostCidDefined, "postCid">> | undefined;
     };
 
 export class BasePages {
@@ -32,7 +31,6 @@ export class BasePages {
     _clientsManager!: BasePagesClientsManager;
     _plebbit: Plebbit;
     _parentComment!: RepliesProps["parentComment"]; // would be undefined if the comment is not initialized yet and we don't have comment.cid
-    _postComment!: RepliesProps["postComment"];
     _subplebbit!: Pick<SubplebbitIpfsType, "address"> & { signature?: Pick<SubplebbitIpfsType["signature"], "publicKey"> };
     protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
@@ -66,8 +64,11 @@ export class BasePages {
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) {
-            const baseDepth =
-                typeof this._parentComment?.depth === "number" ? this._parentComment.depth + 1 : pageIpfs.comments[0].comment.depth;
+            if (!this._parentComment?.cid) throw Error("Parent comment cid is not defined");
+            if (typeof this._parentComment?.depth !== "number") throw Error("Parent comment depth is not defined");
+            if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
+
+            const baseDepth = this._parentComment.depth + 1;
             const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
             const verificationOpts = {
                 pageCid,
@@ -75,8 +76,7 @@ export class BasePages {
                 resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
                 clientsManager: this._clientsManager,
                 subplebbit: this._subplebbit,
-                parentComment: isUniformDepth ? this._parentComment : undefined, // if it's a flat page, we don't need to verify the parent comment
-                post: this._postComment,
+                parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid }, // if it's a flat page, we don't need to verify the parent comment
                 overrideAuthorAddressIfInvalid: true,
                 validatePages: this._plebbit.validatePages,
                 validateUpdateSignature: false // no need because we verified that page cid matches its content
@@ -102,27 +102,26 @@ export class BasePages {
     async validatePage({ comments }: { comments: PageIpfs["comments"] | PageTypeJson["comments"] }) {
         if (this._plebbit.validatePages)
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
-        // TODO this function should take into consideration a flat page
-        // comments could be either of a flat page or nested page
+        if (!this._parentComment?.cid) throw Error("Parent comment cid is not defined");
+        if (typeof this._parentComment?.depth !== "number") throw Error("Parent comment depth is not defined");
+        if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
         const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
-        // Check if all comments have the same depth
-        const baseDepth =
-            typeof this._parentComment?.depth === "number" ? this._parentComment.depth + 1 : pageIpfs.comments[0].comment.depth;
+
+        const baseDepth = this._parentComment.depth + 1;
         const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
         const verificationOpts = {
             page: pageIpfs,
             pageCid: undefined,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             overrideAuthorAddressIfInvalid: true,
-            parentComment: isUniformDepth ? this._parentComment : undefined,
-            post: this._postComment,
+            parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid },
             subplebbit: this._subplebbit,
             clientsManager: this._clientsManager,
             validatePages: false,
             validateUpdateSignature: false
         };
         const validation = await verifyPage(verificationOpts);
-        if (!validation.valid) throw new PlebbitError("ERR_PAGE_COMMENT_IS_INVALID", { validation, verificationOpts });
+        if (!validation.valid) throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", { validation, verificationOpts });
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
@@ -155,7 +154,6 @@ export class RepliesPages extends BasePages {
     override updateProps(props: RepliesProps) {
         super.updateProps(props);
         if ("parentComment" in props) this._parentComment = props.parentComment;
-        if ("postComment" in props) this._postComment = props.postComment;
     }
 
     protected override _initClientsManager(): void {
@@ -177,7 +175,6 @@ export class PostsPages extends BasePages {
 
     override _clientsManager!: PostsPagesClientsManager;
     override _parentComment: undefined = undefined;
-    override _postComment: undefined = undefined;
     protected override _pagesIpfs: PostsPagesTypeIpfs | undefined = undefined;
 
     constructor(props: PostsProps) {
