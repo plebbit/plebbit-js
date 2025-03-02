@@ -61,33 +61,13 @@ export class BasePages {
         this._pagesIpfs = undefined;
     }
 
+    async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
+        throw Error("should be implemented");
+    }
+
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) {
-            if (!this._parentComment?.cid) throw Error("Parent comment cid is not defined");
-            if (typeof this._parentComment?.depth !== "number") throw Error("Parent comment depth is not defined");
-            if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
-
-            const baseDepth = this._parentComment.depth + 1;
-            const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
-            const verificationOpts = {
-                pageCid,
-                page: pageIpfs,
-                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
-                clientsManager: this._clientsManager,
-                subplebbit: this._subplebbit,
-                parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid }, // if it's a flat page, we don't need to verify the parent comment
-                overrideAuthorAddressIfInvalid: true,
-                validatePages: this._plebbit.validatePages,
-                validateUpdateSignature: false // no need because we verified that page cid matches its content
-            };
-            const signatureValidity = await verifyPage(verificationOpts);
-            if (!signatureValidity.valid)
-                throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", {
-                    signatureValidity,
-                    verificationOpts
-                });
-        }
+        if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) await this._validatePage(pageIpfs, pageCid);
 
         return pageIpfs;
     }
@@ -107,21 +87,7 @@ export class BasePages {
         if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
         const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
 
-        const baseDepth = this._parentComment.depth + 1;
-        const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
-        const verificationOpts = {
-            page: pageIpfs,
-            pageCid: undefined,
-            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
-            overrideAuthorAddressIfInvalid: true,
-            parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid },
-            subplebbit: this._subplebbit,
-            clientsManager: this._clientsManager,
-            validatePages: false,
-            validateUpdateSignature: false
-        };
-        const validation = await verifyPage(verificationOpts);
-        if (!validation.valid) throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", { validation, verificationOpts });
+        await this._validatePage(pageIpfs);
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
@@ -164,6 +130,32 @@ export class RepliesPages extends BasePages {
     override toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
         return <RepliesPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
+
+    override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
+        if (!this._parentComment?.cid) throw Error("Parent comment cid is not defined");
+        if (typeof this._parentComment?.depth !== "number") throw Error("Parent comment depth is not defined");
+        if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
+
+        const baseDepth = this._parentComment.depth + 1;
+        const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
+        const verificationOpts = {
+            pageCid,
+            page: pageIpfs,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            subplebbit: this._subplebbit,
+            parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid }, // if it's a flat page, we don't need to verify the parent comment
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: this._plebbit.validatePages,
+            validateUpdateSignature: false // no need because we verified that page cid matches its content
+        };
+        const signatureValidity = await verifyPage(verificationOpts);
+        if (!signatureValidity.valid)
+            throw new PlebbitError("ERR_REPLIES_PAGE_IS_INVALID", {
+                signatureValidity,
+                verificationOpts
+            });
+    }
 }
 
 export class PostsPages extends BasePages {
@@ -192,5 +184,25 @@ export class PostsPages extends BasePages {
 
     override toJSONIpfs(): PostsPagesTypeIpfs | undefined {
         return <PostsPagesTypeIpfs | undefined>super.toJSONIpfs();
+    }
+
+    override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
+        const verificationOpts = {
+            pageCid,
+            page: pageIpfs,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            subplebbit: this._subplebbit,
+            parentComment: { cid: undefined },
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: this._plebbit.validatePages,
+            validateUpdateSignature: false // no need because we verified that page cid matches its content
+        };
+        const signatureValidity = await verifyPage(verificationOpts);
+        if (!signatureValidity.valid)
+            throw new PlebbitError("ERR_POSTS_PAGE_IS_INVALID", {
+                signatureValidity,
+                verificationOpts
+            });
     }
 }
