@@ -66,8 +66,9 @@ export class BasePages {
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) {
-            const firstDepth = pageIpfs.comments[0].comment.depth;
-            const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === firstDepth);
+            const baseDepth =
+                typeof this._parentComment?.depth === "number" ? this._parentComment.depth + 1 : pageIpfs.comments[0].comment.depth;
+            const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
             const verificationOpts = {
                 pageCid,
                 page: pageIpfs,
@@ -105,8 +106,9 @@ export class BasePages {
         // comments could be either of a flat page or nested page
         const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
         // Check if all comments have the same depth
-        const firstDepth = pageIpfs.comments[0].comment.depth;
-        const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === firstDepth);
+        const baseDepth =
+            typeof this._parentComment?.depth === "number" ? this._parentComment.depth + 1 : pageIpfs.comments[0].comment.depth;
+        const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
         const verificationOpts = {
             page: pageIpfs,
             pageCid: undefined,
