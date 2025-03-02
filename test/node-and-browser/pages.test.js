@@ -93,7 +93,7 @@ const activeScore = async (comment, plebbit) => {
         }
     };
 
-    const commentInstance = await plebbit.createComment({ cid: comment.cid, subplebbitAddress: comment.subplebbitAddress });
+    const commentInstance = await plebbit.createComment(comment);
     const childrenComments = await loadAllPages(comment.replies.pageCids.new, commentInstance.replies);
 
     await updateMaxTimestamp(childrenComments);
@@ -327,7 +327,7 @@ describe(`getPage`, async () => {
             await sub.posts.getPage(invalidPageCid);
             expect.fail("should fail");
         } catch (e) {
-            expect(e.code).to.equal("ERR_PAGE_SIGNATURE_IS_INVALID");
+            expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
         }
     });
 });
