@@ -81,7 +81,8 @@ import type {
     CommentPubsubMessagePublication,
     CommentUpdateType,
     CommentWithinPageJson,
-    CreateCommentOptions
+    CreateCommentOptions,
+    MinimumCommentFieldsToFetchPages
 } from "../publications/comment/types.js";
 
 import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
@@ -474,6 +475,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             | CommentIpfsType
             | CommentPubsubMessagePublication
             | { cid: CommentUpdateType["cid"]; subplebbitAddress?: CommentPubsubMessagePublication["subplebbitAddress"] }
+            | MinimumCommentFieldsToFetchPages
             | CreateCommentOptions
             | CommentJson
             | Comment
@@ -489,13 +491,18 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         else if ("original" in options) return this._createCommentInstanceFromJsonfiedPageComment(options); // CommentWithinPageJson
 
         const commentInstance = new Comment(this);
+        if ("subplebbitAddress" in options && options.subplebbitAddress)
+            commentInstance.setSubplebbitAddress(parseSubplebbitAddressWithPlebbitErrorIfItFails(options.subplebbitAddress));
 
         if ("depth" in options) {
-            // Options is CommentIpfs | CommentIpfsWithCidDefined
+            // Options is CommentIpfs | CommentIpfsWithCidDefined | MinimumCommentFieldsToFetchPages
             if ("cid" in options) commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
             //@ts-expect-error
             const commentIpfs: CommentIpfsType = remeda.omit(options, ["cid"]); // remove cid to make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment._rawCommentIpfs
-            commentInstance._initIpfsProps(parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfs));
+
+            // if it has signature it means it's a full CommentIpfs
+            if (!("signature" in options)) Object.assign(commentInstance, options);
+            else commentInstance._initIpfsProps(parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfs));
         } else if ("signature" in options) {
             // parsedOptions is CommentPubsubMessage
             const parsedOptions = parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails(options);
@@ -519,8 +526,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         } else if ("cid" in options) {
             // {cid: string, subplebbitAddress?: string}
             commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
-            if (options.subplebbitAddress)
-                commentInstance.setSubplebbitAddress(parseSubplebbitAddressWithPlebbitErrorIfItFails(options.subplebbitAddress));
         } else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }

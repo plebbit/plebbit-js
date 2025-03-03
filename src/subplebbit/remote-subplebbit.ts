@@ -117,7 +117,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>parseRawPages(newPosts);
                 this.posts.updateProps({
                     ...parsedPages,
-                    plebbit: this._plebbit,
                     subplebbit: remeda.pick(this, ["address", "signature"]),
                     pageCids: newPosts?.pageCids || {}
                 });

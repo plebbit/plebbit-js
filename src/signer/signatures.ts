@@ -83,8 +83,7 @@ import type {
 import { SubplebbitEditPublicationSignedPropertyNames } from "../publications/subplebbit-edit/schema.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { BasePages } from "../pages/pages.js";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -656,7 +655,7 @@ export async function verifyCommentUpdate({
     update: CommentUpdateType;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
-    subplebbit: BasePages["_subplebbit"];
+    subplebbit: SubplebbitForVerifyingPages;
     comment: Pick<CommentIpfsWithCidPostCidDefined, "signature" | "cid" | "depth" | "postCid">;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
@@ -826,6 +825,8 @@ type ParentCommentForVerifyingPages =
     | Pick<CommentIpfsWithCidDefined, "postCid"> // when we're verifying a flat page
     | { cid: undefined }; // when we're verifying a subplebbit posts page
 
+type SubplebbitForVerifyingPages = Pick<RemoteSubplebbit, "address" | "signature">;
+
 export async function verifyPageComment({
     pageComment,
     subplebbit,
@@ -837,7 +838,7 @@ export async function verifyPageComment({
     validateUpdateSignature
 }: {
     pageComment: PageIpfs["comments"][0];
-    subplebbit: BasePages["_subplebbit"];
+    subplebbit: SubplebbitForVerifyingPages;
     parentComment: ParentCommentForVerifyingPages;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
@@ -917,7 +918,7 @@ export async function verifyPage({
     page: PageIpfs;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
-    subplebbit: BasePages["_subplebbit"];
+    subplebbit: SubplebbitForVerifyingPages;
     parentComment: ParentCommentForVerifyingPages;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;

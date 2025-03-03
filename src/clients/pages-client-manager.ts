@@ -6,10 +6,11 @@ import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
 import * as remeda from "remeda";
 import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { BasePages } from "../pages/pages.js";
+import { BasePages, PostsPages, RepliesPages } from "../pages/pages.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     clients: {
@@ -18,19 +19,19 @@ export class BasePagesClientsManager extends BaseClientsManager {
         plebbitRpcClients: { [sortType: string]: { [rpcUrl: string]: PagesPlebbitRpcStateClient } };
     };
 
-    protected _pages: BasePages;
+    protected _pages: RepliesPages | PostsPages;
     _pagesMaxSize: Record<string, number> = {}; // cid => max file size (number of bytes )
 
-    constructor(pages: BasePages) {
-        super(pages._plebbit);
-        this._pages = pages;
+    constructor(opts: { pages: RepliesPages | PostsPages; plebbit: Plebbit }) {
+        super(opts.plebbit);
+        this._pages = opts.pages;
         //@ts-expect-error
         this.clients = {};
         this._initIpfsGateways();
         this._initIpfsClients();
         this._initPlebbitRpcClients();
 
-        if (pages.pageCids) this.updatePageCidsToSortTypes(pages.pageCids);
+        if (opts.pages.pageCids) this.updatePageCidsToSortTypes(opts.pages.pageCids);
         hideClassPrivateProps(this);
     }
 
@@ -145,13 +146,15 @@ export class BasePagesClientsManager extends BaseClientsManager {
     private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
         const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
 
+        if (this._pages._parentComment && !this._pages._parentComment?.cid) throw Error("Parent comment cid is not defined");
         log.trace(`Fetching page cid (${pageCid}) using rpc`);
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
+
         try {
-            return this._pages._parentComment?.cid
+            return this._pages._parentComment
                 ? await this._plebbit._plebbitRpcClient!.getCommentPage(
                       pageCid,
-                      this._pages._parentComment.cid,
+                      this._pages._parentComment.cid!,
                       this._pages._subplebbit.address
                   )
                 : await this._plebbit._plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbit.address);

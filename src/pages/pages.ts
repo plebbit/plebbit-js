@@ -1,27 +1,26 @@
 import { parsePageIpfs } from "../pages/util.js";
 import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
-import { verifyPage, verifyPageComment } from "../signer/signatures.js";
-import assert from "assert";
+import { verifyPage } from "../signer/signatures.js";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
-import { Plebbit } from "../plebbit/plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { hideClassPrivateProps } from "../util.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
-import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import { CommentIpfsWithCidPostCidDefined } from "../publications/comment/types.js";
+import { Comment } from "../publications/comment/comment.js";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 
 type BaseProps = {
-    plebbit: BasePages["_plebbit"];
-    subplebbit: BasePages["_subplebbit"];
+    subplebbit: Pick<RemoteSubplebbit, "address" | "signature">;
+    plebbit: Plebbit;
 };
 
 type PostsProps = Pick<PostsPages, "pages" | "pageCids"> & BaseProps & { pagesIpfs?: PostsPagesTypeIpfs };
 type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> &
     BaseProps & {
-        parentComment: Partial<Pick<CommentIpfsWithCidPostCidDefined, "cid" | "postCid" | "depth">> | undefined;
         pagesIpfs?: RepliesPagesTypeIpfs;
+        parentComment: Comment;
     };
 
 export class BasePages {
@@ -29,28 +28,25 @@ export class BasePages {
     pageCids!: PostsPages["pageCids"] | RepliesPages["pageCids"];
     clients!: BasePagesClientsManager["clients"];
     _clientsManager!: BasePagesClientsManager;
-    _plebbit: Plebbit;
-    _parentComment!: RepliesProps["parentComment"]; // would be undefined if the comment is not initialized yet and we don't have comment.cid
-    _subplebbit!: Pick<SubplebbitIpfsType, "address"> & { signature?: Pick<SubplebbitIpfsType["signature"], "publicKey"> };
+    _parentComment: Comment | undefined = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
+    _subplebbit!: BaseProps["subplebbit"];
     protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: PostsProps | RepliesProps) {
-        this._plebbit = props.plebbit;
-        this._initClientsManager();
+        this._initClientsManager(props.plebbit);
         this.updateProps(props);
         hideClassPrivateProps(this);
     }
 
-    updateProps(props: PostsProps | RepliesProps) {
+    updateProps(props: Omit<PostsProps | RepliesProps, "plebbit">) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
-        this._plebbit = props.plebbit;
         this._subplebbit = props.subplebbit;
         this._pagesIpfs = props.pagesIpfs;
         if (this.pageCids) this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
     }
 
-    protected _initClientsManager() {
+    protected _initClientsManager(plebbit: Plebbit) {
         throw Error(`This function should be overridden`);
     }
 
@@ -67,7 +63,8 @@ export class BasePages {
 
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        if (!this._plebbit._plebbitRpcClient && this._plebbit.validatePages) await this._validatePage(pageIpfs, pageCid);
+        if (!this._clientsManager._plebbit._plebbitRpcClient && this._clientsManager._plebbit.validatePages)
+            await this._validatePage(pageIpfs, pageCid);
 
         return pageIpfs;
     }
@@ -80,11 +77,8 @@ export class BasePages {
 
     // method below will be present in both subplebbit.posts and comment.replies
     async validatePage({ comments }: { comments: PageIpfs["comments"] | PageTypeJson["comments"] }) {
-        if (this._plebbit.validatePages)
+        if (this._clientsManager._plebbit.validatePages)
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
-        if (!this._parentComment?.cid) throw Error("Parent comment cid is not defined");
-        if (typeof this._parentComment?.depth !== "number") throw Error("Parent comment depth is not defined");
-        if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
         const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
 
         await this._validatePage(pageIpfs);
@@ -110,20 +104,22 @@ export class RepliesPages extends BasePages {
     override clients!: RepliesPagesClientsManager["clients"];
 
     override _clientsManager!: RepliesPagesClientsManager;
+    override _parentComment: Comment; // is always defined but we need to check its field if they're initialized or not
 
     protected override _pagesIpfs: RepliesPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: RepliesProps) {
         super(props);
+        this._parentComment = props.parentComment;
+        hideClassPrivateProps(this);
     }
 
-    override updateProps(props: RepliesProps) {
+    override updateProps(props: Omit<RepliesProps, "plebbit" | "parentComment">) {
         super.updateProps(props);
-        if ("parentComment" in props) this._parentComment = props.parentComment;
     }
 
-    protected override _initClientsManager(): void {
-        this._clientsManager = new RepliesPagesClientsManager(this);
+    protected override _initClientsManager(plebbit: Plebbit): void {
+        this._clientsManager = new RepliesPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
 
@@ -141,12 +137,12 @@ export class RepliesPages extends BasePages {
         const verificationOpts = {
             pageCid,
             page: pageIpfs,
-            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,
             subplebbit: this._subplebbit,
             parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid }, // if it's a flat page, we don't need to verify the parent comment
             overrideAuthorAddressIfInvalid: true,
-            validatePages: this._plebbit.validatePages,
+            validatePages: this._clientsManager._plebbit.validatePages,
             validateUpdateSignature: false // no need because we verified that page cid matches its content
         };
         const signatureValidity = await verifyPage(verificationOpts);
@@ -166,19 +162,19 @@ export class PostsPages extends BasePages {
     override clients!: PostsPagesClientsManager["clients"];
 
     override _clientsManager!: PostsPagesClientsManager;
-    override _parentComment: undefined = undefined;
     protected override _pagesIpfs: PostsPagesTypeIpfs | undefined = undefined;
+    override _parentComment: undefined = undefined; // would be undefined because we don't have a parent comment for posts
 
     constructor(props: PostsProps) {
         super(props);
     }
 
-    override updateProps(props: PostsProps) {
+    override updateProps(props: Omit<PostsProps, "plebbit">) {
         super.updateProps(props);
     }
 
-    protected override _initClientsManager(): void {
-        this._clientsManager = new PostsPagesClientsManager(this);
+    protected override _initClientsManager(plebbit: Plebbit): void {
+        this._clientsManager = new PostsPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
 
@@ -190,12 +186,12 @@ export class PostsPages extends BasePages {
         const verificationOpts = {
             pageCid,
             page: pageIpfs,
-            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,
             subplebbit: this._subplebbit,
             parentComment: { cid: undefined },
             overrideAuthorAddressIfInvalid: true,
-            validatePages: this._plebbit.validatePages,
+            validatePages: this._clientsManager._plebbit.validatePages,
             validateUpdateSignature: false // no need because we verified that page cid matches its content
         };
         const signatureValidity = await verifyPage(verificationOpts);

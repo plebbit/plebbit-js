@@ -122,7 +122,7 @@ export class Comment
             plebbit: this._plebbit,
             subplebbit: { address: this.subplebbitAddress },
             pagesIpfs: undefined,
-            parentComment: { cid: this.cid, depth: this.depth, postCid: this.postCid }
+            parentComment: this
         });
 
         hideClassPrivateProps(this);
@@ -188,7 +188,6 @@ export class Comment
             const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
             if (!postCid) throw Error("There is no way to set comment.postCid");
             this.postCid = postCid;
-            this.replies._parentComment = { ...this.replies._parentComment, postCid };
             this.previousCid = props.previousCid;
             this.thumbnailUrl = props.thumbnailUrl;
             this.thumbnailUrlHeight = props.thumbnailUrlHeight;
@@ -267,10 +266,8 @@ export class Comment
                 const subplebbitSignature = subplebbit?.signature || this.replies._subplebbit.signature;
                 this.replies.updateProps({
                     ...parsedPages,
-                    plebbit: this._plebbit,
                     subplebbit: { address: this.subplebbitAddress, signature: subplebbitSignature },
-                    pageCids: newReplies.pageCids,
-                    parentComment: { cid: this.cid, depth: this.depth, postCid: this.postCid }
+                    pageCids: newReplies.pageCids
                 });
             }
         }
@@ -410,7 +407,6 @@ export class Comment
     setCid(newCid: string) {
         this.cid = newCid;
         this.shortCid = shortifyCid(this.cid);
-        this.replies._parentComment = { ...this.replies._parentComment, cid: this.cid, depth: this.depth, postCid: this.postCid };
     }
 
     override setSubplebbitAddress(newSubplebbitAddress: string) {

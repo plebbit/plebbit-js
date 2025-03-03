@@ -111,3 +111,5 @@ export interface CommentUpdateForChallengeVerificationSignature extends JsonSign
 export interface CommentUpdateSignature extends JsonSignature {
     signedPropertyNames: typeof CommentUpdateSignedPropertyNames;
 }
+
+export type MinimumCommentFieldsToFetchPages = Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "postCid">;
