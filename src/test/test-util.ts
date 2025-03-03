@@ -346,6 +346,23 @@ export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
             httpRoutersOptions: []
         };
 }
+export async function mockPlebbitV2({
+    plebbitOptions,
+    forceMockPubsub,
+    stubStorage,
+    mockResolve,
+    remotePlebbit
+}: {
+    plebbitOptions?: InputPlebbitOptions;
+    forceMockPubsub?: boolean;
+    stubStorage?: boolean;
+    mockResolve?: boolean;
+    remotePlebbit?: boolean;
+}) {
+    const plebbit = await mockPlebbit(plebbitOptions, forceMockPubsub, stubStorage, mockResolve);
+    if (remotePlebbit) plebbit._canCreateNewLocalSub = () => false;
+    return plebbit;
+}
 
 export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
@@ -602,10 +619,15 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
 
     const listenerPromise = new Promise(async (resolve) => {
         const listener = async () => {
-            const conditionStatus = await predicate();
-            if (conditionStatus) {
-                resolve(conditionStatus);
-                toUpdate.removeListener(eventName, listener);
+            try {
+                const conditionStatus = await predicate();
+                if (conditionStatus) {
+                    resolve(conditionStatus);
+                    toUpdate.removeListener(eventName, listener);
+                }
+            } catch (error) {
+                console.error(error);
+                throw error;
             }
         };
         toUpdate.on(eventName, listener);
@@ -1137,8 +1159,11 @@ export function mockUpdatingCommentResolvingAuthor(
 
 export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: string; textRecord: string; value: string }) {
     const cacheKey = opts.plebbit._clientsManager._getKeyOfCachedDomainTextRecord(opts.domain, opts.textRecord);
-    const valueInCache = <CachedTextRecordResolve>{ timestampSeconds: timestamp(), valueOfTextRecord: opts.value };
-    await opts.plebbit._storage.setItem(cacheKey, valueInCache);
+    if (!opts.value) await opts.plebbit._storage.removeItem(cacheKey);
+    else {
+        const valueInCache = <CachedTextRecordResolve>{ timestampSeconds: timestamp(), valueOfTextRecord: opts.value };
+        await opts.plebbit._storage.setItem(cacheKey, valueInCache);
+    }
 }
 
 const skipFunction = (_: any) => {};
@@ -1151,3 +1176,28 @@ export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : skipFuncti
 export const itSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["it"];
 
 export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : skipFunction;
+
+export function mockViemClientGetEnsText({
+    plebbit,
+    chainTicker,
+    url,
+    mockFunction
+}: {
+    plebbit: Plebbit;
+    chainTicker: string;
+    url: string;
+    mockFunction: (params: { name: string; key: string }) => string | null | Promise<string | null>;
+}) {
+    // Create a unique identifier for the viem client
+    const viemClientKey = chainTicker + url;
+
+    // Access the domain resolver's viem clients and mock the getEnsText method
+
+    if (!plebbit._domainResolver._viemClients[viemClientKey]) {
+        //@ts-expect-error - Accessing internal property
+        plebbit._domainResolver._viemClients[viemClientKey] = {};
+    }
+
+    //@ts-expect-error - Accessing internal property
+    plebbit._domainResolver._viemClients[viemClientKey].getEnsText = mockFunction;
+}

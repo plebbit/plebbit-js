@@ -12,17 +12,19 @@ import {
     itSkipIfRpc,
     describeSkipIfRpc,
     mockPlebbit,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockCacheOfTextRecord,
+    mockPlebbitV2,
+    mockViemClientGetEnsText
 } from "../../dist/node/test/test-util.js";
 import { v4 as uuidV4 } from "uuid";
-import * as resolverClass from "../../dist/node/resolver.js";
 
 const mockComments = [];
 
 // Clients of RPC will trust the response of RPC and won't validate
 // Skip testing for now because they keep failing randomly in github CI tests
 describeSkipIfRpc.skip(`Resolving text records`, async () => {
-    it(`Can resolve correctly with just viem`, async () => {
+    it.skip(`Can resolve correctly with just viem`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
@@ -30,21 +32,21 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
 
-    it(`Can resolve correctly with just ethers.js`, async () => {
+    it.skip(`Can resolve correctly with just ethers.js`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["ethers.js"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
-    it(`Can resolve correctly with custom chain provider`, async () => {
+    it.skip(`Can resolve correctly with custom chain provider`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
-    it(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
+    it.skip(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
         const plebbit = await mockRemotePlebbit({
             chainProviders: { eth: { urls: ["https://cloudflare-eth.com/", "viem", "ethers.js"], chainId: 1 } }
         }); // Should have viem defined
@@ -112,17 +114,16 @@ describe("Comments with Authors as domains", async () => {
     itSkipIfRpc(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return null on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
 
         const authorAddress = "testgibbreish.eth";
-        const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
+        const tempPlebbit = await mockPlebbitV2({ stubStorage: false });
 
-        resolverClass.viemClients["eth" + testEthRpc] = {
-            getEnsText: ({ name, key }) => {
-                if (name === authorAddress && key === "plebbit-author-address") return signers[6].address;
-                else return null;
-            }
-        };
+        await mockCacheOfTextRecord({
+            plebbit: tempPlebbit,
+            name: authorAddress,
+            key: "plebbit-author-address",
+            value: signers[6].address
+        });
 
         const mockPost = await tempPlebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: authorAddress },
@@ -165,17 +166,17 @@ describe(`Vote with authors as domains`, async () => {
     });
 
     itSkipIfRpc(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
-        const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
+        const tempPlebbit = await mockPlebbitV2({ stubStorage: false });
+        const authorAddress = "testgibbreish.eth";
+        await mockCacheOfTextRecord({
+            plebbit: tempPlebbit,
+            name: authorAddress,
+            key: "plebbit-author-address",
+            value: signers[6].address
+        });
 
-        resolverClass.viemClients["eth" + testEthRpc] = {
-            getEnsText: ({ name, key }) => {
-                if (name === authorAddress && key === "plebbit-author-address") return signers[6].address;
-                else return null;
-            }
-        };
         const vote = await tempPlebbit.createVote({
-            author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
+            author: { address: authorAddress },
             signer: signers[6],
             commentCid: comment.cid,
             vote: -1,
@@ -200,13 +201,16 @@ describeSkipIfRpc(`Resolving resiliency`, async () => {
 
         const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
 
-        resolverClass.viemClients["eth" + testEthRpc] = {
-            getEnsText: ({ name, key }) => {
+        mockViemClientGetEnsText({
+            plebbit,
+            chainTicker: "eth",
+            url: testEthRpc,
+            mockFunction: ({ name, key }) => {
                 resolveHit++;
                 if (resolveHit < 4) throw Error("failed to resolve because whatever");
                 else return subplebbitTextRecordOfAddress;
             }
-        };
+        });
 
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(address);
         expect(resolvedAuthorAddress).to.equal(subplebbitTextRecordOfAddress);
