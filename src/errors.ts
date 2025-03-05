@@ -145,7 +145,7 @@ export enum messages {
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE = "The subplebbit sent an invalid decryptedChallengeVerification.commentUpdate",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID = "The sub sent decryptedChallengeVerification with commentUpdate.cid that does not correspond to commentIpfs",
     ERR_PAGE_COMMENT_IS_INVALID = "validatePage has found a comment within a page that is invalid",
-    ERR_PAGE_COMMENT_IS_NESTED_BUT_HAS_NO_PARENT_COMMENT_INSTANCE = "Page comment is a reply but has no parent comment instance cid",
+    ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE = "Page comment is a reply with depth greater than 0, but has no parent comment instance cid",
     ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT = "Page comment is a reply with a depth that's not relative to its direct parent",
     ERR_PAGE_COMMENT_PARENT_DOES_NOT_EXIST_IN_FLAT_PAGE = "The parent of a comment in a flat page does not exist",
     ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE = "The post cid of reply in page is different than the post cid of the comment instance. Did the subplebbit instance put the wrong reply in this page?",

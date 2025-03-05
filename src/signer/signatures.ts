@@ -601,9 +601,9 @@ export async function verifySubplebbit({
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
-                parentComment: { cid: undefined },
+                parentComment: { cid: undefined, depth: -1, postCid: undefined },
                 overrideAuthorAddressIfInvalid,
-                validatePages: true,
+                validatePages,
                 validateUpdateSignature: false // no need because we already verified subplebbit signature
             });
 
@@ -823,7 +823,7 @@ export async function verifyChallengeVerification(
 type ParentCommentForVerifyingPages =
     | Pick<CommentIpfsWithCidPostCidDefined, "cid" | "depth" | "postCid"> // when we're verifying a nested page
     | Pick<CommentIpfsWithCidDefined, "postCid"> // when we're verifying a flat page
-    | { cid: undefined }; // when we're verifying a subplebbit posts page
+    | { cid: undefined; depth: -1; postCid: undefined }; // when we're verifying a subplebbit posts page
 
 type SubplebbitForVerifyingPages = Pick<RemoteSubplebbit, "address" | "signature">;
 
@@ -857,12 +857,12 @@ export async function verifyPageComment({
         return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
 
     if (pageComment.comment.depth > 0 && "cid" in parentComment && !parentComment?.cid)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_NESTED_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
 
     if ("depth" in parentComment && typeof parentComment.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
         return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
 
-    if ("postCid" in parentComment && pageComment.comment.postCid !== parentComment.postCid)
+    if (pageComment.comment.postCid !== parentComment.postCid)
         return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
 
     const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
@@ -875,12 +875,7 @@ export async function verifyPageComment({
         calculatedCommentCid
     });
     if (!commentSignatureValidity.valid) return commentSignatureValidity;
-    const postCid =
-        "postCid" in parentComment
-            ? parentComment.postCid
-            : pageComment.comment.depth === 0
-              ? calculatedCommentCid
-              : pageComment.comment.postCid;
+    const postCid = parentComment.postCid || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
     if (!postCid) return { valid: false, reason: messages.ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID };
     const commentUpdateSignatureValidity = await verifyCommentUpdate({
         update: pageComment.commentUpdate,

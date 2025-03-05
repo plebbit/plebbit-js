@@ -208,7 +208,7 @@ export class PostsPages extends BasePages {
             resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,
             subplebbit: this._subplebbit,
-            parentComment: { cid: undefined },
+            parentComment: { cid: undefined, postCid: undefined, depth: -1 },
             overrideAuthorAddressIfInvalid: true,
             validatePages: this._clientsManager._plebbit.validatePages,
             validateUpdateSignature: false // no need because we verified that page cid matches its content
