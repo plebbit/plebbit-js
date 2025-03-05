@@ -12,7 +12,9 @@ import {
     generateMockPost,
     publishWithExpectedResult,
     describeSkipIfRpc,
-    waitUntilPlebbitSubplebbitsIncludeSubAddress
+    waitUntilPlebbitSubplebbitsIncludeSubAddress,
+    publishRandomPost,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 
 import plebbitVersion from "../../../dist/node/version";
@@ -119,16 +121,13 @@ describeSkipIfRpc("DB Migration", () => {
             await assert.isFulfilled(subplebbit.start());
 
             await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
-            const mockPost = await generateMockPost(subplebbit.address, plebbit);
-            mockPost.once("challenge", async (challengeMsg) => {
-                await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
-            });
-
-            await publishWithExpectedResult(mockPost, true);
+            await subplebbit.edit({ settings: { ...subplebbit.settings, challenges: [] } });
+            const mockPost = await publishRandomPost(subplebbit.address, plebbit);
 
             await mockPost.update();
-            await new Promise((resolve) => mockPost.once("update", resolve));
+            await resolveWhenConditionIsTrue(mockPost, () => mockPost.updatedAt);
             expect(mockPost.updatedAt).to.be.a("number");
+            expect(mockPost.author.subplebbit).to.be.a("object");
             await mockPost.stop();
 
             await subplebbit.delete();
