@@ -592,7 +592,7 @@ getRemotePlebbitConfigs().map((config) => {
 describe(`getPage`, async () => {
     it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
         const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
-        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
+        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl], validatePages: true });
 
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
@@ -607,7 +607,7 @@ describe(`getPage`, async () => {
         }
     });
     it(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockPlebbit({ validatePages: true });
 
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
 

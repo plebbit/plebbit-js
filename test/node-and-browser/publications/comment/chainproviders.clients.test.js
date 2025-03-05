@@ -222,7 +222,8 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         const differentPlebbit = await mockPlebbitV2({
             stubStorage: true, // make sure there's no storage so it won't be cached
             remotePlebbit: true,
-            mockResolve: true
+            mockResolve: true,
+            plebbitOptions: { validatePages: true } // it needs to validate page to resolve author address
         });
         const loadedPost = await differentPlebbit.createComment({ cid: mockPost.cid });
         const expectedStates = ["resolving-author-address", "stopped"];

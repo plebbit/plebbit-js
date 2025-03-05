@@ -376,7 +376,8 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
         publishInterval: 1000,
-        updateInterval: 1000,
+        validatePages: false,
+        updateInterval: 500,
         chainProviders: { eth: { urls: [mockEthResolver], chainId: 1 } },
         ...plebbitOptions
     });
