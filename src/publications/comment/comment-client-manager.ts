@@ -237,6 +237,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType, subplebbitIpfs: SubplebbitIpfsType) {
         if (!this._comment._rawCommentIpfs) throw Error("Can't validate comment update when CommentIpfs hasn't been loaded");
+        if (!this._comment.cid) throw Error("can't validate comment update when cid is not defined");
         if (!this._comment.postCid) throw Error("can't validate comment update when postCid is not defined");
         const verifyOptions = {
             update: commentUpdate,
@@ -355,32 +356,32 @@ export class CommentClientsManager extends PublicationClientsManager {
         } else return false;
     }
 
-    async useSubplebbitUpdateToFetchCommentUpdate(subIpns: SubplebbitIpfsType) {
-        const log = Logger("plebbit-js:comment:useSubplebbitUpdateToFetchCommentUpdate");
-        if (!subIpns) throw Error("Failed to fetch the subplebbit to start the comment update process");
-        if (!subIpns.postUpdates) {
-            log("Sub", subIpns.address, "has no postUpdates field. Will wait for next update for comment", this._comment.cid);
+    async useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs: SubplebbitIpfsType) {
+        const log = Logger("plebbit-js:comment:useSubplebbitPostUpdatesToFetchCommentUpdate");
+        if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
+        if (!subIpfs.postUpdates) {
+            log("Sub", subIpfs.address, "has no postUpdates field. Will wait for next update for comment", this._comment.cid);
             this._comment._setUpdatingState("waiting-retry");
-            this._comment.emit("waiting-retry", new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpns }));
+            this._comment.emit("waiting-retry", new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs }));
             return undefined;
         }
 
         const parentsPostUpdatePath = this._comment._commentUpdateIpfsPath
             ? this._comment._commentUpdateIpfsPath.replace("/update", "").split("/").slice(1).join("/")
-            : await this._getParentsPath(subIpns);
+            : await this._getParentsPath(subIpfs);
         const postCid = this._comment.postCid;
         if (!postCid) throw Error("comment.postCid needs to be defined to fetch comment update");
         const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(postCid);
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
-        const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
+        const timestampRanges = getPostUpdateTimestampRange(subIpfs.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
         this._comment._setUpdatingState("fetching-update-ipfs");
 
         let newCommentUpdate: NewCommentUpdate;
         try {
             if (this._defaultIpfsProviderUrl)
-                newCommentUpdate = await this._fetchNewCommentUpdateIpfsP2P(subIpns, timestampRanges, parentsPostUpdatePath, log);
-            else newCommentUpdate = await this._fetchCommentUpdateFromGateways(subIpns, timestampRanges, parentsPostUpdatePath, log);
+                newCommentUpdate = await this._fetchNewCommentUpdateIpfsP2P(subIpfs, timestampRanges, parentsPostUpdatePath, log);
+            else newCommentUpdate = await this._fetchCommentUpdateFromGateways(subIpfs, timestampRanges, parentsPostUpdatePath, log);
         } catch (e) {
             if (e instanceof Error) {
                 if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
@@ -403,7 +404,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
         if (newCommentUpdate) {
-            this._useLoadedCommentUpdateIfNewInfo(newCommentUpdate, subIpns, log);
+            this._useLoadedCommentUpdateIfNewInfo(newCommentUpdate, subIpfs, log);
         } else if (newCommentUpdate === undefined) {
             log.trace(`Comment`, this._comment.cid, "loaded an old comment update. Ignoring it");
             this._comment._setUpdatingState("waiting-retry");
@@ -474,9 +475,10 @@ export class CommentClientsManager extends PublicationClientsManager {
         return this._comment.state === "publishing";
     }
 
-    _findCommentInPagesOfUpdatingCommentsSubplebbit(): PageIpfs["comments"][0] | undefined {
+    _findCommentInPagesOfUpdatingCommentsSubplebbit(subIpfs?: SubplebbitIpfsType): PageIpfs["comments"][0] | undefined {
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
-        const updatingSubplebbitPosts = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs?.posts;
+        const updatingSubplebbitPosts = (subIpfs || this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs)
+            ?.posts;
         if (!updatingSubplebbitPosts) return undefined;
 
         if (this._comment.depth === 0 || this._comment.postCid === this._comment.cid)
@@ -508,7 +510,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
             // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
             try {
-                const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit();
+                const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit(subIpfs);
 
                 if (commentInPage) {
                     const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
@@ -520,7 +522,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
                 }
                 // we didn't manage to find any update from pages, let's fetch an update from post updates
-                await this.useSubplebbitUpdateToFetchCommentUpdate(subIpfs);
+                await this.useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs);
             } catch (e) {
                 log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
             }
