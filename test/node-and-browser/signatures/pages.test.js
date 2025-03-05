@@ -12,24 +12,28 @@ const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid, overrideAuthorAddressIsInvalid) => {
     // randomize pageCid so that we don't rely on cache
-    const pageObjRes = await verifyPage(
-        uuidV4(),
-        JSON.parse(JSON.stringify(pageJson)),
-        plebbit.resolveAuthorAddresses,
-        plebbit._clientsManager,
-        subplebbit.address,
-        parentCid,
-        overrideAuthorAddressIsInvalid
-    );
-    const pageJsonRes = await verifyPage(
-        uuidV4(),
-        pageJson,
-        plebbit.resolveAuthorAddresses,
-        plebbit._clientsManager,
-        subplebbit.address,
-        parentCid,
-        overrideAuthorAddressIsInvalid
-    );
+    const pageObjRes = await verifyPage({
+        pageCid: uuidV4(),
+        page: JSON.parse(JSON.stringify(pageJson)),
+        resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+        clientsManager: plebbit._clientsManager,
+        subplebbit: subplebbit,
+        parentComment: { cid: parentCid },
+        overrideAuthorAddressIfInvalid: overrideAuthorAddressIsInvalid,
+        validatePages: true,
+        validateUpdateSignature: true
+    });
+    const pageJsonRes = await verifyPage({
+        pageCid: uuidV4(),
+        page: pageJson,
+        resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+        clientsManager: plebbit._clientsManager,
+        subplebbit: subplebbit,
+        parentComment: { cid: parentCid },
+        overrideAuthorAddressIfInvalid: overrideAuthorAddressIsInvalid,
+        validatePages: true,
+        validateUpdateSignature: true
+    });
     expect(pageObjRes).to.deep.equal(pageJsonRes);
     return pageObjRes;
 };
