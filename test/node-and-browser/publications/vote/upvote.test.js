@@ -20,11 +20,12 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, postToVote, replyToVote, signer;
 
         before(async () => {
-            plebbit = await config.plebbitInstancePromise();
+            plebbit = await config.plebbitInstancePromise({ validatePages: false });
             signer = await plebbit.createSigner();
             postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
             replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
-            await Promise.all([postToVote.update(), replyToVote.update()]);
+            await postToVote.update();
+            await replyToVote.update();
             await resolveWhenConditionIsTrue(postToVote, () => typeof postToVote.updatedAt === "number");
             await resolveWhenConditionIsTrue(replyToVote, () => typeof replyToVote.updatedAt === "number");
         });
