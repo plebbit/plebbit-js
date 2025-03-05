@@ -223,6 +223,133 @@ getRemotePlebbitConfigs().map((config) => {
                 }
             }
         });
+
+        describe(`subplebbit.posts.validatePage - ${config.name}`, async () => {
+            let plebbit, subplebbit, validPageJson, newPost;
+
+            before(async () => {
+                plebbit = await config.plebbitInstancePromise({ validatePages: false });
+                newPost = await publishRandomPost(subplebbitAddress, plebbit);
+                await publishRandomReply(newPost, plebbit);
+                await waitTillPostInSubplebbitPages(newPost, plebbit);
+                subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                validPageJson = await subplebbit.posts.getPage(subplebbit.posts.pageCids.hot); // PageTypeJson, not PageIpfs
+            });
+
+            it("validates a legitimate page correctly", async () => {
+                await subplebbit.posts.validatePage(validPageJson);
+            });
+
+            it("fails validation when a comment has invalid signature", async () => {
+                const invalidPage = JSON.parse(JSON.stringify(validPageJson));
+                invalidPage.comments[0].pageComment.comment.content = "modified content to invalidate signature";
+
+                try {
+                    await subplebbit.posts.validatePage(invalidPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+                }
+            });
+
+            it("fails validation when a comment belongs to a different subplebbit", async () => {
+                const invalidPage = JSON.parse(JSON.stringify(validPageJson));
+                invalidPage.comments[0].pageComment.comment.subplebbitAddress = "different-address";
+
+                try {
+                    await subplebbit.posts.validatePage(invalidPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB);
+                }
+            });
+
+            it("fails validation when calculated CID doesn't match commentUpdate.cid", async () => {
+                const invalidPage = JSON.parse(JSON.stringify(validPageJson));
+                // Modify the comment but keep the same commentUpdate.cid
+                invalidPage.comments[0].pageComment.comment.timestamp += 1000;
+
+                try {
+                    await subplebbit.posts.validatePage(invalidPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+                }
+            });
+
+            it("fails validation when a comment has incorrect depth (not 0)", async () => {
+                const invalidPage = JSON.parse(JSON.stringify(validPageJson));
+                invalidPage.comments[0].pageComment.comment.depth = 1; // Should be 0 for posts
+
+                // Update the commentUpdate.cid to match the modified comment
+                invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(invalidPage.comments[0].pageComment.comment)
+                );
+
+                try {
+                    await subplebbit.posts.validatePage(invalidPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(
+                        messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE
+                    );
+                }
+            });
+
+            it("fails validation when a post has parentCid defined", async () => {
+                const invalidPage = JSON.parse(JSON.stringify(validPageJson));
+                invalidPage.comments[0].pageComment.comment.parentCid = "QmInvalidParentCid"; // Should be undefined for posts
+
+                // Update the commentUpdate.cid to match the modified comment
+                invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(invalidPage.comments[0].pageComment.comment)
+                );
+
+                try {
+                    await subplebbit.posts.validatePage(invalidPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT);
+                }
+            });
+
+            it("validates posts pages differently than replies pages", async () => {
+                // Get a post with replies
+
+                const post = await plebbit.getComment(newPost.cid);
+                await post.update();
+                await resolveWhenConditionIsTrue(post, () => post.replies?.pageCids?.topAll);
+                await post.stop();
+
+                // Get a replies page
+                const repliesPage = await post.replies.getPage(post.replies.pageCids.topAll);
+
+                // This should fail because we're using a replies page with posts.validatePage
+                try {
+                    await subplebbit.posts.validatePage(repliesPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT);
+                }
+            });
+
+            it("validates empty pages (no comments)", async () => {
+                // Create an empty page
+                const emptyPage = {
+                    ...validPageJson,
+                    comments: []
+                };
+
+                // Empty pages should be valid
+                await subplebbit.posts.validatePage(emptyPage);
+            });
+        });
     });
 
     describe("comment.replies", async () => {
