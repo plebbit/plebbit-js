@@ -155,7 +155,7 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
         return finalJson;
     });
 
-    return { comments: finalComments, nextCid: pageIpfs.nextCid };
+    return { comments: finalComments, ...remeda.pick(pageIpfs, ["nextCid"]) };
 }
 
 export function parsePagesIpfs(pagesRaw: PagesTypeIpfs): Omit<PagesTypeJson, "clients"> {
