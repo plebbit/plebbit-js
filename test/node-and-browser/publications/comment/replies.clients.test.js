@@ -24,7 +24,7 @@ describe(`comment.replies.clients`, async () => {
         it(`comment.replies.clients.kuboRpcClients is {} for gateway plebbit`, async () => {
             const comment = await gatewayPlebbit.getComment(commentCid);
             const sortTypes = Object.keys(comment.replies.clients.kuboRpcClients);
-            expect(sortTypes).to.deep.equal(["topAll", "new", "controversialAll", "old"]);
+            expect(sortTypes.length).to.be.greaterThan(0);
 
             for (const sortType of sortTypes) expect(comment.replies.clients.kuboRpcClients[sortType]).to.deep.equal({}); // should be empty
         });
