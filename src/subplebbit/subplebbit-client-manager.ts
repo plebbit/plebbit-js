@@ -328,11 +328,17 @@ export class SubplebbitClientsManager extends ClientsManager {
             ) => {
                 if (typeof gatewayRes.resText !== "string") throw Error("Gateway response has no body");
                 // get ipfs cid of IPNS from header or calculate it
-                const subCid = await this.calculateIpfsCid(gatewayRes.resText); // cid v0
-                if (subCid !== gatewayRes.res.headers.get("x-ipfs-roots"))
+                const calculatedSubCidFromBody = await this.calculateIpfsCid(gatewayRes.resText); // cid v0
+
+                this._updateCidsAlreadyLoaded.add(calculatedSubCidFromBody);
+
+                const subCidFromResponseHeader = gatewayRes.res.headers.get("x-ipfs-roots")
+                    ? CID.parse(gatewayRes.res.headers.get("x-ipfs-roots")!).toV0().toString()
+                    : undefined;
+                if (subCidFromResponseHeader && calculatedSubCidFromBody !== subCidFromResponseHeader)
                     throw new PlebbitError("ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS", {
-                        "header-x-ipfs-roots": gatewayRes.res.headers.get("x-ipfs-roots"),
-                        "calculated-x-ipfs-roots": subCid,
+                        "header-x-ipfs-roots": subCidFromResponseHeader,
+                        "calculated-x-ipfs-roots": calculatedSubCidFromBody,
                         bodyText: gatewayRes.resText
                     });
 
@@ -342,17 +348,16 @@ export class SubplebbitClientsManager extends ClientsManager {
                         parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
                     );
                 } catch (e) {
-                    (<PlebbitError>e).details.cidOfSubIpns = subCid;
+                    (<PlebbitError>e).details.cidOfSubIpns = calculatedSubCidFromBody;
                     throw e;
                 }
-                const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, subCid);
+                const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName, calculatedSubCidFromBody);
                 if (errorWithinRecord) {
                     delete errorWithinRecord["stack"];
                     throw errorWithinRecord;
                 } else {
                     gatewayFetches[gatewayUrl].subplebbitRecord = subIpfs;
-                    gatewayFetches[gatewayUrl].cid = subCid;
-                    this._updateCidsAlreadyLoaded.add(subCid);
+                    gatewayFetches[gatewayUrl].cid = calculatedSubCidFromBody;
                 }
             };
 
@@ -360,33 +365,12 @@ export class SubplebbitClientsManager extends ClientsManager {
                 const ipnsCidFromGateway = res.headers.get("x-ipfs-roots")
                     ? CID.parse(res.headers.get("x-ipfs-roots")!).toV0().toString()
                     : undefined;
-                const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
-                if (curSubUpdateCid && ipnsCidFromGateway === curSubUpdateCid) {
-                    // this gateway responded with a subplebbit IPFS we already have
-                    // we will abort and stop it from consuming the body
-                    const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID", {
-                        ipnsCidFromGatewayHeaders: ipnsCidFromGateway
-                    });
-
-                    return error;
-                }
-
-                const lastInvalidSubCid =
-                    this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
-                if (lastInvalidSubCid && ipnsCidFromGateway === lastInvalidSubCid) {
-                    const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD", {
-                        ipnsCidFromGatewayHeaders: ipnsCidFromGateway
-                    });
-                    // this gateway responded with a subplebbit whose record we know to be invalid
-                    return error;
-                }
-
                 if (ipnsCidFromGateway && this._updateCidsAlreadyLoaded.has(ipnsCidFromGateway)) {
                     // an old update cid we don't need anymore
                     const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
                         ipnsCidFromGatewayHeaders: ipnsCidFromGateway
                     });
-                    // this gateway responded with a subplebbit whose record we know to be invalid
+                    // this gateway responded with a subplebbit whose record we already loaded before
                     return error;
                 }
             };
