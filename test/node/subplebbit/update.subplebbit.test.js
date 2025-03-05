@@ -25,7 +25,7 @@ describe(`subplebbit.update - Local subs`, async () => {
 
         const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));
         await recreatedSub.update();
-        await publishRandomPost(recreatedSub.address, plebbit, {}, false);
+        await publishRandomPost(recreatedSub.address, plebbit);
         await resolveWhenConditionIsTrue(recreatedSub, () => recreatedSub.updatedAt !== oldUpdatedAt);
         expect(recreatedSub.updatedAt).to.be.greaterThan(oldUpdatedAt);
         await recreatedSub.stop();
