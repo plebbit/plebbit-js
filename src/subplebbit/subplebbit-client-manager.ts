@@ -270,16 +270,13 @@ export class SubplebbitClientsManager extends ClientsManager {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         this.updateIpfsState("fetching-ipns");
         const latestSubplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
-
-        const curSubUpdateCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?.updateCid;
-        // need to check if subplebbitCid === sub.updateCid
-        if (curSubUpdateCid && latestSubplebbitCid === curSubUpdateCid) {
-            log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit.updateCid. No need to fetch its ipfs");
-            return undefined;
-        }
-        const lastInvalidSubCid = this._plebbit._updatingSubplebbits[this._getSubplebbitAddressFromInstance()]?._lastInvalidSubplebbitCid;
-        if (lastInvalidSubCid && latestSubplebbitCid === lastInvalidSubCid) {
-            log.trace("Resolved subplebbit IPNS", ipnsName, "to the same subplebbit._lastInvalidSubplebbitCid. No need to fetch its ipfs");
+        if (this._updateCidsAlreadyLoaded.has(latestSubplebbitCid)) {
+            log.trace(
+                "Resolved subplebbit IPNS",
+                ipnsName,
+                "to a cid that we already loaded before. No need to fetch its ipfs",
+                latestSubplebbitCid
+            );
             return undefined;
         }
 
@@ -288,6 +285,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
         const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, { maxFileSizeBytes: 1024 * 1024 });
 
+        this._updateCidsAlreadyLoaded.add(latestSubplebbitCid);
         try {
             const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
                 parseJsonWithPlebbitErrorIfFails(rawSubJsonString)
@@ -330,6 +328,14 @@ export class SubplebbitClientsManager extends ClientsManager {
                 // get ipfs cid of IPNS from header or calculate it
                 const calculatedSubCidFromBody = await this.calculateIpfsCid(gatewayRes.resText); // cid v0
 
+                if (this._updateCidsAlreadyLoaded.has(calculatedSubCidFromBody))
+                    throw new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
+                        calculatedSubCidFromBody,
+                        ipnsName,
+                        gatewayRes,
+                        gatewayUrl
+                    });
+
                 this._updateCidsAlreadyLoaded.add(calculatedSubCidFromBody);
 
                 const subCidFromResponseHeader = gatewayRes.res.headers.get("x-ipfs-roots")
@@ -339,7 +345,9 @@ export class SubplebbitClientsManager extends ClientsManager {
                     throw new PlebbitError("ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS", {
                         "header-x-ipfs-roots": subCidFromResponseHeader,
                         "calculated-x-ipfs-roots": calculatedSubCidFromBody,
-                        bodyText: gatewayRes.resText
+                        bodyText: gatewayRes.resText,
+                        gatewayRes,
+                        gatewayUrl
                     });
 
                 let subIpfs: SubplebbitIpfsType;
@@ -473,12 +481,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
             const allGatewaysAborted = Object.keys(gatewayFetches)
                 .map((gatewayUrl) => gatewayFetches[gatewayUrl].error?.code)
-                .every(
-                    (errCode) =>
-                        errCode === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID" ||
-                        errCode === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD" ||
-                        errCode === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD"
-                );
+                .every((errCode) => errCode === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD");
             if (allGatewaysAborted) return undefined; // all gateways returned old update cids we already consumed
 
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({
