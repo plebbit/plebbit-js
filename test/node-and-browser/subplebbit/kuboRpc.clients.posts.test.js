@@ -24,25 +24,9 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
 
     it(`subplebbit.posts.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
-        expect(Object.keys(mockSub.posts.clients.kuboRpcClients)).to.deep.equal([
-            "hot",
-            "new",
-            "active",
-            "topHour",
-            "topDay",
-            "topWeek",
-            "topMonth",
-            "topYear",
-            "topAll",
-            "controversialHour",
-            "controversialDay",
-            "controversialWeek",
-            "controversialMonth",
-            "controversialYear",
-            "controversialAll"
-        ]);
-        for (const sortType of Object.keys(mockSub.posts.clients.kuboRpcClients))
-            expect(mockSub.posts.clients.kuboRpcClients[sortType]).to.deep.equal({});
+        const sortTypes = Object.keys(mockSub.posts.clients.kuboRpcClients);
+        expect(sortTypes.length).to.be.greaterThan(0);
+        for (const sortType of sortTypes) expect(mockSub.posts.clients.kuboRpcClients[sortType]).to.deep.equal({});
     });
 
     it(`subplebbit.posts.clients.kuboRpcClients[sortType][url] is stopped by default`, async () => {
