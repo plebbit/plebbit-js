@@ -1129,6 +1129,7 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
 
     delete sub._rawSubplebbitIpfs;
     delete sub.updatedAt;
+    sub._clientsManager._updateCidsAlreadyLoaded.clear();
     delete sub.updateCid;
     const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
