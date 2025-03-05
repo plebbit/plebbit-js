@@ -8,7 +8,6 @@ import {
 
 import signers from "../../../fixtures/signers";
 import Sinon from "sinon";
-import * as util from "../../../../dist/node/constants";
 import chai from "chai";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import chaiAsPromised from "chai-as-promised";
@@ -58,8 +57,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
             transport: http()
         });
         viemMaticFake["verifyMessage"] = viemEthFake["verifyMessage"] = actualViemClient.verifyMessage;
-        util._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]] = viemEthFake;
-        util._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]] = viemMaticFake;
+
+        plebbit._domainResolver._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]] = viemEthFake;
+        plebbit._domainResolver._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]] = viemMaticFake;
 
         sub = await plebbit.createSubplebbit();
         await sub.edit({ settings });
@@ -74,8 +74,8 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
     after(async () => {
         await sub.delete();
         viemSandbox.restore();
-        delete util._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]];
-        delete util._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]];
+        delete plebbit._domainResolver._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]];
+        delete plebbit._domainResolver._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]];
     });
     it(`A wallet with over 1000 PLEB passes the challenge`, async () => {
         const authorSigner = await plebbit.createSigner();
