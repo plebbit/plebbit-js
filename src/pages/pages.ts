@@ -149,7 +149,8 @@ export class RepliesPages extends BasePages {
                 parentComment: this._parentComment
             });
 
-        const baseDepth = this._parentComment.depth + 1;
+        if (pageIpfs.comments.length === 0) return;
+        const baseDepth = pageIpfs.comments[0].comment?.depth;
         const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
         const verificationOpts = {
             pageCid,
@@ -200,6 +201,7 @@ export class PostsPages extends BasePages {
     }
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
+        if (pageIpfs.comments.length === 0) return;
         const verificationOpts = {
             pageCid,
             page: pageIpfs,
