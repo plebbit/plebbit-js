@@ -24,7 +24,7 @@ export class DomainResolver {
         await Promise.all(
             Object.values(this._viemClients).map(async (viemClient) => {
                 const transport = viemClient.transport;
-                if (transport.type === "webSocket") {
+                if (transport?.type === "webSocket") {
                     // it's a websocket
                     const rpcClient = await transport.getRpcClient();
                     rpcClient.close();
