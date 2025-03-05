@@ -16,6 +16,7 @@ import { expect } from "chai";
 import signers from "../fixtures/signers.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { messages } from "../../dist/node/errors.js";
 
 let subplebbit;
 const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
@@ -225,7 +226,7 @@ getRemotePlebbitConfigs().map((config) => {
             });
         });
 
-        describe("comment.replies", async () => {
+        describe.only("comment.replies", async () => {
             let postsWithReplies;
             let postWithNestedReplies;
             let firstLevelReply, secondLevelReply, thirdLevelReply;
@@ -257,12 +258,14 @@ getRemotePlebbitConfigs().map((config) => {
                 .filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat)
                 .map((flatSortName) =>
                     it(`flat sort (${flatSortName}) has no replies field within its comments`, async () => {
-                        const commentInstance = await plebbit.createComment({ cid: postWithNestedReplies.cid });
-                        await commentInstance.update();
-                        await resolveWhenConditionIsTrue(commentInstance, () => typeof commentInstance.updatedAt === "number");
-                        await commentInstance.stop();
+                        await postWithNestedReplies.update();
+                        await resolveWhenConditionIsTrue(postWithNestedReplies, () => typeof postWithNestedReplies.updatedAt === "number");
+                        await postWithNestedReplies.stop();
 
-                        const flatReplies = await loadAllPages(commentInstance.replies.pageCids[flatSortName], commentInstance.replies);
+                        const flatReplies = await loadAllPages(
+                            postWithNestedReplies.replies.pageCids[flatSortName],
+                            postWithNestedReplies.replies
+                        );
                         // Verify all published replies are present in flatReplies
                         const flatRepliesCids = flatReplies.map((reply) => reply.cid);
                         expect(flatRepliesCids).to.include(firstLevelReply.cid);
@@ -286,6 +289,54 @@ getRemotePlebbitConfigs().map((config) => {
                             expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
                         }
                     }
+                }
+            });
+
+            it(`replies.validatePage will throw if any comment is invalid`, async () => {
+                const plebbit = await config.plebbitInstancePromise({ validatePages: false });
+
+                const pageWithInvalidComment = await postWithNestedReplies.replies.getPage(postWithNestedReplies.replies.pageCids.new);
+                pageWithInvalidComment.comments[0].pageComment.comment.content = "this is to invalidate signature";
+
+                const post = await plebbit.getComment(postWithNestedReplies.cid);
+                try {
+                    await post.replies.validatePage(pageWithInvalidComment);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_REPLIES_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+                }
+            });
+            it(`replies.validatePage will throw if any comment is not of the same post`, async () => {
+                const plebbit = await config.plebbitInstancePromise({ validatePages: false });
+
+                const pageWithInvalidComment = await postWithNestedReplies.replies.getPage(postWithNestedReplies.replies.pageCids.new);
+                pageWithInvalidComment.comments[0].pageComment.comment.postCid += "1"; // will be a different post cid
+
+                const post = await plebbit.getComment(postWithNestedReplies.cid);
+                try {
+                    await post.replies.validatePage(pageWithInvalidComment);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_REPLIES_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(
+                        messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE
+                    );
+                }
+            });
+
+            it(`replies.validatePage will throw if postCid not defined on the parent comment`, async () => {
+                const plebbit = await config.plebbitInstancePromise({ validatePages: false });
+
+                const pageWithInvalidComment = await postWithNestedReplies.replies.getPage(postWithNestedReplies.replies.pageCids.new);
+
+                const post = await plebbit.getComment(postWithNestedReplies.cid);
+                delete post.postCid;
+                try {
+                    await post.replies.validatePage(pageWithInvalidComment);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID");
                 }
             });
         });
