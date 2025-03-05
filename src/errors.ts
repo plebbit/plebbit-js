@@ -148,11 +148,14 @@ export enum messages {
     ERR_PAGE_COMMENT_IS_NESTED_BUT_HAS_NO_PARENT_COMMENT_INSTANCE = "Page comment is a reply but has no parent comment instance cid",
     ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT = "Page comment is a reply with a depth that's not relative to its direct parent",
     ERR_PAGE_COMMENT_PARENT_DOES_NOT_EXIST_IN_FLAT_PAGE = "The parent of a comment in a flat page does not exist",
-    ERR_PAGE_COMMENT_POST_CID_IS_NOT_CORRECT = "The post cid of reply in page is not correct",
+    ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE = "The post cid of reply in page is different than the post cid of the comment instance. Did the subplebbit instance put the wrong reply in this page?",
     ERR_REPLY_IN_FLAT_PAGE_HAS_NO_PARENT_CID = "Reply in flat page has no parent CID",
     ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID = "Unable to derive post cid from page comment while verifying page",
     ERR_POSTS_PAGE_IS_INVALID = "The page of posts is invalid",
     ERR_REPLIES_PAGE_IS_INVALID = "The page of replies is invalid",
+    ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID = "User attempted to validate replies page without providing parent comment cid. Make sure parent comment is properly loaded",
+    ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH = "User attempted to validate replies page without providing parent comment depth. Make sure parent comment is properly loaded",
+    ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID = "User attempted to validate replies page without providing parent comment post cid. Make sure parent comment is properly loaded",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",

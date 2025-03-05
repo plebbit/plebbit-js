@@ -76,10 +76,10 @@ export class BasePages {
     }
 
     // method below will be present in both subplebbit.posts and comment.replies
-    async validatePage({ comments }: { comments: PageIpfs["comments"] | PageTypeJson["comments"] }) {
+    async validatePage(page: PageIpfs | PageTypeJson) {
         if (this._clientsManager._plebbit.validatePages)
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
-        const pageIpfs = <PageIpfs>{ comments: comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
+        const pageIpfs = <PageIpfs>{ comments: page.comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
 
         await this._validatePage(pageIpfs);
     }
@@ -128,9 +128,26 @@ export class RepliesPages extends BasePages {
     }
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
-        if (!this._parentComment?.cid) throw Error("Parent comment cid is not defined");
-        if (typeof this._parentComment?.depth !== "number") throw Error("Parent comment depth is not defined");
-        if (!this._parentComment?.postCid) throw Error("Post cid is not defined");
+        if (!this._parentComment?.cid)
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID", {
+                pageIpfs,
+                pageCid,
+                parentComment: this._parentComment
+            });
+
+        if (typeof this._parentComment?.depth !== "number")
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH", {
+                pageIpfs,
+                parentComment: this._parentComment,
+                pageCid
+            });
+
+        if (!this._parentComment?.postCid)
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID", {
+                pageIpfs,
+                pageCid,
+                parentComment: this._parentComment
+            });
 
         const baseDepth = this._parentComment.depth + 1;
         const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
@@ -140,7 +157,7 @@ export class RepliesPages extends BasePages {
             resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,
             subplebbit: this._subplebbit,
-            parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid }, // if it's a flat page, we don't need to verify the parent comment
+            parentComment: isUniformDepth ? this._parentComment : { postCid: this._parentComment.postCid }, // if it's a flat page, we don't need to verify the parent comment. Only the post
             overrideAuthorAddressIfInvalid: true,
             validatePages: this._clientsManager._plebbit.validatePages,
             validateUpdateSignature: false // no need because we verified that page cid matches its content

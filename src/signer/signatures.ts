@@ -863,7 +863,7 @@ export async function verifyPageComment({
         return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
 
     if ("postCid" in parentComment && pageComment.comment.postCid !== parentComment.postCid)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_CORRECT };
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
 
     const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
 
