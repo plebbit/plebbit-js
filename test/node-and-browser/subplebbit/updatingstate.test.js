@@ -6,7 +6,9 @@ import {
     mockGatewayPlebbit,
     itSkipIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    publishSubplebbitRecordWithExtraProp
+    publishSubplebbitRecordWithExtraProp,
+    mockPlebbitToReturnSpecificSubplebbit,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -165,5 +167,82 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         for (const waitingRetryError of waitingRetryErrors)
             expect(waitingRetryError.code).to.equal("ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD");
+    });
+
+    it(`updatingState is correct when we attempt to update a subplebbit with invalid record, if we're updating with an ipfs client`, async () => {
+        const kuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+
+        // Create a subplebbit with a valid address
+        const subplebbit = await kuboPlebbit.createSubplebbit({ address: signers[0].address });
+
+        // Mock the subplebbit to return an invalid record
+        const invalidSubplebbitRecord = { address: subplebbit.address }; // Missing required fields will fail validation
+
+        const recordedUpdatingStates = [];
+        const errors = [];
+
+        subplebbit.on("updatingstatechange", (newState) => recordedUpdatingStates.push(newState));
+        subplebbit.on("error", (err) => errors.push(err));
+
+        // First update should succeed with the initial valid record
+        await subplebbit.update();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number"); // wait until the subplebbit is updated
+
+        const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
+        await mockPlebbitToReturnSpecificSubplebbit(kuboPlebbit, subplebbit.address, invalidSubplebbitRecord);
+
+        await errorPromise;
+
+        await subplebbit.stop();
+
+        // Expected states for initial update and then the invalid update attempt
+        const expectedUpdatingStates = [
+            "fetching-ipns",
+            "fetching-ipfs",
+            "succeeded",
+            "fetching-ipns",
+            "fetching-ipfs",
+            "failed",
+            "stopped"
+        ];
+
+        expect(recordedUpdatingStates).to.deep.equal(expectedUpdatingStates);
+        expect(errors.length).to.equal(1);
+        expect(errors[0].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+    });
+
+    it(`updatingState is correct when we attempt to update a subplebbit with invalid record, if we're updating with an ipfs gateways`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
+
+        // Create a subplebbit with a valid address
+        const subplebbit = await gatewayPlebbit.createSubplebbit({ address: signers[0].address });
+
+        // Mock the subplebbit to return an invalid record
+        const invalidSubplebbitRecord = { address: "1234.eth" }; // This will fail validation
+
+        const recordedUpdatingStates = [];
+        const errors = [];
+
+        subplebbit.on("updatingstatechange", (newState) => recordedUpdatingStates.push(newState));
+        subplebbit.on("error", (err) => errors.push(err));
+
+        // First update should succeed with the initial valid record
+        await subplebbit.update();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number"); // wait until the subplebbit is updated
+
+        const errorPromise = new Promise((resolve) => subplebbit.once("error", resolve));
+        await mockPlebbitToReturnSpecificSubplebbit(gatewayPlebbit, subplebbit.address, invalidSubplebbitRecord);
+
+        await errorPromise;
+
+        await subplebbit.stop();
+
+        // Expected states for initial update and then the invalid update attempt
+        const expectedUpdatingStates = ["fetching-ipns", "succeeded", "fetching-ipns", "failed", "stopped"];
+
+        expect(recordedUpdatingStates).to.deep.equal(expectedUpdatingStates);
+        expect(errors.length).to.equal(1);
+        expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+        expect(errors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
     });
 });
