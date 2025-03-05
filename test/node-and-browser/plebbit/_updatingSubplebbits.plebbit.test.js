@@ -15,7 +15,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.a("object");
-
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs).to.deep.equal(sub._rawSubplebbitIpfs);
             await sub.stop();
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
@@ -36,6 +36,11 @@ getRemotePlebbitConfigs().map((config) => {
             // all subs have received an update event now
             expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.be.a("number");
             expect(plebbit._updatingSubplebbits[subplebbitAddress].state).to.equal("updating");
+
+            // Check that plebbit._updatingSubplebbits has the latest updatedAt
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.equal(sub1.updatedAt);
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.equal(sub2.updatedAt);
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.equal(sub3.updatedAt);
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(3);
 
@@ -60,8 +65,24 @@ getRemotePlebbitConfigs().map((config) => {
             await sub1.update();
             await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
 
+            // Verify that _updatingSubplebbits has the same updatedAt as sub1
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt).to.equal(sub1.updatedAt);
+
+            // Verify that _updatingSubplebbits has _rawSubplebbitIpfs if sub1 has it
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs).to.deep.equal(sub1._rawSubplebbitIpfs);
+
             const sub2 = await plebbit.createSubplebbit({ address: subplebbitAddress });
             expect(sub2.updatedAt).to.be.a("number");
+
+            // Verify that sub2 has the same updatedAt as _updatingSubplebbits
+            expect(sub2.updatedAt).to.equal(plebbit._updatingSubplebbits[subplebbitAddress].updatedAt);
+
+            expect(sub2.updatedAt).to.equal(sub1.updatedAt);
+
+            // Verify that sub2 has _rawSubplebbitIpfs if _updatingSubplebbits has it
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs).to.deep.equal(sub2._rawSubplebbitIpfs);
 
             await sub1.stop();
             await new Promise((resolve) => setTimeout(resolve, 500));
@@ -84,7 +105,14 @@ getRemotePlebbitConfigs().map((config) => {
             const comment1 = await plebbit.createComment({ cid: commentCid });
             await comment1.update();
             await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
+
+            // Verify that _updatingSubplebbits exists and has the expected properties
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
             expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1);
+
+            // Verify that _updatingSubplebbits has _rawSubplebbitIpfs if it should
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs).to.exist;
 
             await comment1.stop();
             const updatingSubInstance = plebbit._updatingSubplebbits[subplebbitAddress];
@@ -109,13 +137,26 @@ getRemotePlebbitConfigs().map((config) => {
             const updatingCommentInstance = plebbit._updatingComments[comment1.cid];
             expect(updatingCommentInstance).to.exist;
             expect(updatingCommentInstance._subplebbitForUpdating).to.be.a("object");
+
+            // Verify that _updatingSubplebbits exists and has the expected properties
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
             expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1);
+
+            // Verify that _subplebbitForUpdating.subplebbit and _updatingSubplebbits[address] have the same _rawSubplebbitIpfs state
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs).to.deep.equal(
+                updatingCommentInstance._subplebbitForUpdating?.subplebbit?._rawSubplebbitIpfs
+            );
 
             await comment2.update();
             await resolveWhenConditionIsTrue(comment2, () => typeof comment2.updatedAt === "number");
             expect(updatingCommentInstance._subplebbitForUpdating).to.be.a("object");
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress].listenerCount("update")).to.equal(1); // should not change
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]._rawSubplebbitIpfs).to.deep.equal(
+                updatingCommentInstance._subplebbitForUpdating?.subplebbit?._rawSubplebbitIpfs
+            );
 
             await comment1.stop();
 
