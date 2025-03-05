@@ -19,7 +19,12 @@ import { v4 as uuidV4 } from "uuid";
 import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, RemoteSubplebbitJson } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
+import type {
+    CommentIpfsWithCidDefined,
+    CommentIpfsWithCidPostCidDefined,
+    CommentWithinPageJson,
+    CreateCommentOptions
+} from "../publications/comment/types.js";
 import {
     signComment,
     _signJson,
@@ -1124,17 +1129,21 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     delete sub._rawSubplebbitIpfs;
     delete sub.updatedAt;
     delete sub.updateCid;
+    const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
         const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
         //@ts-expect-error
-        sub._clientsManager._fetchWithLimit = (...args) => {
+        sub._clientsManager._fetchWithLimit = async (...args) => {
             const url = args[0];
             if (url.includes("ipns")) {
-                return { resText: JSON.stringify(subplebbitRecord) };
+                return {
+                    ...args,
+                    resText: JSON.stringify(subplebbitRecord),
+                    res: { headers: { get: (headerName: string) => (headerName === "x-ipfs-roots" ? subplebbitRecordCid : undefined) } }
+                };
             } else return originalFetch(...args);
         };
     } else {
-        const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
         // we're using kubo/helia
         sub._clientsManager.resolveIpnsToCidP2P = async () => subplebbitRecordCid;
     }
@@ -1200,4 +1209,16 @@ export function mockViemClientGetEnsText({
 
     //@ts-expect-error - Accessing internal property
     plebbit._domainResolver._viemClients[viemClientKey].getEnsText = mockFunction;
+}
+
+export function processAllCommentsRecursively(
+    comments: (Comment | CommentWithinPageJson)[] | undefined,
+    processor: (comment: Comment | CommentWithinPageJson) => void
+): void {
+    if (!comments || comments.length === 0) return;
+
+    comments.forEach((comment) => processor(comment));
+
+    for (const comment of comments)
+        if (comment.replies?.pages?.topAll?.comments) processAllCommentsRecursively(comment.replies.pages.topAll.comments, processor);
 }

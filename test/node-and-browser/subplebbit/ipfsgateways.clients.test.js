@@ -3,7 +3,13 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { describeSkipIfRpc, publishRandomPost, mockGatewayPlebbit, mockPlebbit } from "../../../dist/node/test/test-util.js";
+import {
+    describeSkipIfRpc,
+    publishRandomPost,
+    mockGatewayPlebbit,
+    mockPlebbit,
+    mockPlebbitToReturnSpecificSubplebbit
+} from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -64,6 +70,11 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
+        let updateCount = 0;
+        sub.on("update", () => updateCount++);
+        let waitingRetryCount = 0;
+        sub.on("waiting-retry", () => waitingRetryCount++);
+
         const recordedStates = [];
         const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
         sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
@@ -73,15 +84,15 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();
         await updatePromise;
+        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, sub.toJSONIpfs());
 
-        const updatingSubInstance = customPlebbit._updatingSubplebbits[sub.address];
-
-        updatingSubInstance._clientsManager.resolveIpnsToCidP2P = () => sub.updateCid; // stop it from loading new IPNS
-
-        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+        const expectedWaitingRetryCount = 4;
+        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * expectedWaitingRetryCount));
 
         await sub.stop();
 
+        expect(updateCount).to.equal(1); // it shouldn't emit an update for the same subplebbit record
+        expect(waitingRetryCount).to.equal(expectedWaitingRetryCount);
         // should be just ["fetching-ipns", "stopped"]
         // because it can't find a new record
         for (let i = 0; i < recordedStates.length; i += 2) {
@@ -90,5 +101,57 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         }
     });
 
-    it(`Correct order of ipfs gateway states when we update a subplebbit with invalid record`);
+    it(`Correct order of ipfs gateway states when we update a subplebbit with invalid record`, async () => {
+        const customPlebbit = await mockGatewayPlebbit();
+
+        const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+
+        let updateCount = 0;
+        sub.on("update", () => updateCount++);
+
+        let waitingRetryCount = 0;
+        sub.on("waiting-retry", () => waitingRetryCount++);
+
+        const emittedErrors = [];
+        sub.on("error", (error) => emittedErrors.push(error));
+
+        // Record states for verification
+        const recordedStates = [];
+        const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
+        sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
+
+        // First update to get a valid record
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await updatePromise;
+
+        const validRecord = sub.toJSONIpfs();
+        const invalidRecord = { ...validRecord, rules: ["1234"] }; // new rules should invalidate the record
+
+        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, invalidRecord);
+
+        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+
+        await sub.stop();
+
+        // verifying states for the first correct update
+        expect(recordedStates.slice(0, 2)).to.deep.equal(["fetching-ipns", "stopped"]);
+
+        // verifying states for the first error
+        expect(recordedStates.slice(2, 4)).to.deep.equal(["fetching-ipns", "stopped"]);
+
+        // verifying states for the waiting retries, because it can't find a new record
+        for (let i = 0; i < recordedStates.length; i += 2) {
+            expect(recordedStates[i]).to.equal("fetching-ipns");
+            expect(recordedStates[i + 1]).to.equal("stopped");
+        }
+
+        // Verify the counts of various events
+        expect(emittedErrors.length).to.be.at.least(1);
+        expect(emittedErrors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+        expect(emittedErrors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+
+        expect(waitingRetryCount).to.be.greaterThan(0);
+        expect(updateCount).to.equal(1); // Only the first update should succeed
+    });
 });
