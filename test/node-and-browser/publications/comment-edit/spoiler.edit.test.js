@@ -89,14 +89,16 @@ getRemotePlebbitConfigs().map((config) => {
             });
             expect(commentIpfsValidity).to.deep.equal({ valid: true });
 
-            const commentUpdateValidity = await verifyCommentUpdate(
-                recreatedPost._rawCommentUpdate,
-                true,
-                recreatedPost._clientsManager,
-                recreatedPost.subplebbitAddress,
-                { cid: recreatedPost.cid, signature: recreatedPost.signature },
-                false
-            );
+            const commentUpdateValidity = await verifyCommentUpdate({
+                update: recreatedPost._rawCommentUpdate,
+                resolveAuthorAddresses: true,
+                clientsManager: recreatedPost._clientsManager,
+                subplebbit: { address: recreatedPost.subplebbitAddress },
+                comment: recreatedPost,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: true,
+                validateUpdateSignature: true
+            });
             expect(commentUpdateValidity).to.deep.equal({ valid: true });
         });
 
