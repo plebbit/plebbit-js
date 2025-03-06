@@ -10,13 +10,13 @@ import {
     publishRandomReply,
     resolveWhenConditionIsTrue,
     waitTillReplyInParentPages
-} from "../../dist/node/test/test-util.js";
-import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
+} from "../../../dist/node/test/test-util.js";
+import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import { expect } from "chai";
-import signers from "../fixtures/signers.js";
+import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { messages } from "../../dist/node/errors.js";
+import { messages } from "../../../dist/node/errors.js";
 
 let subplebbit;
 const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
