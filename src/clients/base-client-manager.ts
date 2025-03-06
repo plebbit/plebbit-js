@@ -491,19 +491,24 @@ export class BaseClientsManager {
     }
 
     // TODO rename this to _fetchPathP2P
-    async _fetchCidP2P(cid: string, loadOpts: { maxFileSizeBytes: number }): Promise<string> {
+    async _fetchCidP2P(cidV0: string, loadOpts: { maxFileSizeBytes: number }): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
 
         const fetchPromise = async () => {
-            const rawData = await all(ipfsClient._client.cat(cid, { length: loadOpts.maxFileSizeBytes })); // Limit is 1mb files
+            const rawData = await all(ipfsClient._client.cat(cidV0, { length: loadOpts.maxFileSizeBytes })); // Limit is 1mb files
             const data = uint8ArrayConcat(rawData);
             const fileContent = uint8ArrayToString(data);
 
-            if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
-            if (fileContent.length === loadOpts.maxFileSizeBytes) {
+            if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cidV0, loadOpts });
+            if (data.byteLength === loadOpts.maxFileSizeBytes) {
                 const calculatedCid: string = await calculateIpfsHash(fileContent);
-                if (calculatedCid !== cid)
-                    throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, loadOpts, fileContentLength: fileContent.length, calculatedCid });
+                if (calculatedCid !== cidV0)
+                    throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", {
+                        cid: cidV0,
+                        loadOpts,
+                        fileContentLength: data.byteLength,
+                        calculatedCid
+                    });
             }
             return fileContent;
         };
