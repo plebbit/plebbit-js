@@ -1,20 +1,8 @@
 import { expect } from "chai";
-import {
-    mockPlebbit,
-    addStringToIpfs,
-    mockGatewayPlebbit,
-    getRemotePlebbitConfigs,
-    isPlebbitFetchingUsingGateways
-} from "../../../dist/node/test/test-util.js";
+import { addStringToIpfs, getRemotePlebbitConfigs, isPlebbitFetchingUsingGateways } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const validPageFixturePath = path.join(__dirname, "../fixtures/valid_page.json");
-const validPageFixture = JSON.parse(fs.readFileSync(validPageFixturePath, "utf8"));
+import validPageFixture from "../../fixtures/valid_page.json" assert { type: "json" };
 
 const subplebbitAddress = signers[0].address;
 
