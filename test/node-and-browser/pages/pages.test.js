@@ -8,6 +8,7 @@ import {
     getRemotePlebbitConfigs,
     waitTillPostInSubplebbitPages,
     publishRandomReply,
+    isPlebbitFetchingUsingGateways,
     resolveWhenConditionIsTrue,
     waitTillReplyInParentPages
 } from "../../../dist/node/test/test-util.js";
@@ -224,6 +225,35 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
+        it("posts.getPage will throw a timeout error when request times out", async () => {
+            // Create a plebbit instance with a very short timeout for page-ipfs
+            const plebbit = await mockPlebbit({ validatePages: false });
+
+            plebbit._timeouts["page-ipfs"] = 100;
+
+            // Create a comment with a CID that doesn't exist or will time out
+            const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
+
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+
+            // Override the pageCid to use our non-existent CID
+            sub.posts.pageCids.hot = nonExistentCid;
+
+            try {
+                // This should time out
+                await sub.posts.getPage(nonExistentCid);
+                expect.fail("Should have timed out");
+            } catch (e) {
+                if (isPlebbitFetchingUsingGateways(plebbit)) {
+                    expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
+                    for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
+                        expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                } else {
+                    expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
+                }
+            }
+        });
+
         describe(`subplebbit.posts.validatePage - ${config.name}`, async () => {
             let plebbit, subplebbit, validPageJson, newPost;
 
@@ -339,7 +369,7 @@ getRemotePlebbitConfigs().map((config) => {
                 }
             });
 
-            it("validates empty pages (no comments)", async () => {
+            it("validates empty posts pages (no comments)", async () => {
                 // Create an empty page
                 const emptyPage = {
                     ...validPageJson,
@@ -417,6 +447,35 @@ getRemotePlebbitConfigs().map((config) => {
                         const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
                         expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
                     }
+                }
+            }
+        });
+
+        it("replies.getPage will throw a timeout error when request times out", async () => {
+            // Create a plebbit instance with a very short timeout for page-ipfs
+            const plebbit = await mockPlebbit({ validatePages: false });
+
+            plebbit._timeouts["page-ipfs"] = 100;
+
+            // Create a comment with a CID that doesn't exist or will time out
+            const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
+
+            const comment = await plebbit.getComment(postWithNestedReplies.cid);
+
+            // Override the pageCid to use our non-existent CID
+            comment.replies.pageCids.active = nonExistentCid;
+
+            try {
+                // This should time out
+                await comment.replies.getPage(nonExistentCid);
+                expect.fail("Should have timed out");
+            } catch (e) {
+                if (isPlebbitFetchingUsingGateways(plebbit)) {
+                    expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
+                    for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
+                        expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                } else {
+                    expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                 }
             }
         });
