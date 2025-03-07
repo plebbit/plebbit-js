@@ -25,6 +25,7 @@ import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
 import { measurePerformance } from "../decorator-util.js";
+import pTimeout from "p-timeout";
 
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 
@@ -47,6 +48,7 @@ export type OptionsToLoadFromGateway = {
     path?: string;
     recordPlebbitType: LoadType;
     abortController: AbortController;
+    timeoutMs: number;
     shouldAbortRequestFunc?: (res: Response) => Promise<PlebbitError | undefined>; // this is called before consuming the body of the gateway response. Can be used to abort and stop the consumption. Should provide an abort error
     validateGatewayResponseFunc: (resObj: { resText: string | undefined; res: Response }) => Promise<void>; // can throw here to trigger a failure in response
     log: Logger;
@@ -223,6 +225,7 @@ export class BaseClientsManager {
 
     // Gateway methods
 
+    @measurePerformance(30)
     async _fetchWithLimit(
         url: string,
         options: { cache: RequestCache; signal: AbortSignal } & Pick<
@@ -320,6 +323,7 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {}
 
+    @measurePerformance(50)
     async _fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid(
         url: string,
         loadOpts: Omit<OptionsToLoadFromGateway, "validateGatewayResponses">
@@ -352,6 +356,7 @@ export class BaseClientsManager {
             GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway] = true;
         }
     }
+    @measurePerformance()
     protected async _fetchWithGateway(
         gateway: string,
         loadOpts: OptionsToLoadFromGateway
@@ -407,7 +412,7 @@ export class BaseClientsManager {
     async fetchFromMultipleGateways(
         loadOpts: Omit<OptionsToLoadFromGateway, "abortController">
     ): Promise<{ resText: string; res: Response }> {
-        const timeoutMs = this._plebbit._timeouts[loadOpts.recordPlebbitType];
+        const timeoutMs = loadOpts.timeoutMs;
         const concurrencyLimit = 3;
 
         const queueLimit = pLimit(concurrencyLimit);
@@ -468,16 +473,30 @@ export class BaseClientsManager {
     }
 
     // IPFS P2P methods
-    async resolveIpnsToCidP2P(ipnsName: string): Promise<string> {
+    async resolveIpnsToCidP2P(ipnsName: string, loadOpts: { timeoutMs: number }): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
 
+        const performIpnsResolve = async () => {
+            const resolvedCidOfIpns: string | undefined = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true }));
+
+            if (!resolvedCidOfIpns)
+                throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", { resolvedCidOfIpns, ipnsName, ipfsClient, loadOpts });
+
+            return CidPathSchema.parse(resolvedCidOfIpns);
+        };
         try {
-            const cid = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true })).then(CidPathSchema.parse); // make sure we're getting a CID path /ipfs/<cid>, and then parse it to <cid>
-            return cid;
+            // Wrap the resolution function with pTimeout because kubo-rpc-client doesn't support timeout for IPNS
+            const result = await pTimeout(performIpnsResolve(), {
+                milliseconds: loadOpts.timeoutMs,
+                message: new PlebbitError("ERR_IPNS_RESOLUTION_P2P_TIMEOUT", { ipnsName, loadOpts, ipfsClient })
+            });
+
+            return result;
         } catch (error) {
-            if (error instanceof PlebbitError && error.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P") throw error;
-            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error });
+            if (error instanceof PlebbitError) throw error;
+            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error, loadOpts, ipfsClient });
         }
+
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
     }
 
@@ -536,6 +555,7 @@ export class BaseClientsManager {
         return `${domainAddress}_${txtRecord}`;
     }
 
+    @measurePerformance(30)
     private async _getCachedTextRecord(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
 
@@ -641,6 +661,7 @@ export class BaseClientsManager {
             return { error: parsedError };
         }
     }
+    @measurePerformance(50)
     private async _resolveTextRecordConcurrently(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
@@ -723,6 +744,7 @@ export class BaseClientsManager {
         throw Error("Should not reach this block within _resolveTextRecordConcurrently");
     }
 
+    @measurePerformance()
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | null> {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         if (!isStringDomain(subplebbitAddress)) return subplebbitAddress;
@@ -744,7 +766,6 @@ export class BaseClientsManager {
         this._plebbit.emit("error", e);
     }
 
-    @measurePerformance(50)
     calculateIpfsCid(content: string) {
         return calculateIpfsCidV0(content);
     }

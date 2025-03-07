@@ -182,7 +182,8 @@ export class ClientsManager extends BaseClientsManager {
                 recordPlebbitType: "generic-ipfs",
                 validateGatewayResponseFunc: async () => {}, // no need to validate body against cid here, fetchFromMultipleGateways already does it
                 log,
-                maxFileSizeBytes: 1024 * 1024
+                maxFileSizeBytes: 1024 * 1024,
+                timeoutMs
             });
             return resObj.resText;
         }

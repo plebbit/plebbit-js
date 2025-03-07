@@ -197,6 +197,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             recordPlebbitType: "page-ipfs",
             validateGatewayResponseFunc: async () => {},
             maxFileSizeBytes: pageMaxSize,
+            timeoutMs: this._plebbit._timeouts["page-ipfs"],
             log
         });
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));

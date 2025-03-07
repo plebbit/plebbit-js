@@ -18,6 +18,7 @@ import { SubplebbitKuboPubsubClient } from "../clients/pubsub-client.js";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
 import { CID } from "kubo-rpc-client";
+import { measurePerformance } from "../decorator-util.js";
 
 type SubplebbitGatewayFetch = {
     [gatewayUrl: string]: {
@@ -231,6 +232,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     // fetching subplebbit ipns here
 
+    @measurePerformance()
     async fetchNewUpdateForSubplebbit(subAddress: SubplebbitIpfsType["address"]): Promise<ResultOfFetchingSubplebbit> {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
@@ -269,10 +271,11 @@ export class SubplebbitClientsManager extends ClientsManager {
         return subRes;
     }
 
+    @measurePerformance()
     private async _fetchSubplebbitIpnsP2PAndVerify(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         this.updateIpfsState("fetching-ipns");
-        const latestSubplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
+        const latestSubplebbitCid = await this.resolveIpnsToCidP2P(ipnsName, { timeoutMs: this._plebbit._timeouts["subplebbit-ipns"] });
         if (this._updateCidsAlreadyLoaded.has(latestSubplebbitCid)) {
             log.trace(
                 "Resolved subplebbit IPNS",
@@ -286,7 +289,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
 
-        const subplebbitTimeoutMs = this._plebbit._timeouts.subplebbit;
+        const subplebbitTimeoutMs = this._plebbit._timeouts["subplebbit-ipfs"];
         const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
             maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
             timeoutMs: subplebbitTimeoutMs
@@ -309,10 +312,11 @@ export class SubplebbitClientsManager extends ClientsManager {
         }
     }
 
+    @measurePerformance()
     private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
         const concurrencyLimit = 3;
-        const timeoutMs = this._plebbit._timeouts.subplebbit;
+        const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
 
         const queueLimit = pLimit(concurrencyLimit);
 
@@ -400,6 +404,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                         shouldAbortRequestFunc: checkIpnsCidFromGateway,
                         abortController,
                         maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+                        timeoutMs: this._plebbit._timeouts["subplebbit-ipns"],
                         log
                     })
                 ),
@@ -505,6 +510,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         return suitableSubplebbit;
     }
 
+    @measurePerformance(50)
     private async _findErrorInSubplebbitRecord(
         subJson: SubplebbitIpfsType,
         ipnsNameOfSub: string,

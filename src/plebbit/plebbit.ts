@@ -173,10 +173,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     _memCaches!: PlebbitMemCaches;
     _domainResolver: DomainResolver;
 
-    _timeouts: Record<LoadType, number> = {
-        subplebbit: 5 * 60 * 1000, // 5min
-        comment: 60 * 1000, // 1 min
-        "comment-update": 2 * 60 * 1000, // 2 min
+    _timeouts = {
+        "subplebbit-ipns": 5 * 60 * 1000, // 5min, for resolving subplebbit IPNS, or fetching subplebbit from gateways
+        "subplebbit-ipfs": 60 * 1000, // 1min, for fetching subplebbit cid P2P
+        "comment-ipfs": 60 * 1000, // 1 min
+        "comment-update-ipfs": 2 * 60 * 1000, // 2 min
         "page-ipfs": 30 * 1000, // 30s for pages
         "generic-ipfs": 30 * 1000 // 30s generic ipfs
     }; // timeout in ms for each load type when we're loading from kubo/helia/gateway
@@ -347,7 +348,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const subplebbit = await this.createSubplebbit({ address: parsedAddress });
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
-        const timeoutMs = this._timeouts.subplebbit;
+        const timeoutMs = this._timeouts["subplebbit-ipns"];
         await waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs);
 
         return subplebbit;
@@ -364,7 +365,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const errorListener = (err: Error) => (lastUpdateError = err);
         comment.on("error", errorListener);
 
-        const commentTimeout = this._timeouts.comment;
+        const commentTimeout = this._timeouts["comment-ipfs"];
         try {
             await pTimeout(comment._attemptInfintelyToLoadCommentIpfs(), {
                 milliseconds: commentTimeout,

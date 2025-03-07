@@ -93,7 +93,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
             this._comment._setUpdatingState("fetching-update-ipfs");
-            const commentTimeoutMs = this._plebbit._timeouts["comment"];
+            const commentTimeoutMs = this._plebbit._timeouts["comment-ipfs"];
             try {
                 const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
                     parseJsonWithPlebbitErrorIfFails(
@@ -153,6 +153,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         return `${folderCid}/` + parentsPostUpdatePath + "/update";
     }
 
+    @measurePerformance()
     async _fetchNewCommentUpdateIpfsP2P(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
@@ -190,7 +191,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
-            const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update"];
+            const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update-ipfs"];
             try {
                 res = await this._fetchCidP2P(path, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentUpdateTimeoutMs });
             } catch (e) {
@@ -260,6 +261,8 @@ export class CommentClientsManager extends PublicationClientsManager {
                 verifyOptions
             });
     }
+
+    @measurePerformance()
     async _fetchCommentUpdateFromGateways(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
@@ -318,7 +321,8 @@ export class CommentClientsManager extends PublicationClientsManager {
                     recordPlebbitType: "comment-update",
                     validateGatewayResponseFunc: validateCommentFromGateway,
                     log,
-                    maxFileSizeBytes: 1024 * 1024
+                    maxFileSizeBytes: 1024 * 1024,
+                    timeoutMs: this._plebbit._timeouts["comment-update-ipfs"]
                 });
                 if (!commentUpdate) throw Error("Failed to load comment update from gateways. This is a critical logic error");
                 return { commentUpdate, commentUpdateIpfsPath: path };
@@ -360,6 +364,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         } else return false;
     }
 
+    @measurePerformance()
     async useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitPostUpdatesToFetchCommentUpdate");
         if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
@@ -419,7 +424,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     private async _fetchRawCommentCidIpfsP2P(cid: string): Promise<string> {
         this.updateIpfsState("fetching-ipfs");
         let commentRawString: string;
-        const commentTimeoutMs = this._plebbit._timeouts.comment;
+        const commentTimeoutMs = this._plebbit._timeouts["comment-ipfs"];
         try {
             commentRawString = await this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentTimeoutMs });
         } catch (e) {
@@ -441,7 +446,8 @@ export class CommentClientsManager extends PublicationClientsManager {
             root: parentCid,
             validateGatewayResponseFunc: async () => {},
             log,
-            maxFileSizeBytes: 1024 * 1024
+            maxFileSizeBytes: 1024 * 1024,
+            timeoutMs: this._plebbit._timeouts["comment-ipfs"]
         });
         return res.resText;
     }

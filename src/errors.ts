@@ -50,6 +50,8 @@ export enum messages {
     ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD = "We loaded a subplebbit record but it's a record we already consumed before",
     ERR_COMMENT_RECEIVED_ALREADY_PROCESSED_COMMENT_UPDATE = "We loaded a CommentUpdate but it's a record we already consumed",
     ERR_FETCH_CID_P2P_TIMEOUT = "Fetching CID via Kubo-rpc-client/helia P2P has timed out",
+    ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED = "Resolved IPNS name to undefined. Does this IPNS name exist?",
+    ERR_IPNS_RESOLUTION_P2P_TIMEOUT = "IPNS resolution P2P timed out",
 
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",
