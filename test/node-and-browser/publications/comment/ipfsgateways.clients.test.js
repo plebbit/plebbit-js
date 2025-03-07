@@ -8,7 +8,8 @@ import {
     mockCommentToNotUsePagesForUpdates,
     createCommentUpdateWithInvalidSignature,
     mockRemotePlebbit,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockPlebbitToReturnSpecificSubplebbit
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -104,21 +105,20 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`Correct order of ipfs gateway  clients state when we update a comment but its subplebbit is not publishing new updates`, async () => {
+    it(`Correct order of ipfs gateway clients state when we update a comment but its subplebbit is not publishing new updates`, async () => {
         const customPlebbit = await mockGatewayPlebbit();
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
-        // now plebbit._updatingSubplebbits will be defined
-
-        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        const updatePromise1 = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();
-        await updatePromise;
+        // now plebbit._updatingSubplebbits will be defined
+        await updatePromise1;
+        const subRecord = JSON.parse(JSON.stringify(sub.toJSONIpfs()));
 
-        const updatingSubInstance = customPlebbit._updatingSubplebbits[sub.address];
-
-        updatingSubInstance._clientsManager.resolveIpnsToCidP2P = () => sub.updateCid; // stop it from loading new IPNS
-
+        const updatePromise2 = new Promise((resolve) => sub.once("update", resolve));
+        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, subRecord);
+        await updatePromise2;
         const mockPost = await customPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
         const recordedStates = [];

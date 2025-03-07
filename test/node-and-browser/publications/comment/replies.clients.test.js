@@ -111,7 +111,7 @@ describe(`comment.replies.clients`, async () => {
                     actualStates[gatewayUrl].push(newState);
                 });
 
-            multipleGatewayPlebbit._clientsManager.getGatewayTimeoutMs = () => 10 * 1000; // Change timeout to 10s
+            multipleGatewayPlebbit._timeouts["page-ipfs"] = 10 * 1000; // Change timeout to 10s
             const timeBefore = Date.now();
             await comment.replies.getPage(comment.replies.pageCids.new);
             const timeItTookInMs = Date.now() - timeBefore;

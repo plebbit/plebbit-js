@@ -233,7 +233,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`publish() can be caught if subplebbit failed to load`, async () => {
             const downSubplebbitAddress = signers[7].address; // an offline sub
             const post = await generateMockPost(downSubplebbitAddress, plebbit);
-            post._clientsManager.getGatewayTimeoutMs = () => 1 * 1000; // need to change time out from 5 minutes to 1s
+            plebbit._timeouts.subplebbit = 1 * 1000; // need to change time out from 5 minutes to 1s
 
             try {
                 await post.publish();
@@ -328,7 +328,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] });
         const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
-        post._clientsManager.getGatewayTimeoutMs = () => 3000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
+        gatewayPlebbit._timeouts["subplebbit"] = 3000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
 
         try {
             await post.publish();

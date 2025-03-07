@@ -82,8 +82,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`plebbit.getComment times out if commentCid does not exist`, async () => {
             const commentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // random cid doesn't exist anywhere
             const customPlebbit = await config.plebbitInstancePromise();
-            customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 1min to 5s
-
+            customPlebbit._timeouts.comment = 5 * 1000;
             try {
                 await customPlebbit.getComment(commentCid);
                 expect.fail("should not succeed");
