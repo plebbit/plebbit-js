@@ -529,11 +529,15 @@ export class BaseClientsManager {
         };
 
         try {
-            return await fetchPromise();
+            // Wrap the fetch function with pTimeout to ensure it times out properly
+            const result = <string>await pTimeout(fetchPromise(), {
+                milliseconds: loadOpts.timeoutMs,
+                message: new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, loadOpts, ipfsClient })
+            });
+            return result;
         } catch (e) {
-            if ((<Error>e).name === "TimeoutError")
-                throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, loadOpts, ipfsClient });
-            else throw e;
+            if (e instanceof PlebbitError) throw e;
+            else throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cidV0, error: e, loadOpts, ipfsClient });
         }
     }
 

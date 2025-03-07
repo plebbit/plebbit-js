@@ -289,10 +289,9 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
 
-        const subplebbitTimeoutMs = this._plebbit._timeouts["subplebbit-ipfs"];
         const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
             maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
-            timeoutMs: subplebbitTimeoutMs
+            timeoutMs: this._plebbit._timeouts["subplebbit-ipfs"]
         });
 
         this._updateCidsAlreadyLoaded.add(latestSubplebbitCid);
