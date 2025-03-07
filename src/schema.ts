@@ -21,7 +21,7 @@ export const ChainProviderSchema = z.object({
     chainId: z.number().int()
 });
 
-const IpfsGatewayUrlSchema = z.string().url();
+const IpfsGatewayUrlSchema = z.string().url().startsWith("http");
 
 const RpcUrlSchema = z.string().url(); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
 
