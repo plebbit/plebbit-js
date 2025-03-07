@@ -6,7 +6,10 @@ import {
     getRemotePlebbitConfigs,
     isPlebbitFetchingUsingGateways,
     createNewIpns,
-    resolveWhenConditionIsTrue
+    mockPlebbitToReturnSpecificSubplebbit,
+    resolveWhenConditionIsTrue,
+    mockGatewayPlebbit,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
@@ -212,5 +215,65 @@ getRemotePlebbitConfigs().map((config) => {
             await errorPromise;
             await tempSubplebbit.stop();
         });
+    });
+});
+
+describe(`Subplebbit emitting waiting-retry`, () => {
+    it(`subplebbit.update() emits waiting-retry if loading subplebbit record times out - IPFS Gateway`, async () => {
+        const stallingGateway = "http://127.0.0.1:14000"; // this gateway will wait for 11s before responding
+        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway], validatePages: true });
+        plebbit._timeouts["subplebbit-ipns"] = 1000; // mocking maximum timeout for subplebbit record loading
+        const nonExistentIpns = "12D3KooWHS5A6Ey4V8fLWD64jpPn2EKi4r4btGN6FfkNgMTnfqVa"; // Random non-existent IPNS
+        const tempSubplebbit = await plebbit.createSubplebbit({ address: nonExistentIpns });
+        const waitingRetryErrs = [];
+        tempSubplebbit.on("waiting-retry", (err) => waitingRetryErrs.push(err));
+        await tempSubplebbit.update();
+        await resolveWhenConditionIsTrue(tempSubplebbit, () => waitingRetryErrs.length === 2, "waiting-retry");
+        await tempSubplebbit.stop();
+
+        for (const err of waitingRetryErrs) {
+            expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+            for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways))
+                expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+        }
+    });
+
+    it(`subplebbit.update() emits waiting-retry if resolving subplebbit IPNS times out - Kubo RPC P2P`, async () => {
+        const nonExistentIpns = "12D3KooWHS5A6Ey4V8fLWD64jpPn2EKi4r4btGN6FfkNgMTnfqVa"; // Random non-existent IPNS
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ kuboRpcClientsOptions: ["http://localhost:14000/api/v0"] }); // this kubo rpc will take 11s to respond
+        plebbit._timeouts["subplebbit-ipns"] = 100; // mocking maximum timeout for subplebbit record loading
+
+        const tempSubplebbit = await plebbit.createSubplebbit({ address: nonExistentIpns });
+        const waitingRetryErrs = [];
+        tempSubplebbit.on("waiting-retry", (err) => waitingRetryErrs.push(err));
+        await tempSubplebbit.update();
+        await resolveWhenConditionIsTrue(tempSubplebbit, () => waitingRetryErrs.length === 2, "waiting-retry");
+        await tempSubplebbit.stop();
+
+        // Check that the errors are as expected
+        for (const err of waitingRetryErrs) {
+            expect(err.code).to.equal("ERR_IPNS_RESOLUTION_P2P_TIMEOUT");
+        }
+    });
+
+    it(`subplebbit.update() emits waiting-retry if fetching subplebbit CID record times out - Kubo RPC P2P`, async () => {
+        const nonExistentIpns = "12D3KooWHS5A6Ey4V8fLWD64jpPn2EKi4r4btGN6FfkNgMmnfqVa"; // Random non-existent IPNS
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ kuboRpcClientsOptions: ["http://localhost:14000/api/v0"] }); // this kubo rpc will take 11s to respond
+
+        plebbit._timeouts["subplebbit-ipns"] = 100;
+        plebbit._timeouts["subplebbit-ipfs"] = 100;
+        const tempSubplebbit = await plebbit.createSubplebbit({ address: nonExistentIpns });
+        const waitingRetryErrs = [];
+        tempSubplebbit.on("waiting-retry", (err) => waitingRetryErrs.push(err));
+        await tempSubplebbit.update();
+        await mockPlebbitToReturnSpecificSubplebbit(plebbit, tempSubplebbit.address, {});
+
+        await resolveWhenConditionIsTrue(tempSubplebbit, () => waitingRetryErrs.length === 3, "waiting-retry");
+
+        await tempSubplebbit.stop();
+
+        expect(waitingRetryErrs[0].code).to.equal("ERR_IPNS_RESOLUTION_P2P_TIMEOUT");
+        expect(waitingRetryErrs[1].code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
+        expect(waitingRetryErrs[2].code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
     });
 });
