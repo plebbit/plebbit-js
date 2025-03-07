@@ -29,6 +29,9 @@ type SubplebbitGatewayFetch = {
         timeoutId: any;
     };
 };
+
+export const MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS = 1024 * 1024; // 1mb
+
 export class SubplebbitClientsManager extends ClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient };
@@ -283,7 +286,9 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
 
-        const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, { maxFileSizeBytes: 1024 * 1024 });
+        const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
+            maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS
+        });
 
         this._updateCidsAlreadyLoaded.add(latestSubplebbitCid);
         try {
@@ -392,7 +397,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                         validateGatewayResponseFunc: throwIfGatewayRespondsWithInvalidSubplebbit,
                         shouldAbortRequestFunc: checkIpnsCidFromGateway,
                         abortController,
-                        maxFileSizeBytes: 1024 * 1024,
+                        maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
                         log
                     })
                 ),

@@ -152,6 +152,7 @@ import { CID, globSource } from "kubo-rpc-client";
 import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
 import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
+import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -199,7 +200,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._challengeAnswerResolveReject = //@ts-expect-error
             this._ongoingChallengeExchanges = //@ts-expect-error
             this._internalStateUpdateId =
-            undefined;
+                undefined;
         hideClassPrivateProps(this);
     }
 
@@ -419,9 +420,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const latestComment = await this._dbHandler.queryLatestCommentCid(trx);
         await this._dbHandler.commitTransaction("subplebbit");
 
+        const preloadedPostsPages = ["hot"];
         const [stats, subplebbitPosts] = await Promise.all([
             this._dbHandler.querySubplebbitStats(undefined),
-            this._pageGenerator.generateSubplebbitPosts()
+            this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages)
         ]);
 
         if (subplebbitPosts && this.posts?.pageCids) {
@@ -456,14 +458,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (subplebbitPosts)
             newIpns.posts = {
                 pageCids: subplebbitPosts.pageCids,
-                pages: remeda.pick(subplebbitPosts.pages, ["hot"])
+                pages: remeda.pick(subplebbitPosts.pages, preloadedPostsPages)
             };
         else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
 
-        await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
+        await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
         const ttl = `${this._plebbit.publishInterval * 3}ms`;
@@ -495,8 +497,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
-    private async _validateSubSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
+    private async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:local-subplebbit:_validateSubSchemaAndSignatureBeforePublishing");
+
+        // Check if the subplebbit record size is less than 1MB
+        const recordSize = Buffer.byteLength(JSON.stringify(recordToPublishRaw)); // size in bytes
+        if (recordSize > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
+            const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
+                size: recordSize,
+                maxSize: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+                recordToPublishRaw,
+                address: this.address
+            });
+            log.error(
+                `Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)}MB). Maximum size is 1MB.`,
+                error
+            );
+            this.emit("error", error);
+            throw error;
+        }
 
         const parseRes = SubplebbitIpfsSchema.safeParse(recordToPublishRaw);
         if (!parseRes.success) {
@@ -1506,10 +1525,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
+        const preloadedRepliesPages = ["topAll"];
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
             this._dbHandler.queryCalculatedCommentUpdate(comment),
             this._dbHandler.queryStoredCommentUpdate(comment),
-            this._pageGenerator.generateRepliesPages(comment)
+            this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages)
         ]);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
@@ -1533,7 +1553,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (generatedPages)
             commentUpdatePriorToSigning.replies = {
                 pageCids: generatedPages.pageCids,
-                pages: remeda.pick(generatedPages.pages, ["topAll"])
+                pages: remeda.pick(generatedPages.pages, preloadedRepliesPages)
             };
 
         const newCommentUpdate: CommentUpdateType = {

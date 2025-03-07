@@ -245,6 +245,7 @@ export enum messages {
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY = "Failed to import challenge file factory",
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE = "Failed to import challenge file",
     ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION = "invalid getChallenge response from subplebbit challenge",
+    ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE = "Local subplebbit has produced a record that is too large. This is a critical error and a bug in plebbit-js",
 
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",

@@ -23,6 +23,7 @@ export type PageOptions = {
     excludeCommentsWithDifferentSubAddress: boolean;
     commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[];
     parentCid: string | null;
+    preloadedPages: (PostSortName | ReplySortName)[] | undefined; // a list of sort types that will be preloaded on the subplebbit/comment instance
 };
 
 type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
@@ -49,9 +50,10 @@ export class PageGenerator {
         return { [sortName]: { pages: listOfPage, cids } };
     }
 
-    _chunkComments(comments: PageIpfs["comments"]): PageIpfs["comments"][] {
+    _chunkComments(comments: PageIpfs["comments"], isPreloadedSort: boolean): PageIpfs["comments"][] {
         // this function is written by AI, looks good to me
-        const BASE_SIZE = 1024 * 1024; // 1MB
+        const FIRST_PAGE_SIZE = isPreloadedSort ? 512 * 1024 : 1024 * 1024; // 0.5MB for preloaded sorts, 1MB for others
+        const SUBSEQUENT_PAGE_BASE_SIZE = 1024 * 1024 * 2; // 2MB for second page, regardless of preloaded status
 
         // Calculate overhead with and without nextCid
         const OBJECT_WRAPPER_WITH_CID =
@@ -73,7 +75,7 @@ export class PageGenerator {
 
         // Quick check for small arrays - if everything fits in one page, no nextCid needed
         const totalSizeWithoutCid = Buffer.byteLength(JSON.stringify(<PageIpfs>{ comments }), "utf8");
-        if (totalSizeWithoutCid <= BASE_SIZE) {
+        if (totalSizeWithoutCid <= FIRST_PAGE_SIZE) {
             return [comments]; // Single page, no chunking needed
         }
 
@@ -95,7 +97,12 @@ export class PageGenerator {
         }
 
         function getCurrentMaxSize(index: number): number {
-            return BASE_SIZE * Math.pow(2, index);
+            if (index === 0) {
+                return FIRST_PAGE_SIZE; // First page is 0.5MB for preloaded, 1MB for others
+            } else {
+                // Subsequent pages follow 2MB, 4MB, 8MB pattern regardless of preloaded status
+                return SUBSEQUENT_PAGE_BASE_SIZE * Math.pow(2, index - 1);
+            }
         }
 
         for (let i = 0; i < comments.length; i++) {
@@ -191,7 +198,9 @@ export class PageGenerator {
 
         if (commentsSorted.length === 0) return undefined;
 
-        const commentsChunks = this._chunkComments(commentsSorted);
+        const isPreloadedSort = options.preloadedPages?.includes(sortName) || false;
+
+        const commentsChunks = this._chunkComments(commentsSorted, isPreloadedSort);
 
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
@@ -208,12 +217,13 @@ export class PageGenerator {
         };
     }
 
-    async generateSubplebbitPosts(): Promise<PostsPagesTypeIpfs | undefined> {
+    async generateSubplebbitPosts(preloadedPages: PostSortName[]): Promise<PostsPagesTypeIpfs | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
-            parentCid: null
+            parentCid: null,
+            preloadedPages
         };
         // Sorting posts on a subplebbit level
         const rawPosts = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
@@ -228,12 +238,16 @@ export class PageGenerator {
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    async generateRepliesPages(comment: Pick<CommentsTableRow, "cid" | "depth">): Promise<RepliesPagesTypeIpfs | undefined> {
+    async generateRepliesPages(
+        comment: Pick<CommentsTableRow, "cid" | "depth">,
+        preloadedPages: ReplySortName[]
+    ): Promise<RepliesPagesTypeIpfs | undefined> {
         const pageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
-            parentCid: comment.cid
+            parentCid: comment.cid,
+            preloadedPages
         };
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
