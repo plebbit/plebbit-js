@@ -173,9 +173,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
         pageMaxSize: number
     ): Promise<PageIpfs> {
         this.updateIpfsState("fetching-ipfs", sortTypes);
+        const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
         try {
             return parsePageIpfsSchemaWithPlebbitErrorIfItFails(
-                parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize }))
+                parseJsonWithPlebbitErrorIfFails(
+                    await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })
+                )
             );
         } catch (e) {
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);

@@ -69,7 +69,7 @@ const createUrlFromSubdomainResolution = (gateway: string, opts: OptionsToLoadFr
     return `${gatewayUrl.protocol}//${root}.${opts.recordIpfsType}.${gatewayUrl.host}${opts.path ? "/" + opts.path : ""}`;
 };
 
-const GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION: Record<string, boolean> = {};
+const GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION: Record<string, boolean> = {}; // gateway url -> whether it supports subdomain resolution
 
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
@@ -403,20 +403,11 @@ export class BaseClientsManager {
         );
     }
 
-    getGatewayTimeoutMs(loadType: LoadType) {
-        return loadType === "subplebbit"
-            ? 5 * 60 * 1000 // 5min
-            : loadType === "comment"
-              ? 60 * 1000 // 1 min
-              : loadType === "comment-update"
-                ? 2 * 60 * 1000 // 2min
-                : 30 * 1000; // 30s for page ipfs and generic ipfs
-    }
-
+    @measurePerformance()
     async fetchFromMultipleGateways(
         loadOpts: Omit<OptionsToLoadFromGateway, "abortController">
     ): Promise<{ resText: string; res: Response }> {
-        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadOpts.recordPlebbitType);
+        const timeoutMs = this._plebbit._timeouts[loadOpts.recordPlebbitType];
         const concurrencyLimit = 3;
 
         const queueLimit = pLimit(concurrencyLimit);
@@ -442,7 +433,7 @@ export class BaseClientsManager {
             gatewayFetches[gateway] = {
                 abortController,
                 promise: queueLimit(() => this._fetchWithGateway(gateway, { ...loadOpts, abortController })),
-                timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
+                timeoutId: setTimeout(() => abortController.abort("Gateway request timed out"), timeoutMs)
             };
         }
 
@@ -491,15 +482,19 @@ export class BaseClientsManager {
     }
 
     // TODO rename this to _fetchPathP2P
-    async _fetchCidP2P(cidV0: string, loadOpts: { maxFileSizeBytes: number }): Promise<string> {
+    @measurePerformance()
+    async _fetchCidP2P(cidV0: string, loadOpts: { maxFileSizeBytes: number; timeoutMs: number }): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
 
         const fetchPromise = async () => {
-            const rawData = await all(ipfsClient._client.cat(cidV0, { length: loadOpts.maxFileSizeBytes })); // Limit is 1mb files
+            const rawData = await all(
+                ipfsClient._client.cat(cidV0, { length: loadOpts.maxFileSizeBytes, timeout: `${loadOpts.timeoutMs}ms` })
+            );
             const data = uint8ArrayConcat(rawData);
             const fileContent = uint8ArrayToString(data);
 
-            if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cidV0, loadOpts });
+            if (typeof fileContent !== "string")
+                throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cidV0, loadOpts, ipfsClient });
             if (data.byteLength === loadOpts.maxFileSizeBytes) {
                 const calculatedCid: string = await calculateIpfsHash(fileContent);
                 if (calculatedCid !== cidV0)
@@ -507,7 +502,8 @@ export class BaseClientsManager {
                         cid: cidV0,
                         loadOpts,
                         fileContentLength: data.byteLength,
-                        calculatedCid
+                        calculatedCid,
+                        ipfsClient
                     });
             }
             return fileContent;
@@ -516,7 +512,9 @@ export class BaseClientsManager {
         try {
             return await fetchPromise();
         } catch (e) {
-            throw e;
+            if ((<Error>e).name === "TimeoutError")
+                throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, loadOpts, ipfsClient });
+            else throw e;
         }
     }
 

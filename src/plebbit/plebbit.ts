@@ -127,6 +127,7 @@ import {
 } from "../publications/subplebbit-edit/types.js";
 import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
+import type { LoadType } from "../clients/base-client-manager.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -171,6 +172,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
     _domainResolver: DomainResolver;
+
+    _timeouts: Record<LoadType, number> = {
+        subplebbit: 5 * 60 * 1000, // 5min
+        comment: 60 * 1000, // 1 min
+        "comment-update": 2 * 60 * 1000, // 2 min
+        "page-ipfs": 30 * 1000, // 30s for pages
+        "generic-ipfs": 30 * 1000 // 30s generic ipfs
+    }; // timeout in ms for each load type when we're loading from kubo/helia/gateway
 
     constructor(options: InputPlebbitOptions) {
         super();
@@ -338,7 +347,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const subplebbit = await this.createSubplebbit({ address: parsedAddress });
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
-        const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
+        const timeoutMs = this._timeouts.subplebbit;
         await waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs);
 
         return subplebbit;
@@ -355,7 +364,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const errorListener = (err: Error) => (lastUpdateError = err);
         comment.on("error", errorListener);
 
-        const commentTimeout = this._clientsManager.getGatewayTimeoutMs("comment");
+        const commentTimeout = this._timeouts.comment;
         try {
             await pTimeout(comment._attemptInfintelyToLoadCommentIpfs(), {
                 milliseconds: commentTimeout,

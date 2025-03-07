@@ -172,7 +172,8 @@ export class ClientsManager extends BaseClientsManager {
         let finalCid = remeda.clone(cid);
         if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
-        if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024 });
+        const timeoutMs = this._plebbit._timeouts["generic-ipfs"];
+        if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024, timeoutMs });
         else {
             const log = Logger("plebbit-js:clients-manager:fetchCid");
             const resObj = await this.fetchFromMultipleGateways({

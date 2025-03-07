@@ -93,9 +93,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
             this._comment._setUpdatingState("fetching-update-ipfs");
+            const commentTimeoutMs = this._plebbit._timeouts["comment"];
             try {
                 const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
-                    parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid, { maxFileSizeBytes: 1024 * 1024 }))
+                    parseJsonWithPlebbitErrorIfFails(
+                        await this._fetchCidP2P(parentCid, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentTimeoutMs })
+                    )
                 );
                 return {
                     comment: commentIpfs,
@@ -187,8 +190,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
+            const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update"];
             try {
-                res = await this._fetchCidP2P(path, { maxFileSizeBytes: 1024 * 1024 });
+                res = await this._fetchCidP2P(path, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentUpdateTimeoutMs });
             } catch (e) {
                 log.trace(`Failed to fetch CommentUpdate from path (${path}) with IPFS P2P. Trying the next timestamp range`);
                 attemptedPathsToLoadErrors[path] = <Error>e;
@@ -415,8 +419,9 @@ export class CommentClientsManager extends PublicationClientsManager {
     private async _fetchRawCommentCidIpfsP2P(cid: string): Promise<string> {
         this.updateIpfsState("fetching-ipfs");
         let commentRawString: string;
+        const commentTimeoutMs = this._plebbit._timeouts.comment;
         try {
-            commentRawString = await this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024 });
+            commentRawString = await this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentTimeoutMs });
         } catch (e) {
             throw e;
         } finally {

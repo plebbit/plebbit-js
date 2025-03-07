@@ -537,7 +537,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation();
             let subIpfs: SubplebbitIpfsType;
             if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
-                const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
+                const timeoutMs = this._plebbit._timeouts.subplebbit;
                 try {
                     await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
                     subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();

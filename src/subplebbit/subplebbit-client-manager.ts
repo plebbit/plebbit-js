@@ -286,8 +286,10 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
 
+        const subplebbitTimeoutMs = this._plebbit._timeouts.subplebbit;
         const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
-            maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS
+            maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+            timeoutMs: subplebbitTimeoutMs
         });
 
         this._updateCidsAlreadyLoaded.add(latestSubplebbitCid);
@@ -310,7 +312,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
         const concurrencyLimit = 3;
-        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs("subplebbit");
+        const timeoutMs = this._plebbit._timeouts.subplebbit;
 
         const queueLimit = pLimit(concurrencyLimit);
 
