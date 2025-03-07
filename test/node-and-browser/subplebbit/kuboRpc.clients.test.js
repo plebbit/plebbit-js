@@ -4,6 +4,7 @@ import {
     publishRandomPost,
     describeSkipIfRpc,
     mockGatewayPlebbit,
+    mockPlebbitToReturnSpecificSubplebbit,
     mockPlebbit,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     waitTillPostInSubplebbitPages
@@ -109,5 +110,45 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
             expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
             expect(noNewUpdateStates[i + 1]).to.equal("stopped");
         }
+    });
+
+    it(`Correct order of kubo rpc client states when we attempt to update a subplebbit with invalid record`, async () => {
+        const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+
+        // Create a subplebbit with a valid address
+        const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+
+        const recordedStates = [];
+        const kuboRpcUrl = Object.keys(sub.clients.kuboRpcClients)[0];
+        sub.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+
+        // First update should succeed with the initial valid record
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await updatePromise;
+
+        // Mock the subplebbit to return an invalid record
+        const invalidSubplebbitRecord = { address: sub.address }; // Missing required fields will fail validation
+
+        const errorPromise = new Promise((resolve) => sub.once("error", resolve));
+        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, invalidSubplebbitRecord);
+
+        await errorPromise;
+        await new Promise((resolve) => sub.once("waiting-retry", resolve));
+        await sub.stop();
+
+        // Expected states for initial update and then the invalid update attempt, then checking if there's a new update
+        const expectedStates = [
+            "fetching-ipns",
+            "fetching-ipfs",
+            "stopped",
+            "fetching-ipns",
+            "fetching-ipfs",
+            "stopped",
+            "fetching-ipns",
+            "stopped"
+        ];
+
+        expect(recordedStates).to.deep.equal(expectedStates);
     });
 });
