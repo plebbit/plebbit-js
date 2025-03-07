@@ -16,7 +16,7 @@ import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import { cleanUpBeforePublishing, verifyCommentIpfs, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
+import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -139,6 +139,41 @@ getRemotePlebbitConfigs().map((config) => {
             await reply.stop();
             expect(reply.updatedAt).to.be.a("number");
             expect(reply.author.subplebbit).to.be.a("object");
+        });
+
+        it(`comment.update() emits waiting-retry and keeps retrying if CommentIpfs loading times out`, async () => {
+            // Create a comment with a CID that doesn't exist or will time out
+            const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
+            const createdComment = await plebbit.createComment({ cid: nonExistentCid });
+
+            plebbit._timeouts.comment = 1000; // reduce timeout to 3s
+
+            let updateHasBeenEmitted = false;
+            createdComment.once("update", () => (updateHasBeenEmitted = true));
+
+            const waitingRetries = [];
+            createdComment.on("waiting-retry", (err) => waitingRetries.push(err));
+
+            // Start the update process
+            await createdComment.update();
+
+            await resolveWhenConditionIsTrue(createdComment, () => waitingRetries.length === 3, "waiting-retry");
+
+            await createdComment.stop();
+            for (const waitingRetryErr of waitingRetries) {
+                if (isPlebbitFetchingUsingGateways(plebbit)) {
+                    expect(waitingRetryErr.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
+                    for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
+                        expect(waitingRetryErr.details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                } else {
+                    expect(waitingRetryErr.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
+                }
+            }
+
+            expect(createdComment.depth).to.be.undefined; // Make sure it did not use any props from CommentIpfs
+            expect(createdComment.state).to.equal("stopped");
+            expect(createdComment.updatedAt).to.be.undefined;
+            expect(updateHasBeenEmitted).to.be.false;
         });
     });
 });
