@@ -146,7 +146,7 @@ getRemotePlebbitConfigs().map((config) => {
             const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
             const createdComment = await plebbit.createComment({ cid: nonExistentCid });
 
-            plebbit._timeouts.comment = 1000; // reduce timeout to 3s
+            plebbit._timeouts["comment-ipfs"] = 100; // reduce timeout to 100ms
 
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));

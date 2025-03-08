@@ -41,7 +41,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     });
     it(`plebbit.getSubplebbit times out if a single gateway is not responding (timeout)`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
-        customPlebbit._timeouts["subplebbit"] = 5 * 1000; // change timeout from 5min to 5s
+        customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
         try {
             await customPlebbit.getSubplebbit(subAddress);
             expect.fails("Should not fulfill");
@@ -52,7 +52,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     });
     it(`updating a subplebbit through working gateway and another gateway that is timing out`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, stallingGateway] });
-        customPlebbit._timeouts["subplebbit"] = 5 * 1000; // change timeout from 5min to 5s
+        customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
         // should succeed and return the result from normalGateway
         const subFromGateway = await customPlebbit.getSubplebbit(subplebbitAddress);
         const latestSub = await fetchLatestSubplebbitJson();
@@ -68,7 +68,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
 
     it(`all gateways are throwing an error`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] });
-        customPlebbit._timeouts["subplebbit"] = 5 * 1000; // change timeout from 5min to 5s
+        customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
         // should faill
         await assert.isRejected(customPlebbit.getSubplebbit(subAddress), messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
@@ -84,9 +84,9 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         // should wait for normalWithStallingGateway
         // Should go with maximum updatedAt, which is normal with stalling gateway
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] });
-        customPlebbit._timeouts.subplebbit = 5 * 1000; // change timeout from 5min to 5s
+        customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
-        const buffer = customPlebbit._timeouts.subplebbit * 5;
+        const buffer = customPlebbit._timeouts["subplebbit-ipns"] * 5;
         const base = Math.round(Date.now() / 1000);
         const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
         expect(sub.updatedAt)
@@ -112,7 +112,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         const customPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
         });
-        customPlebbit._timeouts.subplebbit = 5 * 1000; // change timeout from 5min to 5s
+        customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
         const gatewaySub = await customPlebbit.getSubplebbit(subplebbitAddress);
         const latestSub = await fetchLatestSubplebbitJson();

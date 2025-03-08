@@ -233,13 +233,13 @@ getRemotePlebbitConfigs().map((config) => {
         it(`publish() can be caught if subplebbit failed to load`, async () => {
             const downSubplebbitAddress = signers[7].address; // an offline sub
             const post = await generateMockPost(downSubplebbitAddress, plebbit);
-            plebbit._timeouts.subplebbit = 1 * 1000; // need to change time out from 5 minutes to 1s
+            plebbit._timeouts["subplebbit-ipns"] = 100; // need to change time out from 5 minutes to 100ms
 
             try {
                 await post.publish();
                 expect.fail("should fail");
             } catch (e) {
-                expect(e.code).to.be.oneOf(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"]);
+                expect(e.code).to.be.oneOf(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]);
                 // await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
             }
             expect(post.publishingState).to.equal("failed");
@@ -328,7 +328,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] });
         const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
-        gatewayPlebbit._timeouts["subplebbit"] = 3000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
+        gatewayPlebbit._timeouts["subplebbit-ipns"] = 3000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
 
         try {
             await post.publish();

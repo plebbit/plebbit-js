@@ -73,13 +73,13 @@ getRemotePlebbitConfigs().map((config) => {
         it(`plebbit.getSubplebbit times out if subplebbit does not load`, async () => {
             const doesNotExistSubplebbitAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zx"; // random sub address, should not be able to resolve this
             const customPlebbit = await config.plebbitInstancePromise();
-            customPlebbit._timeouts["subplebbit"] = 1 * 1000; // change timeout from 5min to 1s
+            customPlebbit._timeouts["subplebbit-ipns"] = 1 * 1000; // change timeout from 5min to 1s
 
             try {
                 await customPlebbit.getSubplebbit(doesNotExistSubplebbitAddress);
                 expect.fail("should not succeed");
             } catch (e) {
-                expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"]).to.include(e.code);
+                expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]).to.include(e.code);
             }
         });
     });

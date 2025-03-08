@@ -8,7 +8,8 @@ import {
     publishRandomPost,
     mockGatewayPlebbit,
     mockPlebbit,
-    mockPlebbitToReturnSpecificSubplebbit
+    mockPlebbitToReturnSpecificSubplebbit,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
@@ -84,14 +85,14 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();
         await updatePromise;
-        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, sub.toJSONIpfs());
+        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, JSON.parse(JSON.stringify(sub.toJSONIpfs())));
 
-        const expectedWaitingRetryCount = 4;
-        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * expectedWaitingRetryCount));
+        const expectedWaitingRetryCount = 3;
+        await resolveWhenConditionIsTrue(sub, () => waitingRetryCount === expectedWaitingRetryCount, "waiting-retry");
 
         await sub.stop();
 
-        expect(updateCount).to.equal(1); // it shouldn't emit an update for the same subplebbit record
+        expect(updateCount).to.equal(2); // mockPlebbitToReturnSpecificSubplebbit will delete updateAt which will force a second update
         expect(waitingRetryCount).to.equal(expectedWaitingRetryCount);
         // should be just ["fetching-ipns", "stopped"]
         // because it can't find a new record

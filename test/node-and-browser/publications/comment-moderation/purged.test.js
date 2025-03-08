@@ -184,7 +184,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
             const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-            differentPlebbit._timeouts["comment"] = 1000;
+            differentPlebbit._timeouts["comment-ipfs"] = 100;
 
             const commentsWithDifferentPlebbit = await Promise.all(
                 [postToPurge, postReply, replyUnderReply].map((comment) => differentPlebbit.createComment({ cid: comment.cid }))
