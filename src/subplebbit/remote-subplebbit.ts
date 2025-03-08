@@ -141,7 +141,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
-        this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
         this.protocolVersion = newProps.protocolVersion;
 
@@ -157,6 +156,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
         this.signature = newProps.signature;
+        this.setAddress(newProps.address);
         await this._updateLocalPostsInstance(newProps.posts);
 
         // Exclusive Instance props
@@ -250,7 +250,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
     private async _initSubInstanceWithListeners() {
         if (!this._plebbit._updatingSubplebbits[this.address]) throw Error("should be defined at this stage");
-        const log = Logger("plebbit-js:comment:update");
+        const log = Logger("plebbit-js:remote-subplebbit:update");
         const subInstance = this._plebbit._updatingSubplebbits[this.address];
         return <NonNullable<this["_updatingSubInstanceWithListeners"]>>{
             subplebbit: subInstance,

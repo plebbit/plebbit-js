@@ -187,7 +187,11 @@ export class SubplebbitClientsManager extends ClientsManager {
                 if (invalidCid) this._subplebbit._lastInvalidSubplebbitCid = invalidCid;
             }
             this._subplebbit.emit("error", <PlebbitError>subLoadingRes.criticalError);
-        } else if (subLoadingRes?.subplebbit && (this._subplebbit.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt) {
+        } else if (
+            subLoadingRes?.subplebbit &&
+            (this._subplebbit.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt &&
+            this._subplebbit.updateCid !== subLoadingRes.cid
+        ) {
             await this._subplebbit.initSubplebbitIpfsPropsNoMerge(subLoadingRes.subplebbit);
             this._subplebbit.updateCid = subLoadingRes.cid;
             log(
