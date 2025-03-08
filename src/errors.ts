@@ -23,10 +23,10 @@ export enum messages {
     ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_MODERATION_PUBLICATION_FROM_JSONIFIED_COMMENT_MODERATION = "User provided a jsonfied (cloned) CommentModeration and we're unable to derive request.commentModeration from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_VOTE_PUBLICATION_FROM_JSONIFIED_VOTE = "User provided a jsonfied (cloned) Vote and we're unable to derive request.vote from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_SUBPLEBBIT_EDIT_PUBLICATION_FROM_JSONIFIED_SUBPLEBBIT_EDIT = "User provided a jsonfied (cloned) SubplebbitEdit and we're unable to derive request.subplebbitEdit from it. This is an implementation error",
-
+    ERR_PLEBBIT_SQLITE_LONG_TERM_STORAGE_KEYV_ERROR = "Error in Keyv SQLITE adapter",
     // Fetch errors
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
-    ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS = "Failed to fetch an IPFS via IPFS P2P",
+    ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P = "Failed to fetch an IPFS CID via IPFS P2P",
     ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",
     ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS = "Failed to fetch Subplebbit IPNS record from gateway(s)",
     ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS = "Failed to fetch comment IPFS file from gateway(s)",

@@ -208,7 +208,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     // Errors that retrying to load the ipns record will not help
-    // Instead we should abort the retries, and emit an error to notify the user to do something about it
+    // Instead we should abort the retries, and emit an error event to notify the user to do something about it
     _isRetriableErrorWhenLoading(err: PlebbitError | Error): boolean {
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (

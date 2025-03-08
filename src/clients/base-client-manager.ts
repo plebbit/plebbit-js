@@ -513,7 +513,7 @@ export class BaseClientsManager {
             const fileContent = uint8ArrayToString(data);
 
             if (typeof fileContent !== "string")
-                throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cidV0, loadOpts, ipfsClient });
+                throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, loadOpts, ipfsClient });
             if (data.byteLength === loadOpts.maxFileSizeBytes) {
                 const calculatedCid: string = await calculateIpfsHash(fileContent);
                 if (calculatedCid !== cidV0)
@@ -537,7 +537,7 @@ export class BaseClientsManager {
             return result;
         } catch (e) {
             if (e instanceof PlebbitError) throw e;
-            else throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cidV0, error: e, loadOpts, ipfsClient });
+            else throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, error: e, loadOpts, ipfsClient });
         }
     }
 
