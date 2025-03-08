@@ -36,8 +36,9 @@ import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/co
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs } from "../../../pages/types.js";
-import { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
+import type { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
+import KeyvSqlite from "@keyv/sqlite";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -81,7 +82,7 @@ export class DbHandler {
             this._knex = knex(this._dbConfig);
             log.trace("initialized a new connection to db", dbFilePath);
         }
-        if (!this._keyv) this._keyv = new Keyv(`sqlite://${dbFilePath}`);
+        if (!this._keyv) this._keyv = new Keyv(new KeyvSqlite(`sqlite://${dbFilePath}`));
     }
 
     async createOrMigrateTablesIfNeeded() {
@@ -110,8 +111,8 @@ export class DbHandler {
         return this._dbConfig;
     }
 
-    async keyvGet(key: string, options?: { raw?: false }) {
-        const res = await this._keyv.get(key, options);
+    async keyvGet(key: string) {
+        const res = await this._keyv.get(key);
         return res;
     }
 

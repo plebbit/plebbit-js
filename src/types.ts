@@ -237,9 +237,8 @@ export interface StorageInterface {
     init: () => Promise<void>;
     getItem: (key: string) => Promise<any | undefined>;
     setItem: (key: string, value: any) => Promise<void>;
-    removeItem: (key: string) => Promise<boolean>;
+    removeItem: (key: string | string[]) => Promise<boolean>;
     clear: () => Promise<void>;
-    keys: () => Promise<string[]>;
     destroy: () => Promise<void>;
 }
 

@@ -322,7 +322,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     async _init() {
         const log = Logger("plebbit-js:plebbit:_init");
         // Init storage
-        this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
+        this._storage = new Storage(this);
         await this._storage.init();
 
         // Init stats
