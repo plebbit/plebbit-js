@@ -1,5 +1,5 @@
 import { ListenerSignature, TypedEmitter } from "tiny-typed-emitter";
-import { hideClassPrivateProps } from "../util";
+import { hideClassPrivateProps } from "../util.js";
 
 export class PlebbitTypedEmitter<T extends ListenerSignature<T>> extends TypedEmitter<T> {
     _mirroredClient?: PlebbitTypedEmitter<T> = undefined;

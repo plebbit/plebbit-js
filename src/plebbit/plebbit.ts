@@ -42,7 +42,6 @@ import {
     verifyCommentEdit,
     verifySubplebbitEdit
 } from "../signer/signatures.js";
-import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "../stats.js";
 import Storage from "../runtime/node/storage.js";
 import { ClientsManager } from "../clients/client-manager.js";
@@ -127,9 +126,9 @@ import {
 } from "../publications/subplebbit-edit/types.js";
 import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
-import type { LoadType } from "../clients/base-client-manager.js";
+import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 
-export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
+export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
