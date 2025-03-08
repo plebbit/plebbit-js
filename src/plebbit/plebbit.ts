@@ -116,9 +116,9 @@ import type {
     CommentModerationTypeJson,
     CreateCommentModerationOptions
 } from "../publications/comment-moderation/types.js";
-import { setupKuboAddressesRewriterAndHttpRouters } from "../runtime/node/setup-ipfs-rewrite-and-http-router.js";
+import { setupKuboAddressesRewriterAndHttpRouters } from "../runtime/node/setup-kubo-address-rewriter-and-http-router.js";
 import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
-import {
+import type {
     CreateSubplebbitEditPublicationOptions,
     SubplebbitEditJson,
     SubplebbitEditPublicationOptionsToSign,
