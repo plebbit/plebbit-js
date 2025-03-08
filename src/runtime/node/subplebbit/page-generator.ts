@@ -51,9 +51,7 @@ export class PageGenerator {
     }
 
     _chunkComments(comments: PageIpfs["comments"], isPreloadedSort: boolean): PageIpfs["comments"][] {
-        // this function is written by AI, looks good to me
         const FIRST_PAGE_SIZE = isPreloadedSort ? 512 * 1024 : 1024 * 1024; // 0.5MB for preloaded sorts, 1MB for others
-        const SUBSEQUENT_PAGE_BASE_SIZE = 1024 * 1024 * 2; // 2MB for second page, regardless of preloaded status
 
         // Calculate overhead with and without nextCid
         const OBJECT_WRAPPER_WITH_CID =
@@ -100,8 +98,9 @@ export class PageGenerator {
             if (index === 0) {
                 return FIRST_PAGE_SIZE; // First page is 0.5MB for preloaded, 1MB for others
             } else {
-                // Subsequent pages follow 2MB, 4MB, 8MB pattern regardless of preloaded status
-                return SUBSEQUENT_PAGE_BASE_SIZE * Math.pow(2, index - 1);
+                // For preloaded: 0.5MB, 1MB, 2MB, 4MB, etc.
+                // For non-preloaded: 1MB, 2MB, 4MB, 8MB, etc.
+                return FIRST_PAGE_SIZE * Math.pow(2, index);
             }
         }
 
@@ -252,7 +251,7 @@ export class PageGenerator {
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
-        const hierarchalSorts = Object.keys(REPLIES_SORT_TYPES).filter((replySortName) => !REPLIES_SORT_TYPES[replySortName].flat);
+        const hierarchalSorts = remeda.keys.strict(REPLIES_SORT_TYPES).filter((replySortName) => !REPLIES_SORT_TYPES[replySortName].flat);
         if (hierarchalSorts.length > 0) {
             const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
             if (hierarchalReplies.length === 0) return undefined;
