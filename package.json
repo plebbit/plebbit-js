@@ -184,6 +184,6 @@
     },
     "homepage": "https://github.com/plebbit/plebbit-js#readme",
     "engines": {
-        "node": ">=18.0.0"
+        "node": ">=18.20.0"
     }
 }
