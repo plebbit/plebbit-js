@@ -135,7 +135,7 @@ export class DomainResolver {
         chainProviderUrl: string,
         chainId: number | undefined
     ): Promise<string | null> {
-        const log = Logger("plebbit-js:resolver:resolveTxtRecord");
+        const log = Logger("plebbit-js:domain-resolver:resolveTxtRecord");
 
         // we only support resolving text records on ETH and Solana for now
         log.trace(`Attempting to resolve text record (${txtRecordName}) of address (${address}) with chain provider (${chainProviderUrl})`);
