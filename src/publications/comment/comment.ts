@@ -594,6 +594,13 @@ export class Comment
         this._updateState(commentState);
     }
 
+    private _handleWaitingRetryEventFromRpc(args: any) {
+        const log = Logger("plebbit-js:comment:update:_handleWaitingRetryEventFromRpc");
+        const err = <PlebbitError>args.params.result;
+        log("Received 'waiting-retry' event for comment", this.cid, "from RPC", err);
+        this.emit("waiting-retry", err);
+    }
+
     private async _handleErrorEventFromRpc(args: any) {
         const log = Logger("plebbit-js:comment:update:_handleErrorEventFromRpc");
         const err = <PlebbitError>args.params.result;
@@ -628,7 +635,8 @@ export class Comment
             .on("update", this._handleUpdateEventFromRpc.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
             .on("statechange", this._handleStateChangeFromRpc.bind(this))
-            .on("error", this._handleErrorEventFromRpc.bind(this));
+            .on("error", this._handleErrorEventFromRpc.bind(this))
+            .on("waiting-retry", this._handleWaitingRetryEventFromRpc.bind(this));
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }

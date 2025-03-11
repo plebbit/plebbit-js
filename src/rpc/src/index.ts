@@ -549,6 +549,7 @@ class PlebbitWsServer extends EventEmitter {
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
         comment.on("statechange", () => sendEvent("statechange", comment.state));
         comment.on("error", (error) => sendEvent("error", error));
+        comment.on("waiting-retry", (error) => sendEvent("waiting-retry", error));
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -615,12 +616,16 @@ class PlebbitWsServer extends EventEmitter {
         const errorListener = (error: PlebbitError) => sendEvent("error", error);
         subplebbit.on("error", errorListener);
 
+        const waitingRetryListener = (error: PlebbitError | Error) => sendEvent("waiting-retry", error);
+        subplebbit.on("waiting-retry", waitingRetryListener);
+
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             subplebbit.removeListener("update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
+            subplebbit.removeListener("waiting-retry", waitingRetryListener);
 
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")

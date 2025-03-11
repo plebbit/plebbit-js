@@ -60,6 +60,11 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._updateRpcClientStateFromUpdatingState(newUpdatingState);
     }
 
+    private _handleWaitingRetryEventFromRpcUpdate(args: any) {
+        const err = <PlebbitError | Error>args.params.result;
+        this.emit("waiting-retry", err);
+    }
+
     override async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
 
@@ -78,6 +83,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
+            .on("waiting-retry", this._handleWaitingRetryEventFromRpcUpdate.bind(this))
             .on("error", (args) => this.emit("error", args.params.result)); // zod here
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
