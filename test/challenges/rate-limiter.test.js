@@ -1,4 +1,4 @@
-import { testRateLimit, addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter";
+import { testRateLimit, addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter.js";
 import { expect } from "chai";
 
 // sometimes use random addresses because the rate limiter
