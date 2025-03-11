@@ -206,6 +206,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
+        const sortTypesFromPageCids = remeda.keys
+            .strict(this._pages.pageCids)
+            .filter((sortType) => this._pages.pageCids[sortType] === pageCid);
+        if (sortTypesFromPageCids.length > 0) {
+            this.updatePageCidsToSortTypes(this._pages.pageCids);
+        }
         const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
         const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
         const pageMaxSize = isFirstPage ? 1024 * 1024 : this._pagesMaxSize[pageCid];

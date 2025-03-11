@@ -1,4 +1,12 @@
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress, timestamp } from "../util.js";
+import {
+    binaryKeyToPubsubTopic,
+    doesDomainAddressHaveCapitalLetter,
+    hideClassPrivateProps,
+    isIpns,
+    pubsubTopicToDhtKey,
+    shortifyAddress,
+    timestamp
+} from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 
 import type { SubplebbitEvents } from "../types.js";
@@ -26,6 +34,7 @@ import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
 import { SignerWithPublicKeyAddress } from "../signer/index.js";
 import { SubplebbitClientsManager } from "./subplebbit-client-manager.js";
+import { getPeerIdFromPublicKey } from "../signer/util.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<Partial<SubplebbitIpfsType>, "posts"> {
     // public
@@ -58,11 +67,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     settings?: SubplebbitSettings;
     editable?: Pick<RemoteSubplebbit, keyof SubplebbitEditOptions>;
 
-    // Only for Subplebbit instance
+    // Only for Subplebbit instance, informational
     state!: SubplebbitState;
     updatingState!: SubplebbitUpdatingState;
     clients: SubplebbitClientsManager["clients"];
     updateCid?: string;
+    ipnsName?: string;
+    ipnsPubsubTopic?: string;
+    ipnsPubsubTopicDhtKey?: string;
 
     // should be used internally
     _plebbit: Plebbit;
@@ -156,6 +168,12 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
         this.signature = newProps.signature;
+        if (this.signature?.publicKey && !this.ipnsName) {
+            const signaturePeerId = await getPeerIdFromPublicKey(this.signature.publicKey);
+            this.ipnsName = signaturePeerId.toB58String();
+            this.ipnsPubsubTopic = binaryKeyToPubsubTopic(signaturePeerId.toBytes());
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
         this.setAddress(newProps.address);
         await this._updateLocalPostsInstance(newProps.posts);
 

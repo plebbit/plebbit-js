@@ -1,38 +1,14 @@
 import { pubsub as ipnsPubsubRouter, PubsubRoutingComponents } from "@helia/ipns/routing";
 import { CustomProgressEvent } from "progress-events";
-import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import Logger from "@plebbit/plebbit-logger";
 import { CID } from "multiformats/cid";
-import { sha256 } from "multiformats/hashes/sha2";
-import { base32 } from "multiformats/bases/base32";
 import { peerIdFromString } from "@libp2p/peer-id";
 
 import type { Fetch } from "@libp2p/fetch";
-import type { HeliaWithLibp2pPubsub } from "./types";
+import type { HeliaWithLibp2pPubsub } from "./types.js";
+import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey } from "../util.js";
 
 const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
-
-/**
- * converts a binary record key to a pubsub topic key
- */
-function keyToTopic(key: Uint8Array) {
-    const b64url = uint8ArrayToString(key, "base64url");
-
-    return `/record/${b64url}`;
-}
-
-const pubsubTopicToDhtKey = async (pubsubTopic: string) => {
-    // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
-    const string = `floodsub:${pubsubTopic}`;
-
-    // convert string to same cid as kubo https://github.com/libp2p/go-libp2p/blob/024293c77e17794b0dd9dacec3032b4c5a535f64/p2p/discovery/routing/routing.go#L70
-    const bytes = new TextEncoder().encode(string);
-    const hash = await sha256.digest(bytes);
-    const cidVersion = 1;
-    const multicodec = 0x55;
-    const cid = CID.create(cidVersion, multicodec, hash);
-    return cid.toString(base32);
-};
 
 async function addPubsubPeersFromDelegatedRouters(helia: HeliaWithLibp2pPubsub, ipnsPeersCid: string) {
     const pubsubPeers: ReturnType<typeof peerIdFromString>[] = [];
@@ -62,7 +38,7 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
     const originalRouterPubsub = <PubsubRoutingComponents["libp2p"]["services"]["pubsub"]>originalRouter.pubsub;
     originalRouter.get = async function (routingKey, options) {
         try {
-            const topic = keyToTopic(routingKey);
+            const topic = binaryKeyToPubsubTopic(routingKey);
 
             let ipnsRecordFromFetch: Uint8Array | undefined;
             if (!originalRouterPubsub.getTopics().includes(topic)) {

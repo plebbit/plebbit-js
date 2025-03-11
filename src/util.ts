@@ -24,6 +24,9 @@ import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { sha256 } from "multiformats/hashes/sha2";
+import { base32 } from "multiformats/bases/base32";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -334,4 +337,26 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: 
 
 export function calculateIpfsCidV0(content: string) {
     return calculateIpfsCidV0Lib(content);
+}
+
+/**
+ * converts a binary record key to a pubsub topic key
+ */
+export function binaryKeyToPubsubTopic(key: Uint8Array) {
+    const b64url = uint8ArrayToString(key, "base64url");
+
+    return `/record/${b64url}`;
+}
+
+export async function pubsubTopicToDhtKey(pubsubTopic: string) {
+    // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
+    const string = `floodsub:${pubsubTopic}`;
+
+    // convert string to same cid as kubo https://github.com/libp2p/go-libp2p/blob/024293c77e17794b0dd9dacec3032b4c5a535f64/p2p/discovery/routing/routing.go#L70
+    const bytes = new TextEncoder().encode(string);
+    const hash = await sha256.digest(bytes);
+    const cidVersion = 1;
+    const multicodec = 0x55;
+    const cid = CID.create(cidVersion, multicodec, hash);
+    return cid.toString(base32);
 }

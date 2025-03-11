@@ -99,7 +99,7 @@ export class BasePages {
 export class RepliesPages extends BasePages {
     override pages!: Partial<Record<ReplySortName, PageTypeJson>>;
 
-    override pageCids!: Record<ReplySortName, string> | {};
+    override pageCids!: Record<ReplySortName, string>;
 
     override clients!: RepliesPagesClientsManager["clients"];
 
@@ -175,7 +175,7 @@ export class RepliesPages extends BasePages {
 export class PostsPages extends BasePages {
     override pages!: Partial<Record<PostSortName, PageTypeJson>>;
 
-    override pageCids!: Record<PostSortName, string> | {};
+    override pageCids!: Record<PostSortName, string>;
 
     override clients!: PostsPagesClientsManager["clients"];
 
