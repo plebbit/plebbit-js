@@ -316,6 +316,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         props: Partial<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType>
     ) {
         if (remeda.isEmpty(props)) return;
+        await this._dbHandler.initDbIfNeeded();
+
         props._internalStateUpdateId = uuidV4();
         await this._dbHandler.lockSubState();
         const internalStateBefore = await this._getDbInternalState(false);
@@ -1926,14 +1928,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async _assertDomainResolvesCorrectly(domain: string) {
-        if (isStringDomain(domain)) {
-            await this._clientsManager.clearDomainCache(domain, "subplebbit-address");
-            const resolvedAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(domain);
-            if (resolvedAddress !== this.signer.address)
+    private async _assertDomainResolvesCorrectly(newAddressAsDomain: string) {
+        if (isStringDomain(newAddressAsDomain)) {
+            await this._clientsManager.clearDomainCache(newAddressAsDomain, "subplebbit-address");
+            const resolvedIpnsFromNewDomain = await this._clientsManager.resolveSubplebbitAddressIfNeeded(newAddressAsDomain);
+            if (resolvedIpnsFromNewDomain !== this.signer.address)
                 throwWithErrorCode("ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
-                    subplebbitAddress: this.address,
-                    resolvedAddress,
+                    currentSubplebbitAddress: this.address,
+                    newAddressAsDomain,
+                    resolvedIpnsFromNewDomain,
                     signerAddress: this.signer.address
                 });
         }
@@ -2022,18 +2025,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...newInternalProps
         };
 
-        await this._dbHandler.initDbIfNeeded();
-
         if (newProps.address && newProps.address !== this.address) {
             // we're modifying sub.address
             if (doesDomainAddressHaveCapitalLetter(newProps.address))
                 throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newProps.address });
+            if (this._plebbit.subplebbits.includes(newProps.address))
+                throw new PlebbitError("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS", {
+                    currentSubplebbitAddress: this.address,
+                    editProps: newProps,
+                    currentSubs: this._plebbit.subplebbits
+                });
             this._assertDomainResolvesCorrectly(newProps.address).catch((err: PlebbitError) => {
-                log.error(err.toString());
+                log.error(err);
                 this.emit("error", err);
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newProps.address}`);
-
             await this._updateDbInternalState(newProps);
             if (!(await this._dbHandler.isSubStartLocked())) {
                 log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
