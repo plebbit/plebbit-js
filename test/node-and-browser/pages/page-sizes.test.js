@@ -16,7 +16,7 @@ async function createMockPageOfSize(baseSize, nextCid = null) {
     else delete page.nextCid;
 
     // Calculate current size
-    const currentSize = Buffer.byteLength(JSON.stringify(page));
+    const currentSize = new TextEncoder().encode(JSON.stringify(page)).length;
 
     // If current size is already too large, throw error
     if (currentSize > baseSize) {
@@ -29,7 +29,8 @@ async function createMockPageOfSize(baseSize, nextCid = null) {
         const commentCopy = JSON.parse(JSON.stringify(page.comments[0]));
 
         // Calculate the size of a single comment plus the JSON comma and brackets overhead
-        const singleCommentSize = Buffer.byteLength(JSON.stringify([commentCopy])) - Buffer.byteLength(JSON.stringify([]));
+        const singleCommentSize =
+            new TextEncoder().encode(JSON.stringify([commentCopy])).length - new TextEncoder().encode(JSON.stringify([])).length;
 
         // Calculate how many comments we need to add, being more conservative
         const bytesNeeded = baseSize - currentSize;
@@ -45,7 +46,7 @@ async function createMockPageOfSize(baseSize, nextCid = null) {
         );
 
         // Final verification
-        const finalSize = Buffer.byteLength(JSON.stringify(page));
+        const finalSize = new TextEncoder().encode(JSON.stringify(page)).length;
         if (finalSize > baseSize) {
             throw new Error(`Generated page exceeds target size: ${finalSize} > ${baseSize} bytes`);
         }
