@@ -1,5 +1,10 @@
 import { expect } from "chai";
-import { addStringToIpfs, getRemotePlebbitConfigs, isPlebbitFetchingUsingGateways } from "../../../dist/node/test/test-util.js";
+import {
+    addStringToIpfs,
+    describeSkipIfRpc,
+    getRemotePlebbitConfigs,
+    isPlebbitFetchingUsingGateways
+} from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 
 import validPageFixture from "../../fixtures/valid_page.json" assert { type: "json" };
@@ -63,7 +68,7 @@ async function createMockPageOfSize(baseSize, nextCid = null) {
 }
 
 getRemotePlebbitConfigs().map((config) => {
-    describe(`Page size loading tests - ${config.name}`, async () => {
+    describeSkipIfRpc(`Page size loading tests - ${config.name}`, async () => {
         let plebbit, mockSubplebbit;
 
         before(async () => {

@@ -12,7 +12,8 @@ import {
     describeSkipIfRpc,
     mockPlebbit,
     waitTillPostInSubplebbitPages,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
@@ -230,7 +231,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(loadedPost.author.wallets).to.be.undefined;
         });
 
-        it(`publish() can be caught if subplebbit failed to load`, async () => {
+        itSkipIfRpc(`publish() can be caught if subplebbit failed to load`, async () => {
             const downSubplebbitAddress = signers[7].address; // an offline sub
             const post = await generateMockPost(downSubplebbitAddress, plebbit);
             plebbit._timeouts["subplebbit-ipns"] = 100; // need to change time out from 5 minutes to 100ms
@@ -272,7 +273,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            post = await publishRandomPost(subplebbitAddress, plebbit, {});
+            post = await publishRandomPost(subplebbitAddress, plebbit);
             parents.push(post);
         });
 

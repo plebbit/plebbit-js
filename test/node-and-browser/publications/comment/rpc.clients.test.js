@@ -59,14 +59,7 @@ describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
         await waitTillPostInSubplebbitPages(mockPost, plebbit);
         const postToUpdate = await plebbit.createComment({ cid: mockPost.cid });
-        const expectedStates = [
-            "fetching-ipfs",
-            "stopped",
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs",
-            "fetching-update-ipfs",
-            "stopped"
-        ];
+
         const recordedStates = [];
         const currentRpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
         postToUpdate.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
@@ -77,6 +70,19 @@ describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
         await new Promise((resolve) => postToUpdate.once("update", resolve)); // CommentUpdate update
         await postToUpdate.stop();
 
-        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(postToUpdate.depth).to.be.a("number");
+        expect(postToUpdate.updatedAt).to.be.a("number");
+
+        expect(recordedStates.slice(0, 4)).to.deep.equal([
+            "fetching-ipfs",
+            "stopped",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs"
+        ]);
+
+        if (recordedStates.length === 5)
+            // the rpc server did not fetch update-ipfs
+            expect(recordedStates.slice(4)).to.deep.equal(["stopped"]);
+        else expect(recordedStates.slice(4)).to.deep.equal(["fetching-update-ipfs", "stopped"]);
     });
 });

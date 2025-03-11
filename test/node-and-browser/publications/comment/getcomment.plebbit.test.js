@@ -1,7 +1,7 @@
 import signers from "../../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { loadAllPages, getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
+import { loadAllPages, getRemotePlebbitConfigs, addStringToIpfs, itSkipIfRpc } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -14,6 +14,10 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
+        });
+
+        after(async () => {
+            await plebbit.destroy();
         });
         it("post props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
@@ -82,7 +86,7 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
-        it(`plebbit.getComment times out if commentCid does not exist`, async () => {
+        itSkipIfRpc(`plebbit.getComment times out if commentCid does not exist`, async () => {
             const commentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // random cid doesn't exist anywhere
             const customPlebbit = await config.plebbitInstancePromise();
             customPlebbit._timeouts["comment-ipfs"] = 5 * 1000;

@@ -27,17 +27,15 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await mockRemotePlebbit();
             sub = await plebbit.getSubplebbit(subplebbitAddress);
             await sub.update();
-            postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit, {});
+            postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit);
             modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
 
-            postToBeLocked.update();
-            replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit, {});
-            modPost.update();
+            await postToBeLocked.update();
+            replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit);
+            await modPost.update();
         });
         after(async () => {
-            await postToBeLocked.stop();
-            await modPost.stop();
-            await sub.stop();
+            await plebbit.destroy();
         });
         it(`Author can't lock their own post`, async () => {
             const lockedEdit = await plebbit.createCommentModeration({
@@ -95,7 +93,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await resolveWhenConditionIsTrue(sub, async () => {
                 const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
-                return lockedPostInPage.locked === true;
+                return lockedPostInPage?.locked === true;
             });
 
             await sub.stop();

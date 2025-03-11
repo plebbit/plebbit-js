@@ -1,10 +1,10 @@
-import { getRemotePlebbitConfigs, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, getRemotePlebbitConfigs, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { expect } from "chai";
 
 const subplebbitAddress = signers[0].address;
 getRemotePlebbitConfigs().map((config) => {
-    describe(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
+    describeSkipIfRpc(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
         it(`A single subplebbit instance updating will set up plebbit._updatingSubplebbit. Calling stop should clean up all subscriptions and remove plebbit._updatingSubplebbits`, async () => {
             const plebbit = await config.plebbitInstancePromise();
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });

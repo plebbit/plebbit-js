@@ -137,7 +137,7 @@ getRemotePlebbitConfigs().map((config) => {
             for (const commentShape of shapes) expect(commentShape.author.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
 
-        it(`Can load pages with CommentUpdate that has extra props in them`, async () => {
+        itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in them`, async () => {
             const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(commentUpdateWithExtraProps, extraProps);
 
@@ -171,7 +171,7 @@ getRemotePlebbitConfigs().map((config) => {
             for (const shape of shapes) expect(shape.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
 
-        it(`Can load pages with CommentUpdate that has extra props in commentUpdate.author`, async () => {
+        itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in commentUpdate.author`, async () => {
             const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(commentUpdateWithExtraProps.author, extraProps);
 

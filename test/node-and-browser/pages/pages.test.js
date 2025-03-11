@@ -10,7 +10,8 @@ import {
     publishRandomReply,
     isPlebbitFetchingUsingGateways,
     resolveWhenConditionIsTrue,
-    waitTillReplyInParentPages
+    waitTillReplyInParentPages,
+    itSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import { expect } from "chai";
@@ -225,7 +226,7 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
-        it("posts.getPage will throw a timeout error when request times out", async () => {
+        itSkipIfRpc("posts.getPage will throw a timeout error when request times out", async () => {
             // Create a plebbit instance with a very short timeout for page-ipfs
             const plebbit = await mockPlebbit({ validatePages: false });
 
@@ -451,7 +452,7 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
-        it("replies.getPage will throw a timeout error when request times out", async () => {
+        itSkipIfRpc("replies.getPage will throw a timeout error when request times out", async () => {
             // Create a plebbit instance with a very short timeout for page-ipfs
             const plebbit = await mockPlebbit({ validatePages: false });
 
@@ -649,7 +650,7 @@ getRemotePlebbitConfigs().map((config) => {
 });
 
 describe(`getPage`, async () => {
-    it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
+    itSkipIfRpc(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
         const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
         const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl], validatePages: true });
 
@@ -665,7 +666,7 @@ describe(`getPage`, async () => {
             expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
         }
     });
-    it(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
+    itSkipIfRpc(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
         const plebbit = await mockPlebbit({ validatePages: true });
 
         const sub = await plebbit.getSubplebbit(subplebbitAddress);

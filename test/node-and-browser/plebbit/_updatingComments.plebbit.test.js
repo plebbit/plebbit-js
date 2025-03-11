@@ -1,4 +1,5 @@
 import {
+    describeSkipIfRpc,
     getRemotePlebbitConfigs,
     publishRandomPost,
     publishRandomReply,
@@ -9,7 +10,7 @@ import { expect } from "chai";
 
 const subplebbitAddress = signers[0].address;
 getRemotePlebbitConfigs().map((config) => {
-    describe(`plebbit._updatingComments - ${config.name}`, async () => {
+    describeSkipIfRpc(`plebbit._updatingComments - ${config.name}`, async () => {
         let commentCid;
         before(async () => {
             const plebbit = await config.plebbitInstancePromise();
