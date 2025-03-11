@@ -26,7 +26,7 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
         });
 
-        it("comment props are loaded correctly", async () => {
+        it("reply props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
             const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
@@ -43,7 +43,10 @@ getRemotePlebbitConfigs().map((config) => {
             expect(expectedCommentProps.author.address).to.be.a("string");
             expect(expectedCommentProps.protocolVersion).to.be.a("string");
             expectedCommentProps.cid = comment.cid;
-            expectedCommentProps.author.shortAddress = expectedCommentProps.author.address.slice(8).slice(0, 12);
+            if (!expectedCommentProps.author.address.includes("."))
+                // only shorten address when it's not a domain
+                expectedCommentProps.author.shortAddress = expectedCommentProps.author.address.slice(8).slice(0, 12);
+            else expectedCommentProps.author.shortAddress = expectedCommentProps.author.address;
 
             const loadedComment = await plebbit.getComment(comment.cid);
             expect(loadedComment.constructor.name).to.equal("Comment");

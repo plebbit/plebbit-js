@@ -630,7 +630,7 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             // need to send an update with first subplebbitUpdate if it's a local sub
-            if ("signer" in subplebbit) sendSubJson();
+            if ("signer" in subplebbit || subplebbit._rawSubplebbitIpfs) sendSubJson();
 
             // No need to call .update() if it's already running locally because we're listening to update event
             if (!isSubStarted) await subplebbit.update();

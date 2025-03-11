@@ -120,8 +120,8 @@ describe("Comments with Authors as domains", async () => {
 
         await mockCacheOfTextRecord({
             plebbit: tempPlebbit,
-            name: authorAddress,
-            key: "plebbit-author-address",
+            domain: authorAddress,
+            textRecord: "plebbit-author-address",
             value: signers[6].address
         });
 
@@ -170,8 +170,8 @@ describe(`Vote with authors as domains`, async () => {
         const authorAddress = "testgibbreish.eth";
         await mockCacheOfTextRecord({
             plebbit: tempPlebbit,
-            name: authorAddress,
-            key: "plebbit-author-address",
+            domain: authorAddress,
+            textRecord: "plebbit-author-address",
             value: signers[6].address
         });
 
