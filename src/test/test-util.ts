@@ -364,8 +364,8 @@ export async function mockPlebbitV2({
     mockResolve?: boolean;
     remotePlebbit?: boolean;
 }) {
+    if (remotePlebbit) plebbitOptions = { dataPath: undefined, ...plebbitOptions };
     const plebbit = await mockPlebbit(plebbitOptions, forceMockPubsub, stubStorage, mockResolve);
-    if (remotePlebbit) plebbit._canCreateNewLocalSub = () => false;
     return plebbit;
 }
 
@@ -1170,6 +1170,10 @@ export function mockUpdatingCommentResolvingAuthor(
 
 export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: string; textRecord: string; value: string }) {
     const cacheKey = opts.plebbit._clientsManager._getKeyOfCachedDomainTextRecord(opts.domain, opts.textRecord);
+    if (cacheKey.includes("undefined")) throw Error("User provided invalid mocked value for caching text records");
+    if (!String(opts.plebbit._storage.getItem).includes("return"))
+        throw Error("Can't mock cache of text record because plebbit._storage is stubbed and isn't doing anything");
+
     if (!opts.value) await opts.plebbit._storage.removeItem(cacheKey);
     else {
         const valueInCache = <CachedTextRecordResolve>{ timestampSeconds: timestamp(), valueOfTextRecord: opts.value };

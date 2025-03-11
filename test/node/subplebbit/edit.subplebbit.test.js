@@ -9,16 +9,16 @@ import {
     describeIfRpc,
     jsonifyLocalSubWithNoInternalProps,
     jsonifySubplebbitAndRemoveInternalProps,
-    mockRemotePlebbit,
-    waitTillPostInSubplebbitPages
-} from "../../../dist/node/test/test-util";
-import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util";
-import { timestamp } from "../../../dist/node/util";
+    waitTillPostInSubplebbitPages,
+    mockCacheOfTextRecord,
+    mockPlebbitV2
+} from "../../../dist/node/test/test-util.js";
+import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util.js";
+import { timestamp } from "../../../dist/node/util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
 import path from "path";
 import * as remeda from "remeda";
-import * as resolverClass from "../../../dist/node/resolver";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -29,18 +29,22 @@ const { expect, assert } = chai;
 describeSkipIfRpc(`subplebbit.edit`, async () => {
     let plebbit, remotePlebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
-        const testEthRpc = `https://testEthRpc-${uuidV4()}.com`;
-        plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } }, true, false);
-        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
-        subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
+        plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
+        remotePlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true, remotePlebbit: true });
+
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         ethAddress = `test-edit-${uuidV4()}.eth`;
 
-        resolverClass.viemClients["eth" + testEthRpc] = {
-            getEnsText: ({ name, key }) => {
-                if (name === ethAddress && key === "subplebbit-address") return subplebbit.signer.address;
-                else return null;
-            }
-        };
+        await mockCacheOfTextRecord({ plebbit, domain: ethAddress, textRecord: "subplebbit-address", value: subplebbit.signer.address });
+        await mockCacheOfTextRecord({
+            plebbit: remotePlebbit,
+            domain: ethAddress,
+            textRecord: "subplebbit-address",
+            value: subplebbit.signer.address
+        });
+
+        const resolvedSubAddress = await remotePlebbit._clientsManager.resolveSubplebbitAddressIfNeeded(ethAddress);
+        expect(resolvedSubAddress).to.equal(subplebbit.signer.address);
 
         await plebbit.resolveAuthorAddress("esteban.eth");
         await subplebbit.start();
@@ -60,7 +64,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
                 const remoteSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
                 await remoteSubplebbit.update();
                 await resolveWhenConditionIsTrue(remoteSubplebbit, () => remoteSubplebbit[keyToEdit] === newValue);
-                remoteSubplebbit.stop();
+                await remoteSubplebbit.stop();
                 expect(remoteSubplebbit[keyToEdit]).to.equal(newValue);
                 expect(jsonifySubplebbitAndRemoveInternalProps(remoteSubplebbit)).to.deep.equal(
                     jsonifySubplebbitAndRemoveInternalProps(subplebbit)
@@ -182,32 +186,41 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
-            const ethRpcTest = `https://testEthRpc${uuidV4()}.com`;
-            const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest], chainId: 1 } } });
+            // TODO investigate why this test gets slower the more times it's run
+            const plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
             // create subplebbit
             const subplebbitTitle = "subplebbit title" + timestamp();
             const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
-            if (editArgs.address)
-                resolverClass.viemClients["eth" + ethRpcTest] = {
-                    getEnsText: ({ name, key }) => {
-                        if (name === editArgs.address && key === "subplebbit-address") return subplebbit.signer.address;
-                        else return null;
-                    }
-                };
+            if (editArgs.address) {
+                await mockCacheOfTextRecord({
+                    plebbit,
+                    domain: editArgs.address,
+                    textRecord: "subplebbit-address",
+                    value: subplebbit.signer.address
+                });
+                plebbit._storage.removeItem = () => {}; // stop clearing cache when editing subplebbit address
+
+                const resolvedSubAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(editArgs.address);
+                expect(resolvedSubAddress).to.equal(subplebbit.signer.address);
+            }
+
+            let editIsFinished;
 
             // subplebbit is updating
-            const updatingSubplebbit = await createSubWithNoChallenge({ address: subplebbit.address }, plebbit);
+            const updatingSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
+            updatingSubplebbit.on("update", () => {
+                if (remeda.isDeepEqual(remeda.pick(updatingSubplebbit, Object.keys(editArgs)), editArgs)) editIsFinished = true; // there's a case where the edit is finished and update is emitted before we get to update editIsFinished
+            });
             expect(updatingSubplebbit.signer).to.be.a("object");
             expect(updatingSubplebbit.title).to.equal(subplebbitTitle);
             await updatingSubplebbit.update();
 
             // start subplebbit
-            const startedSubplebbit = await createSubWithNoChallenge({ address: subplebbit.address }, plebbit);
+            const startedSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
             await startedSubplebbit.start();
 
             expect(startedSubplebbit.title).to.equal(subplebbitTitle);
 
-            let editIsFinished;
             const updateEventPromise = new Promise((resolve) =>
                 updatingSubplebbit.on("update", (updatedSubplebbit) => editIsFinished && resolve(updatedSubplebbit))
             );
@@ -264,19 +277,12 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
     );
 
     it(`Can edit a local sub address, then start it`, async () => {
-        const ethRpcTest = `https://testEthRpc${uuidV4()}.com`;
-        const customPlebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest], chainId: 1 } } });
+        const customPlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
         const signer = await customPlebbit.createSigner();
         const domain = `edit-before-start-${uuidV4()}.eth`;
 
-        const originalPlebbit = await mockPlebbit();
+        await mockCacheOfTextRecord({ plebbit: customPlebbit, domain, textRecord: "subplebbit-address", value: signer.address });
 
-        resolverClass.viemClients["eth" + ethRpcTest] = {
-            getEnsText: ({ name, key }) => {
-                if (name === domain && key === "subplebbit-address") return signer.address;
-                else return null;
-            }
-        };
         const sub = await createSubWithNoChallenge({ signer }, customPlebbit);
         await sub.edit({ address: domain });
         // Check for locks
@@ -299,10 +305,14 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
 
 describe(`Edit misc`, async () => {
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not exist`, async () => {
-        const customPlebbit = await mockPlebbit();
+        const customPlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
         const newSub = await customPlebbit.createSubplebbit();
+        const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.eth");
+        expect(resolvedSubAddress).to.equal(null);
+
         // Has no subplebbit-address text record
         await newSub.edit({ address: "no-sub-address.eth" });
+
         expect(newSub.address).to.equal("no-sub-address.eth");
         await newSub.delete();
     });
@@ -311,34 +321,12 @@ describe(`Edit misc`, async () => {
         const customPlebbit = await mockPlebbit();
         const newSub = await customPlebbit.createSubplebbit();
 
+        const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.eth");
+        expect(resolvedSubAddress).to.equal(null);
+
         // Should not match signer.address
         await newSub.edit({ address: "different-signer.eth" });
         expect(newSub.address).to.equal("different-signer.eth");
-        await newSub.delete();
-    });
-
-    it.skip(`Setting sub.settings.challenges[0].exclude.rateLimit to a string doesn't corrupt the signature`, async () => {
-        // This test is not needed because zod will throw if you tried to set rateLimit to a string
-        const customPlebbit = await mockPlebbit();
-        const remotePlebbit = await mockRemotePlebbit();
-        const newSub = await customPlebbit.createSubplebbit();
-        await newSub.start();
-        await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
-        await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
-
-        const newSettings = remeda.clone(newSub.settings);
-        newSettings.challenges[0].exclude[0].rateLimit = "123";
-        newSettings.challenges[0].exclude[0].firstCommentTimestamp = "123";
-
-        await newSub.edit({ settings: newSettings });
-        expect(newSub.challenges[0].exclude[0].rateLimit).to.equal("123");
-        expect(newSub.settings.challenges[0].exclude[0].rateLimit).to.equal("123");
-        expect(newSub.settings.challenges[0].exclude[0].firstCommentTimestamp).to.equal("123");
-
-        await new Promise((resolve) => newSub.once("update", resolve));
-        const newSubRemote = await remotePlebbit.getSubplebbit(newSub.address);
-        expect(newSubRemote.challenges[0].exclude[0].rateLimit).to.equal("123");
-
         await newSub.delete();
     });
 });
