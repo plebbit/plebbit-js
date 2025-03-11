@@ -4,7 +4,8 @@ import {
     mockRemotePlebbit,
     describeSkipIfRpc,
     mockGatewayPlebbit,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    addStringToIpfs
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -15,14 +16,14 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
-    let gatewayPlebbit, plebbit;
+    let plebbit;
 
     before(async () => {
-        gatewayPlebbit = await mockGatewayPlebbit();
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     it(`subplebbit.posts.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         const sortTypes = Object.keys(mockSub.posts.clients.kuboRpcClients);
         expect(sortTypes.length).to.be.greaterThan(0);
@@ -54,6 +55,16 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
     it("Correct state of 'new' sort is updated after fetching second page of 'new' pages", async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
         const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
+
+        const firstPage = JSON.parse(await plebbit.fetchCid(mockSub.posts.pageCids.new)); // we don't want it to validate the page schema
+
+        const secondPageMocked = { comments: firstPage.comments.slice(1) }; // create a slightly different page
+        const secondPageCid = await addStringToIpfs(JSON.stringify(secondPageMocked));
+
+        const firstPageMocked = { ...firstPage, nextCid: secondPageCid };
+        const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
+
+        mockSub.posts.pageCids.new = firstPageMockedCid;
 
         const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipfs", "stopped"];
         const actualStates = [];

@@ -463,7 +463,7 @@ getRemotePlebbitConfigs().map((config) => {
             const comment = await plebbit.getComment(postWithNestedReplies.cid);
 
             // Override the pageCid to use our non-existent CID
-            comment.replies.pageCids.active = nonExistentCid;
+            comment.replies.pageCids.new = nonExistentCid;
 
             try {
                 // This should time out
