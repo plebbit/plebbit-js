@@ -8,7 +8,6 @@ import {
     findCommentInPage,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
-    waitTillPostInSubplebbitPages,
     waitTillReplyInParentPages,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
@@ -24,20 +23,6 @@ const roles = [
     { role: "admin", signer: signers[2] },
     { role: "mod", signer: signers[3] }
 ];
-
-// only mods can purge
-
-// after purging
-// should not be able to load it (DONE)
-// should not be able to load its children (DONE)
-// should not be able to vote on it (DONE)
-// should not be able to load one of its pages (DONE)
-// the purged post should not appear in the subplebbit posts (DONE)
-// the purged comment should not appear in its parent pages ()
-
-// should also test loading pages of postToPurge to see if its tree exists
-
-// should not be able to load its comment update (DONE)
 
 getRemotePlebbitConfigs().map((config) => {
     describe(`Purging post - ${config.name}`, async () => {
@@ -79,23 +64,23 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Regular author can not purge a comment`, async () => {
-            const removeEdit = await plebbit.createCommentModeration({
+            const purgeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToPurge.subplebbitAddress,
                 commentCid: postToPurge.cid,
                 commentModeration: { reason: "To purge a post", purged: true },
                 signer: await plebbit.createSigner() // random author
             });
-            await publishWithExpectedResult(removeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
+            await publishWithExpectedResult(purgeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
         });
 
         it(`Mod can mark an author post as purged`, async () => {
-            const removeEdit = await plebbit.createCommentModeration({
+            const purgeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToPurge.subplebbitAddress,
                 commentCid: postToPurge.cid,
                 commentModeration: { reason: "To purge a post", purged: true },
                 signer: roles[2].signer // Mod role
             });
-            await publishWithExpectedResult(removeEdit, true);
+            await publishWithExpectedResult(purgeEdit, true);
         });
 
         it(`The whole reply tree including post, replies and their pages should not be stored in the ipfs node of the subplebbit`, async () => {
