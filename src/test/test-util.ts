@@ -411,7 +411,9 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
         for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
 
-    plebbit.on("error", () => {});
+    plebbit.on("error", (e) => {
+        console.error("Error emitted to plebbit instance", e);
+    });
     return plebbit;
 }
 
@@ -1071,6 +1073,7 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
 export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
     const updatingComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
     if (!updatingComment) throw Error("Comment should be updating before starting to mock");
+    if (commentToBeMocked._plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
 
     delete updatingComment.updatedAt;
     delete updatingComment._rawCommentUpdate;
@@ -1126,6 +1129,7 @@ export async function createCommentUpdateWithInvalidSignature(commentCid: string
 export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any) {
     const sub = plebbit._updatingSubplebbits[subAddress];
     if (!sub) throw Error("Can't mock sub when it's not being updated");
+    if (plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
 
     delete sub._rawSubplebbitIpfs;
     delete sub.updatedAt;
@@ -1155,6 +1159,8 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     const updatingComment = comment._plebbit._updatingComments[comment.cid!];
     if (!updatingComment) throw Error("Comment should be updating before starting to mock");
 
+    if (comment._plebbit._plebbitRpcClient)
+        throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
 }
 
@@ -1165,6 +1171,7 @@ export function mockUpdatingCommentResolvingAuthor(
     const updatingComment = comment._plebbit._updatingComments[comment.cid!];
     if (!updatingComment) throw Error("Comment should be updating before starting to mock");
 
+    if (comment._plebbit._plebbitRpcClient) throw Error("Can't mock cache with plebbit rpc clients");
     updatingComment._clientsManager.resolveAuthorAddressIfNeeded = mockFunction;
 }
 
@@ -1174,6 +1181,7 @@ export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: st
     if (!String(opts.plebbit._storage.getItem).includes("return"))
         throw Error("Can't mock cache of text record because plebbit._storage is stubbed and isn't doing anything");
 
+    if (opts.plebbit._plebbitRpcClient) throw Error("Can't mock cache with plebbit rpc clients");
     if (!opts.value) await opts.plebbit._storage.removeItem(cacheKey);
     else {
         const valueInCache = <CachedTextRecordResolve>{ timestampSeconds: timestamp(), valueOfTextRecord: opts.value };
