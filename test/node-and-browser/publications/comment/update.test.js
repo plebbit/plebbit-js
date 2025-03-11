@@ -52,7 +52,7 @@ getRemotePlebbitConfigs().map((config) => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
             const reply = await publishRandomReply(
-                subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0),
+                subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0 && !post.locked),
                 plebbit
             );
 
