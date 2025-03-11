@@ -7,7 +7,7 @@ export enum messages {
     ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
-    ERR_IPNS_IS_INVALID = "IPNS is invalid",
+    ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS = "Subplebbit owner attempted to edit subplebbit.address to a new address that already exists",
 
     // Plebbit errors
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
