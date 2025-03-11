@@ -76,7 +76,7 @@
         "js-sha512": "0.9.0",
         "keyv": "5.3.1",
         "knex": "3.1.0",
-        "kubo-rpc-client": "5.0.2",
+        "kubo-rpc-client": "5.1.0",
         "libp2p-crypto": "0.21.2",
         "limiter-es6-compat": "2.1.2",
         "localforage": "1.10.0",
