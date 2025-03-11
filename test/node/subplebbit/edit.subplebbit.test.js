@@ -307,8 +307,10 @@ describe(`Edit misc`, async () => {
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not exist`, async () => {
         const customPlebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
         const newSub = await customPlebbit.createSubplebbit();
-        const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.eth");
-        expect(resolvedSubAddress).to.equal(null);
+        if (!customPlebbit._plebbitRpcClient) {
+            const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.eth");
+            expect(resolvedSubAddress).to.equal(null);
+        }
 
         // Has no subplebbit-address text record
         await newSub.edit({ address: "no-sub-address.eth" });
@@ -319,15 +321,33 @@ describe(`Edit misc`, async () => {
 
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not match subplebbit.signer.address`, async () => {
         const customPlebbit = await mockPlebbit();
+        const subAddress = "different-signer.eth";
+        if (customPlebbit.subplebbits.includes(subAddress)) {
+            const sub = await customPlebbit.createSubplebbit({ address: subAddress });
+            await sub.delete();
+            await new Promise((resolve) => customPlebbit.once("subplebbitschange", resolve));
+        }
         const newSub = await customPlebbit.createSubplebbit();
 
-        const resolvedSubAddress = await customPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded("no-sub-address.eth");
-        expect(resolvedSubAddress).to.equal(null);
-
         // Should not match signer.address
-        await newSub.edit({ address: "different-signer.eth" });
-        expect(newSub.address).to.equal("different-signer.eth");
+        await newSub.edit({ address: subAddress });
+        expect(newSub.address).to.equal(subAddress);
         await newSub.delete();
+    });
+
+    it(`subplebbit.edit({address}) fails if the new address is already taken by another subplebbit`, async () => {
+        const customPlebbit = await mockPlebbit();
+        const newSub = await customPlebbit.createSubplebbit();
+        const ethAddress = `subplebbit-address-${uuidV4()}.eth`;
+        await newSub.edit({ address: ethAddress });
+
+        const anotherSub = await customPlebbit.createSubplebbit();
+        try {
+            await anotherSub.edit({ address: newSub.address });
+            expect.fail("Should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS");
+        }
     });
 });
 
@@ -417,6 +437,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
     });
     [
         { title: `Test subplebbit RPC title edit ${Date.now()}` },
