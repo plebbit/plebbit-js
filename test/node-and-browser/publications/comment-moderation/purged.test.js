@@ -48,16 +48,18 @@ getRemotePlebbitConfigs().map((config) => {
             remotePlebbitIpfs = await mockPlebbitNoDataPathWithOnlyKuboClient(); // this instance is connected to the same IPFS node as the sub
             postToPurge = await publishRandomPost(subplebbitAddress, plebbit, { content: "post to be purged" + Date.now() });
             await postToPurge.update();
-            await resolveWhenConditionIsTrue(postToPurge, () => typeof postToPurge.updatedAt === "number");
-            await waitTillPostInSubplebbitPages(postToPurge, plebbit);
             postReply = await publishRandomReply(postToPurge, plebbit);
             await postReply.update();
-            await resolveWhenConditionIsTrue(postReply, () => typeof postReply.updatedAt === "number");
-
-            await waitTillReplyInParentPages(postReply, plebbit);
 
             replyUnderReply = await publishRandomReply(postReply, plebbit);
+            await replyUnderReply.update();
             await waitTillReplyInParentPages(replyUnderReply, plebbit);
+
+            await Promise.all(
+                [postToPurge, postReply, replyUnderReply].map((comment) =>
+                    resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number")
+                )
+            );
 
             // make sure both postToPurge and postReply exists on the IPFS node
 
@@ -81,7 +83,7 @@ getRemotePlebbitConfigs().map((config) => {
                 subplebbitAddress: postToPurge.subplebbitAddress,
                 commentCid: postToPurge.cid,
                 commentModeration: { reason: "To purge a post", purged: true },
-                signer: await plebbit.createSigner() // Mod role
+                signer: await plebbit.createSigner() // random author
             });
             await publishWithExpectedResult(removeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
         });
@@ -118,15 +120,12 @@ getRemotePlebbitConfigs().map((config) => {
         it(`Purged post don't show in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: postToPurge.subplebbitAddress });
 
-            const updatePromise = new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const purgedPostInPage = await findCommentInPage(postToPurge.cid, sub.posts.pageCids.new, sub.posts);
-                    if (!purgedPostInPage) resolve();
-                })
-            );
             await sub.update();
 
-            await updatePromise;
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const purgedPostInPage = await findCommentInPage(postToPurge.cid, sub.posts.pageCids.new, sub.posts);
+                return purgedPostInPage === undefined; // if we can't find it then it's purged
+            });
 
             await sub.stop();
 
