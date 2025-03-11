@@ -31,7 +31,7 @@ describe(`subplebbit.start`, async () => {
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
-    after(async () => subplebbit.stop());
+    after(async () => await plebbit.destroy());
 
     it(`Started Sub can receive publications sequentially`, async () => {
         await publishRandomPost(subplebbit.address, plebbit);
