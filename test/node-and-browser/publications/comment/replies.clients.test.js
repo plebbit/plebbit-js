@@ -135,8 +135,7 @@ describe(`comment.replies.clients`, async () => {
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await plebbit.getComment(commentCid);
             await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve));
-            if (!comment.updatedAt) await new Promise((resolve) => comment.once("update", resolve));
+            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
 
             const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
 

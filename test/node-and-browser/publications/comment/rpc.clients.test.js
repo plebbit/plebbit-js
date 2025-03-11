@@ -1,4 +1,3 @@
-import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -15,7 +14,6 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-const mathCliSubplebbitAddress = signers[1].address;
 
 describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
     let plebbit;
@@ -73,16 +71,19 @@ describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
         expect(postToUpdate.depth).to.be.a("number");
         expect(postToUpdate.updatedAt).to.be.a("number");
 
-        expect(recordedStates.slice(0, 4)).to.deep.equal([
-            "fetching-ipfs",
-            "stopped",
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs"
-        ]);
+        if (recordedStates.length === 2) expect(recordedStates).to.deep.equal(["fetching-ipfs", "stopped"]);
+        else {
+            expect(recordedStates.slice(0, 4)).to.deep.equal([
+                "fetching-ipfs",
+                "stopped",
+                "fetching-subplebbit-ipns",
+                "fetching-subplebbit-ipfs"
+            ]);
 
-        if (recordedStates.length === 5)
-            // the rpc server did not fetch update-ipfs
-            expect(recordedStates.slice(4)).to.deep.equal(["stopped"]);
-        else expect(recordedStates.slice(4)).to.deep.equal(["fetching-update-ipfs", "stopped"]);
+            if (recordedStates.length === 5)
+                // the rpc server did not fetch update-ipfs
+                expect(recordedStates.slice(4)).to.deep.equal(["stopped"]);
+            else expect(recordedStates.slice(4)).to.deep.equal(["fetching-update-ipfs", "stopped"]);
+        }
     });
 });

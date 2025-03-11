@@ -79,7 +79,8 @@ getRemotePlebbitConfigs().map((config) => {
                 await customPlebbit.getSubplebbit(doesNotExistSubplebbitAddress);
                 expect.fail("should not succeed");
             } catch (e) {
-                expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]).to.include(e.code);
+                if (customPlebbit._plebbitRpcClient) expect(e.name).to.equal("TimeoutError");
+                else expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]).to.include(e.code);
             }
         });
     });

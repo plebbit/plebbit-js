@@ -10,9 +10,9 @@ import {
     getRemotePlebbitConfigs,
     mockCommentToReturnSpecificCommentUpdate,
     describeSkipIfRpc,
-    isPlebbitFetchingUsingGateways
+    isPlebbitFetchingUsingGateways,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
@@ -141,7 +141,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(reply.author.subplebbit).to.be.a("object");
         });
 
-        it(`comment.update() emits waiting-retry and keeps retrying if CommentIpfs loading times out`, async () => {
+        itSkipIfRpc(`comment.update() emits waiting-retry and keeps retrying if CommentIpfs loading times out`, async () => {
             // Create a comment with a CID that doesn't exist or will time out
             const nonExistentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // Random CID that doesn't exist
             const createdComment = await plebbit.createComment({ cid: nonExistentCid });

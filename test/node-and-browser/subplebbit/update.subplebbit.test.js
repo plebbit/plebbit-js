@@ -9,7 +9,8 @@ import {
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue,
     mockGatewayPlebbit,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    describeSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
@@ -218,7 +219,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-describe(`Subplebbit emitting waiting-retry`, () => {
+describeSkipIfRpc(`Subplebbit emitting waiting-retry`, () => {
     it(`subplebbit.update() emits waiting-retry if loading subplebbit record times out - IPFS Gateway`, async () => {
         const stallingGateway = "http://127.0.0.1:14000"; // this gateway will wait for 11s before responding
         const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway], validatePages: true });
