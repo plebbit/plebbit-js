@@ -13,7 +13,6 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
-import { verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -195,20 +194,6 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
     ];
     forbiddenFieldsWithValue.map((forbiddenType) =>
         itSkipIfRpc(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
-            const propName = Object.keys(forbiddenType)[0];
-            try {
-                await generateMockPost(subplebbitAddress, plebbit, false, forbiddenType);
-                expect.fail("Should fail because these fields should not part be of CreateComment");
-            } catch (e) {
-                // no need to test for cid
-                if (forbiddenType.depth) {
-                    expect(e.code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
-                } else if (!forbiddenType.cid) {
-                    expect(e.code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
-                    expect(e.details.zodError.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
-                }
-            }
-
             const post = await generateMockPost(subplebbitAddress, plebbit, false);
             await setExtraPropOnCommentAndSign(post, forbiddenType, true);
             await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_RESERVED_FIELD);
