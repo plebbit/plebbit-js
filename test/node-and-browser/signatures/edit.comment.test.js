@@ -21,12 +21,17 @@ describe("Sign commentedit", async () => {
             reason: "New comment edit",
             content: "Just so",
             signer: signers[7],
-            timestamp: timestamp()
+            timestamp: timestamp(),
+            protocolVersion: "1.0.0"
         };
+
         editSignature = await signCommentEdit(editProps, plebbit);
     });
 
     it(`plebbit.createCommentEdit creates a valid CommentEdit`, async () => {
+        const commentEdit = await plebbit.createCommentEdit(editProps);
+        expect(commentEdit.signature).to.deep.equal(editSignature);
+
         const verification = await verifyCommentEdit(
             remeda.omit({ ...editProps, signature: editSignature }, ["signer"]),
             plebbit.resolveAuthorAddresses,
@@ -53,6 +58,7 @@ describeSkipIfRpc("Verify CommentEdit", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
+        await plebbit.createCommentEdit(validCommentEditFixture); // should throw if it has an invalid schema
     });
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
         const edit = remeda.clone(validCommentEditFixture);

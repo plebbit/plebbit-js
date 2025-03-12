@@ -6,7 +6,7 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { createNewIpns, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
 
 const ensSubplebbitAddress = "plebbit.eth";
 const subplebbitSigner = signers[0];
@@ -52,6 +52,36 @@ getRemotePlebbitConfigs().map((config) => {
             };
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 3));
             expect(updatedHasBeenCalled).to.be.false;
+        });
+
+        it(`plebbit.getSubplebbit should throw immedietly if it encounters a non retriable error`, async () => {
+            const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+            const ipnsObj = await createNewIpns();
+            await ipnsObj.publishToIpns(JSON.stringify({ ...loadedSubplebbit._rawSubplebbitIpfs, updatedAt: 12345 })); // publish invalid signature
+
+            try {
+                await plebbit.getSubplebbit(ipnsObj.signer.address);
+                expect.fail("should not succeed");
+            } catch (e) {
+                expect([
+                    "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS",
+                    "ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED"
+                ]).to.include(e.code);
+            }
+        });
+
+        it(`plebbit.getSubplebbit times out if subplebbit does not load`, async () => {
+            const doesNotExistSubplebbitAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zx"; // random sub address, should not be able to resolve this
+            const customPlebbit = await config.plebbitInstancePromise();
+            customPlebbit._timeouts["subplebbit-ipns"] = 1 * 1000; // change timeout from 5min to 1s
+
+            try {
+                await customPlebbit.getSubplebbit(doesNotExistSubplebbitAddress);
+                expect.fail("should not succeed");
+            } catch (e) {
+                if (customPlebbit._plebbitRpcClient) expect(e.name).to.equal("TimeoutError");
+                else expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]).to.include(e.code);
+            }
         });
     });
 });

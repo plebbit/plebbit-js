@@ -14,7 +14,7 @@ import type {
     SubplebbitRole
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
-import { SortHandler } from "./sort-handler.js";
+import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
@@ -74,7 +74,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     getThumbnailUrlOfLink,
-    importSignerIntoIpfsNode,
+    importSignerIntoKuboNode,
     isDirectoryEmptyRecursive,
     listSubplebbits,
     moveSubplebbitDbToDeletedDirectory
@@ -129,7 +129,8 @@ import {
 import {
     parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails,
-    parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails
+    parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails,
+    parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails
 } from "../../../schema/schema-util.js";
 import {
     CommentIpfsSchema,
@@ -151,6 +152,7 @@ import { CID, globSource } from "kubo-rpc-client";
 import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
 import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
+import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -160,7 +162,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _defaultSubplebbitChallenges: SubplebbitChallengeSetting[] = [
         {
             name: "captcha-canvas-v3",
-            exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
         }
     ];
 
@@ -173,17 +175,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     >;
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
 
-    private _cidsToUnPin: string[] = [];
-    private _mfsPathsToUnPin: string[] = [];
+    private _cidsToUnPin: Set<string> = new Set<string>();
+    private _mfsPathsToUnPin: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger!: boolean;
 
-    private _sortHandler!: SortHandler;
+    private _pageGenerator!: PageGenerator;
     _dbHandler!: DbHandler;
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
     private _updateLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
-    private _internalStateUpdateId!: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"];
+    private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
+
+    private _updateLocalSubTimeout?: NodeJS.Timeout = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -268,7 +272,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this._dbHandler) {
             this._dbHandler = new DbHandler(this);
             await this._dbHandler.initDbConfigIfNeeded();
-            this._sortHandler = new SortHandler(this);
+            this._pageGenerator = new PageGenerator(this);
         }
     }
 
@@ -284,16 +288,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._setSubplebbitIpfsIfNeeded();
 
         await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+
+        // need to validate schema of Subplebbit IPFS
+        if (this._rawSubplebbitIpfs)
+            try {
+                parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(this._rawSubplebbitIpfs);
+            } catch (e) {
+                if (e instanceof Error) {
+                    e.message = "Local subplebbit" + this.address + " has an invalid schema: " + e.message;
+                    throw e;
+                }
+            }
     }
     private async _importSubplebbitSignerIntoIpfsIfNeeded() {
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
         if (!this.signer.ipfsKey) throw Error("subplebbit.signer.ipfsKey is not defined");
 
-        const ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
-        if (!ipfsNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
-            await importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-                url: this._plebbit.ipfsHttpClientsOptions![0].url!.toString(),
-                headers: this._plebbit.ipfsHttpClientsOptions![0].headers
+        const kuboNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
+        if (!kuboNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
+            await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+                url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
+                headers: this._plebbit.kuboRpcClientsOptions![0].headers
             });
     }
 
@@ -301,6 +316,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         props: Partial<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType>
     ) {
         if (remeda.isEmpty(props)) return;
+        await this._dbHandler.initDbIfNeeded();
+
         props._internalStateUpdateId = uuidV4();
         await this._dbHandler.lockSubState();
         const internalStateBefore = await this._getDbInternalState(false);
@@ -359,10 +376,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
         if (!this.settings?.challenges) {
             this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges };
-            this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
             this._usingDefaultChallenge = true;
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
+
+        this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
 
         await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
 
@@ -404,9 +422,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const latestComment = await this._dbHandler.queryLatestCommentCid(trx);
         await this._dbHandler.commitTransaction("subplebbit");
 
+        const preloadedPostsPages = ["hot"];
         const [stats, subplebbitPosts] = await Promise.all([
             this._dbHandler.querySubplebbitStats(undefined),
-            this._sortHandler.generateSubplebbitPosts()
+            this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages)
         ]);
 
         if (subplebbitPosts && this.posts?.pageCids) {
@@ -415,13 +434,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
             );
 
-            this._cidsToUnPin.push(...pageCidsToUnPin);
+            pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         }
 
         const newPostUpdates = await this._calculateNewPostUpdates();
 
         const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
-        if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.push(this.statsCid);
+        if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
 
         await this._updateInstanceStateWithDbState();
 
@@ -439,16 +458,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
         // posts should not be cleaned up because we want to make sure not to modify authors' posts
         if (subplebbitPosts)
-            newIpns.posts = removeUndefinedValuesRecursively({
+            newIpns.posts = {
                 pageCids: subplebbitPosts.pageCids,
-                pages: remeda.pick(subplebbitPosts.pages, ["hot"])
-            });
+                pages: remeda.pick(subplebbitPosts.pages, preloadedPostsPages)
+            };
         else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
 
-        await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
+        await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
         const ttl = `${this._plebbit.publishInterval * 3}ms`;
@@ -460,7 +479,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
-        if (this.updateCid) this._cidsToUnPin.push(this.updateCid); // add old cid of subplebbit to be unpinned
+        if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
 
         this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
 
@@ -480,8 +499,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
-    private async _validateSubSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
+    private async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:local-subplebbit:_validateSubSchemaAndSignatureBeforePublishing");
+
+        // Check if the subplebbit record size is less than 1MB
+        const recordSize = Buffer.byteLength(JSON.stringify(recordToPublishRaw)); // size in bytes
+        if (recordSize > MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS) {
+            const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE", {
+                size: recordSize,
+                maxSize: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+                recordToPublishRaw,
+                address: this.address
+            });
+            log.error(
+                `Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)}MB). Maximum size is 1MB.`,
+                error
+            );
+            this.emit("error", error);
+            throw error;
+        }
 
         const parseRes = SubplebbitIpfsSchema.safeParse(recordToPublishRaw);
         if (!parseRes.success) {
@@ -494,12 +530,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw error;
         }
 
+        const verificationOpts = {
+            subplebbit: recordToPublishRaw,
+            subplebbitIpnsName: this.signer.address,
+            resolveAuthorAddresses: false,
+            clientsManager: this._clientsManager,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: this._plebbit.validatePages
+        };
         try {
-            const validation = await verifySubplebbit(recordToPublishRaw, false, this._clientsManager, false, false);
+            const validation = await verifySubplebbit(verificationOpts);
             if (!validation.valid) {
                 throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
                     validation,
-                    invalidRecord: recordToPublishRaw
+                    verificationOpts
                 });
             }
         } catch (e) {
@@ -582,23 +626,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(`Inserted new CommentModeration in DB`, remeda.omit(modTableRow, ["signature"]));
 
         if (modTableRow.commentModeration.purged) {
-            const transactionName = challengeRequestId.toString() + modTableRow.commentCid + "purge";
-            const trx = await this._dbHandler.createTransaction(transactionName);
             log(
                 "commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs",
                 "comment cid is",
                 modTableRow.commentCid
             );
+            const transactionName = challengeRequestId.toString();
+            const trx = await this._dbHandler.createTransaction(transactionName);
 
             const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid, trx);
             await this._dbHandler.commitTransaction(transactionName);
 
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
-            this._cidsToUnPin.push(...purgedCids);
+            purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
 
             const purgedMfsPaths = cidsToPurgeOffIpfsNode.filter((ipfsPath) => ipfsPath.startsWith("/"));
 
-            this._mfsPathsToUnPin.push(...purgedMfsPaths);
+            purgedMfsPaths.forEach((path) => this._mfsPathsToUnPin.add(path));
 
             await this._unpinStaleCids();
 
@@ -761,12 +805,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // The line below will fail with extra props
 
             const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
-            const validity = await verifyCommentIpfs(
-                removeUndefinedValuesRecursively(commentIpfsRecreated),
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                false
-            );
+            const validity = await verifyCommentIpfs({
+                comment: removeUndefinedValuesRecursively(commentIpfsRecreated),
+                resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                calculatedCommentCid: commentCid
+            });
             if (!validity.valid)
                 throw Error(
                     "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
@@ -1471,9 +1516,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
         log.trace("Wrote comment update", newCommentUpdate.cid, "to database successfully");
-        if (oldIpfsPath && oldIpfsPath !== ipfsPath) {
-            this._mfsPathsToUnPin.push(oldIpfsPath);
-        }
+        if (oldIpfsPath && oldIpfsPath !== ipfsPath) this._mfsPathsToUnPin.add(oldIpfsPath);
     }
 
     private async _calculateNewCommentUpdateAndWriteToFilesystemAndDb(comment: CommentsTableRow): Promise<void> {
@@ -1484,10 +1527,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
+        const preloadedRepliesPages = ["topAll"];
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
             this._dbHandler.queryCalculatedCommentUpdate(comment),
             this._dbHandler.queryStoredCommentUpdate(comment),
-            this._sortHandler.generateRepliesPages(comment)
+            this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages)
         ]);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
@@ -1496,7 +1540,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const pageCidsToUnPin = remeda.unique(
                 Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
             );
-            this._cidsToUnPin.push(...pageCidsToUnPin);
+            pageCidsToUnPin.forEach((pageCid) => this._cidsToUnPin.add(pageCid));
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
@@ -1509,10 +1553,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedPages)
-            commentUpdatePriorToSigning.replies = removeUndefinedValuesRecursively({
+            commentUpdatePriorToSigning.replies = {
                 pageCids: generatedPages.pageCids,
-                pages: remeda.pick(generatedPages.pages, ["topAll"])
-            });
+                pages: remeda.pick(generatedPages.pages, preloadedRepliesPages)
+            };
 
         const newCommentUpdate: CommentUpdateType = {
             ...commentUpdatePriorToSigning,
@@ -1533,16 +1577,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 ...remeda.pick(storedCommentUpdate, storedCommentUpdate.signature.signedPropertyNames)
             });
             const oldCommentUpdateCid = await calculateIpfsHash(oldCommentUpdateRecord);
-            this._cidsToUnPin.push(oldCommentUpdateCid);
+            this._cidsToUnPin.add(oldCommentUpdateCid);
         }
     }
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
         // This function should be deleted at some point, once the protocol ossifies
-        const validation = await verifyCommentUpdate(newCommentUpdate, false, this._clientsManager, this.address, comment, false, false);
+        const verificationOpts = {
+            update: newCommentUpdate,
+            resolveAuthorAddresses: false,
+            clientsManager: this._clientsManager,
+            subplebbit: this._rawSubplebbitIpfs!,
+            comment,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: this._plebbit.validatePages,
+            validateUpdateSignature: true
+        };
+        const validation = await verifyCommentUpdate(verificationOpts);
         if (!validation.valid) {
             log.error(`CommentUpdate (${comment.cid}) signature is invalid due to (${validation.reason}). This is a critical error`);
-            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", validation);
+            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { validation, verificationOpts });
         }
     }
 
@@ -1675,45 +1729,44 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _unpinStaleCids() {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
-        this._cidsToUnPin = remeda.uniq(this._cidsToUnPin);
-        if (this._cidsToUnPin.length > 0) {
-            const removedCids: string[] = [];
+
+        if (this._cidsToUnPin.size > 0) {
+            const sizeBefore = this._cidsToUnPin.size;
             await Promise.all(
-                this._cidsToUnPin.map(async (cid) => {
+                Array.from(this._cidsToUnPin.values()).map(async (cid) => {
                     try {
                         await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
-                        removedCids.push(cid);
+                        this._cidsToUnPin.delete(cid);
                     } catch (e) {
                         const error = <Error>e;
-                        if (error.message.startsWith("not pinned")) removedCids.push(cid);
+                        if (error.message.startsWith("not pinned")) this._cidsToUnPin.delete(cid);
                         else log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
                     }
                 })
             );
 
-            log(`unpinned ${removedCids.length} stale cids from ipfs node for subplebbit (${this.address})`);
-            this._cidsToUnPin = remeda.difference(this._cidsToUnPin, removedCids);
+            log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }
 
-        this._mfsPathsToUnPin = remeda.uniq(this._mfsPathsToUnPin);
-        if (this._mfsPathsToUnPin.length > 0) {
+        if (this._mfsPathsToUnPin.size > 0) {
             try {
-                await this._clientsManager.getDefaultIpfs()._client.files.rm(this._mfsPathsToUnPin, { recursive: true });
-                log("Removed ", this._mfsPathsToUnPin.length, "files from MFS directory", this._mfsPathsToUnPin);
+                await this._clientsManager
+                    .getDefaultIpfs()
+                    ._client.files.rm(Array.from(this._mfsPathsToUnPin.values()), { recursive: true });
+                log("Removed ", this._mfsPathsToUnPin.size, "files from MFS directory", this._mfsPathsToUnPin);
+                this._mfsPathsToUnPin.clear();
             } catch (e) {
                 const error = <Error>e;
                 if (!error.message.includes("file does not exist")) {
                     log.error("Failed to remove files from MFS", this._mfsPathsToUnPin, e);
                     throw e;
-                }
+                } else this._mfsPathsToUnPin.clear();
             }
 
             for (const ipfsPath of this._mfsPathsToUnPin) {
                 const fullFsPath = path.join(this._getPostUpdatesDirOnFilesystem(), ...ipfsPath.split("/"));
                 await fsPromises.rm(fullFsPath, { force: true });
             }
-
-            this._mfsPathsToUnPin = [];
         }
     }
     private pubsubTopicWithfallback() {
@@ -1779,12 +1832,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const res = await genToArray(
             this._clientsManager.getDefaultIpfs()._client.addAll(globSource(postUpdatesDir, "**/*"), {
-                wrapWithDirectory: true,
-                // @ts-expect-error
-                "to-files": `/${this.address}`
+                wrapWithDirectory: true
             })
         );
 
+        await this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + res[res.length - 1].cid.toString(), "/" + this.address);
         log("Synced", res.length, "file nodes", "of FS post updates to IPFS");
     }
 
@@ -1839,7 +1891,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _cleanUpIpfsRepoRarely(force = false) {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        if (Math.random() < 0.001 || force) {
+        if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             try {
                 for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
@@ -1856,10 +1908,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
-        await this._dbHandler.initDbIfNeeded();
-        await this._switchDbWhileRunningIfNeeded();
 
         try {
+            await this._dbHandler.initDbIfNeeded();
+            await this._switchDbWhileRunningIfNeeded();
             await this._updateInstanceStateWithDbState();
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
@@ -1872,18 +1924,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setStartedState("failed");
             this._clientsManager.updateIpfsState("stopped");
 
-            log.error(`Failed to sync due to error,`, e);
+            log.error(`Failed to sync sub`, this.address, `due to error,`, e);
+            throw e;
         }
     }
 
-    private async _assertDomainResolvesCorrectly(domain: string) {
-        if (isStringDomain(domain)) {
-            await this._clientsManager.clearDomainCache(domain, "subplebbit-address");
-            const resolvedAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(domain);
-            if (resolvedAddress !== this.signer.address)
+    private async _assertDomainResolvesCorrectly(newAddressAsDomain: string) {
+        if (isStringDomain(newAddressAsDomain)) {
+            await this._clientsManager.clearDomainCache(newAddressAsDomain, "subplebbit-address");
+            const resolvedIpnsFromNewDomain = await this._clientsManager.resolveSubplebbitAddressIfNeeded(newAddressAsDomain);
+            if (resolvedIpnsFromNewDomain !== this.signer.address)
                 throwWithErrorCode("ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
-                    subplebbitAddress: this.address,
-                    resolvedAddress,
+                    currentSubplebbitAddress: this.address,
+                    newAddressAsDomain,
+                    resolvedIpnsFromNewDomain,
                     signerAddress: this.signer.address
                 });
         }
@@ -1972,18 +2026,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...newInternalProps
         };
 
-        await this._dbHandler.initDbIfNeeded();
-
         if (newProps.address && newProps.address !== this.address) {
             // we're modifying sub.address
             if (doesDomainAddressHaveCapitalLetter(newProps.address))
                 throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newProps.address });
+            if (this._plebbit.subplebbits.includes(newProps.address))
+                throw new PlebbitError("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS", {
+                    currentSubplebbitAddress: this.address,
+                    editProps: newProps,
+                    currentSubs: this._plebbit.subplebbits
+                });
             this._assertDomainResolvesCorrectly(newProps.address).catch((err: PlebbitError) => {
-                log.error(err.toString());
+                log.error(err);
                 this.emit("error", err);
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newProps.address}`);
-
             await this._updateDbInternalState(newProps);
             if (!(await this._dbHandler.isSubStartLocked())) {
                 log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
@@ -2021,7 +2078,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!("signature" in internalState)) throw Error("signature should be defined");
             this._rawSubplebbitIpfs = <
                 SubplebbitIpfsType //@ts-expect-error
-            >remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature"]);
+            >remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature", "protocolVersion"]);
         }
     }
 
@@ -2100,13 +2157,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._updateLoopPromise = this._updateOnce();
         this._updateLoopPromise
             .catch((e) => log.error(`Failed to update subplebbit`, e))
-            .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
+            .finally(() => (this._updateLocalSubTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
 
     override async stop() {
         const log = Logger("plebbit-js:local-subplebbit:stop");
         this._stopHasBeenCalled = true;
         if (this.state === "started") {
+            this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids before stopping", err));
             try {
                 await this._dbHandler.unlockSubStart();
             } catch (e) {
@@ -2132,7 +2190,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this._updateLoopPromise;
                 this._updateLoopPromise = undefined;
             }
-            clearTimeout(this._updateTimeout);
+            clearTimeout(this._updateLocalSubTimeout);
             await this._dbHandler.destoryConnection();
             this._setUpdatingState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
@@ -2146,14 +2204,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log.trace(`Attempting to stop the subplebbit (${this.address}) before deleting, if needed`);
         if (this.state === "updating" || this.state === "started") await this.stop();
 
-        const ipfsClient = this._clientsManager.getDefaultIpfs();
-        if (!ipfsClient) throw Error("Ipfs client is not defined");
+        const kuboClient = this._clientsManager.getDefaultIpfs();
+        if (!kuboClient) throw Error("Ipfs client is not defined");
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
-                await ipfsClient._client.key.rm(this.signer.ipnsKeyName);
+                await kuboClient._client.key.rm(this.signer.ipnsKeyName);
             } catch {}
         log(`Deleted subplebbit (${this.address}) successfully`);
 

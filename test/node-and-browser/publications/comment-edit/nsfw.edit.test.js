@@ -1,5 +1,6 @@
 import signers from "../../../fixtures/signers.js";
 import {
+    findCommentInPage,
     getRemotePlebbitConfigs,
     publishRandomPost,
     publishWithExpectedResult,
@@ -21,7 +22,7 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, authorPost;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            authorPost = await publishRandomPost(subplebbitAddress, plebbit, {});
+            authorPost = await publishRandomPost(subplebbitAddress, plebbit);
             await authorPost.update();
         });
 
@@ -66,6 +67,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.nsfw).to.be.true;
         });
 
+        it(`nsfw=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.nsfw).to.be.true;
+        });
+
         it(`The new Comment with nsfw=true has valid signature`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
             await recreatedPost.update();
@@ -74,17 +81,24 @@ getRemotePlebbitConfigs().map((config) => {
             await recreatedPost.stop();
             expect(recreatedPost.nsfw).to.be.true;
 
-            const commentIpfsValidity = await verifyCommentIpfs(recreatedPost.toJSONIpfs(), true, recreatedPost._clientsManager, false);
+            const commentIpfsValidity = await verifyCommentIpfs({
+                comment: recreatedPost.toJSONIpfs(),
+                resolveAuthorAddresses: true,
+                clientsManager: recreatedPost._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             expect(commentIpfsValidity).to.deep.equal({ valid: true });
 
-            const commentUpdateValidity = await verifyCommentUpdate(
-                recreatedPost._rawCommentUpdate,
-                true,
-                recreatedPost._clientsManager,
-                recreatedPost.subplebbitAddress,
-                { cid: recreatedPost.cid, signature: recreatedPost.signature },
-                false
-            );
+            const commentUpdateValidity = await verifyCommentUpdate({
+                update: recreatedPost._rawCommentUpdate,
+                resolveAuthorAddresses: true,
+                clientsManager: recreatedPost._clientsManager,
+                subplebbit: { address: recreatedPost.subplebbitAddress },
+                comment: recreatedPost,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: true,
+                validateUpdateSignature: true
+            });
             expect(commentUpdateValidity).to.deep.equal({ valid: true });
         });
 
@@ -111,6 +125,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.reason).to.be.undefined;
 
             expect(authorPost.nsfw).to.be.false;
+        });
+
+        it(`nsfw=false appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.nsfw).to.be.false;
         });
     });
 
@@ -152,6 +172,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.nsfw).to.be.true;
         });
 
+        it(`nsfw=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.nsfw).to.be.true;
+        });
+
         it(`Mod can unnsfw their own comment`, async () => {
             const unnsfwEdit = await plebbit.createCommentEdit({
                 subplebbitAddress: modPost.subplebbitAddress,
@@ -175,6 +201,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.reason).to.be.undefined;
             expect(modPost.edit.reason).to.equal("Mod unnsfwing their own comment");
             expect(modPost.nsfw).to.be.false;
+        });
+
+        it(`nsfw=false appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.nsfw).to.be.false;
         });
     });
 });

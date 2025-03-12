@@ -2,6 +2,7 @@ import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
     publishRandomPost,
+    findCommentInPage,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
@@ -48,6 +49,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(randomPost.spoiler).to.be.true;
         });
 
+        it(`spoiler=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(randomPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.spoiler).to.be.true;
+        });
+
         it(`Mod can mark unspoiler author comment `, async () => {
             const unspoilerEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: randomPost.subplebbitAddress,
@@ -66,6 +73,12 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(randomPost.reason).to.equal("Mod unspoilering an author comment");
             expect(randomPost.spoiler).to.be.false;
+        });
+
+        it(`spoiler=false appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(randomPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.spoiler).to.be.false;
         });
     });
 });

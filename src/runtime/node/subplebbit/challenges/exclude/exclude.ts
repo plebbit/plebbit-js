@@ -1,16 +1,7 @@
 //@ts-expect-error
 import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
-import {
-    testVote,
-    testReply,
-    testPost,
-    testScore,
-    testFirstCommentTimestamp,
-    testRole,
-    testCommentEdit,
-    testCommentModeration
-} from "./utils.js";
+import { testScore, testFirstCommentTimestamp, testRole, testPublicationType } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
@@ -46,15 +37,11 @@ const shouldExcludePublication = (
     for (const exclude of subplebbitChallenge.exclude) {
         // if doesn't have any author excludes, shouldn't exclude
         if (
-            !exclude.postScore &&
-            !exclude.replyScore &&
-            !exclude.firstCommentTimestamp &&
+            typeof exclude.postScore !== "number" &&
+            typeof exclude.replyScore !== "number" &&
+            typeof exclude.firstCommentTimestamp !== "number" &&
             !exclude.address?.length &&
-            exclude.post === undefined &&
-            exclude.reply === undefined &&
-            exclude.vote === undefined &&
-            exclude.commentEdit === undefined &&
-            exclude.commentModeration === undefined &&
+            exclude.publicationType === undefined &&
             exclude.rateLimit === undefined &&
             !exclude.role?.length
         ) {
@@ -73,24 +60,9 @@ const shouldExcludePublication = (
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
             shouldExclude = false;
         }
-        if (typeof exclude.post === "boolean" && !testPost(exclude.post, request)) {
+        if (!testPublicationType(exclude.publicationType, request)) {
             shouldExclude = false;
         }
-        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, request)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
-            shouldExclude = false;
-        }
-
-        if (typeof exclude.commentEdit === "boolean" && !testCommentEdit(exclude.commentEdit, request)) {
-            shouldExclude = false;
-        }
-
-        if (typeof exclude.commentModeration === "boolean" && !testCommentModeration(exclude.commentModeration, request)) {
-            shouldExclude = false;
-        }
-
         if (!testRateLimit(exclude, request)) {
             shouldExclude = false;
         }
@@ -241,7 +213,7 @@ const shouldExcludeChallengeCommentCids = async (
         // don't fetch the same comment twice
         const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
         const pendingKey =
-            commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.ipfsHttpClientsOptions?.[0].url;
+            commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.kuboRpcClientsOptions?.[0].url;
         while (getCommentPending[pendingKey] === true) {
             await sleep(20);
         }

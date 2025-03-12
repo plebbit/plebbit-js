@@ -27,13 +27,13 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             [postToDelete, modPostToDelete] = await Promise.all([
-                publishRandomPost(subplebbitAddress, plebbit, {}, false),
-                publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false)
+                publishRandomPost(subplebbitAddress, plebbit),
+                publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer })
             ]);
-            postReply = await publishRandomReply(postToDelete, plebbit, {}, false);
-            postToDelete.update();
-            modPostToDelete.update();
-            postReply.update();
+            postReply = await publishRandomReply(postToDelete, plebbit);
+            await postToDelete.update();
+            await modPostToDelete.update();
+            await postReply.update();
         });
 
         after(async () => {
@@ -77,7 +77,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToDelete.deleted).to.be.true;
             expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
             expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.true;
-            expect(postToDelete.reason).to.be.undefined; // .reason is only for mod
+            expect(postToDelete.reason).to.be.undefined; // reason is only for mod
             expect(postToDelete.edit.reason).to.equal("To test delete for author");
             expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("To test delete for author");
             expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
@@ -85,14 +85,13 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Deleted post is omitted from subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: postToDelete.subplebbitAddress });
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const postInPage = await findCommentInPage(postToDelete.cid, sub.posts.pageCids.new, sub.posts);
-                    if (!postInPage) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const postInPage = await findCommentInPage(postToDelete.cid, sub.posts.pageCids.new, sub.posts);
+                return postInPage === undefined;
+            });
+
             await sub.stop();
 
             for (const pageCid of Object.values(sub.posts.pageCids)) {
@@ -198,18 +197,16 @@ getRemotePlebbitConfigs().map((config) => {
         });
         it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
             const parentComment = await plebbit.createComment({ cid: replyToDelete.parentCid });
-            parentComment.update();
+            await parentComment.update();
 
-            await new Promise((resolve) =>
-                parentComment.on("update", async () => {
-                    const deletedReplyUnderPost = await findCommentInPage(
-                        replyToDelete.cid,
-                        parentComment.replies.pageCids.new,
-                        parentComment.replies
-                    );
-                    if (deletedReplyUnderPost.deleted === true) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(parentComment, async () => {
+                const deletedReplyUnderPost = await findCommentInPage(
+                    replyToDelete.cid,
+                    parentComment.replies.pageCids.new,
+                    parentComment.replies
+                );
+                return deletedReplyUnderPost?.deleted === true;
+            });
 
             // Need to test for all pages here
 

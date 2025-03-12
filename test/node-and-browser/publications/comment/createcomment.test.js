@@ -121,7 +121,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postJson).to.deep.equal(postFromStringifiedPostJson);
         });
 
-        it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
+        it("comment instance created with {subplebbitAddress, cid, depth, postCid} prop can call getPage", async () => {
             const post = await publishRandomPost(subplebbitAddress, plebbit);
             expect(post.replies).to.be.a("object");
             await publishRandomReply(post, plebbit);
@@ -136,8 +136,17 @@ getRemotePlebbitConfigs().map((config) => {
             const pageCid = post.replies.pageCids.new;
             expect(pageCid).to.be.a("string");
 
-            const postClone = await plebbit.createComment({ subplebbitAddress: post.subplebbitAddress, cid: post.cid });
+            const postClone = await plebbit.createComment({
+                subplebbitAddress: post.subplebbitAddress,
+                cid: post.cid,
+                depth: post.depth,
+                postCid: post.postCid
+            });
             expect(postClone.content).to.be.undefined;
+            expect(postClone.subplebbitAddress).to.equal(post.subplebbitAddress);
+            expect(postClone.cid).to.equal(post.cid);
+            expect(postClone.depth).to.equal(post.depth);
+            expect(postClone.postCid).to.equal(post.postCid);
 
             const page = await postClone.replies.getPage(pageCid);
             expect(page.comments.length).to.be.equal(1);

@@ -195,6 +195,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
         "deleted",
         "signer",
         "comment",
+        "commentUpdate",
         "state",
         "clients",
         "publishingState",

@@ -16,6 +16,7 @@ import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js"
 import * as remeda from "remeda";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
 import { messages } from "../errors.js";
+import { nonNegativeIntStringSchema } from "../schema.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
@@ -118,28 +119,36 @@ export const ChallengeExcludeSubplebbitSchema = z
     })
     .strict();
 
+const excludePublicationFieldSchema = z.boolean().optional(); // can be true or undefined
+
+export const ChallengeExcludePublicationTypeSchema = z
+    .object({
+        post: excludePublicationFieldSchema,
+        reply: excludePublicationFieldSchema,
+        vote: excludePublicationFieldSchema,
+        commentEdit: excludePublicationFieldSchema,
+        commentModeration: excludePublicationFieldSchema
+    })
+    .passthrough()
+    .refine(
+        (args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so
+        messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT
+    );
+
 export const ChallengeExcludeSchema = z
     .object({
         subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
         firstCommentTimestamp: PlebbitTimestampSchema.optional(),
-        challenges: z.number().nonnegative().int().array().nonempty().optional(),
-        post: z.boolean().optional(),
-        reply: z.boolean().optional(),
-        vote: z.boolean().optional(),
-        commentModeration: z.boolean().optional(),
-        commentEdit: z.boolean().optional(),
-        role: SubplebbitRoleSchema.shape.role.array().nonempty().optional(),
-        address: AuthorAddressSchema.array().nonempty().optional(),
+        challenges: z.number().nonnegative().int().array().optional(),
+        role: SubplebbitRoleSchema.shape.role.array().optional(),
+        address: AuthorAddressSchema.array().optional(),
         rateLimit: z.number().nonnegative().int().optional(),
-        rateLimitChallengeSuccess: z.boolean().optional()
+        rateLimitChallengeSuccess: z.boolean().optional(),
+        publicationType: ChallengeExcludePublicationTypeSchema.optional()
     })
-    .passthrough()
-    .refine(
-        (args) => [args.post, args.vote, args.reply, args.commentModeration, args.commentEdit].filter((pub) => pub === true).length <= 1,
-        messages.ERR_CAN_NOT_SET_EXCLUDE_TO_HAVE_MORE_THAN_ONE_PUBLICATION
-    );
+    .passthrough();
 
 export const SubplebbitChallengeSettingSchema = z
     .object({
@@ -198,7 +207,7 @@ export const SubplebbitIpfsSchema = z
         pubsubTopic: PubsubTopicSchema.optional(),
         statsCid: CidStringSchema,
         protocolVersion: ProtocolVersionSchema,
-        postUpdates: z.record(z.string(), CidStringSchema).optional(),
+        postUpdates: z.record(nonNegativeIntStringSchema, CidStringSchema).optional(),
         title: z.string().optional(),
         description: z.string().optional(),
         roles: z.record(AuthorAddressSchema, SubplebbitRoleSchema).optional(),

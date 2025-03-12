@@ -3,18 +3,18 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     itSkipIfRpc,
     itIfRpc,
+    findCommentInPage,
     resolveWhenConditionIsTrue,
-    mockRpcServerPlebbit,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    mockPlebbitV2
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 import path from "path";
 import fs from "fs";
 import signers from "../../fixtures/signers";
-import { subplebbitVerificationCache } from "../../../dist/node/constants";
 import { v4 as uuidV4 } from "uuid";
 
 import chai from "chai";
@@ -30,26 +30,26 @@ describe(`subplebbit.start`, async () => {
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
-    after(async () => subplebbit.stop());
+    after(async () => await plebbit.destroy());
 
     it(`Started Sub can receive publications sequentially`, async () => {
-        await publishRandomPost(subplebbit.address, plebbit, {}, false);
-        await publishRandomPost(subplebbit.address, plebbit, {}, false);
-        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await publishRandomPost(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit);
     });
 
     it(`Started Sub can receive publications parallelly`, async () => {
-        await Promise.all(new Array(3).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit, {}, false)));
+        await Promise.all(new Array(3).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit)));
     });
 
     it(`Can start a sub after stopping it`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await resolveWhenConditionIsTrue(newSub, () => typeof newSub.updatedAt === "number");
-        await publishRandomPost(newSub.address, plebbit, {}, false);
+        await publishRandomPost(newSub.address, plebbit);
         await newSub.stop();
         await newSub.start();
-        await publishRandomPost(newSub.address, plebbit, {}, false);
+        await publishRandomPost(newSub.address, plebbit);
         await newSub.stop();
     });
 
@@ -66,7 +66,7 @@ describe(`subplebbit.start`, async () => {
         await new Promise((resolve) => setTimeout(resolve, subplebbit._plebbit.publishInterval * 2));
         expect(await listedTopics()).to.include(subplebbit.address);
 
-        await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
+        await publishRandomPost(subplebbit.address, plebbit); // Should receive publication since subscription to pubsub topic has been restored
     });
 });
 
@@ -295,16 +295,17 @@ describe(`Start lock`, async () => {
 describe(`Publish loop resiliency`, async () => {
     let plebbit, subplebbit, remotePlebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        plebbit = await mockPlebbitV2({ stubStorage: false });
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Subplebbit can publish a new IPNS record with one of its comments having a valid ENS author address`, async () => {
@@ -318,14 +319,13 @@ describe(`Publish loop resiliency`, async () => {
 
         await publishWithExpectedResult(mockPost, true);
 
-        let updated = false;
-        setTimeout(() => {
-            if (!updated) assert.fail("Subplebbit failed to publish a new IPNS record with ENS author address");
-        }, 60000);
-        await new Promise((resolve) => subplebbit.once("update", () => (updated = true) && resolve(1)));
+        await waitTillPostInSubplebbitPages(mockPost, remotePlebbit);
+
         const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
 
-        expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
+        const loadedPost = await findCommentInPage(mockPost.cid, loadedSub.posts.pageCids.new, loadedSub.posts);
+
+        expect(loadedPost.cid).to.equal(mockPost.cid);
     });
 
     it(`Subplebbit isn't publishing updates needlessly`, async () => {
@@ -388,10 +388,11 @@ describe(`Publish loop resiliency`, async () => {
         await waitTillPostInSubplebbitPages(post, plebbit);
 
         for (const resolveAuthorAddresses of [true, false]) {
-            subplebbitVerificationCache.clear();
-            const remotePlebbit = await mockRemotePlebbitIpfsOnly({ resolveAuthorAddresses });
+            const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ resolveAuthorAddresses, validatePages: true }); // we need to enable validatePages so subplebbit.posts can be validated and override author.address
             const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address);
             const mockPostInPage = loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === mockPost.cid);
+            // if we're resolving author address, plebbit-js should pick up that it's pointing to the wrong signer address
+            // once it does that plebbit-js override author.address to point to signer.address
             if (resolveAuthorAddresses) expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
             else expect(mockPostInPage.author.address).to.equal("plebbit.eth");
         }

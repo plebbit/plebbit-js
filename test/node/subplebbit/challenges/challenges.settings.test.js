@@ -2,7 +2,7 @@ import {
     mockPlebbit,
     generateMockPost,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     publishRandomPost,
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
@@ -19,7 +19,7 @@ describe(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     it(`default challenge is captcha-canvas-v3`, async () => {
@@ -28,7 +28,10 @@ describe(`subplebbit.settings.challenges`, async () => {
         // subplebbit?.settings?.challenges should be set to captcha-canvas-v3
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
         expect(subplebbit?.settings?.challenges).to.deep.equal([
-            { name: "captcha-canvas-v3", exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }] }
+            {
+                name: "captcha-canvas-v3",
+                exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
+            }
         ]);
 
         expect(subplebbit._usingDefaultChallenge).to.be.true;
@@ -41,7 +44,7 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(_subplebbit.challenges[0].challenge).to.be.undefined;
             expect(_subplebbit.challenges[0].description).to.equal("make custom image captcha");
             expect(_subplebbit.challenges[0].exclude).to.deep.equal([
-                { role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }
+                { role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }
             ]);
             expect(_subplebbit.challenges[0].caseInsensitive).to.be.true;
         }
@@ -62,8 +65,11 @@ describe(`subplebbit.settings.challenges`, async () => {
 
     itSkipIfRpc(`plebbit-js will upgrade default challenge if there is a new one`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
-        expect(subplebbit.settings.challenges).to.deep.equal([
-            { name: "captcha-canvas-v3", exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }] }
+        expect(subplebbit?.settings?.challenges).to.deep.equal([
+            {
+                name: "captcha-canvas-v3",
+                exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
+            }
         ]);
         expect(subplebbit._usingDefaultChallenge).to.be.true;
         const differentDefaultChallenges = [];

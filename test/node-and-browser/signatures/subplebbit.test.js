@@ -8,7 +8,6 @@ import { messages } from "../../../dist/node/errors.js";
 import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing, _signJson } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
 import validSubplebbitFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_ipfs.json" assert { type: "json" };
-import validSubplebbitWithEnsCommentsFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_ipfs_with_ens_comments.json" assert { type: "json" };
 import { removeUndefinedValuesRecursively } from "../../../dist/node/util.js";
 
 // Clients of RPC will trust the response of RPC and won't validate
@@ -35,7 +34,14 @@ describeSkipIfRpc("Sign subplebbit", async () => {
         subplebbitToSign.signature = await signSubplebbit(subplebbitToSign, signers[0], plebbit);
         expect(subplebbitToSign.signature).to.deep.equal(subplebbit.signature);
 
-        const verification = await verifySubplebbit(subplebbitToSign, plebbit.resolveAuthorAddresses, plebbit._clientsManager);
+        const verification = await verifySubplebbit({
+            subplebbit: subplebbitToSign,
+            subplebbitIpnsName: signers[0].address,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: plebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true
+        });
         expect(verification).to.deep.equal({ valid: true });
     });
 });
@@ -51,12 +57,28 @@ describeSkipIfRpc("Verify subplebbit", async () => {
     it(`Can validate live subplebbit`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);
         expect(
-            await verifySubplebbit(loadedSubplebbit.toJSONIpfs(), plebbit.resolveAuthorAddresses, plebbit._clientsManager)
+            await verifySubplebbit({
+                subplebbit: loadedSubplebbit.toJSONIpfs(),
+                subplebbitIpnsName: signers[0].address,
+                resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+                clientsManager: plebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: true
+            })
         ).to.deep.equal({ valid: true });
     });
     it(`Valid subplebbit fixture is validated correctly`, async () => {
         const sub = remeda.clone(validSubplebbitFixture);
-        expect(await verifySubplebbit(sub, plebbit.resolveAuthorAddresses, plebbit._clientsManager)).to.deep.equal({ valid: true });
+        expect(
+            await verifySubplebbit({
+                subplebbit: sub,
+                subplebbitIpnsName: signers[0].address,
+                resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+                clientsManager: plebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: true
+            })
+        ).to.deep.equal({ valid: true });
     });
     it(`Subplebbit with domain that does not match public key will get invalidated`, async () => {
         // plebbit.eth -> signers[3]
@@ -64,7 +86,14 @@ describeSkipIfRpc("Verify subplebbit", async () => {
         tempPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded = (address) =>
             address === "plebbit.eth" ? signers[4].address : address;
         const sub = await plebbit.getSubplebbit("plebbit.eth");
-        const verification = await verifySubplebbit(sub.toJSONIpfs(), tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager);
+        const verification = await verifySubplebbit({
+            subplebbit: sub.toJSONIpfs(),
+            subplebbitIpnsName: signers[4].address,
+            resolveAuthorAddresses: tempPlebbit.resolveAuthorAddresses,
+            clientsManager: tempPlebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true
+        });
         // Subplebbit posts will be invalid because the resolved address of sub will be used to validate posts
         expect(verification.valid).to.be.false;
     });
@@ -73,12 +102,30 @@ describeSkipIfRpc("Verify subplebbit", async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(signers[0].address);
 
         const subJson = loadedSubplebbit.toJSONIpfs();
-        expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false)).to.deep.equal({
+        expect(
+            await verifySubplebbit({
+                subplebbit: subJson,
+                subplebbitIpnsName: signers[0].address,
+                resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+                clientsManager: plebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: false
+            })
+        ).to.deep.equal({
             valid: true
         });
 
         subJson.posts.pages.hot.comments[0].comment.content += "1234"; // Invalidate signature
-        expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false)).to.deep.equal({
+        expect(
+            await verifySubplebbit({
+                subplebbit: subJson,
+                subplebbitIpnsName: signers[0].address,
+                resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+                clientsManager: plebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: false
+            })
+        ).to.deep.equal({
             valid: false,
             reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID
         });
@@ -87,12 +134,13 @@ describeSkipIfRpc("Verify subplebbit", async () => {
     it(`subplebbit signature is valid if subplebbit.posts has a comment.author.address who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
         // Publish a comment with ENS domain here
 
-        const subIpfs = remeda.clone(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
+        const subIpfs = remeda.clone(validSubplebbitFixture); // This json has only one comment with plebbit.eth
         const commentWithEnsCid = subIpfs.posts.pages.hot.comments.find(
             (commentPage) => commentPage.comment.author.address === "plebbit.eth"
-        ).comment.cid;
+        ).commentUpdate.cid;
+        expect(commentWithEnsCid).to.be.a("string");
 
-        const getLatestComment = () => subIpfs.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
+        const getLatestComment = () => subIpfs.posts.pages.hot.comments.find((comment) => comment.commentUpdate.cid === commentWithEnsCid);
 
         const tempPlebbit = await mockRemotePlebbit();
 
@@ -101,7 +149,16 @@ describeSkipIfRpc("Verify subplebbit", async () => {
             authorAddress === "plebbit.eth" ? signers[7].address : originalResolveAuthor(authorAddress);
 
         expect(getLatestComment().comment.author.address).to.equal("plebbit.eth");
-        expect(await verifySubplebbit(subIpfs, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, true)).to.deep.equal({
+        expect(
+            await verifySubplebbit({
+                subplebbit: subIpfs,
+                subplebbitIpnsName: signers[0].address,
+                resolveAuthorAddresses: tempPlebbit.resolveAuthorAddresses,
+                clientsManager: tempPlebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: true,
+                validatePages: true
+            })
+        ).to.deep.equal({
             valid: true
         });
 
@@ -123,13 +180,14 @@ describeSkipIfRpc("Verify subplebbit", async () => {
 
         expect(signature.signedPropertyNames).to.not.include("extraProp");
 
-        const validation = await verifySubplebbit(
-            subFixtureClone,
-            tempPlebbit.resolveAuthorAddresses,
-            tempPlebbit._clientsManager,
-            true,
-            true
-        );
+        const validation = await verifySubplebbit({
+            subplebbit: subFixtureClone,
+            subplebbitIpnsName: signers[0].address,
+            resolveAuthorAddresses: tempPlebbit.resolveAuthorAddresses,
+            clientsManager: tempPlebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: true
+        });
         expect(validation).to.deep.equal({
             valid: false,
             reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
@@ -147,13 +205,14 @@ describeSkipIfRpc("Verify subplebbit", async () => {
 
         subFixtureClone.signature = signature;
 
-        const validation = await verifySubplebbit(
-            subFixtureClone,
-            tempPlebbit.resolveAuthorAddresses,
-            tempPlebbit._clientsManager,
-            true,
-            true
-        );
+        const validation = await verifySubplebbit({
+            subplebbit: subFixtureClone,
+            subplebbitIpnsName: signers[0].address,
+            resolveAuthorAddresses: tempPlebbit.resolveAuthorAddresses,
+            clientsManager: tempPlebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: true
+        });
         expect(validation).to.deep.equal({
             valid: true
         });

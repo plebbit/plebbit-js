@@ -1,9 +1,10 @@
 import signers from "../../fixtures/signers.js";
 
-import { describeIfRpc, mockPlebbit } from "../../../dist/node/test/test-util.js";
+import { describeIfRpc, mockPlebbit, createNewIpns, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -13,14 +14,29 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
         const sub = await plebbit.createSubplebbit({ address: signers[0].address });
         const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
         expect(sub.clients.plebbitRpcClients[rpcUrl].state).to.equal("stopped");
     });
 
-    it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with plebbit address`, async () => {
-        const sub = await plebbit.createSubplebbit({ address: signers[0].address });
+    it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with IPNS address`, async () => {
+        const newIpns = await createNewIpns();
+        const actualSub = await plebbit.getSubplebbit(signers[0].address);
+
+        const record = JSON.parse(JSON.stringify(actualSub._rawSubplebbitIpfs));
+        record.address = newIpns.signer.address;
+        delete record["posts"];
+        record.signature = await signSubplebbit(record, newIpns.signer);
+
+        await newIpns.publishToIpns(JSON.stringify(record));
+
+        const sub = await plebbit.createSubplebbit({ address: newIpns.signer.address });
         const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
@@ -46,7 +62,7 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
 
         await sub.update();
 
-        await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
         await sub.stop();
         expect(recordedStates).to.deep.equal(expectedStates);

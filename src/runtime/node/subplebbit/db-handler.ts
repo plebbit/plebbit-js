@@ -23,8 +23,8 @@ import env from "../../../version.js";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
-import { PageOptions } from "./sort-handler.js";
-import { SubplebbitStats } from "../../../subplebbit/types.js";
+import type { PageOptions } from "./page-generator.js";
+import type { InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitStats } from "../../../subplebbit/types.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
@@ -36,7 +36,9 @@ import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/co
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs } from "../../../pages/types.js";
-import { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
+import type { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
+import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
+import KeyvSqlite from "@keyv/sqlite";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -80,7 +82,7 @@ export class DbHandler {
             this._knex = knex(this._dbConfig);
             log.trace("initialized a new connection to db", dbFilePath);
         }
-        if (!this._keyv) this._keyv = new Keyv(`sqlite://${dbFilePath}`);
+        if (!this._keyv) this._keyv = new Keyv(new KeyvSqlite(`sqlite://${dbFilePath}`));
     }
 
     async createOrMigrateTablesIfNeeded() {
@@ -109,8 +111,8 @@ export class DbHandler {
         return this._dbConfig;
     }
 
-    async keyvGet(key: string, options?: { raw?: false }) {
-        const res = await this._keyv.get(key, options);
+    async keyvGet(key: string) {
+        const res = await this._keyv.get(key);
         return res;
     }
 
@@ -311,6 +313,19 @@ export class DbHandler {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
 
+    _migrateOldSettings(oldSettings: InternalSubplebbitRecordBeforeFirstUpdateType["settings"]) {
+        // need to remove settings.challenges.exclude.{post, vote, reply}
+        const fieldsToRemove = ["post", "reply", "vote"] as const;
+        const newSettings = remeda.clone(oldSettings);
+        if (Array.isArray(newSettings.challenges))
+            for (const oldChallengeSetting of newSettings.challenges)
+                if (oldChallengeSetting.exclude)
+                    for (const oldExcludeSetting of oldChallengeSetting.exclude)
+                        for (const fieldToMove of fieldsToRemove) delete oldExcludeSetting[fieldToMove];
+
+        return newSettings;
+    }
+
     async _createOrMigrateTablesIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
 
@@ -394,8 +409,14 @@ export class DbHandler {
                         : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
                 const updateCid =
                     ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+
+                const newSettings = this._migrateOldSettings(internalState.settings);
+
+                const newChallenges = newSettings.challenges?.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
                 await this._subplebbit._updateDbInternalState({
                     posts: undefined,
+                    challenges: newChallenges,
+                    settings: newSettings,
                     updateCid,
                     protocolVersion,
                     _usingDefaultChallenge
@@ -468,12 +489,13 @@ export class DbHandler {
 
             // Purge comments with invalid signature
 
-            const validRes = await verifyCommentIpfs(
-                { ...commentRecord, ...commentRecord.extraProps },
-                false,
-                this._subplebbit._clientsManager,
-                false
-            );
+            const validRes = await verifyCommentIpfs({
+                comment: { ...commentRecord, ...commentRecord.extraProps },
+                resolveAuthorAddresses: false,
+                calculatedCommentCid: commentRecord.cid,
+                clientsManager: this._subplebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             if (!validRes.valid) {
                 log.error(
                     `Comment`,
@@ -576,7 +598,7 @@ export class DbHandler {
             .first();
     }
 
-    private _basePageQuery(options: Omit<PageOptions, "pageSize">, trx?: Transaction) {
+    private _basePageQuery(options: Omit<PageOptions, "pageSize" | "preloadedPages">, trx?: Transaction) {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .jsonExtract(`${TABLES.COMMENT_UPDATES}.edit`, "$.deleted", "deleted", true)
@@ -608,7 +630,7 @@ export class DbHandler {
         const updateMaxTimestamp = async (localComments: (typeof comment)[]) => {
             for (const commentChild of localComments) {
                 if (commentChild.timestamp > maxTimestamp) maxTimestamp = commentChild.timestamp;
-                const activeScoreOptions: Omit<PageOptions, "pageSize"> = {
+                const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPages"> = {
                     excludeCommentsWithDifferentSubAddress: true,
                     excludeDeletedComments: true,
                     excludeRemovedComments: true,
@@ -622,7 +644,7 @@ export class DbHandler {
             }
         };
 
-        const activeScoreOptions: Omit<PageOptions, "pageSize"> = {
+        const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPages"> = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
@@ -638,10 +660,16 @@ export class DbHandler {
         return maxTimestamp;
     }
 
-    async queryCommentsForPages(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
+    async queryPageComments(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
         // protocolVersion, signature
 
-        const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
+        const commentUpdateColumns = <(keyof CommentUpdateType)[]>(
+            remeda.keys.strict(
+                options.commentUpdateFieldsToExclude
+                    ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
+                    : CommentUpdateSchema.shape
+            )
+        ); // TODO query extra props here as well
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
@@ -672,6 +700,31 @@ export class DbHandler {
         }));
 
         return comments;
+    }
+
+    async commentHasReplies(commentCid: string, trx?: Transaction): Promise<boolean> {
+        // very optimized function for finding if a comment has replies
+        const result = await this._baseTransaction(trx)(TABLES.COMMENTS).select("id").where("parentCid", commentCid).first();
+        return Boolean(result);
+    }
+
+    async queryFlattenedPageReplies(options: PageOptions & { parentCid: string }, trx?: Transaction): Promise<PageIpfs["comments"]> {
+        const firstLevelReplies = await this.queryPageComments(options, trx);
+
+        const nestedReplies = await Promise.all(
+            firstLevelReplies.map(async (baseComment) => {
+                const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
+                if (commentHasReplies) {
+                    // Only get the nested replies, don't include the base comment again
+                    return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                } else {
+                    return []; // No replies to this comment
+                }
+            })
+        );
+
+        // Combine first level replies with all nested replies
+        return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
     }
 
     async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined> {
@@ -1072,8 +1125,12 @@ export class DbHandler {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
 
         const purgedCids: string[] = [];
-        await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
-        await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        try {
+            await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
+        } catch {}
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        } catch {}
 
         if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
             // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
@@ -1083,7 +1140,9 @@ export class DbHandler {
                 const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
                 if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
                 if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
-                await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+                try {
+                    await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+                } catch {}
 
                 const comment = await this.queryComment(curCid, trx);
                 curCid = comment?.parentCid;
@@ -1094,7 +1153,9 @@ export class DbHandler {
         const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: cid });
         for (const child of children) purgedCids.push(...(await this.purgeComment(child.cid, trx)));
 
-        await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        } catch {}
         purgedCids.push(cid);
         return remeda.unique(purgedCids);
     }

@@ -41,6 +41,7 @@ describe(`subplebbit.statsCid`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
     });
 
     it(`stats of subplebbit is all zeros by default`, async () => {

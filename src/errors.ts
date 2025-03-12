@@ -7,7 +7,7 @@ export enum messages {
     ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
-    ERR_IPNS_IS_INVALID = "IPNS is invalid",
+    ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS = "Subplebbit owner attempted to edit subplebbit.address to a new address that already exists",
 
     // Plebbit errors
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
@@ -23,10 +23,10 @@ export enum messages {
     ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_MODERATION_PUBLICATION_FROM_JSONIFIED_COMMENT_MODERATION = "User provided a jsonfied (cloned) CommentModeration and we're unable to derive request.commentModeration from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_VOTE_PUBLICATION_FROM_JSONIFIED_VOTE = "User provided a jsonfied (cloned) Vote and we're unable to derive request.vote from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_SUBPLEBBIT_EDIT_PUBLICATION_FROM_JSONIFIED_SUBPLEBBIT_EDIT = "User provided a jsonfied (cloned) SubplebbitEdit and we're unable to derive request.subplebbitEdit from it. This is an implementation error",
-
+    ERR_PLEBBIT_SQLITE_LONG_TERM_STORAGE_KEYV_ERROR = "Error in Keyv SQLITE adapter",
     // Fetch errors
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
-    ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS = "Failed to fetch an IPFS via IPFS P2P",
+    ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P = "Failed to fetch an IPFS CID via IPFS P2P",
     ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",
     ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS = "Failed to fetch Subplebbit IPNS record from gateway(s)",
     ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS = "Failed to fetch comment IPFS file from gateway(s)",
@@ -35,6 +35,7 @@ export enum messages {
     ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS = "Failed to fetch IPFS file from gateways(s)",
     ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P = "Failed to resolve IPNS through IPFS P2P. It may have resolved IPNS name to an undefined CID",
     ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES = "Failed to fetch CommentUpdate from all post update timestamp ranges",
+    ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES = "Subplebbit has no postUpdates field and therefore can't fetch a commentUpdate",
     ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
@@ -42,6 +43,15 @@ export enum messages {
     ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase",
     ERR_GATEWAY_TIMED_OUT_OR_ABORTED = "Fetching from gateway has been aborted/timed out",
     ERR_FAILED_TO_PARSE_CID_FROM_IPNS_GATEWAY_RESPONSE = "Failed to parse the CID of IPNS file from x-ipfs-roots header",
+    ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_INVALID_SUBPLEBBIT_RECORD = "Aborted the gateway request to load subplebbit record because it will give us an invalid record we already processed and validated before",
+    ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_SAME_UPDATE_CID = "Aborted the gateway request to load subplebbit record because it will give us the same record we already have",
+    ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD = "Aborted the gateway request to load subplebbit record because we already loaded this record before",
+    ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS = "Gateway provided an x-ipfs-roots that doesn't correspond to body",
+    ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD = "We loaded a subplebbit record but it's a record we already consumed before",
+    ERR_COMMENT_RECEIVED_ALREADY_PROCESSED_COMMENT_UPDATE = "We loaded a CommentUpdate but it's a record we already consumed",
+    ERR_FETCH_CID_P2P_TIMEOUT = "Fetching CID via Kubo-rpc-client/helia P2P has timed out",
+    ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED = "Resolved IPNS name to undefined. Does this IPNS name exist?",
+    ERR_IPNS_RESOLUTION_P2P_TIMEOUT = "IPNS resolution P2P timed out",
 
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",
@@ -89,7 +99,7 @@ export enum messages {
     ERR_INVALID_CREATE_PLEBBIT_WS_SERVER_OPTIONS_SCHEMA = "Invalid create arguments for Plebbit WS RPC server",
     ERR_INVALID_CREATE_PLEBBIT_ARGS_SCHEMA = "User sent arguments with invalid schema in an attempt to create a Plebbit instance",
     ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA = "User provided invalid schema of arguments for plebbit.createSubplebbit while connected to RPC",
-    ERR_CAN_NOT_SET_EXCLUDE_TO_HAVE_MORE_THAN_ONE_PUBLICATION = "The subplebbit has subplebbit.settings.challenges[x].exclude[y] with more than one 'vote'| 'comment' | 'reply' | 'commentEdit' | 'commentModeration' as true. It can only be one",
+    ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT = "The subplebbit has subplebbit.settings.challenges[x].exclude[y].publicationType is set to an empty object. You should either choose which publication to exclude or remove exclude.publicationType",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
@@ -100,9 +110,9 @@ export enum messages {
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
     ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID = "The author edit of comment (commentUpdate.edit) has an invalid signature",
-    ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT = "The gateway has responded with a subplebbit record that does not correspond to the requested subplebbit",
+    ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED = "The subplebbit record address does not correspond to the requested subplebbit. requestedSubplebbit.address !== providedSubplebbit.address",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",
-    ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey",
+    ERR_SUBPLEBBIT_IPNS_NAME_DOES_NOT_MATCH_SIGNATURE_PUBLIC_KEY = "The IPNS name of subplebbit doesn't match subplebbit.signature.publicKey",
     ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "comment.content is not set to the latest comment.authorEdit.content",
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
@@ -137,10 +147,22 @@ export enum messages {
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT = "The subplebbit sent an invalid decryptedChallengeVerification.comment",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE = "The subplebbit sent an invalid decryptedChallengeVerification.commentUpdate",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID = "The sub sent decryptedChallengeVerification with commentUpdate.cid that does not correspond to commentIpfs",
+    ERR_PAGE_COMMENT_IS_INVALID = "validatePage has found a comment within a page that is invalid",
+    ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE = "Page comment is a reply with depth greater than 0, but has no parent comment instance cid",
+    ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT = "Page comment is a reply with a depth that's not relative to its direct parent",
+    ERR_PAGE_COMMENT_PARENT_DOES_NOT_EXIST_IN_FLAT_PAGE = "The parent of a comment in a flat page does not exist",
+    ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE = "The post cid of reply in page is different than the post cid of the comment instance. Did the subplebbit instance put the wrong reply in this page?",
+    ERR_REPLY_IN_FLAT_PAGE_HAS_NO_PARENT_CID = "Reply in flat page has no parent CID",
+    ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID = "Unable to derive post cid from page comment while verifying page",
+    ERR_POSTS_PAGE_IS_INVALID = "The page of posts is invalid",
+    ERR_REPLIES_PAGE_IS_INVALID = "The page of replies is invalid",
+    ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID = "User attempted to validate replies page without providing parent comment cid. Make sure parent comment is properly loaded",
+    ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH = "User attempted to validate replies page without providing parent comment depth. Make sure parent comment is properly loaded",
+    ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID = "User attempted to validate replies page without providing parent comment post cid. Make sure parent comment is properly loaded",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
-    ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
+    ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT = "The parent cid of comment in page is not correct",
     ERR_PAGE_SIGNATURE_IS_INVALID = "The signature of one of the comment in the page is invalid",
 
     // Subplebbit rejections of pubsub messages
@@ -226,6 +248,7 @@ export enum messages {
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY = "Failed to import challenge file factory",
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE = "Failed to import challenge file",
     ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION = "invalid getChallenge response from subplebbit challenge",
+    ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE = "Local subplebbit has produced a record that is too large. This is a critical error and a bug in plebbit-js",
 
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",

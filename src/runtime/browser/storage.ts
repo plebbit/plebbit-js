@@ -2,6 +2,7 @@ import localForage from "localforage";
 import { StorageInterface } from "../../types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import { v4 as uuidV4 } from "uuid";
+import { hideClassPrivateProps } from "../../util.js";
 
 // Storage is for long term items, no eviction based on ttl or anything like that
 export default class Storage implements StorageInterface {
@@ -9,6 +10,7 @@ export default class Storage implements StorageInterface {
     private _store!: LocalForage;
     constructor(plebbit: Storage["_plebbit"]) {
         this._plebbit = plebbit;
+        hideClassPrivateProps(this);
     }
 
     toJSON() {
@@ -29,17 +31,15 @@ export default class Storage implements StorageInterface {
         await this._store.setItem(key, value);
     }
 
-    async removeItem(key: string) {
-        await this._store.removeItem(key);
+    async removeItem(key: string | string[]) {
+        if (Array.isArray(key)) await Promise.all(key.map((k) => this._store.removeItem(k)));
+        else await this._store.removeItem(key);
+
         return true;
     }
 
     async clear() {
         await this._store.clear();
-    }
-
-    async keys(): Promise<string[]> {
-        return await this._store.keys();
     }
 
     async destroy() {}

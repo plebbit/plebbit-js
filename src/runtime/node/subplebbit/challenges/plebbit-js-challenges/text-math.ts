@@ -13,7 +13,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
 
 const type: Challenge["type"] = "text/plain";
 
-const description = "Ask a plain text math question, insecure, use ONLY for testing.";
+const description: ChallengeFile["description"] = "Ask a plain text math question, insecure, use ONLY for testing.";
 
 const getRandomNumber = (minNumber: number, maxNumber: number) => Math.floor(Math.random() * (maxNumber - minNumber + 1) + minNumber);
 

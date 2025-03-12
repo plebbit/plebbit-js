@@ -4,7 +4,7 @@ import {
     mockPlebbit,
     publishRandomPost,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -25,7 +25,7 @@ describe(`subplebbit.update - Local subs`, async () => {
 
         const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));
         await recreatedSub.update();
-        await publishRandomPost(recreatedSub.address, plebbit, {}, false);
+        await publishRandomPost(recreatedSub.address, plebbit);
         await resolveWhenConditionIsTrue(recreatedSub, () => recreatedSub.updatedAt !== oldUpdatedAt);
         expect(recreatedSub.updatedAt).to.be.greaterThan(oldUpdatedAt);
         await recreatedSub.stop();

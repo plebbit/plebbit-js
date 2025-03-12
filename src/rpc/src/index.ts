@@ -22,7 +22,7 @@ import type {
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType
-} from "../../pubsub-messages/types";
+} from "../../pubsub-messages/types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -197,11 +197,14 @@ class PlebbitWsServer extends EventEmitter {
                 const res = await callback(params, connectionId);
                 return res;
             } catch (e: any) {
-                log.error(`${callback.name} error`, { params, error: e });
+                const typedError = <PlebbitError | Error>e;
+                log.error(`${callback.name} error`, { params, error: typedError });
                 // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
-                const errorJson = JSON.parse(JSON.stringify(e));
-                delete errorJson["stack"];
-                throw errorJson;
+                if (typedError instanceof PlebbitError) {
+                    const errorJson = JSON.parse(JSON.stringify(typedError));
+                    delete errorJson["stack"];
+                    throw errorJson;
+                } else throw typedError;
             }
         };
         this.rpcWebsockets.register(method, callbackWithErrorHandled);
@@ -535,31 +538,46 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
+        let sentCommentIpfsUpdateEvent = false;
         const comment = await this.plebbit.createComment({ cid });
-        comment.on("update", () => {
-            if (typeof comment.updatedAt === "number") {
-                const commentUpdateRecord = comment._rawCommentUpdate;
-                if (!commentUpdateRecord) throw Error("comment._rawCommentUpdate should be available if updatedAt is defined");
-                sendEvent("update", commentUpdateRecord);
-            } else {
+        const sendUpdate = () => {
+            if (!sentCommentIpfsUpdateEvent && comment._rawCommentIpfs) {
                 const commentIpfsRecord = comment.toJSONIpfs();
                 sendEvent("update", commentIpfsRecord);
+                sentCommentIpfsUpdateEvent = true;
             }
-        });
-        comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
-        comment.on("statechange", () => sendEvent("statechange", comment.state));
-        comment.on("error", (error) => sendEvent("error", error));
+            if (comment._rawCommentUpdate) {
+                sendEvent("update", comment._rawCommentUpdate);
+            }
+        };
+        const updateListener = () => sendUpdate();
+        comment.on("update", updateListener);
+
+        const updatingStateListener = () => sendEvent("updatingstatechange", comment.updatingState);
+        comment.on("updatingstatechange", updatingStateListener);
+
+        const stateListener = () => sendEvent("statechange", comment.state);
+        comment.on("statechange", stateListener);
+
+        const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
+        comment.on("error", errorListener);
+
+        const waitingRetryListener = (error: PlebbitError | Error) => sendEvent("waiting-retry", error);
+        comment.on("waiting-retry", waitingRetryListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            comment.removeAllListeners("update");
-            comment.removeAllListeners("updatingstatechange");
-            comment.removeAllListeners("statechange");
+            comment.removeListener("update", updateListener);
+            comment.removeListener("updatingstatechange", updatingStateListener);
+            comment.removeListener("statechange", stateListener);
+            comment.removeListener("error", errorListener);
+            comment.removeListener("waiting-retry", waitingRetryListener);
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
 
         // if fail, cleanup
         try {
+            sendUpdate();
             await comment.update();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
@@ -609,11 +627,14 @@ class PlebbitWsServer extends EventEmitter {
         subplebbit.on("updatingstatechange", updatingStateListener);
 
         // listener for startestatechange
-        const startedStateListener = () => sendEvent("updatingstatechange", (<LocalSubplebbit>subplebbit).startedState);
+        const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
         if (isSubStarted) subplebbit.on("startedstatechange", startedStateListener);
 
         const errorListener = (error: PlebbitError) => sendEvent("error", error);
         subplebbit.on("error", errorListener);
+
+        const waitingRetryListener = (error: PlebbitError | Error) => sendEvent("waiting-retry", error);
+        subplebbit.on("waiting-retry", waitingRetryListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -621,6 +642,7 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
+            subplebbit.removeListener("waiting-retry", waitingRetryListener);
 
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
@@ -630,7 +652,7 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             // need to send an update with first subplebbitUpdate if it's a local sub
-            if ("signer" in subplebbit) sendSubJson();
+            if ("signer" in subplebbit || subplebbit._rawSubplebbitIpfs) sendSubJson();
 
             // No need to call .update() if it's already running locally because we're listening to update event
             if (!isSubStarted) await subplebbit.update();

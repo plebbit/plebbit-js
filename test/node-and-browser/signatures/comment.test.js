@@ -143,13 +143,13 @@ describeSkipIfRpc("verify Comment", async () => {
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
         const comment = remeda.clone(validCommentFixture);
 
-        const verification = await verifyCommentIpfs(comment, plebbit);
+        const verification = await verifyCommentIpfs({ comment, clientsManager: plebbit._clientsManager });
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
         const comment = remeda.clone(validCommentAvatarFixture);
-        const verification = await verifyCommentIpfs(comment, plebbit, true);
+        const verification = await verifyCommentIpfs({ comment, clientsManager: plebbit._clientsManager, resolveAuthorAddresses: true });
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -202,7 +202,12 @@ describeSkipIfRpc(`Comment with author.address as domain`, async () => {
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
-        const verification = await verifyCommentIpfs(comment, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, false);
+        const verification = await verifyCommentIpfs({
+            comment,
+            resolveAuthorAddresses: tempPlebbit.resolveAuthorAddresses,
+            clientsManager: tempPlebbit._clientsManager,
+            overrideAuthorAddressIfInvalid: false
+        });
 
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
 
@@ -227,7 +232,15 @@ describeSkipIfRpc(`commentupdate`, async () => {
 
         const commentUpdateRecord = comment._rawCommentUpdate;
         expect(
-            await verifyCommentUpdate(commentUpdateRecord, true, comment._clientsManager, comment.subplebbitAddress, comment, false, true)
+            await verifyCommentUpdate({
+                update: commentUpdateRecord,
+                resolveAuthorAddresses: true,
+                clientsManager: comment._clientsManager,
+                subplebbit: subplebbit,
+                comment: comment,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: true
+            })
         ).to.deep.equal({ valid: true });
     });
 
@@ -235,26 +248,32 @@ describeSkipIfRpc(`commentupdate`, async () => {
         const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
         update.signature = await signCommentUpdate(update, signers[0]); // Same signer as the subplebbit that signed the CommentUpdate
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
+        const verification = await verifyCommentUpdate({
+            update: update,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: subplebbit._clientsManager,
+            subplebbit: subplebbit,
+            comment: comment,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true,
+            validateUpdateSignature: true
+        });
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
         const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
+        const verification = await verifyCommentUpdate({
+            update: update,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: subplebbit._clientsManager,
+            subplebbit: subplebbit,
+            comment: comment,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true,
+            validateUpdateSignature: true
+        });
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -262,13 +281,16 @@ describeSkipIfRpc(`commentupdate`, async () => {
         const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
+        const verification = await verifyCommentUpdate({
+            update: update,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: subplebbit._clientsManager,
+            subplebbit: subplebbit,
+            comment: comment,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true,
+            validateUpdateSignature: true
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT });
     });
 
@@ -276,17 +298,29 @@ describeSkipIfRpc(`commentupdate`, async () => {
         const update = remeda.clone(validCommentUpdateWithAuthorEditFixture);
         const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
-            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
+            await verifyCommentUpdate({
+                update: update,
+                resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+                clientsManager: subplebbit._clientsManager,
+                subplebbit: subplebbit,
+                comment: comment,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: false,
+                validateUpdateSignature: true
+            })
         ).to.deep.equal({ valid: true });
         update.edit.author.address = signers[7].address;
         update.edit.signature = await signCommentEdit({ ...update.edit, signer: signers[7] }, plebbit);
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
+        const verification = await verifyCommentUpdate({
+            update: update,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: subplebbit._clientsManager,
+            subplebbit: subplebbit,
+            comment: comment,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true,
+            validateUpdateSignature: true
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
@@ -294,18 +328,30 @@ describeSkipIfRpc(`commentupdate`, async () => {
         const update = remeda.clone(validCommentUpdateWithAuthorEditFixture);
         const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
-            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
+            await verifyCommentUpdate({
+                update: update,
+                resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+                clientsManager: subplebbit._clientsManager,
+                subplebbit: subplebbit,
+                comment: comment,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: true,
+                validateUpdateSignature: true
+            })
         ).to.deep.equal({ valid: true });
         update.edit.content += "12345"; // Invalidate signature
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit and author
 
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
+        const verification = await verifyCommentUpdate({
+            update: update,
+            resolveAuthorAddresses: plebbit.resolveAuthorAddresses,
+            clientsManager: subplebbit._clientsManager,
+            subplebbit: subplebbit,
+            comment: comment,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: true,
+            validateUpdateSignature: true
+        });
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID });
     });
 });

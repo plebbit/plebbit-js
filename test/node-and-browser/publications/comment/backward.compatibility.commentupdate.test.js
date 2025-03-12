@@ -6,6 +6,7 @@ import {
     publishRandomPost,
     generateMockPost,
     publishChallengeVerificationMessageWithEncryption,
+    mockCommentToReturnSpecificCommentUpdate,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
@@ -23,27 +24,6 @@ const subplebbitAddress = signers[0].address;
 
 const subWithNoResponseSigner = signers[4]; // this sub will never respond via pubsub
 
-const mockPostToFetchSpecificCommentUpdateCid = (postToUpdate, commentUpdateCid) => {
-    if (postToUpdate.clients.ipfsClients) postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
-    else {
-        // it's gateway tests
-        const originalFetch = postToUpdate._clientsManager.fetchFromMultipleGateways.bind(postToUpdate._clientsManager);
-
-        postToUpdate._clientsManager.fetchFromMultipleGateways = (loadOpts, validateGatewayResponse) => {
-            if (loadOpts.recordPlebbitType === "comment-update")
-                return originalFetch(
-                    {
-                        ...loadOpts,
-                        root: commentUpdateCid,
-                        path: undefined
-                    },
-                    validateGatewayResponse
-                );
-            else return originalFetch(loadOpts, validateGatewayResponse);
-        };
-    }
-};
-
 getRemotePlebbitConfigs().map((config) => {
     describe(`Loading CommentUpdate with extra prop - ${config.name}`, async () => {
         let plebbit, post, subplebbit;
@@ -60,27 +40,28 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
-            const invalidCommentUpdate = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            const invalidCommentUpdate = remeda.clone(post._rawCommentUpdate);
             Object.assign(invalidCommentUpdate, extraProps);
 
-            const invalidCommentUpdateCid = await addStringToIpfs(JSON.stringify(invalidCommentUpdate));
-
             const postToUpdate = await plebbit.getComment(post.cid);
-
-            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, invalidCommentUpdateCid);
-            // should emit an error because we did not include extraProp in signedPropertyNames
-
+            let updateEmitted = false;
+            postToUpdate.once("update", () => (updateEmitted = true));
             const errorPromise = new Promise((resolve) => postToUpdate.once("error", resolve));
 
+            // should emit an error because we did not include extraProp in signedPropertyNames
+
             await postToUpdate.update();
+            mockCommentToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(invalidCommentUpdate));
 
             const error = await errorPromise;
 
             await postToUpdate.stop();
 
+            expect(updateEmitted).to.be.false;
+
             expect(postToUpdate.updatedAt).to.be.undefined; // should not accept the comment update
 
-            if (postToUpdate.clients.ipfsClients) {
+            if (postToUpdate.clients.kuboRpcClients) {
                 expect(error.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
                 expect(error.details.signatureValidity).to.deep.equal({
                     valid: false,
@@ -97,7 +78,7 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
         itSkipIfRpc(`Can load CommentUpdate with extra props if they're included in signedPropertyNames`, async () => {
-            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            const commentUpdateWithExtraProps = remeda.clone(post._rawCommentUpdate);
             Object.assign(commentUpdateWithExtraProps, extraProps);
 
             commentUpdateWithExtraProps.signature = await _signJson(
@@ -106,12 +87,10 @@ getRemotePlebbitConfigs().map((config) => {
                 signers[0]
             );
 
-            const commentUpdateWithExtraPropsCid = await addStringToIpfs(JSON.stringify(commentUpdateWithExtraProps));
-
             const postToUpdate = await plebbit.getComment(post.cid);
-            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, commentUpdateWithExtraPropsCid);
 
             await postToUpdate.update();
+            mockCommentToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
 
             await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
 
@@ -130,7 +109,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`Can load CommentUpdate with extra props in commentUpdate.author`, async () => {
-            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            const commentUpdateWithExtraProps = remeda.clone(post._rawCommentUpdate);
             Object.assign(commentUpdateWithExtraProps.author, extraProps);
 
             commentUpdateWithExtraProps.signature = await _signJson(
@@ -139,12 +118,10 @@ getRemotePlebbitConfigs().map((config) => {
                 signers[0]
             );
 
-            const commentUpdateWithExtraPropsCid = await addStringToIpfs(JSON.stringify(commentUpdateWithExtraProps));
-
             const postToUpdate = await plebbit.getComment(post.cid);
-            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, commentUpdateWithExtraPropsCid);
 
             await postToUpdate.update();
+            mockCommentToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
 
             await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
 
@@ -160,7 +137,7 @@ getRemotePlebbitConfigs().map((config) => {
             for (const commentShape of shapes) expect(commentShape.author.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
 
-        it(`Can load pages with CommentUpdate that has extra props in them`, async () => {
+        itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in them`, async () => {
             const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(commentUpdateWithExtraProps, extraProps);
 
@@ -179,6 +156,8 @@ getRemotePlebbitConfigs().map((config) => {
 
             const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));
 
+            subplebbit.posts.pageCids.new = pageIpfsCid; // just so that it wouldn't throw
+
             const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
 
             const commentInPageJson = fetchedPage.comments[fetchedPage.comments.length - 1];
@@ -192,7 +171,7 @@ getRemotePlebbitConfigs().map((config) => {
             for (const shape of shapes) expect(shape.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
 
-        it(`Can load pages with CommentUpdate that has extra props in commentUpdate.author`, async () => {
+        itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in commentUpdate.author`, async () => {
             const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(commentUpdateWithExtraProps.author, extraProps);
 
@@ -210,6 +189,7 @@ getRemotePlebbitConfigs().map((config) => {
             });
 
             const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));
+            subplebbit.posts.pageCids.new = pageIpfsCid; // just so that it wouldn't throw
 
             const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
 

@@ -8,7 +8,7 @@ export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 
 export interface PageIpfsManuallyDefined {
     comments: { comment: CommentIpfsType; commentUpdate: CommentUpdateType }[];
-    nextCid?: string;
+    nextCid?: string; // "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx" for example
 }
 
 export type RepliesPagesTypeIpfs = z.infer<typeof RepliesPagesIpfsSchema>;
@@ -30,6 +30,7 @@ export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 export type SortProps = {
     score: (comment: { comment: CommentIpfsType; commentUpdate: CommentUpdateType }) => number;
     timeframe?: Timeframe;
+    flat?: boolean;
 };
 
 export type PostSort = Record<PostSortName, SortProps>;

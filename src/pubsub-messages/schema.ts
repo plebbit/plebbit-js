@@ -17,8 +17,10 @@ import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subpleb
 import * as remeda from "remeda";
 import { CommentModerationPubsubMessagePublicationSchema } from "../publications/comment-moderation/schema.js";
 import { SubplebbitEditPubsubMessagePublicationSchema } from "../publications/subplebbit-edit/schema.js";
+import { nonNegativeIntStringSchema } from "../schema.js";
 
 const AcceptedChallengeTypeSchema = z.string().min(1);
+
 export const PubsubMessageSignatureSchema = z
     .object({
         signature: z.instanceof(Uint8Array), // (byte string in cbor)
@@ -114,7 +116,7 @@ export const ChallengeAnswerMessageSignedPropertyNames = remeda.keys.strict(reme
 export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend({
     type: z.enum(["CHALLENGEVERIFICATION"]),
     challengeSuccess: z.boolean(),
-    challengeErrors: z.record(z.number().int().nonnegative(), z.string()).optional(), // challenge index => challenge error
+    challengeErrors: z.record(nonNegativeIntStringSchema, z.string()).optional(), // challenge index => challenge error
     reason: z.string().optional(),
     encrypted: EncryptedSchema.optional() // Will decrypt to DecryptedChallengeVerificationSchema
 }).strict();

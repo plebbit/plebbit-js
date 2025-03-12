@@ -12,6 +12,7 @@ import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
 import question from "./plebbit-js-challenges/question.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
+import publicationMatch from "./plebbit-js-challenges/publication-match.js";
 import type {
     ChallengeVerificationMessageType,
     DecryptedChallengeAnswer,
@@ -29,7 +30,6 @@ import { LocalSubplebbit } from "../local-subplebbit.js";
 import * as remeda from "remeda";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
-import { derivePublicationFromChallengeRequest } from "../../../../util.js";
 
 type PendingChallenge = Challenge & { index: number };
 
@@ -41,7 +41,8 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
     fail: fail,
     blacklist: blacklist,
     question: question,
-    "evm-contract-call": evmContractCall
+    "evm-contract-call": evmContractCall,
+    "publication-match": publicationMatch
 };
 
 const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: LocalSubplebbit) => {

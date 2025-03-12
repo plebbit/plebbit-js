@@ -15,7 +15,7 @@ import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
-import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
+import type { PageIpfs, RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
 
@@ -65,6 +65,7 @@ export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined,
     author: AuthorWithShortSubplebbitAddress;
     deleted?: boolean;
     replies?: Omit<RepliesPagesTypeJson, "clients">;
+    pageComment: PageIpfs["comments"][number];
 }
 
 // Comment states
@@ -80,7 +81,8 @@ export type CommentUpdatingState =
     | "fetching-subplebbit-ipns"
     | "fetching-subplebbit-ipfs"
     | "failed"
-    | "succeeded";
+    | "succeeded"
+    | "waiting-retry";
 
 // Native types here
 
@@ -109,3 +111,5 @@ export interface CommentUpdateForChallengeVerificationSignature extends JsonSign
 export interface CommentUpdateSignature extends JsonSignature {
     signedPropertyNames: typeof CommentUpdateSignedPropertyNames;
 }
+
+export type MinimumCommentFieldsToFetchPages = Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "postCid">;

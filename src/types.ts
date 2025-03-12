@@ -31,6 +31,9 @@ import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.j
 import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
 import { CommentModerationTableRow } from "./publications/comment-moderation/types.js";
+import { LRUCache } from "lru-cache";
+import type { SubplebbitIpfsType } from "./subplebbit/types.js";
+import type { PageIpfs } from "./pages/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -112,7 +115,8 @@ export interface SubplebbitEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
 
-    error: (error: PlebbitError) => void;
+    error: (error: PlebbitError | PlebbitError) => void;
+    "waiting-retry": (err: Error | PlebbitError) => void;
 
     // State changes
     statechange: (newState: RemoteSubplebbit["state"]) => void;
@@ -120,6 +124,8 @@ export interface SubplebbitEvents {
     startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
 
     update: (updatedSubplebbit: RemoteSubplebbit) => void;
+
+    removeListener: (eventName: string, listener: Function) => void;
 }
 
 export interface PublicationEvents {
@@ -128,6 +134,7 @@ export interface PublicationEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
     error: (error: PlebbitError | Error) => void;
+    "waiting-retry": (err: PlebbitError | Error) => void;
 
     // State changes
     publishingstatechange: (newState: Publication["publishingState"]) => void;
@@ -136,6 +143,8 @@ export interface PublicationEvents {
     // For comment only
     update: (updatedInstance: Comment) => void;
     updatingstatechange: (newState: Comment["updatingState"]) => void;
+
+    removeListener: (eventName: string, listener: Function) => void;
 }
 
 export interface PlebbitEvents {
@@ -197,8 +206,8 @@ export interface PubsubSubplebbitStats {
     sessionStats: PubsubStats; // session means in the last 1h
 }
 
-export interface IpfsClient {
-    peers: () => ReturnType<IpfsClient["_client"]["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+export interface KuboRpcClient {
+    peers: () => ReturnType<KuboRpcClient["_client"]["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
@@ -206,15 +215,15 @@ export interface IpfsClient {
     _clientOptions: IpfsHttpClientOptions;
 }
 
-export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
+export type PubsubSubscriptionHandler = Extract<Parameters<KuboRpcClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
 export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
 export interface PubsubClient {
     peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: Pick<IpfsClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
-    _clientOptions: IpfsClient["_clientOptions"];
+    _client: Pick<KuboRpcClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
+    _clientOptions: KuboRpcClient["_clientOptions"];
 }
 
 export interface GatewayClient {
@@ -228,9 +237,8 @@ export interface StorageInterface {
     init: () => Promise<void>;
     getItem: (key: string) => Promise<any | undefined>;
     setItem: (key: string, value: any) => Promise<void>;
-    removeItem: (key: string) => Promise<boolean>;
+    removeItem: (key: string | string[]) => Promise<boolean>;
     clear: () => Promise<void>;
-    keys: () => Promise<string[]>;
     destroy: () => Promise<void>;
 }
 
@@ -259,4 +267,11 @@ type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: 
 
 export type JsonOfClass<T> = ExcludeMethods<OmitUnderscoreProps<T>>;
 
-// RPC state
+export type PlebbitMemCaches = {
+    subplebbitVerificationCache: LRUCache<string, boolean>;
+    pageVerificationCache: LRUCache<string, boolean>;
+    commentVerificationCache: LRUCache<string, boolean>;
+    commentUpdateVerificationCache: LRUCache<string, boolean>;
+    subplebbitForPublishing: LRUCache<SubplebbitIpfsType["address"], NonNullable<Publication["_subplebbit"]>>;
+    pageCidToSortTypes: LRUCache<NonNullable<PageIpfs["nextCid"]>, string[]>; // page cid => sort types
+};

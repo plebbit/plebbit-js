@@ -15,6 +15,8 @@ import PlebbitWsServer from "../../rpc";
 import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+
 import fs from "fs";
 import { removeUndefinedValuesRecursively } from "../../dist/node/util.js";
 
@@ -37,13 +39,15 @@ const offlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline"),
     apiPort: 15001,
     gatewayPort: 18080,
-    daemonArgs: "--offline"
+    swarmPort: 4001,
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
     apiPort: 15002,
     gatewayPort: 18081,
-    daemonArgs: "--enable-pubsub-experiment",
+    swarmPort: 4002,
+    daemonArgs: "--enable-pubsub-experiment --enable-namesys-pubsub",
     extraCommands: ["bootstrap rm --all"]
 };
 
@@ -51,6 +55,7 @@ const onlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-online"),
     apiPort: 15003,
     gatewayPort: 18082,
+    swarmPort: 4003,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: []
 };
@@ -59,6 +64,7 @@ const anotherOfflineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline2"),
     apiPort: 15004,
     gatewayPort: 18083,
+    swarmPort: 4004,
     daemonArgs: "--offline"
 };
 
@@ -66,6 +72,7 @@ const anotherPubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub2"),
     apiPort: 15005,
     gatewayPort: 18084,
+    swarmPort: 4005,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all"]
 };
@@ -74,6 +81,7 @@ const httpRouterNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-http-router"),
     apiPort: 15006,
     gatewayPort: 18085,
+    swarmPort: 4006,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all"]
 };
@@ -86,23 +94,30 @@ const startIpfsNode = async (nodeArgs) => {
         execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
     } catch {}
 
-    const ipfsConfigPath = path.join(nodeArgs.dir, "config");
-    const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
-
-    ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
-    ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
-    ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
-
-    fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
-
     if (nodeArgs.extraCommands)
         for (const extraCommand of nodeArgs.extraCommands)
             execSync(`${ipfsPath} ${extraCommand}`, {
                 stdio: "inherit",
                 env: { IPFS_PATH: nodeArgs.dir }
             });
+    const ipfsDenyListPath = path.join(nodeArgs.dir, "denylists", "*.deny");
+    if (!fs.existsSync(ipfsDenyListPath)) {
+        if (!fs.existsSync(path.dirname(ipfsDenyListPath))) fs.mkdirSync(path.dirname(ipfsDenyListPath));
 
-    const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
+        await fs.promises.writeFile(ipfsDenyListPath, "");
+    }
+
+    const ipfsConfigPath = path.join(nodeArgs.dir, "config");
+    const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
+
+    ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
+    ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
+    ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+    ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
+    ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map((swarmAddr) => swarmAddr.replace("/4001", "/" + nodeArgs.swarmPort));
+    fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
+
+    const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
     console.log(ipfsCmd);
     const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
     ipfsProcess.stderr.on("data", console.error);
@@ -155,7 +170,7 @@ const setUpMockGateways = async () => {
         else if (req.url.includes("/ipns")) {
             const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]);
             const sub = await plebbit.getSubplebbit(subAddress);
-            res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+            res.setHeader("x-ipfs-roots", sub.updateCid);
             res.end(JSON.stringify(sub.toJSONIpfs()));
         } else res.end(await plebbit.fetchCid(req.url));
     })
@@ -199,19 +214,18 @@ const setUpMockGateways = async () => {
 
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
-    const fetchLatestSubplebbitJson = async () => {
-        const subjsonIpfs = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-
-        const subRecord = cleanUpBeforePublishing(subjsonIpfs);
-        if (subjsonIpfs.posts) subRecord.posts = removeUndefinedValuesRecursively(subjsonIpfs.posts);
-        return subRecord;
+    const fetchLatestSubplebbit = async () => {
+        return await plebbit.getSubplebbit(signers[0].address);
     };
 
     // This gateaway will wait for 11s then respond
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 11000));
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
+        const subRecord = await fetchLatestSubplebbit();
+        res.setHeader("x-ipfs-roots", subRecord.updateCid);
+
+        res.end(JSON.stringify(subRecord.toJSONIpfs()));
     })
         .listen(14000, hostName)
         .on("error", (err) => {
@@ -222,7 +236,10 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         res.setHeader("Access-Control-Allow-Origin", "*");
-        res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
+        const subRecord = await fetchLatestSubplebbit();
+        res.setHeader("x-ipfs-roots", subRecord.updateCid);
+
+        res.end(JSON.stringify(subRecord.toJSONIpfs()));
     })
         .listen(14002, hostName)
         .on("error", (err) => {
@@ -244,12 +261,13 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
-        subplebbitRecordThirtyMinuteOld.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
-        subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
-        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+        const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
+        const subplebbitRecordThirtyMinuteOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordThirtyMinuteOld.toJSONIpfs()));
+        subplebbitRecordThirtyMinuteOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordThirtyMinuteOldIpfs.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOldIpfs, signers[0]);
+        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs)));
 
-        res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
+        res.end(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs));
     })
         .listen(14004, hostName)
         .on("error", (err) => {
@@ -260,12 +278,14 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
-        subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
-        subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
-        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+        const latestRecord = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
+        const subplebbitRecordHourOldIpfs = JSON.parse(JSON.stringify(latestRecord.toJSONIpfs()));
 
-        res.end(JSON.stringify(subplebbitRecordHourOld));
+        subplebbitRecordHourOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordHourOldIpfs.signature = await signSubplebbit(subplebbitRecordHourOldIpfs, signers[0]);
+        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordHourOldIpfs)));
+
+        res.end(JSON.stringify(subplebbitRecordHourOldIpfs));
     })
         .listen(14005, hostName)
         .on("error", (err) => {
@@ -276,14 +296,46 @@ const setUpMockGateways = async () => {
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
 
-        const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
-        subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
-        subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
-        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+        const subplebbitRecordTwoHoursOld = await fetchLatestSubplebbit(); // very old Subplebbit ipns record from subplebbitAddress
+        const subplebbitRecordTwoHoursOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordTwoHoursOld.toJSONIpfs()));
 
-        res.end(JSON.stringify(subplebbitRecordHourOld));
+        subplebbitRecordTwoHoursOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordTwoHoursOldIpfs.signature = await signSubplebbit(subplebbitRecordTwoHoursOldIpfs, signers[0]);
+        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordTwoHoursOldIpfs)));
+
+        res.end(JSON.stringify(subplebbitRecordTwoHoursOldIpfs));
     })
         .listen(14006, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
+};
+
+const setupMockDelegatedRouter = async () => {
+    // This router will just return the offlineNodeArgs IPFS addresses whenever it's queried
+
+    http.createServer(async (req, res) => {
+        console.log("Received a request for mock http router", req.url);
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+
+        const providerList = { Providers: [] };
+        for (const ipfsNode of [offlineNodeArgs, pubsubNodeArgs]) {
+            const idRes = await fetch(`http://localhost:${ipfsNode.apiPort}/api/v0/id`, { method: "POST" }).then((res) => res.json());
+            providerList.Providers.push({
+                Schema: "peer",
+                Addrs: idRes["Addresses"],
+                ID: idRes["ID"],
+                Protocols: ["transport-bitswap"]
+            });
+        }
+
+        res.end(JSON.stringify(providerList));
+    })
+        .listen(20001, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -304,6 +356,8 @@ const setUpMockGateways = async () => {
     await startIpfsNodes();
 
     await setUpMockGateways();
+
+    await setupMockDelegatedRouter();
 
     await import("./pubsub-mock-server");
 
@@ -338,7 +392,7 @@ const setUpMockGateways = async () => {
     if (process.env["NO_SUBPLEBBITS"] !== "1") {
         const subs = await startSubplebbits({
             signers: signers,
-            publishInterval: 3000,
+            publishInterval: 1000,
             votesPerCommentToPublish: 1,
             numOfPostsToPublish: 1,
             numOfCommentsToPublish: 1,

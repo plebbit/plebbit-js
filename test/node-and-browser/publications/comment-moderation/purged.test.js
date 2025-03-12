@@ -8,14 +8,14 @@ import {
     findCommentInPage,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
-    waitTillPostInSubplebbitPages,
-    mockPlebbit,
-    createSubWithNoChallenge,
     waitTillReplyInParentPages,
-    mockRemotePlebbitIpfsOnly
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
+import { CID } from "kubo-rpc-client";
+
 import * as remeda from "remeda";
 
 const subplebbitAddress = signers[0].address;
@@ -25,47 +25,35 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-// only mods can purge
-
-// after purging
-// should not be able to load it (DONE)
-// should not be able to load its children (DONE)
-// should not be able to vote on it (DONE)
-// should not be able to load one of its pages (DONE)
-// the purged post should not appear in the subplebbit posts (DONE)
-// the purged comment should not appear in its parent pages ()
-
-// should also test loading pages of postToPurge to see if its tree exists
-
-// should not be able to load its comment update (DONE)
-
 getRemotePlebbitConfigs().map((config) => {
-    describe(`Purging post - ${config.name}`, async () => {
+    describeSkipIfRpc(`Purging post - ${config.name}`, async () => {
         let plebbit, postToPurge, postReply, replyUnderReply;
         let remotePlebbitIpfs;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            remotePlebbitIpfs = await mockRemotePlebbitIpfsOnly(); // this instance is connected to the same IPFS node as the sub
+            remotePlebbitIpfs = await mockPlebbitNoDataPathWithOnlyKuboClient(); // this instance is connected to the same IPFS node as the sub
             postToPurge = await publishRandomPost(subplebbitAddress, plebbit, { content: "post to be purged" + Date.now() });
             await postToPurge.update();
-            await resolveWhenConditionIsTrue(postToPurge, () => typeof postToPurge.updatedAt === "number");
-            await waitTillPostInSubplebbitPages(postToPurge, plebbit);
             postReply = await publishRandomReply(postToPurge, plebbit);
             await postReply.update();
-            await resolveWhenConditionIsTrue(postReply, () => typeof postReply.updatedAt === "number");
-
-            await waitTillReplyInParentPages(postReply, plebbit);
 
             replyUnderReply = await publishRandomReply(postReply, plebbit);
+            await replyUnderReply.update();
             await waitTillReplyInParentPages(replyUnderReply, plebbit);
+
+            await Promise.all(
+                [postToPurge, postReply, replyUnderReply].map((comment) =>
+                    resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number")
+                )
+            );
 
             // make sure both postToPurge and postReply exists on the IPFS node
 
             for (const cid of [postToPurge.cid, postReply.cid, replyUnderReply.cid]) {
                 const res =
-                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
-                        cid
-                    );
+                    await remotePlebbitIpfs.clients.kuboRpcClients[
+                        Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
+                    ]._client.block.stat(cid);
                 expect(res.size).to.be.a("number");
             }
         });
@@ -77,59 +65,53 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Regular author can not purge a comment`, async () => {
-            const removeEdit = await plebbit.createCommentModeration({
+            const purgeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToPurge.subplebbitAddress,
                 commentCid: postToPurge.cid,
                 commentModeration: { reason: "To purge a post", purged: true },
-                signer: await plebbit.createSigner() // Mod role
+                signer: await plebbit.createSigner() // random author
             });
-            await publishWithExpectedResult(removeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
+            await publishWithExpectedResult(purgeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
         });
 
         it(`Mod can mark an author post as purged`, async () => {
-            const removeEdit = await plebbit.createCommentModeration({
+            const purgeEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: postToPurge.subplebbitAddress,
                 commentCid: postToPurge.cid,
                 commentModeration: { reason: "To purge a post", purged: true },
                 signer: roles[2].signer // Mod role
             });
-            await publishWithExpectedResult(removeEdit, true);
+            await publishWithExpectedResult(purgeEdit, true);
         });
 
         it(`The whole reply tree including post, replies and their pages should not be stored in the ipfs node of the subplebbit`, async () => {
-            const cids = [
+            const cids = remeda.unique([
                 postToPurge.cid,
                 postReply.cid,
                 replyUnderReply.cid,
                 ...Object.values(postToPurge.replies.pageCids),
                 ...Object.values(postReply.replies.pageCids)
-            ];
+            ]);
+            const cidsV1 = cids.map((cid) => CID.parse(cid).toV1().toString());
 
-            for (const cid of cids) {
-                try {
-                    await remotePlebbitIpfs.clients.ipfsClients[Object.keys(remotePlebbitIpfs.clients.ipfsClients)[0]]._client.block.stat(
-                        cid
-                    );
-
-                    expect.fail("should not succeed");
-                } catch (e) {
-                    expect(e.message).to.include("block was not found locally");
-                }
+            const allCids = [...cids, ...cidsV1];
+            const ipfsClientOfSub =
+                remotePlebbitIpfs.clients.kuboRpcClients[Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]]._client;
+            // Collect all pinned CIDs
+            for await (const pin of ipfsClientOfSub.pin.ls()) {
+                expect(!allCids.includes(pin.cid.toString())).to.be.true;
             }
         });
 
         it(`Purged post don't show in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: postToPurge.subplebbitAddress });
 
-            const updatePromise = new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const purgedPostInPage = await findCommentInPage(postToPurge.cid, sub.posts.pageCids.new, sub.posts);
-                    if (!purgedPostInPage) resolve();
-                })
-            );
             await sub.update();
 
-            await updatePromise;
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const purgedPostInPage = await findCommentInPage(postToPurge.cid, sub.posts.pageCids.new, sub.posts);
+                return purgedPostInPage === undefined; // if we can't find it then it's purged
+            });
 
             await sub.stop();
 
@@ -186,15 +168,25 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
+            const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+            differentPlebbit._timeouts["comment-ipfs"] = 100;
+
+            const commentsWithDifferentPlebbit = await Promise.all(
+                [postToPurge, postReply, replyUnderReply].map((comment) => differentPlebbit.createComment({ cid: comment.cid }))
+            );
             await Promise.all(
-                [postToPurge, postReply, replyUnderReply].map(async (purgedComment) => {
-                    purgedComment.updatedAt = undefined;
+                commentsWithDifferentPlebbit.map(async (purgedComment) => {
+                    const waitingRetryErrs = [];
+                    purgedComment.on("waiting-retry", (err) => waitingRetryErrs.push(err));
                     await purgedComment.update();
 
-                    await new Promise((resolve) => setTimeout(resolve, 10000));
-                    // we've waiting 10s for the update but it's not defined yet
+                    await resolveWhenConditionIsTrue(purgedComment, () => waitingRetryErrs.length === 2, "waiting-retry");
+
+                    // we've attempted to load twice but it's not defined yet
                     // plebbit-js keeps on retrying to load the comment update, but it's not loading because ipfs node removed it from MFS
-                    expect(purgedComment.updatedAt).to.be.undefined;
+                    expect(waitingRetryErrs.length).to.be.greaterThan(0);
+                    expect(purgedComment.updatedAt).to.be.undefined; // should not load comment update
+                    expect(purgedComment.depth).to.be.undefined; // should not load comment ipfs
 
                     await purgedComment.stop();
                 })

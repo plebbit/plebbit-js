@@ -4,7 +4,7 @@ import {
     generateMockPost,
     overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     publishRandomPost,
     generateMockVote,
@@ -21,7 +21,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
@@ -61,7 +61,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
@@ -69,6 +69,8 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Feature is updated correctly in props`, async () => {
@@ -101,7 +103,7 @@ describe(`subplebbit.features.noUpvotes`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.start();
@@ -141,7 +143,7 @@ describe(`subplebbit.features.noDownvotes`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.start();
@@ -182,7 +184,7 @@ describe(`subplebbit.features.noPostDownvotes`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.edit({ features: { ...subplebbit.features, noPostDownvotes: true } });
@@ -223,7 +225,7 @@ describe(`subplebbit.features.noPostUpvotes`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.edit({ features: { ...subplebbit.features, noPostUpvotes: true } });
@@ -265,7 +267,7 @@ describe(`subplebbit.features.noReplyDownvotes`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.edit({ features: { ...subplebbit.features, noReplyDownvotes: true } });
@@ -306,7 +308,7 @@ describe(`subplebbit.features.noReplyUpvotes`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
 
         await subplebbit.edit({ features: { ...subplebbit.features, noReplyUpvotes: true } });

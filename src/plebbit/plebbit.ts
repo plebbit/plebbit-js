@@ -1,14 +1,14 @@
 import {
     getDefaultDataPath,
     listSubplebbits as nodeListSubplebbits,
-    createIpfsClient,
+    createKuboRpcClient,
     monitorSubplebbitsDirectory
 } from "../runtime/node/util.js";
 import type {
     StorageInterface,
     ChainProvider,
     GatewayClient,
-    IpfsClient,
+    KuboRpcClient,
     PlebbitEvents,
     PubsubClient,
     ParsedPlebbitOptions,
@@ -16,10 +16,17 @@ import type {
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
     InputPlebbitOptions,
-    AuthorPubsubType
+    AuthorPubsubType,
+    PlebbitMemCaches
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import {
+    waitForUpdateInSubInstanceWithErrorAndTimeout,
+    doesDomainAddressHaveCapitalLetter,
+    hideClassPrivateProps,
+    removeUndefinedValuesRecursively,
+    timestamp
+} from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -35,7 +42,6 @@ import {
     verifyCommentEdit,
     verifySubplebbitEdit
 } from "../signer/signatures.js";
-import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "../stats.js";
 import Storage from "../runtime/node/storage.js";
 import { ClientsManager } from "../clients/client-manager.js";
@@ -74,7 +80,8 @@ import type {
     CommentPubsubMessagePublication,
     CommentUpdateType,
     CommentWithinPageJson,
-    CreateCommentOptions
+    CreateCommentOptions,
+    MinimumCommentFieldsToFetchPages
 } from "../publications/comment/types.js";
 
 import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
@@ -109,36 +116,39 @@ import type {
     CommentModerationTypeJson,
     CreateCommentModerationOptions
 } from "../publications/comment-moderation/types.js";
-import { setupIpfsAddressesRewriterAndHttpRouters } from "../runtime/node/setup-ipfs-rewrite-and-http-router.js";
+import { setupKuboAddressesRewriterAndHttpRouters } from "../runtime/node/setup-kubo-address-rewriter-and-http-router.js";
 import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
-import {
+import type {
     CreateSubplebbitEditPublicationOptions,
     SubplebbitEditJson,
     SubplebbitEditPublicationOptionsToSign,
     SubplebbitEditPubsubMessagePublication
 } from "../publications/subplebbit-edit/types.js";
+import { LRUCache } from "lru-cache";
+import { DomainResolver } from "../domain-resolver.js";
+import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 
-export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
+export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
-    ipfsHttpClientsOptions?: ParsedPlebbitOptions["ipfsHttpClientsOptions"];
-    pubsubHttpClientsOptions: ParsedPlebbitOptions["pubsubHttpClientsOptions"];
+    kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
+    pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
-    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders!: ParsedPlebbitOptions["chainProviders"];
     parsedPlebbitOptions: ParsedPlebbitOptions;
     publishInterval: ParsedPlebbitOptions["publishInterval"];
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
+    validatePages: ParsedPlebbitOptions["validatePages"];
     userAgent: ParsedPlebbitOptions["userAgent"];
     httpRoutersOptions: ParsedPlebbitOptions["httpRoutersOptions"];
 
     // Only Plebbit instance has these props
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
-        ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
-        pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
+        kuboRpcClients: { [kuboRpcClientUrl: string]: KuboRpcClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
     };
@@ -152,11 +162,24 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
     _stats!: Stats;
     _storage!: StorageInterface;
+    _updatingSubplebbits: Record<SubplebbitIpfsType["address"], Awaited<ReturnType<Plebbit["createSubplebbit"]>>> = {}; // storing subplebbit instance that are getting updated rn
+    _updatingComments: Record<string, Awaited<ReturnType<Plebbit["createComment"]>>> = {}; // storing comment instancse that are getting updated rn
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
+    _memCaches!: PlebbitMemCaches;
+    _domainResolver: DomainResolver;
+
+    _timeouts = {
+        "subplebbit-ipns": 5 * 60 * 1000, // 5min, for resolving subplebbit IPNS, or fetching subplebbit from gateways
+        "subplebbit-ipfs": 60 * 1000, // 1min, for fetching subplebbit cid P2P
+        "comment-ipfs": 60 * 1000, // 1 min
+        "comment-update-ipfs": 2 * 60 * 1000, // 2 min
+        "page-ipfs": 30 * 1000, // 30s for pages
+        "generic-ipfs": 30 * 1000 // 30s generic ipfs
+    }; // timeout in ms for each load type when we're loading from kubo/helia/gateway
 
     constructor(options: InputPlebbitOptions) {
         super();
@@ -167,19 +190,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         this.plebbitRpcClientsOptions = this.parsedPlebbitOptions.plebbitRpcClientsOptions;
 
-        this.ipfsGatewayUrls = this.parsedPlebbitOptions.ipfsGatewayUrls = this.plebbitRpcClientsOptions
+        this.ipfsGatewayUrls = this.parsedPlebbitOptions.ipfsGatewayUrls =
+            this.plebbitRpcClientsOptions || !this.parsedPlebbitOptions.ipfsGatewayUrls?.length
+                ? undefined
+                : this.parsedPlebbitOptions.ipfsGatewayUrls;
+        this.kuboRpcClientsOptions = this.parsedPlebbitOptions.kuboRpcClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
-            : this.parsedPlebbitOptions.ipfsGatewayUrls;
-        this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions = this.plebbitRpcClientsOptions
-            ? undefined
-            : this.parsedPlebbitOptions.ipfsHttpClientsOptions;
+            : this.parsedPlebbitOptions.kuboRpcClientsOptions;
 
         // We default for ipfsHttpClientsOptions first, but if it's not defined we use the default from schema
-        this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions = this.plebbitRpcClientsOptions
+        this.pubsubKuboRpcClientsOptions = this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
-            : this._userPlebbitOptions.pubsubHttpClientsOptions // did the user provide their own pubsub options
-              ? this.parsedPlebbitOptions.pubsubHttpClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
-              : this.parsedPlebbitOptions.ipfsHttpClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
+            : this._userPlebbitOptions.pubsubKuboRpcClientsOptions // did the user provide their own pubsub options
+              ? this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
+              : this.parsedPlebbitOptions.kuboRpcClientsOptions || this.parsedPlebbitOptions.pubsubKuboRpcClientsOptions;
 
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
@@ -188,9 +212,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.publishInterval = this.parsedPlebbitOptions.publishInterval;
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
         this.noData = this.parsedPlebbitOptions.noData;
-        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
+        this.validatePages = this.parsedPlebbitOptions.validatePages;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
         this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
+        this._domainResolver = new DomainResolver(this);
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
             this._subplebbitschangeEventHasbeenEmitted = true;
@@ -199,45 +224,57 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         //@ts-expect-error
         this.clients = {};
 
-        this._initIpfsClientsIfNeeded();
-        this._initPubsubClientsIfNeeded();
+        this._initKuboRpcClientsIfNeeded();
+        this._initKuboPubsubClientsIfNeeded();
         this._initRpcClientsIfNeeded();
         this._initIpfsGatewaysIfNeeded();
         this._initChainProviders();
+        this._initMemCaches();
 
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
                 "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
     }
 
-    private _initIpfsClientsIfNeeded() {
-        this.clients.ipfsClients = {};
-        if (!this.ipfsHttpClientsOptions) return;
-        for (const clientOptions of this.ipfsHttpClientsOptions) {
-            const ipfsClient = createIpfsClient(clientOptions);
-            this.clients.ipfsClients[clientOptions.url!.toString()] = {
-                _client: ipfsClient,
+    _initMemCaches() {
+        this._memCaches = {
+            subplebbitVerificationCache: new LRUCache<string, boolean>({ max: 100 }),
+            pageVerificationCache: new LRUCache<string, boolean>({ max: 1000 }),
+            commentVerificationCache: new LRUCache<string, boolean>({ max: 5000 }),
+            commentUpdateVerificationCache: new LRUCache<string, boolean>({ max: 100_000 }),
+            subplebbitForPublishing: new LRUCache({
+                max: 100,
+                ttl: 600000
+            }),
+            pageCidToSortTypes: new LRUCache<string, string[]>({ max: 5000 })
+        };
+    }
+
+    private _initKuboRpcClientsIfNeeded() {
+        this.clients.kuboRpcClients = {};
+        if (!this.kuboRpcClientsOptions) return;
+        for (const clientOptions of this.kuboRpcClientsOptions) {
+            const kuboRpcClient = createKuboRpcClient(clientOptions);
+            this.clients.kuboRpcClients[clientOptions.url!.toString()] = {
+                _client: kuboRpcClient,
                 _clientOptions: clientOptions,
-                peers: ipfsClient.swarm.peers
+                peers: kuboRpcClient.swarm.peers
             };
         }
     }
 
-    private _initPubsubClientsIfNeeded() {
-        this.clients.pubsubClients = {};
-        if (this.browserLibp2pJsPublish)
-            //@ts-expect-error
-            this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
-        if (!this.pubsubHttpClientsOptions) return;
+    private _initKuboPubsubClientsIfNeeded() {
+        this.clients.pubsubKuboRpcClients = {};
+        if (!this.pubsubKuboRpcClientsOptions) return;
 
-        for (const clientOptions of this.pubsubHttpClientsOptions) {
-            const ipfsClient = createIpfsClient(clientOptions);
-            this.clients.pubsubClients[clientOptions.url!.toString()] = {
-                _client: ipfsClient,
+        for (const clientOptions of this.pubsubKuboRpcClientsOptions) {
+            const kuboRpcClient = createKuboRpcClient(clientOptions);
+            this.clients.pubsubKuboRpcClients[clientOptions.url!.toString()] = {
+                _client: kuboRpcClient,
                 _clientOptions: clientOptions,
                 peers: async () => {
-                    const topics = await ipfsClient.pubsub.ls();
-                    const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                    const topics = await kuboRpcClient.pubsub.ls();
+                    const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => kuboRpcClient.pubsub.peers(topic))));
                     const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                     return peers;
                 }
@@ -262,10 +299,29 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         for (const gatewayUrl of this.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
     }
 
+    private async _setupHttpRoutersWithKuboNodeInBackground() {
+        const log = Logger("plebbit-js:plebbit:_initHttpRoutersWithIpfsInBackground");
+
+        if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
+            // only for node
+            setupKuboAddressesRewriterAndHttpRouters(this)
+                .then(() =>
+                    log(
+                        "Set http router options and their proxies successfully on all connected ipfs",
+                        Object.keys(this.clients.kuboRpcClients)
+                    )
+                )
+                .catch((e: Error) => {
+                    log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
+                    this.emit("error", e);
+                });
+        }
+    }
+
     async _init() {
         const log = Logger("plebbit-js:plebbit:_init");
         // Init storage
-        this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
+        this._storage = new Storage(this);
         await this._storage.init();
 
         // Init stats
@@ -281,20 +337,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             this.subplebbits = []; // subplebbits = [] on browser
         }
 
-        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && this._canCreateNewLocalSub()) {
-            // only for node
-            setupIpfsAddressesRewriterAndHttpRouters(this)
-                .then(() =>
-                    log(
-                        "Set http router options and their proxies successfully on all connected ipfs",
-                        Object.keys(this.clients.ipfsClients)
-                    )
-                )
-                .catch((e: Error) => {
-                    log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
-                    this.emit("error", e);
-                });
-        }
+        await this._setupHttpRoutersWithKuboNodeInBackground();
 
         hideClassPrivateProps(this);
     }
@@ -304,26 +347,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const subplebbit = await this.createSubplebbit({ address: parsedAddress });
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
-        const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
-        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        let updateError: PlebbitError | undefined;
-        const errorListener = (err: PlebbitError) => (updateError = err);
-        subplebbit.on("error", errorListener);
-        try {
-            await subplebbit.update();
-            await pTimeout(updatePromise, {
-                milliseconds: timeoutMs,
-                message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
-            });
-        } catch (e) {
-            subplebbit.removeAllListeners("error");
-            await subplebbit.stop();
-            if (updateError) throw updateError;
-            if (subplebbit?._ipnsLoadingOperation?.mainError()) throw subplebbit._ipnsLoadingOperation.mainError();
-            throw Error("Timed out without error. Should not happen" + e);
-        }
-        subplebbit.removeListener("error", errorListener);
-        await subplebbit.stop();
+        const timeoutMs = this._timeouts["subplebbit-ipns"];
+        await waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs);
 
         return subplebbit;
     }
@@ -331,29 +356,29 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     async getComment(cid: z.infer<typeof CidStringSchema>): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:getComment");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
+        // getComment is interested in loading CommentIpfs only
         const comment = await this.createComment({ cid: parsedCid });
 
-        // The reason why we override this function is because we don't want update() to load the IPNS
-        // we only want to load the comment ipfs
-        //@ts-expect-error
-        const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
-        //@ts-expect-error
-        comment._retryLoadingCommentUpdate = () => {};
-        const updatePromise = new Promise((resolve) => comment.once("update", resolve));
-        let error: PlebbitError | Error | undefined;
-        const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
+        let lastUpdateError: Error | undefined;
 
-        await comment.update();
-        await Promise.race([updatePromise, errorPromise]);
-        await comment.stop();
-        //@ts-expect-error
-        comment._retryLoadingCommentUpdate = originalLoadMethod;
+        const errorListener = (err: Error) => (lastUpdateError = err);
+        comment.on("error", errorListener);
 
-        if (error) {
-            log.error(`Failed to load comment (${parsedCid}) due to error`, error);
-            throw error;
+        const commentTimeout = this._timeouts["comment-ipfs"];
+        try {
+            await pTimeout(comment._attemptInfintelyToLoadCommentIpfs(), {
+                milliseconds: commentTimeout,
+                message: lastUpdateError || new TimeoutError(`plebbit.getComment(${cid}) timed out after ${commentTimeout}ms`)
+            });
+            if (!comment.signature) throw Error("Failed to load CommentIpfs");
+            return comment;
+        } catch (e) {
+            if (lastUpdateError) throw lastUpdateError;
+            throw e;
+        } finally {
+            comment.removeListener("error", errorListener);
+            await comment.stop();
         }
-        return comment;
     }
 
     private async _initMissingFieldsOfPublicationBeforeSigning(
@@ -390,18 +415,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     private async _createCommentInstanceFromAnotherCommentInstance(options: Comment) {
         const commentInstance = new Comment(this);
-        commentInstance._rawCommentIpfs = options._rawCommentIpfs;
-        commentInstance._rawCommentUpdate = options._rawCommentUpdate;
-        commentInstance._pubsubMsgToPublish = options._pubsubMsgToPublish;
 
         Object.assign(
             commentInstance, // we jsonify here to get rid of private and function props
             remeda.omit(JSON.parse(JSON.stringify(options)), ["replies", "clients", "state", "publishingState", "updatingState"])
         );
 
-        if (commentInstance._rawCommentIpfs) commentInstance._initIpfsProps(commentInstance._rawCommentIpfs);
-        else if (commentInstance._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(commentInstance._pubsubMsgToPublish);
-        if (commentInstance._rawCommentUpdate) commentInstance._initCommentUpdate(commentInstance._rawCommentUpdate);
+        if (options._rawCommentIpfs) commentInstance._initIpfsProps(options._rawCommentIpfs);
+        if (options._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(options._pubsubMsgToPublish);
+        if (options._rawCommentUpdate) commentInstance._initCommentUpdate(options._rawCommentUpdate);
         return commentInstance;
     }
 
@@ -462,6 +484,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             | CommentIpfsType
             | CommentPubsubMessagePublication
             | { cid: CommentUpdateType["cid"]; subplebbitAddress?: CommentPubsubMessagePublication["subplebbitAddress"] }
+            | MinimumCommentFieldsToFetchPages
             | CreateCommentOptions
             | CommentJson
             | Comment
@@ -477,13 +500,18 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         else if ("original" in options) return this._createCommentInstanceFromJsonfiedPageComment(options); // CommentWithinPageJson
 
         const commentInstance = new Comment(this);
+        if ("subplebbitAddress" in options && options.subplebbitAddress)
+            commentInstance.setSubplebbitAddress(parseSubplebbitAddressWithPlebbitErrorIfItFails(options.subplebbitAddress));
 
         if ("depth" in options) {
-            // Options is CommentIpfs | CommentIpfsWithCidDefined
+            // Options is CommentIpfs | CommentIpfsWithCidDefined | MinimumCommentFieldsToFetchPages
             if ("cid" in options) commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
             //@ts-expect-error
             const commentIpfs: CommentIpfsType = remeda.omit(options, ["cid"]); // remove cid to make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment._rawCommentIpfs
-            commentInstance._initIpfsProps(parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfs));
+
+            // if it has signature it means it's a full CommentIpfs
+            if (!("signature" in options)) Object.assign(commentInstance, options);
+            else commentInstance._initIpfsProps(parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfs));
         } else if ("signature" in options) {
             // parsedOptions is CommentPubsubMessage
             const parsedOptions = parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails(options);
@@ -507,11 +535,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         } else if ("cid" in options) {
             // {cid: string, subplebbitAddress?: string}
             commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
-            if (options.subplebbitAddress)
-                commentInstance.setSubplebbitAddress(parseSubplebbitAddressWithPlebbitErrorIfItFails(options.subplebbitAddress));
         } else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
+        if (commentInstance.cid) commentInstance._useUpdatePropsFromUpdatingCommentIfPossible();
 
         return commentInstance;
     }
@@ -533,7 +560,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             if (resParseSubplebbitIpfs.success) {
                 const cleanedRecord = removeUndefinedValuesRecursively(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
                 await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord); // we're setting SubplebbitIpfs
+                if ("updateCid" in options && options.updateCid) subplebbit.updateCid = options.updateCid;
             }
+        }
+        if (!subplebbit._rawSubplebbitIpfs) {
+            // we didn't receive options that we can parse into SubplebbitIpfs
+            // let's try using _updatingSubplebbits
+            await subplebbit._setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible();
         }
     }
 
@@ -931,5 +964,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
         await this._storage.destroy();
         await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
+
+        await this._domainResolver.destroy();
+
+        await Promise.all(Object.values(this._updatingComments).map((comment) => comment.stop()));
+        await Promise.all(Object.values(this._updatingSubplebbits).map((sub) => sub.stop()));
+        this._updatingSubplebbits = this._updatingComments = {};
+
+        Object.values(this._memCaches).forEach((cache) => cache.clear());
     }
 }

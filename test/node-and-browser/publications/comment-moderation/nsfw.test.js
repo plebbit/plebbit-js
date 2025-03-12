@@ -2,6 +2,7 @@ import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
     publishRandomPost,
+    findCommentInPage,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
@@ -20,7 +21,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            randomPost = await publishRandomPost(subplebbitAddress, plebbit, {});
+            randomPost = await publishRandomPost(subplebbitAddress, plebbit);
             randomPost.update();
         });
 
@@ -48,6 +49,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(randomPost.nsfw).to.be.true;
         });
 
+        it(`nsfw=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(randomPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.nsfw).to.be.true;
+        });
+
         it(`Mod can mark unnsfw author comment `, async () => {
             const unnsfwEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: randomPost.subplebbitAddress,
@@ -66,6 +73,12 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(randomPost.reason).to.equal("Mod unnsfwing an author comment");
             expect(randomPost.nsfw).to.be.false;
+        });
+
+        it(`nsfw=false appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(randomPost.subplebbitAddress);
+            const commentInPage = await findCommentInPage(randomPost.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.nsfw).to.be.false;
         });
     });
 });

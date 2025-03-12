@@ -107,16 +107,20 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToPin.reason).to.equal("To pin a post");
             expect(postToPin._rawCommentUpdate.reason).to.equal("To pin a post");
         });
+
+        it(`pinned=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(postToPin.subplebbitAddress);
+            const commentInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.pinned).to.be.true;
+        });
         it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const postInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
-                    if (postInPage.pinned) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const postInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
+                return postInPage?.pinned;
+            });
 
             expect(Object.keys(sub.posts.pageCids).every((key) => Object.keys(POSTS_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
             await sub.stop();
@@ -144,14 +148,12 @@ getRemotePlebbitConfigs().map((config) => {
             // We're gonna test whether posts.new has pinned posts on top
             // 'postToPin' should be the first on the list, since it's pinned and has a higher timestamp
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
-                    if (postInPage.pinned) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+                return postInPage?.pinned;
+            });
 
             await sub.stop();
             for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
@@ -195,16 +197,21 @@ getRemotePlebbitConfigs().map((config) => {
             expect(secondPostToPin.reason).to.equal("To unpin the second post");
             expect(secondPostToPin._rawCommentUpdate.reason).to.equal("To unpin the second post");
         });
+
+        it(`pinned=true appears in getPage of subplebbit`, async () => {
+            const sub = await plebbit.getSubplebbit(secondPostToPin.subplebbitAddress);
+            const commentInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+            expect(commentInPage.pinned).to.be.false;
+        });
         it(`Unpinned posts is sorted like regular posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
-            sub.update();
+            await sub.update();
 
-            await new Promise((resolve) =>
-                sub.on("update", async () => {
-                    const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
-                    if (!postInPage.pinned) resolve();
-                })
-            );
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+                return !postInPage?.pinned;
+            });
+
             await sub.stop();
 
             for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
@@ -265,7 +272,7 @@ getRemotePlebbitConfigs().map((config) => {
             await removeAllPins(await loadAllPages(post.replies.pageCids.topAll, post.replies), plebbit);
         });
 
-        after(async () => post.stop());
+        after(async () => await plebbit.destroy());
 
         it(`Mod can pin reply`, async () => {
             const pinEdit = await plebbit.createCommentModeration({
@@ -281,20 +288,18 @@ getRemotePlebbitConfigs().map((config) => {
             // Seems like all pages don't get updated at the same time, so will wait until all pages include the pinned post
             const postToRecreate = await plebbit.createComment({ cid: post.cid });
 
-            postToRecreate.update();
+            await postToRecreate.update();
 
-            await new Promise((resolve) =>
-                postToRecreate.on("update", async () => {
-                    if (postToRecreate.replies?.pageCids) {
-                        const replyInPage = await findCommentInPage(
-                            replyToPin.cid,
-                            postToRecreate.replies.pageCids.new,
-                            postToRecreate.replies
-                        );
-                        if (replyInPage?.pinned) resolve();
-                    }
-                })
-            );
+            await resolveWhenConditionIsTrue(postToRecreate, async () => {
+                if (postToRecreate.replies?.pageCids) {
+                    const replyInPage = await findCommentInPage(
+                        replyToPin.cid,
+                        postToRecreate.replies.pageCids.new,
+                        postToRecreate.replies
+                    );
+                    return replyInPage?.pinned;
+                }
+            });
 
             await postToRecreate.stop();
 
@@ -308,6 +313,11 @@ getRemotePlebbitConfigs().map((config) => {
                 for (let i = 0; i < pageComments.length - 1; i++)
                     if (!pageComments[i].pinned && pageComments[i + 1].pinned) expect.fail("Pinned replies should always be on top");
             }
+        });
+
+        it(`pinned=true appears in getPage of parent comment`, async () => {
+            const pinnedReplyInPage = await findCommentInPage(replyToPin.cid, post.replies.pageCids.new, post.replies);
+            expect(pinnedReplyInPage.pinned).to.be.true;
         });
     });
 });

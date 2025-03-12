@@ -118,3 +118,5 @@ test-karma-webpack
 .test-ipfs*
 
 karma-electron-preload.js
+.subs-publishing-with-http-tracker
+.fix-subs/
