@@ -627,7 +627,7 @@ class PlebbitWsServer extends EventEmitter {
         subplebbit.on("updatingstatechange", updatingStateListener);
 
         // listener for startestatechange
-        const startedStateListener = () => sendEvent("updatingstatechange", (<LocalSubplebbit>subplebbit).startedState);
+        const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
         if (isSubStarted) subplebbit.on("startedstatechange", startedStateListener);
 
         const errorListener = (error: PlebbitError) => sendEvent("error", error);
