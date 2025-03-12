@@ -1908,10 +1908,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
-        await this._dbHandler.initDbIfNeeded();
-        await this._switchDbWhileRunningIfNeeded();
 
         try {
+            await this._dbHandler.initDbIfNeeded();
+            await this._switchDbWhileRunningIfNeeded();
             await this._updateInstanceStateWithDbState();
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
@@ -1924,7 +1924,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setStartedState("failed");
             this._clientsManager.updateIpfsState("stopped");
 
-            log.error(`Failed to sync due to error,`, e);
+            log.error(`Failed to sync sub`, this.address, `due to error,`, e);
+            throw e;
         }
     }
 
