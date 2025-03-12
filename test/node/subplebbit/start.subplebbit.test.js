@@ -79,7 +79,7 @@ describe(`subplebbit.start`, async () => {
         expect(sub2.updatedAt).to.equal(sub.updatedAt);
         const updatePromise = new Promise((resolve) => sub2.once("update", resolve));
         await sub2.start();
-        await updatePromise;
+        await resolveWhenConditionIsTrue(sub2, () => typeof sub2.updatedAt !== sub.updatedAt);
         expect(sub2.updatedAt).to.not.equal(sub.updatedAt);
         await sub2.delete();
     });
