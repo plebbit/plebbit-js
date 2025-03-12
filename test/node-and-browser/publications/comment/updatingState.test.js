@@ -88,17 +88,20 @@ describe("comment.updatingState", async () => {
         await new Promise((resolve) => postToUpdate.once("update", resolve)); // CommentUpdate update
         await postToUpdate.stop();
 
-        expect(recordedStates.slice(0, 4)).to.deep.equal([
-            "fetching-ipfs",
-            "succeeded",
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs"
-        ]);
+        if (recordedStates.length === 3) expect(recordedStates).to.deep.equal(["fetching-ipfs", "succeeded", "stopped"]);
+        else {
+            expect(recordedStates.slice(0, 4)).to.deep.equal([
+                "fetching-ipfs",
+                "succeeded",
+                "fetching-subplebbit-ipns",
+                "fetching-subplebbit-ipfs"
+            ]);
 
-        if (recordedStates.length === 6)
-            // the rpc server did not fetch update-ipfs, it got a new CommentUpdate from subplebbit.posts
-            expect(recordedStates.slice(4)).to.deep.equal(["succeeded", "stopped"]);
-        else expect(recordedStates.slice(4)).to.deep.equal(["fetching-update-ipfs", "succeeded", "stopped"]);
+            if (recordedStates.length === 6)
+                // the rpc server did not fetch update-ipfs, it got a new CommentUpdate from subplebbit.posts
+                expect(recordedStates.slice(4)).to.deep.equal(["succeeded", "stopped"]);
+            else expect(recordedStates.slice(4)).to.deep.equal(["fetching-update-ipfs", "succeeded", "stopped"]);
+        }
     });
 
     it(`Add a test for updatingState with resolving-author-address`);

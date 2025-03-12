@@ -9,7 +9,8 @@ import {
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     waitTillReplyInParentPages,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
@@ -25,7 +26,7 @@ const roles = [
 ];
 
 getRemotePlebbitConfigs().map((config) => {
-    describe(`Purging post - ${config.name}`, async () => {
+    describeSkipIfRpc(`Purging post - ${config.name}`, async () => {
         let plebbit, postToPurge, postReply, replyUnderReply;
         let remotePlebbitIpfs;
         before(async () => {

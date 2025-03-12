@@ -28,6 +28,11 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
             const subplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
             expect(subplebbit.address).to.equal("plebbit.eth");
@@ -160,15 +165,14 @@ getRemotePlebbitConfigs().map((config) => {
         it(`subplebbit.stop() stops subplebbit updates`, async () => {
             const remotePlebbit = await mockRemotePlebbit();
             const subplebbit = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" }); // 'plebbit.eth' is part of test-server.js
-            subplebbit.update();
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            await subplebbit.update();
+            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
             await subplebbit.stop();
-            await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval + 1));
             let updatedHasBeenCalled = false;
+
             subplebbit.updateOnce = subplebbit._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;
             };
-
             await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval * 2));
             expect(updatedHasBeenCalled).to.be.false;
         });

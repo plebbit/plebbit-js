@@ -299,8 +299,11 @@ describe(`subplebbit.updatingState (node)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, plebbit, {}); // To force trigger an update
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await publishRandomPost(subplebbit.address, plebbit); // To force trigger an update
+
+        await updatePromise;
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
@@ -703,38 +706,5 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await sub.delete();
         });
-    });
-});
-
-describe.skip(`Challenge exchange resiliency`, async () => {
-    // In production we have a lot of flakiness when it comes to publishing over pubsub
-    // These tests will produce scenarios where the drop rate of pubsub msgs is very high
-    // The goal is to make sure publications are received and the challenge exchange is stable
-    // We're assuming the dropping happens only in CHALLENGEREQUEST
-
-    const dropRate = 0.05;
-    const numberOfPostsToPublish = 300;
-    let subplebbit, plebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
-        for (const pubsubProviderUrl of Object.keys(plebbit.clients.pubsubKuboRpcClients)) {
-            plebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client = createMockIpfsClient(dropRate);
-        }
-
-        const subplebbitPlebbit = await mockPlebbit();
-        subplebbit = await createSubWithNoChallenge({}, subplebbitPlebbit);
-        await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-    });
-
-    after(async () => {
-        await subplebbit.stop();
-    });
-
-    it(`${numberOfPostsToPublish} posts are published without any issues (no challenge)`, async () => {
-        // TODO should use a sub with challenge
-        await Promise.all(
-            new Array(numberOfPostsToPublish).fill(null).map((x) => publishRandomPost(subplebbit.address, plebbit, {}, false))
-        );
     });
 });

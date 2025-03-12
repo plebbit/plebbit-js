@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { describeIfRpc, mockPlebbit, createNewIpns } from "../../../dist/node/test/test-util.js";
+import { describeIfRpc, mockPlebbit, createNewIpns, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -14,6 +14,11 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
         const sub = await plebbit.createSubplebbit({ address: signers[0].address });
         const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
@@ -57,7 +62,7 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
 
         await sub.update();
 
-        await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
         await sub.stop();
         expect(recordedStates).to.deep.equal(expectedStates);

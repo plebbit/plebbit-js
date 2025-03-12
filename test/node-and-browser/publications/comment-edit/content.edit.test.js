@@ -45,7 +45,7 @@ getRemotePlebbitConfigs().map((config) => {
             await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
         });
 
-        it("Original Author can edit content", async function () {
+        it("Original author can edit content", async function () {
             const editedText = "edit test" + Date.now();
             const editReason = "To test editing content" + Date.now();
 
@@ -72,11 +72,11 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentToBeEdited.edit.challengeRequestId).to.be.undefined;
         });
 
-        it(`The new content is reflected correctly in JSON.parse(JSON.stringif(comment)) and toJSONCommentWithinPage`, async () => {
+        it(`The new content is reflected correctly in JSON.parse(JSON.stringif(comment))`, async () => {
             const recreatedComment = await plebbit.getComment(commentToBeEdited.cid);
             await recreatedComment.update();
 
-            await resolveWhenConditionIsTrue(recreatedComment, () => recreatedComment.updatedAt);
+            await resolveWhenConditionIsTrue(recreatedComment, () => typeof recreatedComment.updatedAt === "number");
             await recreatedComment.stop();
 
             for (const commentJson of [JSON.parse(JSON.stringify(commentToBeEdited)), JSON.parse(JSON.stringify(recreatedComment))]) {

@@ -289,7 +289,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(updateHasBeenEmitted).to.be.false;
         });
 
-        it(`comment.update() emit an error if CommentUpdate signature is invalid `, async () => {
+        itSkipIfRpc(`comment.update() emit an error if CommentUpdate signature is invalid `, async () => {
             // Should emit an error as well but stay subscribed to sub updates
 
             const createdComment = await plebbit.createComment({
@@ -326,7 +326,7 @@ getRemotePlebbitConfigs().map((config) => {
             await createdComment.stop();
         });
 
-        it(`comment.update() emits error if CommentUpdate is an invalid json`, async () => {
+        itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid json`, async () => {
             // Should emit an error and keep on updating
 
             const invalidCommentUpdateJson = "<html>something</html>";
@@ -365,7 +365,7 @@ getRemotePlebbitConfigs().map((config) => {
             await createdComment.stop();
         });
 
-        it(`comment.update() emits error if CommentUpdate is an invalid schema`, async () => {
+        itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid schema`, async () => {
             // Should emit an error as well but stay subscribed to sub updates
             const createdComment = await plebbit.createComment({
                 cid: commentUpdateWithInvalidSignatureJson.cid

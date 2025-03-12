@@ -209,7 +209,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await resolveWhenConditionIsTrue(sub, async () => {
                 const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
-                return !postInPage.pinned;
+                return !postInPage?.pinned;
             });
 
             await sub.stop();
@@ -272,7 +272,7 @@ getRemotePlebbitConfigs().map((config) => {
             await removeAllPins(await loadAllPages(post.replies.pageCids.topAll, post.replies), plebbit);
         });
 
-        after(async () => post.stop());
+        after(async () => await plebbit.destroy());
 
         it(`Mod can pin reply`, async () => {
             const pinEdit = await plebbit.createCommentModeration({
