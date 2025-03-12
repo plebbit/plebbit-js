@@ -383,10 +383,10 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
     });
 
     if (mockResolve) {
-        //@ts-expect-error
-        plebbit._domainResolver._viemClients["eth" + mockEthResolver] = {
+        const mockedViemClient = <any>{
+            //@ts-expect-error
             getEnsText: async ({ name, key }) => {
-                log(`Attempting to mock resolve address (${name}) textRecord (${key}) chainProviderUrl (${mockEthResolver})`);
+                console.log(`Attempting to mock resolve address (${name}) textRecord (${key}) chainProviderUrl (${mockEthResolver})`);
                 if (name === "plebbit.eth" && key === "subplebbit-address")
                     return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
                 else if (name === "plebbit.eth" && key === "plebbit-author-address")
@@ -399,6 +399,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
                 else return null;
             }
         };
+        plebbit._domainResolver._createViemClientIfNeeded = () => mockedViemClient;
     }
 
     if (stubStorage) {
@@ -445,7 +446,13 @@ export async function mockPlebbitNoDataPathWithOnlyKuboClient(plebbitOptions?: I
 }
 
 export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions) {
-    const plebbit = await mockPlebbit(plebbitOptions, true);
+    const plebbit = await mockPlebbitV2({
+        plebbitOptions,
+        mockResolve: true,
+        forceMockPubsub: true,
+        remotePlebbit: false,
+        stubStorage: false
+    });
     return plebbit;
 }
 
@@ -1217,29 +1224,24 @@ export const itSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["it"];
 
 export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : skipFunction;
 
-export function mockViemClientGetEnsText({
+export function mockViemClient({
     plebbit,
     chainTicker,
     url,
-    mockFunction
+    mockedViem
 }: {
     plebbit: Plebbit;
     chainTicker: string;
     url: string;
-    mockFunction: (params: { name: string; key: string }) => string | null | Promise<string | null>;
+    mockedViem: any;
 }) {
+    if (plebbit._plebbitRpcClient) throw Error("Can't mock viem client with plebbit rpc clients");
     // Create a unique identifier for the viem client
     const viemClientKey = chainTicker + url;
 
     // Access the domain resolver's viem clients and mock the getEnsText method
 
-    if (!plebbit._domainResolver._viemClients[viemClientKey]) {
-        //@ts-expect-error - Accessing internal property
-        plebbit._domainResolver._viemClients[viemClientKey] = {};
-    }
-
-    //@ts-expect-error - Accessing internal property
-    plebbit._domainResolver._viemClients[viemClientKey].getEnsText = mockFunction;
+    plebbit._domainResolver._viemClients[viemClientKey] = mockedViem;
 }
 
 export function processAllCommentsRecursively(

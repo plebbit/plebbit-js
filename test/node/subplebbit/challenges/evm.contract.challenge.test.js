@@ -1,7 +1,8 @@
 import {
-    mockPlebbit,
     generateMockPost,
     publishWithExpectedResult,
+    mockPlebbitV2,
+    mockViemClient,
     describeSkipIfRpc,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util";
@@ -48,9 +49,13 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
     before(async () => {
         const ethRpcUrl = `https://Fake${uuidV4()}eth.com`;
         const maticRpcUrl = `https://Fake${uuidV4()}matic.com`;
-        plebbit = await mockPlebbit({
-            resolveAuthorAddresses: false,
-            chainProviders: { eth: { urls: [ethRpcUrl], chainId: 1 }, matic: { urls: [maticRpcUrl], chainId: 137 } }
+        plebbit = await mockPlebbitV2({
+            plebbitOptions: {
+                resolveAuthorAddresses: false,
+                chainProviders: { eth: { urls: [ethRpcUrl], chainId: 1 }, matic: { urls: [maticRpcUrl], chainId: 137 } }
+            },
+            remotePlebbit: false,
+            mockResolve: false
         });
         actualViemClient = createPublicClient({
             chain: chains.mainnet,
@@ -58,8 +63,8 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         });
         viemMaticFake["verifyMessage"] = viemEthFake["verifyMessage"] = actualViemClient.verifyMessage;
 
-        plebbit._domainResolver._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]] = viemEthFake;
-        plebbit._domainResolver._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]] = viemMaticFake;
+        mockViemClient({ plebbit, chainTicker: "eth", mockedViem: viemEthFake, url: ethRpcUrl });
+        mockViemClient({ plebbit, chainTicker: "matic", mockedViem: viemMaticFake, url: maticRpcUrl });
 
         sub = await plebbit.createSubplebbit();
         await sub.edit({ settings });
@@ -76,6 +81,7 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         viemSandbox.restore();
         delete plebbit._domainResolver._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]];
         delete plebbit._domainResolver._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]];
+        await plebbit.destroy();
     });
     it(`A wallet with over 1000 PLEB passes the challenge`, async () => {
         const authorSigner = await plebbit.createSigner();

@@ -11,11 +11,11 @@ import {
     publishRandomPost,
     itSkipIfRpc,
     describeSkipIfRpc,
+    mockViemClient,
     mockPlebbit,
     resolveWhenConditionIsTrue,
     mockCacheOfTextRecord,
-    mockPlebbitV2,
-    mockViemClientGetEnsText
+    mockPlebbitV2
 } from "../../dist/node/test/test-util.js";
 import { v4 as uuidV4 } from "uuid";
 
@@ -193,7 +193,11 @@ describe(`Vote with authors as domains`, async () => {
 describeSkipIfRpc(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
         const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
-        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
+        const plebbit = await mockPlebbitV2({
+            plebbitOptions: { chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } },
+            remotePlebbit: false,
+            mockResolve: false
+        });
 
         let resolveHit = 0;
 
@@ -201,14 +205,16 @@ describeSkipIfRpc(`Resolving resiliency`, async () => {
 
         const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
 
-        mockViemClientGetEnsText({
+        mockViemClient({
             plebbit,
             chainTicker: "eth",
             url: testEthRpc,
-            mockFunction: ({ name, key }) => {
-                resolveHit++;
-                if (resolveHit < 4) throw Error("failed to resolve because whatever");
-                else return subplebbitTextRecordOfAddress;
+            mockedViem: {
+                getEnsText: ({ name, key }) => {
+                    resolveHit++;
+                    if (resolveHit < 4) throw Error("failed to resolve because whatever");
+                    else return subplebbitTextRecordOfAddress;
+                }
             }
         });
 
