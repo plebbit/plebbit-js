@@ -1,23 +1,33 @@
 import path from "path";
 import fs from "fs";
 import Keyv from "keyv";
+import KeyvSqlite from "@keyv/sqlite";
+import { PlebbitError } from "../../plebbit-error.js";
+import { hideClassPrivateProps } from "../../util.js";
 // Storage is for long term items, no eviction based on ttl or anything like that
 export default class Storage {
     constructor(plebbit) {
         this._plebbit = plebbit;
+        hideClassPrivateProps(this);
     }
     toJSON() {
         return undefined;
     }
     async init() {
+        let sqlitePath;
         if (this._plebbit.noData || !this._plebbit.dataPath) {
-            this._keyv = new Keyv(`sqlite://:memory:`);
+            sqlitePath = `sqlite://:memory:`;
         }
         else {
             fs.mkdirSync(this._plebbit.dataPath, { recursive: true });
-            const dbPath = path.join(this._plebbit.dataPath, "storage");
-            this._keyv = new Keyv(`sqlite://${dbPath}`);
+            sqlitePath = `sqlite://${path.join(this._plebbit.dataPath, "storage")}`;
         }
+        this._keyv = new Keyv(new KeyvSqlite(sqlitePath));
+        this._keyv.on("error", (err) => {
+            const error = new PlebbitError("ERR_PLEBBIT_SQLITE_LONG_TERM_STORAGE_KEYV_ERROR", { err, sqlitePath });
+            console.error("Error in Keyv", err);
+            this._plebbit.emit("error", error);
+        });
     }
     async getItem(key) {
         return this._keyv.get(key);
@@ -30,12 +40,6 @@ export default class Storage {
     }
     async clear() {
         await this._keyv.clear();
-    }
-    async keys() {
-        const keys = [];
-        for await (const [key, value] of this._keyv.iterator())
-            keys.push(key);
-        return keys;
     }
     async destroy() {
         await this._keyv.disconnect();

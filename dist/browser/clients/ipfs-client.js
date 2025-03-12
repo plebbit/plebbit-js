@@ -1,21 +1,21 @@
-import { TypedEmitter } from "tiny-typed-emitter";
 import { hideClassPrivateProps } from "../util.js";
+import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";
 // Client classes
-class BaseIpfsClient extends TypedEmitter {
+class BaseKuboRpcClient extends PlebbitTypedEmitter {
     constructor(state) {
         super();
         this.state = state;
         hideClassPrivateProps(this);
     }
 }
-export class GenericIpfsClient extends BaseIpfsClient {
+export class GenericKuboRpcClient extends BaseKuboRpcClient {
 }
-export class PublicationIpfsClient extends BaseIpfsClient {
+export class PublicationKuboRpcClient extends BaseKuboRpcClient {
 }
-export class CommentIpfsClient extends BaseIpfsClient {
+export class CommentKuboRpcClient extends BaseKuboRpcClient {
 }
-export class SubplebbitIpfsClient extends BaseIpfsClient {
+export class SubplebbitKuboRpcClient extends BaseKuboRpcClient {
 }
-export class PagesIpfsClient extends BaseIpfsClient {
+export class PagesKuboRpcClient extends BaseKuboRpcClient {
 }
 //# sourceMappingURL=ipfs-client.js.map

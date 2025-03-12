@@ -3,18 +3,17 @@ import { decryptEd25519AesGcm, encryptEd25519AesGcm } from "../signer/index.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
 import { cleanUpBeforePublishing, signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "../signer/signatures.js";
-import { hideClassPrivateProps, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
+import { waitForUpdateInSubInstanceWithErrorAndTimeout, hideClassPrivateProps, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
-import { PublicationClientsManager } from "../clients/client-manager.js";
 import * as cborg from "cborg";
 import * as remeda from "remeda";
-import { subplebbitForPublishingCache } from "../constants.js";
 import { parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseDecryptedChallengeVerification, parseDecryptedChallengeWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { ChallengeRequestMessageSchema, ChallengeAnswerMessageSchema, ChallengeMessageSchema, ChallengeVerificationMessageSchema } from "../pubsub-messages/schema.js";
 import { decodeRpcChallengeAnswerPubsubMsg, decodeRpcChallengePubsubMsg, decodeRpcChallengeRequestPubsubMsg, decodeRpcChallengeVerificationPubsubMsg } from "../clients/rpc-client/decode-rpc-response-util.js";
+import { PublicationClientsManager } from "./publication-client-manager.js";
 class Publication extends TypedEmitter {
     constructor(plebbit) {
         super();
@@ -40,7 +39,7 @@ class Publication extends TypedEmitter {
         this._setProviderFailureThresholdSeconds = 60 * 2; // Two minutes
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
-        this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubClients);
+        this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients);
         hideClassPrivateProps(this);
     }
     _initClients() {
@@ -348,7 +347,8 @@ class Publication extends TypedEmitter {
         return pubsubTopic;
     }
     _getSubplebbitCache() {
-        return subplebbitForPublishingCache.get(this.subplebbitAddress, { allowStale: true });
+        return (this._plebbit._memCaches.subplebbitForPublishing.get(this.subplebbitAddress, { allowStale: true }) ||
+            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs);
     }
     async _fetchSubplebbitForPublishing() {
         const log = Logger("plebbit-js:publish:_fetchSubplebbitForPublishing");
@@ -357,15 +357,37 @@ class Publication extends TypedEmitter {
             // We will use the cached subplebbit even though it's stale
             // And in the background we will fetch a new subplebbit and update the cache
             // cache.has will return false if the item is stale
-            if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
+            if (!this._plebbit._memCaches.subplebbitForPublishing.has(this.subplebbitAddress)) {
                 log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
-                this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
+                this._plebbit
+                    .getSubplebbit(this.subplebbitAddress)
+                    .catch((e) => log.error("Failed to update cache of subplebbit", this.subplebbitAddress, e)); // will update cache in background, will not update current comment states
             }
             return cachedSubplebbit;
         }
         else {
-            const subRes = await this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
-            return subRes.subplebbit;
+            // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
+            const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation();
+            let subIpfs;
+            if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
+                const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
+                try {
+                    await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
+                    subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+                }
+                catch (e) {
+                    await this._clientsManager.cleanUpUpdatingSubInstance();
+                    throw e;
+                }
+                await this._clientsManager.cleanUpUpdatingSubInstance();
+            }
+            else {
+                subIpfs = updatingSubInstance.subplebbit.toJSONIpfs();
+                await this._clientsManager.cleanUpUpdatingSubInstance();
+            }
+            if (!subIpfs)
+                throw Error("Should fail properly here");
+            return subIpfs;
         }
     }
     async stop() {
@@ -519,8 +541,6 @@ class Publication extends TypedEmitter {
         catch (e) {
             this._updateState("stopped");
             this._updatePublishingState("failed");
-            if (this._clientsManager._defaultIpfsProviderUrl)
-                this._clientsManager.updateIpfsState("stopped");
             throw e;
         }
         const pubsubMessageSigner = await this._plebbit.createSigner();

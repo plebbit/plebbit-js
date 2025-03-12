@@ -1,20 +1,19 @@
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress, timestamp } from "../util.js";
+import { binaryKeyToPubsubTopic, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, pubsubTopicToDhtKey, shortifyAddress, timestamp } from "../util.js";
 import Logger from "@plebbit/plebbit-logger";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
-import retry from "retry";
-import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import * as remeda from "remeda";
 import { PostsPages } from "../pages/pages.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
+import { SubplebbitClientsManager } from "./subplebbit-client-manager.js";
+import { getPeerIdFromPublicKey } from "../signer/util.js";
 export class RemoteSubplebbit extends TypedEmitter {
     constructor(plebbit) {
         super();
-        this._ipnsLoadingOperation = undefined;
         this._rawSubplebbitIpfs = undefined;
-        // private
-        this._updateTimeout = undefined;
+        this._lastInvalidSubplebbitCid = undefined; // a subplebbit cid that's invalid signature/schema/etc
+        this._updatingSubInstanceWithListeners = undefined; // The plebbit._updatingSubplebbits we're subscribed to
         this._plebbit = plebbit;
         this._setState("stopped");
         this._setUpdatingState("stopped");
@@ -28,7 +27,7 @@ export class RemoteSubplebbit extends TypedEmitter {
             pageCids: {},
             pages: {},
             plebbit: this._plebbit,
-            subplebbitAddress: this.address,
+            subplebbit: remeda.pick(this, ["address", "signature"]),
             pagesIpfs: undefined
         });
         hideClassPrivateProps(this);
@@ -49,8 +48,7 @@ export class RemoteSubplebbit extends TypedEmitter {
                 const parsedPages = parseRawPages(newPosts);
                 this.posts.updateProps({
                     ...parsedPages,
-                    plebbit: this._plebbit,
-                    subplebbitAddress: this.address,
+                    subplebbit: remeda.pick(this, ["address", "signature"]),
                     pageCids: newPosts?.pageCids || {}
                 });
             }
@@ -72,7 +70,6 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
-        this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
         this.protocolVersion = newProps.protocolVersion;
         this.roles = newProps.roles;
@@ -87,6 +84,13 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
         this.signature = newProps.signature;
+        if (this.signature?.publicKey && !this.ipnsName) {
+            const signaturePeerId = await getPeerIdFromPublicKey(this.signature.publicKey);
+            this.ipnsName = signaturePeerId.toB58String();
+            this.ipnsPubsubTopic = binaryKeyToPubsubTopic(signaturePeerId.toBytes());
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
+        this.setAddress(newProps.address);
         await this._updateLocalPostsInstance(newProps.posts);
         // Exclusive Instance props
         if (newProps.updateCid)
@@ -102,7 +106,7 @@ export class RemoteSubplebbit extends TypedEmitter {
             throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA", { subplebbitAddress: newAddress, isDomain, isIpns: false });
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
-        this.posts._subplebbitAddress = this.address;
+        this.posts._subplebbit = remeda.pick(this, ["address", "signature"]);
     }
     _toJSONIpfsBaseNoPosts() {
         const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts"]));
@@ -134,13 +138,13 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.emit("updatingstatechange", this.updatingState);
     }
     // Errors that retrying to load the ipns record will not help
-    // Instead we should abort the retries, and emit an error to notify the user to do something about it
+    // Instead we should abort the retries, and emit an error event to notify the user to do something about it
     _isRetriableErrorWhenLoading(err) {
         if (!(err instanceof PlebbitError))
             return false; // If it's not a recognizable error, then we throw to notify the user
         if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" ||
             err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA" ||
-            err.code === "ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT" ||
+            err.code === "ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED" ||
             err.code === "ERR_OVER_DOWNLOAD_LIMIT" ||
             err.code === "ERR_INVALID_JSON")
             return false;
@@ -153,67 +157,130 @@ export class RemoteSubplebbit extends TypedEmitter {
         }
         return true;
     }
-    async _retryLoadingSubplebbitIpns(log, subplebbitIpnsAddress) {
-        return new Promise((resolve) => {
-            this._ipnsLoadingOperation.attempt(async (curAttempt) => {
-                log.trace(`Retrying to load subplebbit ${this.address} ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
-                try {
-                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
-                    this.updateCid = update.cid;
-                    resolve(update.subplebbit);
-                }
-                catch (e) {
-                    this._setUpdatingState("failed");
-                    log.error(`Failed to load Subplebbit ${this.address} IPNS for the ${curAttempt}th attempt`, e);
-                    if (e instanceof PlebbitError && !this._isRetriableErrorWhenLoading(e))
-                        resolve(e);
-                    else
-                        this._ipnsLoadingOperation.retry(e);
-                }
-            });
-        });
-    }
-    async updateOnce() {
-        const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
-        this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
-        const loadedSubIpfsOrError = await this._retryLoadingSubplebbitIpns(log, this.address);
-        this._ipnsLoadingOperation.stop();
-        if (loadedSubIpfsOrError instanceof Error) {
-            log.error(`Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event and abort the current update iteration`, `Will retry after ${this._plebbit.updateInterval}ms`);
-            this.emit("error", loadedSubIpfsOrError);
-            return;
-        }
-        // Signature already has been validated
-        if ((this.updatedAt || 0) < loadedSubIpfsOrError.updatedAt) {
-            await this.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError);
-            log(`Remote Subplebbit`, this.address, `received a new update. Will emit an update event with updatedAt`, loadedSubIpfsOrError.updatedAt, "that's", timestamp() - loadedSubIpfsOrError.updatedAt, "seconds old");
+    async _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
+        const log = Logger("plebbit-js:comment:_setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible");
+        const updatingSub = this._plebbit._updatingSubplebbits[this.address];
+        if (updatingSub?._rawSubplebbitIpfs && (this.updatedAt || 0) < updatingSub._rawSubplebbitIpfs.updatedAt) {
+            await this.initSubplebbitIpfsPropsNoMerge(updatingSub._rawSubplebbitIpfs);
+            this.updateCid = updatingSub.updateCid;
+            log.trace(`New Remote Subplebbit instance`, this.address, `will use SubplebbitIpfs from plebbit._updatingSubplebbits[${this.address}] with updatedAt`, this.updatedAt, "that's", timestamp() - this.updatedAt, "seconds old");
             this.emit("update", this);
         }
-        else
-            log.trace("Remote subplebbit", this.address, "loaded a SubplebbitIpfsType with no new information whose updatedAt is", loadedSubIpfsOrError.updatedAt);
+    }
+    async _initSubInstanceWithListeners() {
+        if (!this._plebbit._updatingSubplebbits[this.address])
+            throw Error("should be defined at this stage");
+        const log = Logger("plebbit-js:remote-subplebbit:update");
+        const subInstance = this._plebbit._updatingSubplebbits[this.address];
+        return {
+            subplebbit: subInstance,
+            update: async () => {
+                await this.initSubplebbitIpfsPropsNoMerge(subInstance._rawSubplebbitIpfs);
+                this.updateCid = subInstance.updateCid;
+                log(`Remote Subplebbit instance`, this.address, `received update event from plebbit._updatingSubplebbits[${this.address}] with updatedAt`, this.updatedAt, "that's", timestamp() - this.updatedAt, "seconds old");
+                this.emit("update", this);
+            },
+            error: async (error) => {
+                this.emit("error", error);
+            },
+            updatingstatechange: async (newUpdatingState) => {
+                this._setUpdatingState(newUpdatingState);
+            },
+            "waiting-retry": async (error) => {
+                this.emit("waiting-retry", error);
+            }
+        };
+    }
+    async fetchLatestSubOrSubscribeToEvent() {
+        const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
+        if (!this._plebbit._updatingSubplebbits[this.address]) {
+            const updatingSub = await this._plebbit.createSubplebbit({
+                address: this.address,
+                ...this._rawSubplebbitIpfs,
+                updateCid: this.updateCid
+            });
+            this._plebbit._updatingSubplebbits[this.address] = updatingSub;
+            log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
+            // make sure to it keeps retrying to resolve here
+            // should only stop when there's no subplebbit instance listening to its events
+            // if it encounters a critical error, it should stop and delete this._plebbit._updatingSubplebbits[this.address]
+            const updatingSubRemoveListenerListener = async (eventName, listener) => {
+                const count = updatingSub.listenerCount("update");
+                if (count === 0) {
+                    log.trace(`cleaning up plebbit._updatingSubplebbits`, this.address, "There are no subplebbits using it for updates");
+                    await cleanUpUpdatingSubInstance();
+                }
+            };
+            const cleanUpUpdatingSubInstance = async () => {
+                updatingSub.removeListener("removeListener", updatingSubRemoveListenerListener);
+                await updatingSub.stop();
+            };
+            updatingSub.on("removeListener", updatingSubRemoveListenerListener);
+        }
+        this._updatingSubInstanceWithListeners = await this._initSubInstanceWithListeners();
+        this._updatingSubInstanceWithListeners.subplebbit.on("update", this._updatingSubInstanceWithListeners.update);
+        this._updatingSubInstanceWithListeners.subplebbit.on("updatingstatechange", this._updatingSubInstanceWithListeners.updatingstatechange);
+        this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
+        this._updatingSubInstanceWithListeners.subplebbit.on("waiting-retry", this._updatingSubInstanceWithListeners["waiting-retry"]);
+        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"];
+        for (const clientType of clientKeys)
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    if ("state" in this.clients[clientType][clientUrl])
+                        //@ts-expect-error
+                        this.clients[clientType][clientUrl].mirror(this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl]);
+                    else {
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                            this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
+                            //@ts-expect-error
+                            this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]);
+                        }
+                    }
+                }
+        if (this._updatingSubInstanceWithListeners.subplebbit.state === "stopped") {
+            this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
+            await this._updatingSubInstanceWithListeners.subplebbit._clientsManager.startUpdatingLoop();
+        }
     }
     async update() {
         if (this.state !== "stopped")
             return; // No need to do anything if subplebbit is already updating
         const log = Logger("plebbit-js:remote-subplebbit:update");
-        const updateLoop = (async () => {
-            if (this.state === "updating")
-                this.updateOnce()
-                    .catch((e) => log.error(`Failed to update subplebbit ${this.address}`, e))
-                    .finally(() => setTimeout(updateLoop, this._plebbit.updateInterval));
-        }).bind(this);
         this._setState("updating");
-        this.updateOnce()
-            .catch((e) => log.error(`Failed to update subplebbit ${this.address}`, e))
-            .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
+        await this.fetchLatestSubOrSubscribeToEvent();
     }
     async stop() {
         if (this.state !== "updating")
             throw Error("User call remoteSubplebbit.stop() without updating first");
-        this._ipnsLoadingOperation?.stop();
-        clearTimeout(this._updateTimeout);
         this._setUpdatingState("stopped");
         this._setState("stopped");
+        if (this._updatingSubInstanceWithListeners) {
+            // this instance is subscribed to plebbit._updatingSubplebbit[address]
+            // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingSubInstanceWithListeners.update);
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener("updatingstatechange", this._updatingSubInstanceWithListeners.updatingstatechange);
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener("waiting-retry", this._updatingSubInstanceWithListeners["waiting-retry"]);
+            const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"];
+            for (const clientType of clientKeys)
+                if (this.clients[clientType])
+                    for (const clientUrl of Object.keys(this.clients[clientType])) {
+                        if ("state" in this.clients[clientType][clientUrl])
+                            //@ts-expect-error
+                            this.clients[clientType][clientUrl].unmirror();
+                        else {
+                            for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                                this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+                            }
+                        }
+                    }
+            this._updatingSubInstanceWithListeners = undefined;
+        }
+        else {
+            // this instance is plebbit._updatingSubplebbit[address] itself
+            await this._clientsManager.stopUpdatingLoop();
+            delete this._plebbit._updatingSubplebbits[this.address];
+        }
     }
     // functions to be overridden in local subplebbit classes
     async edit(options) {

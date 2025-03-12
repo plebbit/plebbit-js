@@ -1,24 +1,25 @@
 import assert from "assert";
 import { BaseClientsManager } from "./base-client-manager.js";
-import { PagesIpfsClient } from "./ipfs-client.js";
+import { PagesKuboRpcClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import * as remeda from "remeda";
-import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { hideClassPrivateProps } from "../util.js";
 export class BasePagesClientsManager extends BaseClientsManager {
-    constructor(pages) {
-        super(pages._plebbit);
-        this._pages = pages;
+    constructor(opts) {
+        super(opts.plebbit);
+        this._pages = opts.pages;
         //@ts-expect-error
         this.clients = {};
         this._initIpfsGateways();
         this._initIpfsClients();
         this._initPlebbitRpcClients();
-        if (pages.pageCids)
-            this.updatePageCidsToSortTypes(pages.pageCids);
+        if (opts.pages.pageCids)
+            this.updatePageCidsToSortTypes(opts.pages.pageCids);
+        hideClassPrivateProps(this);
     }
     getSortTypes() {
         throw Error(`This method should be overridden`);
@@ -33,12 +34,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
     _initIpfsClients() {
-        if (this._plebbit.clients.ipfsClients) {
-            this.clients.ipfsClients = {};
+        if (this._plebbit.clients.kuboRpcClients) {
+            this.clients.kuboRpcClients = {};
             for (const sortType of this.getSortTypes()) {
-                this.clients.ipfsClients[sortType] = {};
-                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
-                    this.clients.ipfsClients[sortType][ipfsUrl] = new PagesIpfsClient("stopped");
+                this.clients.kuboRpcClients[sortType] = {};
+                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
+                    this.clients.kuboRpcClients[sortType][ipfsUrl] = new PagesKuboRpcClient("stopped");
             }
         }
     }
@@ -55,12 +56,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
     // Override methods from BaseClientsManager here
     preFetchGateway(gatewayUrl, loadOpts) {
         const cid = loadOpts.root;
-        const sortTypes = pageCidToSortTypesCache.get(cid);
+        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(cid);
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
     postFetchGatewaySuccess(gatewayUrl, loadOpts) {
         const cid = loadOpts.root;
-        const sortTypes = pageCidToSortTypesCache.get(cid);
+        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(cid);
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
     postFetchGatewayFailure(gatewayUrl, loadOpts) {
@@ -70,13 +71,13 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
     _updatePageCidsSortCache(pageCid, sortTypes) {
-        const curSortTypes = pageCidToSortTypesCache.get(pageCid);
+        const curSortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
         if (!curSortTypes) {
-            pageCidToSortTypesCache.set(pageCid, sortTypes);
+            this._plebbit._memCaches.pageCidToSortTypes.set(pageCid, sortTypes);
         }
         else {
             const newSortTypes = remeda.unique([...curSortTypes, ...sortTypes]);
-            pageCidToSortTypesCache.set(pageCid, newSortTypes);
+            this._plebbit._memCaches.pageCidToSortTypes.set(pageCid, newSortTypes);
         }
     }
     updatePageCidsToSortTypes(newPageCids) {
@@ -84,7 +85,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this._updatePageCidsSortCache(pageCid, [sortType]);
     }
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid, previousPageCid) {
-        const sortTypes = pageCidToSortTypesCache.get(previousPageCid);
+        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(previousPageCid);
         if (!Array.isArray(sortTypes))
             return;
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
@@ -94,10 +95,10 @@ export class BasePagesClientsManager extends BaseClientsManager {
             return;
         assert(typeof this._defaultIpfsProviderUrl === "string", "Can't update ipfs state without ipfs client");
         for (const sortType of sortTypes) {
-            if (this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state === newState)
+            if (this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state === newState)
                 continue;
-            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
-            this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
+            this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state = newState;
+            this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
         }
     }
     updateGatewayState(newState, gateway, sortTypes) {
@@ -122,53 +123,76 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
     async _fetchPageWithRpc(pageCid, log, sortTypes) {
         const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions[0];
+        if (this._pages._parentComment && !this._pages._parentComment?.cid)
+            throw Error("Parent comment cid is not defined");
         log.trace(`Fetching page cid (${pageCid}) using rpc`);
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
-            const page = this._pages._parentCid
-                ? await this._plebbit._plebbitRpcClient.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
-                : await this._plebbit._plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
-            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
-            return page;
+            return this._pages._parentComment
+                ? await this._plebbit._plebbitRpcClient.getCommentPage(pageCid, this._pages._parentComment.cid, this._pages._subplebbit.address)
+                : await this._plebbit._plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbit.address);
         }
         catch (e) {
             log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
-            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
             throw e;
         }
+        finally {
+            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
+        }
     }
-    async _fetchPageWithIpfsP2P(pageCid, log, sortTypes) {
+    async _fetchPageWithIpfsP2P(pageCid, log, sortTypes, pageMaxSize) {
         this.updateIpfsState("fetching-ipfs", sortTypes);
+        const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
         try {
-            const page = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid)));
-            this.updateIpfsState("stopped", sortTypes);
-            return page;
+            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })));
         }
         catch (e) {
-            this.updateIpfsState("stopped", sortTypes);
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
         }
+        finally {
+            this.updateIpfsState("stopped", sortTypes);
+        }
     }
-    async _fetchPageFromGateways(pageCid) {
+    async _fetchPageFromGateways(pageCid, log, pageMaxSize) {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
-        const res = await this.fetchFromMultipleGateways({ root: pageCid, recordIpfsType: "ipfs", recordPlebbitType: "page-ipfs" }, async (_) => { });
+        const res = await this.fetchFromMultipleGateways({
+            root: pageCid,
+            recordIpfsType: "ipfs",
+            recordPlebbitType: "page-ipfs",
+            validateGatewayResponseFunc: async () => { },
+            maxFileSizeBytes: pageMaxSize,
+            timeoutMs: this._plebbit._timeouts["page-ipfs"],
+            log
+        });
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
         return pageIpfs;
     }
     async fetchPage(pageCid) {
         const log = Logger("plebbit-js:pages:getPage");
-        const sortTypes = pageCidToSortTypesCache.get(pageCid);
+        const sortTypesFromPageCids = remeda.keys
+            .strict(this._pages.pageCids)
+            .filter((sortType) => this._pages.pageCids[sortType] === pageCid);
+        if (sortTypesFromPageCids.length > 0) {
+            this.updatePageCidsToSortTypes(this._pages.pageCids);
+        }
+        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
+        const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
+        const pageMaxSize = isFirstPage ? 1024 * 1024 : this._plebbit._memCaches.pagesMaxSize.get(pageCid);
+        if (!pageMaxSize)
+            throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page;
         if (this._plebbit._plebbitRpcClient)
             page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl)
-            page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
+            page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes, pageMaxSize);
         else
-            page = await this._fetchPageFromGateways(pageCid);
-        if (page.nextCid)
+            page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
+        if (page.nextCid) {
             this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
+            this._plebbit._memCaches.pagesMaxSize.set(page.nextCid, pageMaxSize * 2);
+        }
         return page;
     }
 }

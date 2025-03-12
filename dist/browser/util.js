@@ -8,6 +8,11 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/schema.js";
+import pTimeout, { TimeoutError } from "p-timeout";
+import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { sha256 } from "multiformats/hashes/sha2";
+import { base32 } from "multiformats/bases/base32";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -230,21 +235,21 @@ export function isIpfsCid(x) {
 export function isIpfsPath(x) {
     return x.startsWith("/ipfs/");
 }
-export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption) {
-    if (!ipfsRawOption)
+export function parseIpfsRawOptionToIpfsOptions(kuboRpcRawOption) {
+    if (!kuboRpcRawOption)
         throw Error("Need to define the ipfs options");
-    if (typeof ipfsRawOption === "string" || ipfsRawOption instanceof URL) {
-        const url = new URL(ipfsRawOption);
+    if (typeof kuboRpcRawOption === "string" || kuboRpcRawOption instanceof URL) {
+        const url = new URL(kuboRpcRawOption);
         const authorization = url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
         return {
-            url: authorization ? url.origin + url.pathname : ipfsRawOption.toString(),
+            url: authorization ? url.origin + url.pathname : kuboRpcRawOption.toString(),
             ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
         };
     }
-    else if ("bytes" in ipfsRawOption)
-        return { url: ipfsRawOption };
+    else if ("bytes" in kuboRpcRawOption)
+        return { url: kuboRpcRawOption };
     else
-        return ipfsRawOption;
+        return kuboRpcRawOption;
 }
 export function hideClassPrivateProps(_this) {
     // make props that start with _ not enumerable
@@ -265,5 +270,63 @@ export function isRequestPubsubPublicationOfReply(request) {
 }
 export function isRequestPubsubPublicationOfPost(request) {
     return Boolean(request.comment && !request.comment.parentCid);
+}
+export async function resolveWhenPredicateIsTrue(toUpdate, predicate, eventName = "update") {
+    // should add a timeout?
+    if (!(await predicate()))
+        await new Promise((resolve) => {
+            toUpdate.on(eventName, async () => {
+                const conditionStatus = await predicate();
+                if (conditionStatus)
+                    resolve(conditionStatus);
+            });
+        });
+}
+export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs) {
+    const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+    let updateError;
+    const errorListener = (err) => (updateError = err);
+    subplebbit.on("error", errorListener);
+    try {
+        await subplebbit.update();
+        await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
+            milliseconds: timeoutMs,
+            message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
+        });
+        if (updateError)
+            throw updateError;
+    }
+    catch (e) {
+        if (updateError)
+            throw updateError;
+        if (subplebbit._plebbit._updatingSubplebbits[subplebbit.address]?._clientsManager._ipnsLoadingOperation?.mainError())
+            throw subplebbit._plebbit._updatingSubplebbits[subplebbit.address]._clientsManager._ipnsLoadingOperation.mainError();
+        throw e;
+    }
+    finally {
+        subplebbit.removeListener("error", errorListener);
+        await subplebbit.stop();
+    }
+}
+export function calculateIpfsCidV0(content) {
+    return calculateIpfsCidV0Lib(content);
+}
+/**
+ * converts a binary record key to a pubsub topic key
+ */
+export function binaryKeyToPubsubTopic(key) {
+    const b64url = uint8ArrayToString(key, "base64url");
+    return `/record/${b64url}`;
+}
+export async function pubsubTopicToDhtKey(pubsubTopic) {
+    // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
+    const string = `floodsub:${pubsubTopic}`;
+    // convert string to same cid as kubo https://github.com/libp2p/go-libp2p/blob/024293c77e17794b0dd9dacec3032b4c5a535f64/p2p/discovery/routing/routing.go#L70
+    const bytes = new TextEncoder().encode(string);
+    const hash = await sha256.digest(bytes);
+    const cidVersion = 1;
+    const multicodec = 0x55;
+    const cid = CID.create(cidVersion, multicodec, hash);
+    return cid.toString(base32);
 }
 //# sourceMappingURL=util.js.map

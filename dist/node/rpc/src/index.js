@@ -3,6 +3,7 @@ import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import { encodeChallengeAnswerMessage, encodeChallengeMessage, encodeChallengeRequest, encodeChallengeVerificationMessage, generateSubscriptionId } from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
+import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
@@ -127,11 +128,16 @@ class PlebbitWsServer extends EventEmitter {
                 return res;
             }
             catch (e) {
-                log.error(`${callback.name} error`, { params, error: e });
+                const typedError = e;
+                log.error(`${callback.name} error`, { params, error: typedError });
                 // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
-                const errorJson = JSON.parse(JSON.stringify(e));
-                delete errorJson["stack"];
-                throw errorJson;
+                if (typedError instanceof PlebbitError) {
+                    const errorJson = JSON.parse(JSON.stringify(typedError));
+                    delete errorJson["stack"];
+                    throw errorJson;
+                }
+                else
+                    throw typedError;
             }
         };
         this.rpcWebsockets.register(method, callbackWithErrorHandled);
@@ -413,31 +419,40 @@ class PlebbitWsServer extends EventEmitter {
             result,
             connectionId
         });
+        let sentCommentIpfsUpdateEvent = false;
         const comment = await this.plebbit.createComment({ cid });
-        comment.on("update", () => {
-            if (typeof comment.updatedAt === "number") {
-                const commentUpdateRecord = comment._rawCommentUpdate;
-                if (!commentUpdateRecord)
-                    throw Error("comment._rawCommentUpdate should be available if updatedAt is defined");
-                sendEvent("update", commentUpdateRecord);
-            }
-            else {
+        const sendUpdate = () => {
+            if (!sentCommentIpfsUpdateEvent && comment._rawCommentIpfs) {
                 const commentIpfsRecord = comment.toJSONIpfs();
                 sendEvent("update", commentIpfsRecord);
+                sentCommentIpfsUpdateEvent = true;
             }
-        });
-        comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
-        comment.on("statechange", () => sendEvent("statechange", comment.state));
-        comment.on("error", (error) => sendEvent("error", error));
+            if (comment._rawCommentUpdate) {
+                sendEvent("update", comment._rawCommentUpdate);
+            }
+        };
+        const updateListener = () => sendUpdate();
+        comment.on("update", updateListener);
+        const updatingStateListener = () => sendEvent("updatingstatechange", comment.updatingState);
+        comment.on("updatingstatechange", updatingStateListener);
+        const stateListener = () => sendEvent("statechange", comment.state);
+        comment.on("statechange", stateListener);
+        const errorListener = (error) => sendEvent("error", error);
+        comment.on("error", errorListener);
+        const waitingRetryListener = (error) => sendEvent("waiting-retry", error);
+        comment.on("waiting-retry", waitingRetryListener);
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            comment.removeAllListeners("update");
-            comment.removeAllListeners("updatingstatechange");
-            comment.removeAllListeners("statechange");
+            comment.removeListener("update", updateListener);
+            comment.removeListener("updatingstatechange", updatingStateListener);
+            comment.removeListener("statechange", stateListener);
+            comment.removeListener("error", errorListener);
+            comment.removeListener("waiting-retry", waitingRetryListener);
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
         // if fail, cleanup
         try {
+            sendUpdate();
             await comment.update();
         }
         catch (e) {
@@ -481,12 +496,15 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.on("startedstatechange", startedStateListener);
         const errorListener = (error) => sendEvent("error", error);
         subplebbit.on("error", errorListener);
+        const waitingRetryListener = (error) => sendEvent("waiting-retry", error);
+        subplebbit.on("waiting-retry", waitingRetryListener);
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             subplebbit.removeListener("update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
+            subplebbit.removeListener("waiting-retry", waitingRetryListener);
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
                 subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, params }));
@@ -494,7 +512,7 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             // need to send an update with first subplebbitUpdate if it's a local sub
-            if ("signer" in subplebbit)
+            if ("signer" in subplebbit || subplebbit._rawSubplebbitIpfs)
                 sendSubJson();
             // No need to call .update() if it's already running locally because we're listening to update event
             if (!isSubStarted)

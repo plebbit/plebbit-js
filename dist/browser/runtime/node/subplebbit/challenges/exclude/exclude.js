@@ -1,7 +1,7 @@
 //@ts-expect-error
 import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
-import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
+import { testScore, testFirstCommentTimestamp, testRole, testPublicationType } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 const shouldExcludePublication = (subplebbitChallenge, request, subplebbit) => {
@@ -22,13 +22,11 @@ const shouldExcludePublication = (subplebbitChallenge, request, subplebbit) => {
     // if match any of the exclude array, should exclude
     for (const exclude of subplebbitChallenge.exclude) {
         // if doesn't have any author excludes, shouldn't exclude
-        if (!exclude.postScore &&
-            !exclude.replyScore &&
-            !exclude.firstCommentTimestamp &&
+        if (typeof exclude.postScore !== "number" &&
+            typeof exclude.replyScore !== "number" &&
+            typeof exclude.firstCommentTimestamp !== "number" &&
             !exclude.address?.length &&
-            exclude.post === undefined &&
-            exclude.reply === undefined &&
-            exclude.vote === undefined &&
+            exclude.publicationType === undefined &&
             exclude.rateLimit === undefined &&
             !exclude.role?.length) {
             continue;
@@ -45,13 +43,7 @@ const shouldExcludePublication = (subplebbitChallenge, request, subplebbit) => {
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
             shouldExclude = false;
         }
-        if (typeof exclude.post === "boolean" && !testPost(exclude.post, request)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, request)) {
-            shouldExclude = false;
-        }
-        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
+        if (!testPublicationType(exclude.publicationType, request)) {
             shouldExclude = false;
         }
         if (!testRateLimit(exclude, request)) {
@@ -171,7 +163,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     const getComment = async (commentCid, addressesSet) => {
         // don't fetch the same comment twice
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const pendingKey = commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.ipfsHttpClientsOptions?.[0].url;
+        const pendingKey = commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.kuboRpcClientsOptions?.[0].url;
         while (getCommentPending[pendingKey] === true) {
             await sleep(20);
         }

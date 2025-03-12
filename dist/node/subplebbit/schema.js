@@ -2,6 +2,8 @@ import { z } from "zod";
 import { AuthorAddressSchema, ChallengeAnswerStringSchema, CidStringSchema, CreateSignerSchema, FlairSchema, JsonSignatureSchema, PlebbitTimestampSchema, ProtocolVersionSchema, SignerWithAddressPublicKeySchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import { PostsPagesIpfsSchema } from "../pages/schema.js";
 import * as remeda from "remeda";
+import { messages } from "../errors.js";
+import { nonNegativeIntStringSchema } from "../schema.js";
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
     .object({
@@ -38,8 +40,6 @@ export const SubplebbitFeaturesSchema = z
     noImageReplies: z.boolean().optional(), // Not implemented
     noPolls: z.boolean().optional(), // Not impllemented
     noCrossposts: z.boolean().optional(), // Not implemented
-    noUpvotes: z.boolean().optional(), // Not implemented
-    noDownvotes: z.boolean().optional(), // Not implemented
     noAuthors: z.boolean().optional(), // Not implemented. No authors at all, like 4chan
     anonymousAuthors: z.boolean().optional(), // Not implemented. Authors are given anonymous ids inside threads, like 4chan
     noNestedReplies: z.boolean().optional(), // Not implemented. No nested replies, like old school forums and 4chan
@@ -52,6 +52,12 @@ export const SubplebbitFeaturesSchema = z
     noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
     markdownImageReplies: z.boolean().optional(), // Not implemented
     markdownVideoReplies: z.boolean().optional(), // Not implemented
+    noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0
+    noReplyUpvotes: z.boolean().optional(), // not allowed to publish a vote=1 to comment with depth > 0
+    noPostDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth = 0
+    noReplyDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth > 0
+    noUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1
+    noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
     requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
     requirePostLinkIsMedia: z.boolean().optional() // post.link must be of media (audio, video, image)
 })
@@ -81,13 +87,25 @@ export const ChallengeFromGetChallengeSchema = z
 export const ResultOfGetChallengeSchema = ChallengeFromGetChallengeSchema.or(ChallengeResultSchema);
 export const ChallengeExcludeSubplebbitSchema = z
     .object({
-    addresses: SubplebbitAddressSchema.array(), // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
+    addresses: SubplebbitAddressSchema.array().nonempty(), // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
     maxCommentCids: z.number().nonnegative().int(), // maximum amount of comment cids that will be fetched to check
     postScore: z.number().int().optional(),
     replyScore: z.number().int().optional(),
     firstCommentTimestamp: PlebbitTimestampSchema.optional() // exclude if author account age is greater or equal than now - firstCommentTimestamp
 })
     .strict();
+const excludePublicationFieldSchema = z.boolean().optional(); // can be true or undefined
+export const ChallengeExcludePublicationTypeSchema = z
+    .object({
+    post: excludePublicationFieldSchema,
+    reply: excludePublicationFieldSchema,
+    vote: excludePublicationFieldSchema,
+    commentEdit: excludePublicationFieldSchema,
+    commentModeration: excludePublicationFieldSchema
+})
+    .passthrough()
+    .refine((args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so
+messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT);
 export const ChallengeExcludeSchema = z
     .object({
     subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
@@ -95,13 +113,11 @@ export const ChallengeExcludeSchema = z
     replyScore: z.number().int().optional(),
     firstCommentTimestamp: PlebbitTimestampSchema.optional(),
     challenges: z.number().nonnegative().int().array().optional(),
-    post: z.boolean().optional(),
-    reply: z.boolean().optional(),
-    vote: z.boolean().optional(),
     role: SubplebbitRoleSchema.shape.role.array().optional(),
     address: AuthorAddressSchema.array().optional(),
     rateLimit: z.number().nonnegative().int().optional(),
-    rateLimitChallengeSuccess: z.boolean().optional()
+    rateLimitChallengeSuccess: z.boolean().optional(),
+    publicationType: ChallengeExcludePublicationTypeSchema.optional()
 })
     .passthrough();
 export const SubplebbitChallengeSettingSchema = z
@@ -110,7 +126,7 @@ export const SubplebbitChallengeSettingSchema = z
     path: z.string().optional(), // (only if name is undefined) the path to the challenge js file, used to get the props ChallengeFile {optionInputs, type, getChallenge}
     name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
     options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
-    exclude: ChallengeExcludeSchema.array().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
+    exclude: ChallengeExcludeSchema.array().nonempty().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
     description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
 })
     .strict()
@@ -118,7 +134,7 @@ export const SubplebbitChallengeSettingSchema = z
 export const ChallengeFileSchema = z
     .object({
     // the result of the function exported by the challenge file
-    optionInputs: ChallengeOptionInputSchema.array().optional(), // the options inputs fields to display to the user
+    optionInputs: ChallengeOptionInputSchema.array().nonempty().optional(), // the options inputs fields to display to the user
     type: ChallengeFromGetChallengeSchema.shape.type,
     challenge: ChallengeFromGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
     caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
@@ -135,7 +151,7 @@ export const ChallengeFileSchema = z
     .strict();
 export const SubplebbitChallengeSchema = z
     .object({
-    exclude: ChallengeExcludeSchema.array().optional(),
+    exclude: ChallengeExcludeSchema.array().nonempty().optional(),
     description: ChallengeFileSchema.shape.description,
     challenge: ChallengeFileSchema.shape.challenge,
     type: ChallengeFileSchema.shape.type,
@@ -156,7 +172,7 @@ export const SubplebbitIpfsSchema = z
     pubsubTopic: PubsubTopicSchema.optional(),
     statsCid: CidStringSchema,
     protocolVersion: ProtocolVersionSchema,
-    postUpdates: z.record(z.string(), CidStringSchema).optional(),
+    postUpdates: z.record(nonNegativeIntStringSchema, CidStringSchema).optional(),
     title: z.string().optional(),
     description: z.string().optional(),
     roles: z.record(AuthorAddressSchema, SubplebbitRoleSchema).optional(),

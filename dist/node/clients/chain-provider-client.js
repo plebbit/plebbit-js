@@ -1,6 +1,6 @@
-import { TypedEmitter } from "tiny-typed-emitter";
 import { hideClassPrivateProps } from "../util.js";
-export class GenericChainProviderClient extends TypedEmitter {
+import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";
+export class GenericChainProviderClient extends PlebbitTypedEmitter {
     constructor(state) {
         super();
         this.state = state;

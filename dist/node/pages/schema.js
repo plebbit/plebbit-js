@@ -29,11 +29,11 @@ export const PostSortNameSchema = z
 export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]).or(z.string().min(1)); // this is added to allow flexiblity;
 // TODO combine the two into one schema
 export const PostsPagesIpfsSchema = z.object({
-    pages: z.record(PostSortNameSchema, PageIpfsSchema), // should be partial
+    pages: z.record(PostSortNameSchema, PageIpfsSchema), // pre loaded pages
     pageCids: z.record(PostSortNameSchema, CidStringSchema)
 });
 export const RepliesPagesIpfsSchema = z.object({
-    pages: z.record(ReplySortNameSchema, PageIpfsSchema), // should be partial
+    pages: z.record(ReplySortNameSchema, PageIpfsSchema), // pre loaded pages
     pageCids: z.record(ReplySortNameSchema, CidStringSchema)
 });
 //# sourceMappingURL=schema.js.map

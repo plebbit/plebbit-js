@@ -4,9 +4,9 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 const debug = Logger("plebbit-js:addresses-rewriter");
 export class AddressesRewriterProxyServer {
-    constructor({ plebbitOptions, port, hostname, proxyTargetUrl }) {
+    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl }) {
         this.addresses = {};
-        this.plebbitOptions = plebbitOptions;
+        this.kuboClients = kuboClient;
         this.port = port;
         this.hostname = hostname || "127.0.0.1";
         this.proxyTarget = new URL(proxyTargetUrl);
@@ -78,29 +78,25 @@ export class AddressesRewriterProxyServer {
     }
     // get up to date listen addresses from kubo every x minutes
     _startUpdateAddressesLoop() {
+        if (!this.kuboClients?.length)
+            throw Error("should have a defined kubo rpc client option to start the address rewriter");
         const tryUpdateAddresses = async () => {
-            if (!this.plebbitOptions.ipfsHttpClientsOptions?.length) {
-                throw Error("no plebbitOptions.ipfsHttpClientsOptions");
-            }
-            for (const ipfsHttpClientOptions of this.plebbitOptions.ipfsHttpClientsOptions) {
-                if (!ipfsHttpClientOptions)
-                    throw Error("should have a defined ipfs http client option to start the address rewriter");
-                const kuboApiUrl = typeof ipfsHttpClientOptions === "string" ? ipfsHttpClientOptions : ipfsHttpClientOptions.url;
+            for (const kuboClient of this.kuboClients) {
                 try {
-                    const idRes = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then((res) => res.json());
-                    const swarmAddrsRes = await fetch(`${kuboApiUrl}/swarm/addrs/listen`, {
-                        method: "POST",
-                        headers: ipfsHttpClientOptions.headers
-                    }).then((res) => res.json());
-                    const peerId = idRes["ID"];
+                    const idRes = await kuboClient.id();
+                    const swarmAddrsRes = await kuboClient.swarm.addrs();
+                    const peerId = idRes.id.toString();
                     if (typeof peerId !== "string")
                         throw Error("Failed to get Peer ID of kubo node");
-                    const addresses = remeda.unique([...idRes["Addresses"], ...swarmAddrsRes["Strings"]]);
+                    const addresses = remeda.unique([
+                        ...idRes.addresses.map((addr) => addr.toString()),
+                        ...remeda.flatten(swarmAddrsRes.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
+                    ]);
                     this.addresses[peerId] = addresses;
                 }
                 catch (e) {
                     const error = e;
-                    debug("tryUpdateAddresses error:", error.message, { kuboApiUrl });
+                    debug("tryUpdateAddresses error:", error.message, { kuboConfig: kuboClient.getEndpointConfig() });
                 }
             }
         };

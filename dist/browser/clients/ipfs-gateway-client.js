@@ -1,7 +1,7 @@
-import { TypedEmitter } from "tiny-typed-emitter";
 import { hideClassPrivateProps } from "../util.js";
+import { PlebbitTypedEmitter } from "./plebbit-typed-emitter.js";
 // Client classes
-class BaseIpfsGateway extends TypedEmitter {
+class BaseIpfsGateway extends PlebbitTypedEmitter {
     constructor(state) {
         super();
         this.state = state;

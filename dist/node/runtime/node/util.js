@@ -19,7 +19,7 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
-const storedIpfsClients = {};
+const storedKuboRpcClients = {};
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) => {
     let filename;
@@ -173,21 +173,21 @@ export async function listSubplebbits(plebbit) {
     const filtered_results = files.filter((_, i) => filterResults[i]).sort(); // make sure it's sorted, so the order is always the same
     return filtered_results;
 }
-export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {
+export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, kuboRpcClientOptions) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string")
         throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
     data.append("file", new Blob([ipfsKey]));
-    const nodeUrl = ipfsNode.url;
-    if (!nodeUrl)
-        throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
-    const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
+    const kuboRpcUrl = kuboRpcClientOptions.url;
+    if (!kuboRpcUrl)
+        throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(kuboRpcClientOptions)}`);
+    const url = `${kuboRpcUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
     const res = await fetch(url, {
         method: "POST",
         body: data,
-        headers: ipfsNode.headers
+        headers: kuboRpcClientOptions.headers
     });
     if (res.status !== 200)
         throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
@@ -207,37 +207,39 @@ export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress, pleb
     else
         await fs.rm(oldPath);
 }
-export function createIpfsClient(ipfsHttpClientOptions) {
-    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
-    if (storedIpfsClients[cacheKey])
-        return storedIpfsClients[cacheKey];
-    const log = Logger("plebbit-js:plebbit:createIpfsClient");
-    log("Creating a new ipfs client on node with options", ipfsHttpClientOptions);
-    const isHttpsAgent = (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
-        ipfsHttpClientOptions?.protocol === "https" ||
-        (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
-        ipfsHttpClientOptions.url?.toString()?.includes("https");
+export function createKuboRpcClient(kuboRpcClientOptions) {
+    const cacheKey = sha256(deterministicStringify(kuboRpcClientOptions));
+    if (storedKuboRpcClients[cacheKey])
+        return storedKuboRpcClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
+    log("Creating a new kubo client on node with options", kuboRpcClientOptions);
+    const isHttpsAgent = (typeof kuboRpcClientOptions.url === "string" && kuboRpcClientOptions.url.startsWith("https")) ||
+        kuboRpcClientOptions?.protocol === "https" ||
+        (kuboRpcClientOptions.url instanceof URL && kuboRpcClientOptions?.url?.protocol === "https:") ||
+        kuboRpcClientOptions.url?.toString()?.includes("https");
     const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
     const onehourMs = 1000 * 60 * 60;
-    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
-        ...ipfsHttpClientOptions,
-        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
+    storedKuboRpcClients[cacheKey] = CreateKuboRpcClient({
+        ...kuboRpcClientOptions,
+        agent: kuboRpcClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
         timeout: onehourMs
     });
-    return storedIpfsClients[cacheKey];
+    return storedKuboRpcClients[cacheKey];
 }
 export async function monitorSubplebbitsDirectory(plebbit) {
     const watchAbortController = new AbortController();
     const subsPath = path.join(plebbit.dataPath, "subplebbits");
     await mkdir(subsPath, { recursive: true });
-    fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
+    fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false }, async (eventType, filename) => {
         if (filename?.endsWith(".lock"))
             return; // we only care about subplebbits
         const currentSubs = await listSubplebbits(plebbit);
-        if (JSON.stringify(currentSubs) !== JSON.stringify(plebbit.subplebbits))
+        if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))
             plebbit.emit("subplebbitschange", currentSubs);
     });
-    plebbit.emit("subplebbitschange", await listSubplebbits(plebbit));
+    const currentListedSubs = await listSubplebbits(plebbit);
+    if (deterministicStringify(currentListedSubs) !== deterministicStringify(plebbit.subplebbits))
+        plebbit.emit("subplebbitschange", currentListedSubs);
     return watchAbortController;
 }
 export async function isDirectoryEmptyRecursive(dirPath) {

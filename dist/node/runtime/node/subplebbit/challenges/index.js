@@ -6,17 +6,18 @@ import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
 import question from "./plebbit-js-challenges/question.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
+import publicationMatch from "./plebbit-js-challenges/publication-match.js";
 import * as remeda from "remeda";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
-import { derivePublicationFromChallengeRequest } from "../../../../util.js";
 const plebbitJsChallenges = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
     fail: fail,
     blacklist: blacklist,
     question: question,
-    "evm-contract-call": evmContractCall
+    "evm-contract-call": evmContractCall,
+    "publication-match": publicationMatch
 };
 const validateChallengeFileFactory = (challengeFileFactory, challengeIndex, subplebbit) => {
     const subplebbitChallengeSettings = subplebbit?.settings?.challenges?.[challengeIndex];
@@ -96,8 +97,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
     // check failures and errors
     let challengeFailureCount = 0;
     let pendingChallenges = [];
-    const challengeErrors = new Array(challengeOrChallengeResults.length);
-    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
+    const challengeErrors = {};
     for (const i in challengeOrChallengeResults) {
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
@@ -167,7 +167,7 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
         challengeResultToPendingChallenge[pendingChallenges[i].index] = pendingChallenges[i];
     }
     let challengeFailureCount = 0;
-    const challengeErrors = [];
+    const challengeErrors = {};
     for (let i in challengeResults) {
         const challengeIndex = Number(i);
         if (!subplebbit.settings?.challenges?.[challengeIndex])
