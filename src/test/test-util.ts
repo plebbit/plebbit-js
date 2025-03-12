@@ -16,7 +16,7 @@ import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { v4 as uuidV4 } from "uuid";
-import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, RemoteSubplebbitJson } from "../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type {
@@ -1018,6 +1018,23 @@ export async function publishSubplebbitRecordWithExtraProp(opts: { includeExtraP
         Logger("plebbit-js:test-util:publishSubplebbitRecordWithExtraProp")
     );
 
+    await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+
+    return { subplebbitRecord, ipnsObj };
+}
+
+export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalSubplebbitUserOptions) {
+    const ipnsObj = await createNewIpns();
+    const subplebbitRecord = <SubplebbitIpfsType>{
+        ...(await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z"))._rawSubplebbitIpfs,
+        posts: undefined,
+        address: ipnsObj.signer.address,
+        pubsubTopic: ipnsObj.signer.address,
+        ...subplebbitOpts
+    }; // default sub, will be using its props
+    if (!subplebbitRecord.posts) delete subplebbitRecord.posts;
+
+    subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
     await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
 
     return { subplebbitRecord, ipnsObj };
