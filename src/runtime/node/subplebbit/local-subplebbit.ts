@@ -1959,9 +1959,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _publishLoop(syncIntervalMs: number) {
         if (this.state !== "started" || this._stopHasBeenCalled) return;
         const loop = async () => {
-            this._publishLoopPromise = this.syncIpnsWithDb();
-            await this._publishLoopPromise;
-            await this._publishLoop(syncIntervalMs);
+            try {
+                this._publishLoopPromise = this.syncIpnsWithDb();
+                await this._publishLoopPromise;
+                await this._publishLoop(syncIntervalMs);
+            } catch {}
         };
         this._publishInterval = setTimeout(loop.bind(this), syncIntervalMs);
     }
@@ -2171,7 +2173,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log.error(`Failed to unlock start lock on sub (${this.address})`, e);
             }
             if (this._publishLoopPromise) {
-                await this._publishLoopPromise; // should be in try/catch
+                try {
+                    await this._publishLoopPromise; // should be in try/catch
+                } catch (e) {
+                    log.error(`Failed to stop subplebbit`, e);
+                }
                 this._publishLoopPromise = undefined;
             }
             await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
