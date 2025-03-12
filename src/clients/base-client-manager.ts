@@ -225,7 +225,6 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    @measurePerformance(30)
     async _fetchWithLimit(
         url: string,
         options: { cache: RequestCache; signal: AbortSignal } & Pick<
@@ -323,7 +322,6 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {}
 
-    @measurePerformance(50)
     async _fetchFromGatewayAndVerifyIfBodyCorrespondsToProvidedCid(
         url: string,
         loadOpts: Omit<OptionsToLoadFromGateway, "validateGatewayResponses">
@@ -356,7 +354,7 @@ export class BaseClientsManager {
             GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway] = true;
         }
     }
-    @measurePerformance()
+
     protected async _fetchWithGateway(
         gateway: string,
         loadOpts: OptionsToLoadFromGateway
@@ -408,7 +406,6 @@ export class BaseClientsManager {
         );
     }
 
-    @measurePerformance()
     async fetchFromMultipleGateways(
         loadOpts: Omit<OptionsToLoadFromGateway, "abortController">
     ): Promise<{ resText: string; res: Response }> {
@@ -501,7 +498,7 @@ export class BaseClientsManager {
     }
 
     // TODO rename this to _fetchPathP2P
-    @measurePerformance()
+
     async _fetchCidP2P(cidV0: string, loadOpts: { maxFileSizeBytes: number; timeoutMs: number }): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
 
@@ -559,7 +556,6 @@ export class BaseClientsManager {
         return `${domainAddress}_${txtRecord}`;
     }
 
-    @measurePerformance(30)
     private async _getCachedTextRecord(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
 
@@ -665,7 +661,7 @@ export class BaseClientsManager {
             return { error: parsedError };
         }
     }
-    @measurePerformance(50)
+
     private async _resolveTextRecordConcurrently(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
@@ -748,7 +744,6 @@ export class BaseClientsManager {
         throw Error("Should not reach this block within _resolveTextRecordConcurrently");
     }
 
-    @measurePerformance()
     async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | null> {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         if (!isStringDomain(subplebbitAddress)) return subplebbitAddress;

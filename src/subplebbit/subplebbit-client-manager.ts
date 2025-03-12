@@ -236,7 +236,6 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     // fetching subplebbit ipns here
 
-    @measurePerformance()
     async fetchNewUpdateForSubplebbit(subAddress: SubplebbitIpfsType["address"]): Promise<ResultOfFetchingSubplebbit> {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
@@ -275,7 +274,6 @@ export class SubplebbitClientsManager extends ClientsManager {
         return subRes;
     }
 
-    @measurePerformance()
     private async _fetchSubplebbitIpnsP2PAndVerify(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         this.updateIpfsState("fetching-ipns");
@@ -315,7 +313,6 @@ export class SubplebbitClientsManager extends ClientsManager {
         }
     }
 
-    @measurePerformance()
     private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
         const concurrencyLimit = 3;
@@ -513,7 +510,6 @@ export class SubplebbitClientsManager extends ClientsManager {
         return suitableSubplebbit;
     }
 
-    @measurePerformance(50)
     private async _findErrorInSubplebbitRecord(
         subJson: SubplebbitIpfsType,
         ipnsNameOfSub: string,

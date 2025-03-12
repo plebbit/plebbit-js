@@ -153,7 +153,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         return `${folderCid}/` + parentsPostUpdatePath + "/update";
     }
 
-    @measurePerformance()
     async _fetchNewCommentUpdateIpfsP2P(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
@@ -262,7 +261,6 @@ export class CommentClientsManager extends PublicationClientsManager {
             });
     }
 
-    @measurePerformance()
     async _fetchCommentUpdateFromGateways(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
@@ -364,7 +362,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         } else return false;
     }
 
-    @measurePerformance()
     async useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitPostUpdatesToFetchCommentUpdate");
         if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
