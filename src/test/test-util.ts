@@ -457,7 +457,6 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
 }
 
 export async function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
-    if (!isRpcFlagOn()) throw Error("Can't connect to RPC server without RPC flag on");
     // This instance will connect to an rpc server that has no local subs
     const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
     return plebbit;
@@ -997,15 +996,15 @@ export function setRemotePlebbitConfigs(configs: RemotePlebbitConfig[]) {
 
 export function getRemotePlebbitConfigs() {
     // Check if configs are passed via environment variable
-    if (process.env.PLEBBIT_CONFIGS) {
+    if (process?.env?.PLEBBIT_CONFIGS) {
         const configs = process.env.PLEBBIT_CONFIGS.split(",") as RemotePlebbitConfig[];
         // Set the configs if they're coming from the environment variable
         setRemotePlebbitConfigs(configs);
     }
     //@ts-expect-error
-    const plebbitConfigsFromWindow = <string | undefined>globalThis["window"]?.["plebbitConfigs"];
+    const plebbitConfigsFromWindow = <string | undefined>globalThis["window"]?.["PLEBBIT_CONFIGS"];
     if (plebbitConfigsFromWindow) {
-        console.log("window.plebbitConfigs", plebbitConfigsFromWindow);
+        console.log("window.PLEBBIT_CONFIGS", plebbitConfigsFromWindow);
         const configs = plebbitConfigsFromWindow.split(",") as RemotePlebbitConfig[];
         console.log("configs", configs);
         // Set the configs if they're coming from the environment variable
