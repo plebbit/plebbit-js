@@ -470,7 +470,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
-        const ttl = `${this._plebbit.publishInterval * 3}ms`;
+        const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,

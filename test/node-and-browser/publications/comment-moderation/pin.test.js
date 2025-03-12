@@ -252,12 +252,8 @@ getRemotePlebbitConfigs().map((config) => {
 
         const populatePost = async () => {
             if (post.replyCount < 5) {
-                await Promise.all(new Array(10).fill(null).map((x) => publishRandomReply(post, plebbit, {}, false)));
-                await new Promise((resolve) =>
-                    post.on("update", () => {
-                        if (post.replyCount > 5) resolve();
-                    })
-                );
+                await Promise.all(new Array(10).fill(null).map((x) => publishRandomReply(post, plebbit)));
+                await resolveWhenConditionIsTrue(post, () => post.replyCount > 5);
             }
         };
         before(async () => {
