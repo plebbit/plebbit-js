@@ -36,6 +36,13 @@ if (process.env.DEBUG) {
     `;
 }
 
+// inject plebbit configs if provided
+if (process.env.PLEBBIT_CONFIGS) {
+    codeToInjectBefore += `
+        window.plebbitConfigs = "${process.env.PLEBBIT_CONFIGS.replaceAll(`"`, "")}";
+    `;
+}
+
 function injectCodeBeforeFactory() {
     return (content, file, done) => done(codeToInjectBefore + content);
 }

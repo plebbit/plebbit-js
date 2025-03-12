@@ -14,7 +14,8 @@ const __dirname = path.dirname(__filename);
 function parseArgs() {
     const args = process.argv.slice(2);
     const options = {
-        plebbitConfigs: []
+        plebbitConfigs: [],
+        environment: "node" // Default to node environment
     };
 
     for (let i = 0; i < args.length; i++) {
@@ -23,6 +24,9 @@ function parseArgs() {
             // Check if the next argument is a comma-separated list
             const configValues = args[i + 1].split(",");
             options.plebbitConfigs.push(...configValues);
+            i++; // Skip the next argument as it's the value
+        } else if (arg === "--environment" && i + 1 < args.length) {
+            options.environment = args[i + 1];
             i++; // Skip the next argument as it's the value
         }
     }
@@ -36,6 +40,16 @@ function validatePlebbitConfigs(configs) {
     if (invalidConfigs.length > 0) {
         console.error(`Error: Invalid plebbit-config value(s): ${invalidConfigs.join(", ")}`);
         console.error(`Valid options are: ${plebbitConfigTypes.join(", ")}`);
+        process.exit(1);
+    }
+    return true;
+}
+
+// Validate environment
+function validateEnvironment(env) {
+    if (!environment.includes(env)) {
+        console.error(`Error: Invalid environment value: ${env}`);
+        console.error(`Valid options are: ${environment.join(", ")}`);
         process.exit(1);
     }
     return true;
@@ -74,20 +88,71 @@ function runMochaTests(plebbitConfigs) {
     });
 }
 
+// Run karma tests with the specified configuration and browser
+function runKarmaTests(plebbitConfigs, browser) {
+    return new Promise((resolve, reject) => {
+        // Path to local karma executable
+        const karmaBin = path.resolve(__dirname, "../node_modules/.bin/karma");
+
+        // Pass plebbit configs as client.config to karma
+        const karmaArgs = ["start", "config/karma.conf.cjs"];
+
+        console.log(`Running karma with: ${karmaBin} ${karmaArgs.join(" ")}`);
+
+        const env = { ...process.env };
+        // Also set as environment variable for backward compatibility
+        env.PLEBBIT_CONFIGS = plebbitConfigs.join(",");
+
+        // Set browser environment variables
+        if (browser === "chrome") {
+            env.CHROME_BIN = process.env.CHROME_BIN || "chrome";
+            env.FIREFOX_BIN = "";
+        } else if (browser === "firefox") {
+            env.FIREFOX_BIN = process.env.FIREFOX_BIN || "firefox";
+            env.CHROME_BIN = "";
+        }
+
+        const karmaProcess = spawn(karmaBin, karmaArgs, {
+            stdio: "inherit",
+            shell: true,
+            env: env
+        });
+
+        karmaProcess.on("close", (code) => {
+            if (code === 0) {
+                resolve();
+            } else {
+                reject(new Error(`Karma exited with code ${code}`));
+            }
+        });
+
+        karmaProcess.on("error", (err) => {
+            reject(err);
+        });
+    });
+}
+
 // Main function to run the tool
 async function main() {
     const options = parseArgs();
 
     if (options.plebbitConfigs.length > 0) {
         validatePlebbitConfigs(options.plebbitConfigs);
+        validateEnvironment(options.environment);
+
         console.log(`Using plebbit-config(s): ${options.plebbitConfigs.join(", ")}`);
+        console.log(`Using environment: ${options.environment}`);
 
         // Set the remote plebbit configs before running tests
         setRemotePlebbitConfigs(options.plebbitConfigs);
 
         try {
-            // Run mocha tests
-            await runMochaTests(options.plebbitConfigs);
+            // Run tests based on environment
+            if (options.environment === "node") {
+                await runMochaTests(options.plebbitConfigs);
+            } else if (options.environment === "chrome" || options.environment === "firefox") {
+                await runKarmaTests(options.plebbitConfigs, options.environment);
+            }
             process.exit(0);
         } catch (error) {
             console.error("Error running tests:", error.message);
@@ -108,4 +173,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Export variables and functions
-export { plebbitConfigTypes, environment, parseArgs, validatePlebbitConfigs, main, runMochaTests };
+export { plebbitConfigTypes, environment, parseArgs, validatePlebbitConfigs, validateEnvironment, main, runMochaTests, runKarmaTests };
