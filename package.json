@@ -89,7 +89,7 @@
         "probe-image-size": "7.2.3",
         "remeda": "1.57.0",
         "retry": "0.13.1",
-        "rpc-websockets": "7.10.0",
+        "rpc-websockets": "10.0.0",
         "safe-stable-stringify": "2.4.3",
         "sha1-uint8array": "0.10.7",
         "skia-canvas": "1.0.2",
