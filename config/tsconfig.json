@@ -2,13 +2,14 @@
     "compilerOptions": {
         "outDir": "../dist/node",
         "module": "ES2020",
-        "declaration": true,
+        "declaration": false,
         "target": "ES2020",
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
         "sourceMap": true,
         "strict": true,
+        "experimentalDecorators": true,
         "noImplicitOverride": true
     },
     "include": ["../src/**/*"],
