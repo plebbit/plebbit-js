@@ -973,14 +973,37 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
     return heliaPlebbit;
 }
 
+type RemotePlebbitConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc";
+
+type RemotePlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit> };
+
+let remotePlebbitConfigs: RemotePlebbitConfigWithName[] = [];
+
+export function setRemotePlebbitConfigs(configs: RemotePlebbitConfig[]) {
+    const mapper: Record<RemotePlebbitConfig, RemotePlebbitConfigWithName> = {
+        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "IPFS P2P" },
+        "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
+        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" }
+    };
+    if (configs.length === 0) throw Error("No configs were provided");
+
+    // Make sure each config exists in the mapper
+    for (const config of configs)
+        if (!mapper[config])
+            throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(mapper)}`);
+
+    remotePlebbitConfigs = configs.map((config) => mapper[config]);
+}
+
 export function getRemotePlebbitConfigs() {
-    if (isRpcFlagOn()) return [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }];
-    else
-        return [
-            { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
-            { name: "IPFS P2P", plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient }
-            // { name: "Helia P2P", plebbitInstancePromise: mockPlebbitWithHeliaConfig }
-        ];
+    // Check if configs are passed via environment variable
+    if (process.env.PLEBBIT_CONFIGS) {
+        const configs = process.env.PLEBBIT_CONFIGS.split(",") as RemotePlebbitConfig[];
+        // Set the configs if they're coming from the environment variable
+        setRemotePlebbitConfigs(configs);
+    }
+    if (remotePlebbitConfigs.length === 0) throw Error("No remote plebbit configs set");
+    return remotePlebbitConfigs;
 }
 
 export async function createNewIpns() {
