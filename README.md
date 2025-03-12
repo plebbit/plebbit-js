@@ -41,7 +41,7 @@ Comment extends Publication /* (IPFS file) */ {
   postCid?: string // helps faster loading post info for reply direct linking, undefined for posts, a post can't know its own CID
   depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
   thumbnailUrl?: string // optionally fetched by subplebbit owner, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
-  thumbnailUrlWidth?: number // subplebbit owner can optionally provide dimensions of thumbails which helps UI clients with infinite scrolling feeds
+  thumbnailUrlWidth?: number // subplebbit owner can optionally provide dimensions of thumbnails which helps UI clients with infinite scrolling feeds
   thumbnailUrlHeight?: number
 }
 Vote extends Publication {
