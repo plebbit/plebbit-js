@@ -20,7 +20,6 @@ export class BasePagesClientsManager extends BaseClientsManager {
     };
 
     protected _pages: RepliesPages | PostsPages;
-    _pagesMaxSize: Record<string, number> = {}; // cid => max file size (number of bytes )
 
     constructor(opts: { pages: RepliesPages | PostsPages; plebbit: Plebbit }) {
         super(opts.plebbit);
@@ -214,7 +213,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
         const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
         const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
-        const pageMaxSize = isFirstPage ? 1024 * 1024 : this._pagesMaxSize[pageCid];
+        const pageMaxSize = isFirstPage ? 1024 * 1024 : this._plebbit._memCaches.pagesMaxSize.get(pageCid);
         if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page: PageIpfs;
         if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
@@ -223,7 +222,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
         if (page.nextCid) {
             this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
-            this._pagesMaxSize[page.nextCid] = pageMaxSize * 2;
+            this._plebbit._memCaches.pagesMaxSize.set(page.nextCid, pageMaxSize * 2);
         }
         return page;
     }
