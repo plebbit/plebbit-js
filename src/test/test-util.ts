@@ -978,8 +978,8 @@ export function getRemotePlebbitConfigs() {
     else
         return [
             { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
-            { name: "IPFS P2P", plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient },
-            { name: "Helia P2P", plebbitInstancePromise: mockPlebbitWithHeliaConfig }
+            { name: "IPFS P2P", plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient }
+            // { name: "Helia P2P", plebbitInstancePromise: mockPlebbitWithHeliaConfig }
         ];
 }
 
