@@ -105,13 +105,13 @@ getRemotePlebbitConfigs().map((config) => {
             const loadedFirstPage = await mockSubplebbit.posts.getPage(firstPageCid); // just to set the expectation for second page
 
             // Verify the size expectation for the second page is set correctly
-            expect(mockSubplebbit.posts._clientsManager._pagesMaxSize[secondPageCid]).to.equal(secondPageSize);
+            expect(mockSubplebbit._plebbit._memCaches.pagesMaxSize.get(secondPageCid)).to.equal(secondPageSize);
 
             // Load the second page
             const loadedSecondPage = await mockSubplebbit.posts.getPage(secondPageCid);
 
             // Verify the size expectation for the third page is set correctly
-            expect(mockSubplebbit.posts._clientsManager._pagesMaxSize[thirdPageCid]).to.equal(thirdPageSize);
+            expect(mockSubplebbit._plebbit._memCaches.pagesMaxSize.get(thirdPageCid)).to.equal(thirdPageSize);
 
             // Load the third page
             const loadedThirdPage = await mockSubplebbit.posts.getPage(thirdPageCid);
@@ -144,7 +144,7 @@ getRemotePlebbitConfigs().map((config) => {
             await mockSubplebbit.posts.getPage(updatedFirstPageCid);
 
             // Verify the size expectation for the second page is set correctly
-            expect(mockSubplebbit.posts._clientsManager._pagesMaxSize[oversizedSecondPageCid]).to.equal(secondPageSize);
+            expect(mockSubplebbit._plebbit._memCaches.pagesMaxSize.get(oversizedSecondPageCid)).to.equal(secondPageSize);
 
             // Attempt to load the oversized second page - should throw an error
             try {
