@@ -31,7 +31,6 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
     let postWithExtraProps;
     before(async () => {
         const plebbit = await mockPlebbit();
-        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
         await resolveWhenConditionIsTrue(subBeforeMigration, () => typeof subBeforeMigration.updatedAt === "number");
@@ -43,9 +42,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         await setExtraPropOnCommentAndSign(postWithExtraProps, extraProps, true);
 
         await publishWithExpectedResult(postWithExtraProps, true);
-        const reply = await publishRandomReply(postWithExtraProps, plebbit);
-
-        await waitTillPostInSubplebbitPages(postWithExtraProps, plebbit);
+        const replyOfPostWithExtraProps = await publishRandomReply(postWithExtraProps, plebbit);
 
         await subBeforeMigration.stop();
 
@@ -55,8 +52,14 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
         await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt !== subBeforeMigration.updatedAt);
-        await waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit);
-        await waitTillReplyInParentPages(reply, remotePlebbit);
+
+        // remote plebbit has to be the same repo otherwise it won't find the new IPNS record
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ kuboRpcClientsOptions: ["http://localhost:15004/api/v0"] });
+        // remote plebbit is connected to the old ipfs repo and has the old IPNS record, not sure how to force it to load the new one
+        await Promise.all([
+            waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit),
+            waitTillReplyInParentPages(replyOfPostWithExtraProps, remotePlebbit)
+        ]);
     });
     it(`Subplebbit IPNS is republished`, async () => {
         const subLoaded = await remotePlebbit.getSubplebbit(subAfterMigration.address);
