@@ -68,6 +68,21 @@ describe(`subplebbit.start`, async () => {
 
         await publishRandomPost(subplebbit.address, plebbit); // Should receive publication since subscription to pubsub topic has been restored
     });
+
+    it(`Subplebbit.start() will publish an update regardless if there's a new data`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await sub.stop();
+
+        const sub2 = await plebbit.createSubplebbit({ address: sub.address });
+        expect(sub2.updatedAt).to.equal(sub.updatedAt);
+        const updatePromise = new Promise((resolve) => sub2.once("update", resolve));
+        await sub2.start();
+        await updatePromise;
+        expect(sub2.updatedAt).to.not.equal(sub.updatedAt);
+        await sub2.delete();
+    });
 });
 
 describe(`subplebbit.started`, async () => {
