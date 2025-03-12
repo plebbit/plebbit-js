@@ -30,9 +30,9 @@ import {
     _signJson,
     signCommentEdit,
     cleanUpBeforePublishing,
-    signVote,
     _signPubsubMsg,
-    signChallengeVerification
+    signChallengeVerification,
+    signSubplebbit
 } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
