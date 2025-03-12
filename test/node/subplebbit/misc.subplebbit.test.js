@@ -143,9 +143,8 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await publishRandomPost(sub.address, plebbit);
         await sub.stop();
+        await plebbit.destroy();
     });
-
-    after(async () => await plebbit.destroy());
 
     it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
         const kuboRpcClientsOptions = [`http://user:password@localhost:15001/api/v0`];
@@ -277,11 +276,13 @@ describe(`subplebbit.startedState`, async () => {
         expect(recordedStates).to.deep.equal(expectedStates);
     });
 
-    itSkipIfRpc(`subplebbit.startedState = error if a failure occurs`, async () => {
-        await new Promise((resolve) => {
-            subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit._plebbit.clients.kuboRpcClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
-        });
+    itSkipIfRpc(`subplebbit.startedState = failed if a failure occurs`, async () => {
+        subplebbit._getDbInternalState = async () => {
+            throw Error("Failed to load sub from db ");
+        };
+        publishRandomPost(subplebbit.address, plebbit);
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.startedState === "failed", "startedstatechange");
+        expect(subplebbit.startedState).to.equal("failed");
     });
 });
 
