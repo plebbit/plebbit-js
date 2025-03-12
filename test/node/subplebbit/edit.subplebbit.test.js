@@ -211,6 +211,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
             updatingSubplebbit.on("update", () => {
                 if (remeda.isDeepEqual(remeda.pick(updatingSubplebbit, Object.keys(editArgs)), editArgs)) editIsFinished = true; // there's a case where the edit is finished and update is emitted before we get to update editIsFinished
             });
+
             expect(updatingSubplebbit.signer).to.be.a("object");
             expect(updatingSubplebbit.title).to.equal(subplebbitTitle);
             await updatingSubplebbit.update();
@@ -218,6 +219,10 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
             // start subplebbit
             const startedSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
             await startedSubplebbit.start();
+
+            startedSubplebbit.on("update", () => {
+                if (remeda.isDeepEqual(remeda.pick(startedSubplebbit, Object.keys(editArgs)), editArgs)) editIsFinished = true; // there's a case where the edit is finished and update is emitted before we get to update editIsFinished
+            });
 
             expect(startedSubplebbit.title).to.equal(subplebbitTitle);
 
