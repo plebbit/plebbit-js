@@ -119,7 +119,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await resolveWhenConditionIsTrue(sub, async () => {
                 const postInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
-                return postInPage.pinned;
+                return postInPage?.pinned;
             });
 
             expect(Object.keys(sub.posts.pageCids).every((key) => Object.keys(POSTS_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
@@ -152,7 +152,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await resolveWhenConditionIsTrue(sub, async () => {
                 const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
-                return postInPage.pinned;
+                return postInPage?.pinned;
             });
 
             await sub.stop();

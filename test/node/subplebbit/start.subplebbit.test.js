@@ -6,10 +6,9 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     itSkipIfRpc,
     itIfRpc,
+    findCommentInPage,
     resolveWhenConditionIsTrue,
-    mockRpcServerPlebbit,
     waitTillPostInSubplebbitPages,
-    mockCacheOfTextRecord,
     mockPlebbitV2
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
@@ -305,6 +304,8 @@ describe(`Publish loop resiliency`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Subplebbit can publish a new IPNS record with one of its comments having a valid ENS author address`, async () => {
@@ -318,14 +319,13 @@ describe(`Publish loop resiliency`, async () => {
 
         await publishWithExpectedResult(mockPost, true);
 
-        let updated = false;
-        setTimeout(() => {
-            if (!updated) assert.fail("Subplebbit failed to publish a new IPNS record with ENS author address");
-        }, 60000);
-        await new Promise((resolve) => subplebbit.once("update", () => (updated = true) && resolve(1)));
+        await waitTillPostInSubplebbitPages(mockPost, remotePlebbit);
+
         const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
 
-        expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
+        const loadedPost = await findCommentInPage(mockPost.cid, loadedSub.posts.pageCids.new, loadedSub.posts);
+
+        expect(loadedPost.cid).to.equal(mockPost.cid);
     });
 
     it(`Subplebbit isn't publishing updates needlessly`, async () => {

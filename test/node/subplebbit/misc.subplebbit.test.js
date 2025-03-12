@@ -92,12 +92,12 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
     });
 
-    after(async () => await sub.stop());
+    after(async () => await plebbit.destroy());
 
     it(`subplebbit.lastPostCid and lastCommentCid reflects latest post published`, async () => {
         expect(sub.lastPostCid).to.be.undefined;
         expect(sub.lastCommentCid).to.be.undefined;
-        const post = await publishRandomPost(sub.address, plebbit, {});
+        const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
         expect(sub.lastPostCid).to.equal(post.cid);
         expect(sub.lastCommentCid).to.equal(post.cid);
@@ -109,7 +109,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     });
 
     it(`subplebbit.lastCommentCid reflects latest comment (post or reply)`, async () => {
-        if ((sub.posts.pages.hot.comments[0].replyCount || 0) === 0) await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => sub.posts.pages.hot.comments[0].replyCount > 0);
         expect(sub.lastCommentCid).to.equal(sub.posts.pages.hot.comments[0].replies.pages.topAll.comments[0].cid);
     });
 });
@@ -140,11 +140,12 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const plebbit = await mockPlebbit(plebbitOptions);
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
-        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
-        await publishRandomPost(sub.address, plebbit, {}, false);
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await publishRandomPost(sub.address, plebbit);
         await sub.stop();
     });
+
+    after(async () => await plebbit.destroy());
 
     it(`Can publish a post with user@password for both ipfs and pubsub http client`, async () => {
         const kuboRpcClientsOptions = [`http://user:password@localhost:15001/api/v0`];
@@ -172,6 +173,7 @@ describe(`subplebbit.pubsubTopic`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
     });
 
     it(`subplebbit.pubsubTopic is defaulted to address when subplebbit is first created`, async () => {
@@ -198,6 +200,7 @@ describe(`subplebbit.state`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
     });
 
     it(`subplebbit.state defaults to "stopped" if not updating or started`, async () => {
@@ -255,9 +258,8 @@ describe(`subplebbit.startedState`, async () => {
     });
 
     after(async () => {
-        try {
-            await subplebbit.delete();
-        } catch {}
+        await subplebbit.delete();
+        await plebbit.destroy();
     });
 
     it(`subplebbit.startedState defaults to stopped`, async () => {
@@ -391,7 +393,8 @@ describe(`comment.link`, async () => {
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
+        await plebbit.destroy();
     });
 
     describe.skip(`comment.thumbnailUrl`, async () => {

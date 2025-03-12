@@ -69,6 +69,8 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Feature is updated correctly in props`, async () => {
