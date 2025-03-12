@@ -1003,7 +1003,7 @@ export function getRemotePlebbitConfigs() {
         setRemotePlebbitConfigs(configs);
     }
     //@ts-expect-error
-    const plebbitConfigsFromWindow = <string | undefined>window?.["plebbitConfigs"];
+    const plebbitConfigsFromWindow = <string | undefined>globalThis["window"]?.["plebbitConfigs"];
     if (plebbitConfigsFromWindow) {
         console.log("window.plebbitConfigs", plebbitConfigsFromWindow);
         const configs = plebbitConfigsFromWindow.split(",") as RemotePlebbitConfig[];
