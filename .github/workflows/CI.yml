@@ -54,6 +54,7 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         strategy:
+            fail-fast: false
             matrix:
                 config: [remote-kubo-rpc, remote-ipfs-gateway]
         steps:
@@ -81,6 +82,7 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         strategy:
+            fail-fast: false
             matrix:
                 environment: [chrome, firefox]
                 config: [remote-kubo-rpc, remote-ipfs-gateway]
