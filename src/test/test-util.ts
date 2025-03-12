@@ -1004,9 +1004,7 @@ export function getRemotePlebbitConfigs() {
     //@ts-expect-error
     const plebbitConfigsFromWindow = <string | undefined>globalThis["window"]?.["PLEBBIT_CONFIGS"];
     if (plebbitConfigsFromWindow) {
-        console.log("window.PLEBBIT_CONFIGS", plebbitConfigsFromWindow);
         const configs = plebbitConfigsFromWindow.split(",") as RemotePlebbitConfig[];
-        console.log("configs", configs);
         // Set the configs if they're coming from the environment variable
         setRemotePlebbitConfigs(configs);
     }
