@@ -6,20 +6,6 @@
             "request": "launch",
             "runtimeVersion": "18",
             "runtimeArgs": ["--es-module-specifier-resolution", "node"],
-            "name": "Generate .vscode/launch.json",
-            "skipFiles": ["<node_internals>/**"],
-            "program": "${workspaceFolder}/.temp/generate_launch_json.cjs",
-            "console": "integratedTerminal",
-            "env": {
-                "DEBUG": "plebbit-js:*, -plebbit*trace",
-                "USE_RPC": "1"
-            }
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "runtimeVersion": "18",
-            "runtimeArgs": ["--es-module-specifier-resolution", "node"],
             "name": "Launch current file with NodeJS",
             "skipFiles": ["<node_internals>/**"],
             "program": "${file}",
