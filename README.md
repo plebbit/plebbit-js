@@ -172,8 +172,16 @@ SubplebbitSuggested { // values suggested by the sub owner, the client/user can 
   // TODO: menu links, wiki pages, sidebar widgets
 }
 SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-  requirePostLink?: boolean // require post.link be defined
+  // implemented
+  noUpvotes?: boolean
+  noPostUpvotes?: boolean
+  noReplyUpvotes?: boolean
+  noDownvotes?: boolean
+  noPostDownvotes?: boolean
+  noReplyDownvotes?: boolean
+  requirePostLink?: boolean // require post.link be defined and a valid https url
   requirePostLinkIsMedia?: boolean // require post.link be media, e.g. for imageboards
+  // not implemented
   noVideos?: boolean
   noSpoilers?: boolean // author can't comment.spoiler = true their own comments
   noImages?: boolean
@@ -182,8 +190,6 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noImageReplies?: boolean
   noPolls?: boolean
   noCrossposts?: boolean
-  noUpvotes?: boolean
-  noDownvotes?: boolean
   noAuthors?: boolean // no authors at all, like 4chan
   anonymousAuthors?: boolean // authors are given anonymous ids inside threads, like 4chan
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
@@ -1606,7 +1612,7 @@ The client events.
 
 | Type | Description |
 | -------- | -------- |
-| `'stopped' \| 'resolving-author-address' \| 'fetching-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'subscribing-pubsub' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification'` \| 'connecting'` \| 'connected'` | The `Client.state` property |
+| `'stopped' \| 'resolving-author-address' \| 'fetching-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'subscribing-pubsub' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification' \| 'connecting' \| 'connected'` | The `Client.state` property |
 
 #### Example
 
