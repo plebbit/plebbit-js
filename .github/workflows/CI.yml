@@ -72,13 +72,18 @@ jobs:
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }}
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node
             - run: cat test_server.log
               if: ${{ !cancelled() }}
 
-    test-plebbit-js-chrome-remote:
+    test-plebbit-js-browser-remote-configs:
+        name: test-plebbit-js-${{ matrix.environment }}-${{ matrix.config }}
         runs-on: ubuntu-latest
         timeout-minutes: 20
+        strategy:
+            matrix:
+                environment: [chrome, firefox]
+                config: [remote-kubo-rpc, remote-ipfs-gateway, remote-plebbit-rpc]
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -95,32 +100,16 @@ jobs:
             - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+
+            # Link chrome executable if needed
             - name: Link chrome executable
               run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
-            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:browser:chrome
-            - run: cat test_server.log
-              if: ${{ !cancelled() }}
+              if: matrix.environment == 'chrome'
 
-    test-plebbit-js-firefox-remote:
-        runs-on: ubuntu-latest
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 18
-                  cache: "npm"
+            # Run tests based on environment and config
+            - name: Run browser tests with config
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
 
-            - run: npm ci
-            - run: npm run build
-            - run: npm run webpack
-
-            # disable hosts we shouldn't use
-            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
-
-            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
-            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
             - run: cat test_server.log
               if: ${{ !cancelled() }}
 
