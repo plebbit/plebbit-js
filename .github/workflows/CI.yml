@@ -2,158 +2,157 @@
 name: CI
 
 on:
-  pull_request:
-    branches:
-      - master
-    paths:
-      - "test/**"
-      - "src/**"
-      - "rpc/**"
-      - "config/**"
-      - "package.json"
-      - "package-lock.json"
-  push:
-    branches:
-      - master
-    paths:
-      - "test/**"
-      - "src/**"
-      - "rpc/**"
-      - "config/**"
-      - ".github/**"
-      - "package.json"
-      - "package-lock.json"
+    pull_request:
+        branches:
+            - master
+        paths:
+            - "test/**"
+            - "src/**"
+            - "rpc/**"
+            - "config/**"
+            - "package.json"
+            - "package-lock.json"
+    push:
+        branches:
+            - master
+        paths:
+            - "test/**"
+            - "src/**"
+            - "rpc/**"
+            - "config/**"
+            - ".github/**"
+            - "package.json"
+            - "package-lock.json"
 
 jobs:
-  test-plebbit-js-node-local:
-      runs-on: ubuntu-latest
-      timeout-minutes: 20
-      steps:
-        - uses: actions/checkout@v4
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 18
-            cache: "npm"
+    test-plebbit-js-node-local:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
 
-        - run: npm ci
-        - run: npm run build
+            - run: npm ci
+            - run: npm run build
 
-        # disable hosts we shouldn't use
-        - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-        - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+            # disable hosts we shouldn't use
+            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-        - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
-        - name: Run mocked challenge tests
-          run: npm run test:mocked:challenges
-        - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:node:local
-        - run: cat test_server.log
-          if: ${{ !cancelled() }}
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - name: Run mocked challenge tests
+              run: npm run test:mocked:challenges
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:local
+            - run: cat test_server.log
+              if: ${{ !cancelled() }}
 
-  test-plebbit-js-node-remote:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    test-plebbit-js-node-remote-configs:
+        name: test-plebbit-js-node-${{ matrix.config }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        strategy:
+            matrix:
+                config: [remote-kubo-rpc, remote-ipfs-gateway, remote-plebbit-rpc]
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
 
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: "npm"
+            - run: npm ci
+            - run: npm run build
 
-      - run: npm ci
-      - run: npm run build
+            # disable hosts we shouldn't use
+            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      # disable hosts we shouldn't use
-      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - name: Run tests with config
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }}
+            - run: cat test_server.log
+              if: ${{ !cancelled() }}
 
-      - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
-      - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:remote
-      - run: cat test_server.log
-        if: ${{ !cancelled() }}
+    test-plebbit-js-chrome-remote:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
 
-    
+            - run: npm ci
+            - run: npm run build
+            - run: npm run webpack
 
+            # disable hosts we shouldn't use
+            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-  test-plebbit-js-chrome-remote:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: "npm"
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - name: Link chrome executable
+              run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:browser:chrome
+            - run: cat test_server.log
+              if: ${{ !cancelled() }}
 
-      - run: npm ci
-      - run: npm run build
-      - run: npm run webpack
+    test-plebbit-js-firefox-remote:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
 
-      # disable hosts we shouldn't use
-      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+            - run: npm ci
+            - run: npm run build
+            - run: npm run webpack
 
-      - run:  DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
-      - name: Link chrome executable
-        run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
-      - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:chrome
-      - run: cat test_server.log
-        if: ${{ !cancelled() }}
+            # disable hosts we shouldn't use
+            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
+            - run: cat test_server.log
+              if: ${{ !cancelled() }}
 
-  test-plebbit-js-firefox-remote:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: "npm"
+    test-plebbit-rpc:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "npm"
 
-      - run: npm ci
-      - run: npm run build
-      - run: npm run webpack
+            # Setup plebbit-js deps
+            - run: npm ci
+            - run: npm run build
+            - run: npm run webpack
+            # disable hosts we shouldn't use
+            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+            # Setup tests for plebbit-js using rpc here
+            - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
+            - run: cat test_server.log
+              if: ${{ !cancelled() }}
 
-      # disable hosts we shouldn't use
-      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+            # Setup tests for rpc directory here (skipped for now)
 
-      - run:  DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
-      - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
-      - run: cat test_server.log
-        if: ${{ !cancelled() }}
+    test-plebbit-react-hooks:
+        uses: ./.github/workflows/CI-plebbit-react-hooks.yml
+        secrets: inherit
 
-  test-plebbit-rpc:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: "npm"
-      
-      # Setup plebbit-js deps
-      - run: npm ci
-      - run: npm run build
-      - run: npm run webpack
-      # disable hosts we shouldn't use
-      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
-      # Setup tests for plebbit-js using rpc here
-      - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
-      - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
-      - run: cat test_server.log
-        if: ${{ !cancelled() }}
-
-
-      # Setup tests for rpc directory here (skipped for now)
-
-  test-plebbit-react-hooks:
-    uses: ./.github/workflows/CI-plebbit-react-hooks.yml
-    secrets: inherit
-
-  test-plebbit-protocol-test:
-    uses: ./.github/workflows/CI-plebbit-protocol-test.yml
-    secrets: inherit
+    test-plebbit-protocol-test:
+        uses: ./.github/workflows/CI-plebbit-protocol-test.yml
+        secrets: inherit
