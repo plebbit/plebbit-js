@@ -120,3 +120,4 @@ test-karma-webpack
 karma-electron-preload.js
 .subs-publishing-with-http-tracker
 .fix-subs/
+.plebbit-rpc*
