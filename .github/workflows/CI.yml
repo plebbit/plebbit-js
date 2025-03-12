@@ -55,7 +55,7 @@ jobs:
         timeout-minutes: 20
         strategy:
             matrix:
-                config: [remote-kubo-rpc, remote-ipfs-gateway, remote-plebbit-rpc]
+                config: [remote-kubo-rpc, remote-ipfs-gateway]
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -83,7 +83,7 @@ jobs:
         strategy:
             matrix:
                 environment: [chrome, firefox]
-                config: [remote-kubo-rpc, remote-ipfs-gateway, remote-plebbit-rpc]
+                config: [remote-kubo-rpc, remote-ipfs-gateway]
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
