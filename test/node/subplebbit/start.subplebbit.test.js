@@ -102,6 +102,29 @@ describe(`subplebbit.start`, async () => {
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
     });
+
+    itSkipIfRpc(`subplebbit.start() recovers if kubo API call  fails`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        const ipfsClient = sub._clientsManager.getDefaultIpfs()._client;
+
+        const originalFunc = ipfsClient.files.cp;
+        ipfsClient.files.cp = () => {
+            throw Error("Failed to copy file");
+        };
+        publishRandomPost(sub.address, plebbit);
+
+        await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
+        expect(sub.startedState).to.equal("failed");
+
+        ipfsClient.files.cp = originalFunc;
+
+        await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
+        const post = await publishRandomPost(sub.address, plebbit);
+        await waitTillPostInSubplebbitPages(post, plebbit);
+        await sub.delete();
+    });
 });
 
 describe(`subplebbit.started`, async () => {
