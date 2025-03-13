@@ -6,7 +6,9 @@ import {
     startSubplebbits,
     mockRpcServerPlebbit,
     mockGatewayPlebbit,
-    mockRpcWsToSkipSignatureValidation
+    setRemotePlebbitConfigs,
+    mockRpcWsToSkipSignatureValidation,
+    isRpcFlagOn
 } from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
@@ -18,7 +20,6 @@ import path from "path";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import fs from "fs";
-import { removeUndefinedValuesRecursively } from "../../dist/node/util.js";
 
 const ipfsPath = getIpfsPath();
 
@@ -361,9 +362,11 @@ const setupMockDelegatedRouter = async () => {
 
     await import("./pubsub-mock-server");
 
-    if (process.env["USE_RPC"] === "1") {
+    if (isRpcFlagOn()) {
         // run RPC server here
-        delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
+        delete process.env["USE_RPC"];
+        delete process.env["PLEBBIT_CONFIGS"];
+        setRemotePlebbitConfigs(["remote-kubo-rpc"]);
         // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
