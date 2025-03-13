@@ -192,8 +192,7 @@ export class DbHandler {
             table.integer("thumbnailUrlHeight").nullable();
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
-            table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-
+            table.text("previousCid").nullable(); // it's not a foreign key because it's possible to purge the comment pointed to by previousCid. It's optimisc
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable();
@@ -238,7 +237,7 @@ export class DbHandler {
             table.json("signature").notNullable(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable(); // TODO we should not be storing replies here, it takes too much storage
-            table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+            table.text("lastChildCid").nullable();
             table.timestamp("lastReplyTimestamp").nullable();
 
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
