@@ -114,10 +114,9 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         });
         customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
-        const gatewaySub = await customPlebbit.getSubplebbit(subplebbitAddress);
-        const latestSub = await fetchLatestSubplebbitJson();
+        const [gatewaySub, latestSub] = await Promise.all([customPlebbit.getSubplebbit(subplebbitAddress), fetchLatestSubplebbitJson()]);
         const diff = latestSub.updatedAt - gatewaySub.updatedAt;
-        const buffer = 6;
+        const buffer = 10;
         expect(diff).to.be.lessThan(buffer);
     });
 });

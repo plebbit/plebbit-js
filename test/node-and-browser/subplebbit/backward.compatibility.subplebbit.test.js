@@ -1,19 +1,16 @@
-import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
 
 import {
     getRemotePlebbitConfigs,
+    isPlebbitFetchingUsingGateways,
     publishSubplebbitRecordWithExtraProp,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
-import * as remeda from "remeda";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-
-const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs().map((config) => {
     describe(`plebbit.createSubplebbit - Backward Compatiblity - ${config.name}`, async () => {
@@ -73,11 +70,13 @@ getRemotePlebbitConfigs().map((config) => {
 
             const sub = await remotePlebbit.createSubplebbit({ address: publishedSub.subplebbitRecord.address });
 
+            const errorPromise = new Promise((resolve) => sub.once("error", resolve));
+
             await sub.update();
 
-            const error = await new Promise((resolve) => sub.on("error", resolve));
+            const error = await errorPromise;
 
-            if (config.name === "IPFS gateway") {
+            if (isPlebbitFetchingUsingGateways(remotePlebbit)) {
                 expect(error.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                 const gatewayError = error.details.gatewayToError[remotePlebbit.ipfsGatewayUrls[0]];
                 expect(gatewayError.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
