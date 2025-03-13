@@ -490,7 +490,7 @@ getRemotePlebbitConfigs().map((config) => {
                 await publishRandomReply(postWithReplies, plebbit);
 
                 await postWithReplies.update();
-                await resolveWhenConditionIsTrue(postWithReplies, () => typeof postWithReplies.updatedAt === "number");
+                await resolveWhenConditionIsTrue(postWithReplies, () => postWithReplies.replies.pageCids?.new);
                 await postWithReplies.stop();
             });
 
