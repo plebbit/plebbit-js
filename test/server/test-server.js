@@ -362,11 +362,8 @@ const setupMockDelegatedRouter = async () => {
 
     await import("./pubsub-mock-server");
 
-    if (isRpcFlagOn()) {
+    if (process.env["START_RPC_SERVER"] === "1") {
         // run RPC server here
-        delete process.env["USE_RPC"];
-        delete process.env["PLEBBIT_CONFIGS"];
-        setRemotePlebbitConfigs(["remote-kubo-rpc"]);
         // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
