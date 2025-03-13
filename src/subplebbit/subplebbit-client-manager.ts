@@ -28,6 +28,7 @@ type SubplebbitGatewayFetch = {
         subplebbitRecord?: SubplebbitIpfsType;
         error?: PlebbitError;
         timeoutId: any;
+        ttl?: number; // ttl in seconds of IPNS record
     };
 };
 
@@ -377,6 +378,16 @@ export class SubplebbitClientsManager extends ClientsManager {
                 } else {
                     gatewayFetches[gatewayUrl].subplebbitRecord = subIpfs;
                     gatewayFetches[gatewayUrl].cid = calculatedSubCidFromBody;
+
+                    // Log the TTL from max-age header after successfully setting the subplebbit record
+                    const cacheControl = gatewayRes.res.headers.get("cache-control");
+                    if (cacheControl) {
+                        const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+                        if (maxAgeMatch && maxAgeMatch[1]) {
+                            const ttl = parseInt(maxAgeMatch[1]);
+                            gatewayFetches[gatewayUrl].ttl = ttl;
+                        }
+                    }
                 }
             };
 
@@ -447,7 +458,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                 // TODO reward this gateway
                 const bestSubRecord = gatewayFetches[bestGatewayUrl].subplebbitRecord!;
                 log(
-                    `Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${bestSubRecord.address}) whose IPNS is (${ipnsName}).  The record has updatedAt (${bestSubRecord.updatedAt}) that's ${bestGatewayRecordAge}s old`
+                    `Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${bestSubRecord.address}) whose IPNS is (${ipnsName}).  The record has updatedAt (${bestSubRecord.updatedAt}) that's ${bestGatewayRecordAge}s old with a TTL of ${gatewayFetches[bestGatewayUrl].ttl} seconds`
                 );
                 return { subplebbit: bestSubRecord, cid: gatewayFetches[bestGatewayUrl].cid! };
             }
