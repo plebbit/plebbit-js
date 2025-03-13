@@ -82,6 +82,26 @@ describe(`subplebbit.start`, async () => {
         expect(sub2.updatedAt).to.not.equal(sub.updatedAt);
         await sub2.delete();
     });
+
+    itSkipIfRpc(`subplebbit.start() recovers if the sync loop crashes once`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        const originalFunc = sub._getDbInternalState.bind(sub);
+        sub._getDbInternalState = async () => {
+            throw Error("Failed to load sub from db ");
+        };
+        publishRandomPost(sub.address, plebbit);
+        await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
+        expect(sub.startedState).to.equal("failed");
+
+        sub._getDbInternalState = originalFunc;
+
+        await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
+        const post = await publishRandomPost(sub.address, plebbit);
+        await waitTillPostInSubplebbitPages(post, plebbit);
+        await sub.delete();
+    });
 });
 
 describe(`subplebbit.started`, async () => {
