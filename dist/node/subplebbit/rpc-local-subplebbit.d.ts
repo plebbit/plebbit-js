@@ -1,0 +1,36 @@
+import type { RpcInternalSubplebbitRecordAfterFirstUpdateType, RpcInternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitEditOptions, SubplebbitStartedState } from "./types.js";
+import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
+export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcInternalSubplebbitRecordBeforeFirstUpdateType {
+    started: boolean;
+    startedState: SubplebbitStartedState;
+    signer: RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
+    settings: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
+    editable: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
+    challenges: RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
+    encryption: RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
+    createdAt: RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
+    protocolVersion: RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
+    private _startRpcSubscriptionId?;
+    _usingDefaultChallenge: RpcInternalSubplebbitRecordAfterFirstUpdateType["_usingDefaultChallenge"];
+    constructor(plebbit: Plebbit);
+    toJSONInternalRpcAfterFirstUpdate(): RpcInternalSubplebbitRecordAfterFirstUpdateType;
+    toJSONInternalRpcBeforeFirstUpdate(): RpcInternalSubplebbitRecordBeforeFirstUpdateType;
+    initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType): Promise<void>;
+    initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType): Promise<void>;
+    protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]): void;
+    protected _updateRpcClientStateFromStartedState(startedState: RpcLocalSubplebbit["startedState"]): void;
+    protected _processUpdateEventFromRpcUpdate(args: any): Promise<void>;
+    private _handleRpcUpdateEventFromStart;
+    private _handleRpcStartedStateChangeEvent;
+    private _handleRpcChallengeRequestEvent;
+    private _handleRpcChallengeEvent;
+    private _handleRpcChallengeAnswerEvent;
+    private _handleRpcChallengeVerificationEvent;
+    start(): Promise<void>;
+    private _cleanUpRpcConnection;
+    stop(): Promise<void>;
+    edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this>;
+    update(): Promise<void>;
+    delete(): Promise<void>;
+}
