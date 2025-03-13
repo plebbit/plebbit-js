@@ -23,7 +23,11 @@ export function parseJsonWithPlebbitErrorIfFails(x) {
 export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(subIpfs) {
     const parseRes = SubplebbitIpfsSchema.passthrough().safeParse(subIpfs);
     if (!parseRes.success)
-        throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", { zodError: parseRes.error, subJson: subIpfs });
+        throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", {
+            zodError: parseRes.error,
+            subAddress: subIpfs?.address,
+            subJson: subIpfs
+        });
     else
         return subIpfs;
 }

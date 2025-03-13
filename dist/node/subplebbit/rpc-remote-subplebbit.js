@@ -21,6 +21,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             failed: ["stopped"],
             "fetching-ipfs": ["fetching-ipfs"],
             "fetching-ipns": ["fetching-ipns"],
+            "waiting-retry": ["stopped"],
             "publishing-ipns": ["publishing-ipns"],
             "resolving-address": ["resolving-subplebbit-address"],
             stopped: ["stopped"],
@@ -51,6 +52,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._setUpdatingState(newUpdatingState);
         this._updateRpcClientStateFromUpdatingState(newUpdatingState);
     }
+    _handleWaitingRetryEventFromRpcUpdate(args) {
+        const err = args.params.result;
+        this.emit("waiting-retry", err);
+    }
     async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
         if (this.state !== "stopped" || this._updateRpcSubscriptionId)
@@ -69,6 +74,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             ._plebbitRpcClient.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
+            .on("waiting-retry", this._handleWaitingRetryEventFromRpcUpdate.bind(this))
             .on("error", (args) => this.emit("error", args.params.result)); // zod here
         this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }

@@ -17,6 +17,8 @@ import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
+import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
+import KeyvSqlite from "@keyv/sqlite";
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -47,7 +49,7 @@ export class DbHandler {
             log.trace("initialized a new connection to db", dbFilePath);
         }
         if (!this._keyv)
-            this._keyv = new Keyv(`sqlite://${dbFilePath}`);
+            this._keyv = new Keyv(new KeyvSqlite(`sqlite://${dbFilePath}`));
     }
     async createOrMigrateTablesIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
@@ -67,8 +69,8 @@ export class DbHandler {
     getDbConfig() {
         return this._dbConfig;
     }
-    async keyvGet(key, options) {
-        const res = await this._keyv.get(key, options);
+    async keyvGet(key) {
+        const res = await this._keyv.get(key);
         return res;
     }
     async keyvSet(key, value, ttl) {
@@ -214,7 +216,7 @@ export class DbHandler {
     }
     async _createCommentModerationsTable(tableName) {
         await this._knex.schema.createTable(tableName, (table) => {
-            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS); // from commentModerationPublication.commentCid
+            table.text("commentCid").notNullable(); // from commentModerationPublication.commentCid. It's not a foreign key because when we purge a comment we still want to maintain its moderation rows for further inspection
             table.json("author").notNullable(); // commentModerationPublication.author
             table.json("signature").notNullable(); // from commentModerationPublication.signature
             table.text("modSignerAddress").notNullable(); // calculated from commentModerationPublication.signatuer.publicKey
@@ -230,6 +232,18 @@ export class DbHandler {
     }
     async getDbVersion() {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
+    }
+    _migrateOldSettings(oldSettings) {
+        // need to remove settings.challenges.exclude.{post, vote, reply}
+        const fieldsToRemove = ["post", "reply", "vote"];
+        const newSettings = remeda.clone(oldSettings);
+        if (Array.isArray(newSettings.challenges))
+            for (const oldChallengeSetting of newSettings.challenges)
+                if (oldChallengeSetting.exclude)
+                    for (const oldExcludeSetting of oldChallengeSetting.exclude)
+                        for (const fieldToMove of fieldsToRemove)
+                            delete oldExcludeSetting[fieldToMove];
+        return newSettings;
     }
     async _createOrMigrateTablesIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
@@ -299,8 +313,12 @@ export class DbHandler {
                     ? internalState._usingDefaultChallenge //@ts-expect-error
                     : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
                 const updateCid = ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+                const newSettings = this._migrateOldSettings(internalState.settings);
+                const newChallenges = newSettings.challenges?.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
                 await this._subplebbit._updateDbInternalState({
                     posts: undefined,
+                    challenges: newChallenges,
+                    settings: newSettings,
                     updateCid,
                     protocolVersion,
                     _usingDefaultChallenge
@@ -361,14 +379,20 @@ export class DbHandler {
             }
             catch (e) {
                 log.error(`Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged along with comment update, votes and children comments`);
-                await this._deleteComment(commentRecord.cid);
+                await this.purgeComment(commentRecord.cid);
                 continue;
             }
             // Purge comments with invalid signature
-            const validRes = await verifyCommentIpfs({ ...commentRecord, ...commentRecord.extraProps }, false, this._subplebbit._clientsManager, false);
+            const validRes = await verifyCommentIpfs({
+                comment: { ...commentRecord, ...commentRecord.extraProps },
+                resolveAuthorAddresses: false,
+                calculatedCommentCid: commentRecord.cid,
+                clientsManager: this._subplebbit._clientsManager,
+                overrideAuthorAddressIfInvalid: false
+            });
             if (!validRes.valid) {
                 log.error(`Comment`, commentRecord.cid, `in DB has invalid signature due to`, validRes.reason, `It will be purged along with its children commentUpdate, votes, comments`);
-                await this._deleteComment(commentRecord.cid);
+                await this.purgeComment(commentRecord.cid);
             }
         }
     }
@@ -438,7 +462,7 @@ export class DbHandler {
     async insertCommentEdit(edit, trx) {
         await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
     }
-    async getStoredVoteOfAuthor(commentCid, authorSignerAddress, trx) {
+    async queryVote(commentCid, authorSignerAddress, trx) {
         return this._baseTransaction(trx)(TABLES.VOTES)
             .where({
             commentCid: commentCid,
@@ -504,9 +528,11 @@ export class DbHandler {
             await updateMaxTimestamp(children);
         return maxTimestamp;
     }
-    async queryCommentsForPages(options, trx) {
+    async queryPageComments(options, trx) {
         // protocolVersion, signature
-        const commentUpdateColumns = remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
+        const commentUpdateColumns = (remeda.keys.strict(options.commentUpdateFieldsToExclude
+            ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
+            : CommentUpdateSchema.shape)); // TODO query extra props here as well
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
         const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
         const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
@@ -529,6 +555,26 @@ export class DbHandler {
             commentUpdate: remeda.mapKeys(remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")), (key, value) => key.replace("commentUpdate_", ""))
         }));
         return comments;
+    }
+    async commentHasReplies(commentCid, trx) {
+        // very optimized function for finding if a comment has replies
+        const result = await this._baseTransaction(trx)(TABLES.COMMENTS).select("id").where("parentCid", commentCid).first();
+        return Boolean(result);
+    }
+    async queryFlattenedPageReplies(options, trx) {
+        const firstLevelReplies = await this.queryPageComments(options, trx);
+        const nestedReplies = await Promise.all(firstLevelReplies.map(async (baseComment) => {
+            const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
+            if (commentHasReplies) {
+                // Only get the nested replies, don't include the base comment again
+                return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+            }
+            else {
+                return []; // No replies to this comment
+            }
+        }));
+        // Combine first level replies with all nested replies
+        return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
     }
     async queryStoredCommentUpdate(comment, trx) {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first();
@@ -817,19 +863,45 @@ export class DbHandler {
             firstCommentTimestamp
         };
     }
-    // Not meant to be used within plebbit-js
-    // Only in edge cases where a comment is invalid or it's causing a problem
-    async _deleteComment(cid) {
+    // will return a list of comment cids + comment updates + their pages that got purged
+    async purgeComment(cid, trx) {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
-        await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
-        await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        await this._baseTransaction()(TABLES.COMMENT_MODERATIONS).where({ commentCid: cid }).del();
-        if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES))
-            await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid }).del();
-        const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: cid });
+        const purgedCids = [];
+        try {
+            await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
+        }
+        catch { }
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        }
+        catch { }
+        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
+            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
+            let curCid = cid;
+            while (curCid) {
+                const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
+                if (commentUpdate?.ipfsPath)
+                    purgedCids.push(commentUpdate.ipfsPath);
+                if (commentUpdate?.replies?.pageCids)
+                    purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
+                try {
+                    await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+                }
+                catch { }
+                const comment = await this.queryComment(curCid, trx);
+                curCid = comment?.parentCid;
+            }
+        }
+        // delete the replies tree of this comment (going down the tree here)
+        const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: cid });
         for (const child of children)
-            await this._deleteComment(child.cid);
-        await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).del(); // Will throw if we do not disable foreign_keys constraint
+            purgedCids.push(...(await this.purgeComment(child.cid, trx)));
+        try {
+            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        }
+        catch { }
+        purgedCids.push(cid);
+        return remeda.unique(purgedCids);
     }
     async changeDbFilename(oldDbName, newDbName) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");

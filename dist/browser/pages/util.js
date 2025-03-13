@@ -25,17 +25,20 @@ export const POSTS_SORT_TYPES = {
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
     topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
     topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
-    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) },
-    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
-    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
-    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
-    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
-    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
-    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
+    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) }
+    // remove it for now, might turn back on
+    // controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
+    // controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
+    // controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
+    // controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
+    // controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
+    // controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
 };
 export const REPLIES_SORT_TYPES = {
     ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
-    old: { score: (...args) => oldScore(...args) }
+    old: { score: (...args) => oldScore(...args) },
+    newFlat: { ...POSTS_SORT_TYPES["new"], flat: true },
+    oldFlat: { score: (...args) => oldScore(...args), flat: true }
 };
 export function hotScore(comment) {
     assert(typeof comment.commentUpdate.downvoteCount === "number" &&
@@ -72,41 +75,51 @@ export function oldScore(comment) {
     return -comment.comment.timestamp;
 }
 export function parsePageIpfs(pageIpfs) {
-    const finalComments = pageIpfs.comments.map((commentObj) => {
+    const finalComments = pageIpfs.comments.map((pageComment) => {
         // This code below is duplicated in comment._initCommentUpdate
         // TODO move it to a shared function
-        const parsedPages = commentObj.commentUpdate.replies ? parsePagesIpfs(commentObj.commentUpdate.replies) : undefined;
-        const postCid = commentObj.comment.postCid ?? (commentObj.comment.depth === 0 ? commentObj.commentUpdate.cid : undefined);
+        const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
+        const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
         if (!postCid)
             throw Error("Failed to infer postCid from pageIpfs.comments.comment");
+        const spoiler = typeof pageComment.commentUpdate.spoiler === "boolean"
+            ? pageComment.commentUpdate.spoiler
+            : typeof pageComment.commentUpdate.edit?.spoiler === "boolean"
+                ? pageComment.commentUpdate.edit?.spoiler
+                : pageComment.comment.spoiler;
+        const nsfw = typeof pageComment.commentUpdate.nsfw === "boolean"
+            ? pageComment.commentUpdate.nsfw
+            : typeof pageComment.commentUpdate.edit?.nsfw === "boolean"
+                ? pageComment.commentUpdate.edit?.nsfw
+                : pageComment.comment.nsfw;
         const finalJson = {
-            ...commentObj.comment,
-            ...commentObj.commentUpdate,
-            signature: commentObj.comment.signature,
+            ...pageComment.comment,
+            ...pageComment.commentUpdate,
+            signature: pageComment.comment.signature,
             author: {
-                ...commentObj.comment.author,
-                ...commentObj.commentUpdate.author,
-                shortAddress: shortifyAddress(commentObj.comment.author.address),
-                flair: commentObj.commentUpdate?.author?.subplebbit?.flair ||
-                    commentObj.commentUpdate?.edit?.author?.flair ||
-                    commentObj.comment.author.flair
+                ...pageComment.comment.author,
+                ...pageComment.commentUpdate.author,
+                shortAddress: shortifyAddress(pageComment.comment.author.address),
+                flair: pageComment.commentUpdate?.author?.subplebbit?.flair ||
+                    pageComment.commentUpdate?.edit?.author?.flair ||
+                    pageComment.comment.author.flair
             },
-            shortCid: shortifyCid(commentObj.commentUpdate.cid),
-            shortSubplebbitAddress: shortifyAddress(commentObj.comment.subplebbitAddress),
-            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(commentObj.comment),
-            deleted: commentObj.commentUpdate.edit?.deleted,
+            shortCid: shortifyCid(pageComment.commentUpdate.cid),
+            shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
+            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
+            deleted: pageComment.commentUpdate.edit?.deleted,
             replies: parsedPages,
-            content: commentObj.commentUpdate.edit?.content || commentObj.comment.content,
-            reason: commentObj.commentUpdate.reason,
-            spoiler: ("spoiler" in commentObj.commentUpdate && commentObj.commentUpdate.spoiler) ||
-                (commentObj.commentUpdate.edit && "spoiler" in commentObj.commentUpdate.edit && commentObj.commentUpdate.edit.spoiler) ||
-                commentObj.comment.spoiler,
-            flair: commentObj.comment.flair || commentObj.commentUpdate.edit?.flair,
-            postCid
+            content: pageComment.commentUpdate.edit?.content || pageComment.comment.content,
+            reason: pageComment.commentUpdate.reason,
+            spoiler,
+            nsfw,
+            flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
+            postCid,
+            pageComment
         };
         return finalJson;
     });
-    return { comments: finalComments, nextCid: pageIpfs.nextCid };
+    return { comments: finalComments, ...remeda.pick(pageIpfs, ["nextCid"]) };
 }
 export function parsePagesIpfs(pagesRaw) {
     const keys = remeda.keys.strict(pagesRaw.pages);
@@ -140,5 +153,46 @@ export function parseRawPages(pages) {
             pagesIpfs: undefined
         };
     }
+}
+// finding comments within pages
+export function findCommentInPages(pageIpfs, targetCommentCid) {
+    if (!pageIpfs)
+        throw Error("should define page ipfs");
+    if (!targetCommentCid)
+        throw Error("should define target comment cid");
+    for (const page of Object.values(pageIpfs.pages))
+        for (const pageComment of page.comments)
+            if (pageComment.commentUpdate.cid === targetCommentCid)
+                return pageComment;
+    return undefined;
+}
+export function findCommentInPagesRecrusively(pages, targetCid, targetDepth, visited = new Set()) {
+    if (!pages)
+        throw Error("should define page ipfs");
+    if (!targetCid)
+        throw Error("should define target comment cid");
+    // Check all pages in the current level
+    for (const [pageCid, page] of Object.entries(pages.pages)) {
+        // Skip if we've visited this page
+        if (visited.has(pageCid))
+            continue;
+        visited.add(pageCid);
+        const currentDepth = page.comments[0].comment.depth;
+        if (currentDepth === targetDepth || targetDepth === undefined) {
+            for (const pageComment of page.comments)
+                if (pageComment.commentUpdate.cid === targetCid)
+                    return pageComment;
+        }
+        if (targetDepth === undefined || currentDepth < targetDepth) {
+            for (const pageComment of page.comments) {
+                if (pageComment.commentUpdate.replies?.pages) {
+                    const result = findCommentInPagesRecrusively(pageComment.commentUpdate.replies, targetCid, targetDepth, visited);
+                    if (result)
+                        return result;
+                }
+            }
+        }
+    }
+    return undefined;
 }
 //# sourceMappingURL=util.js.map

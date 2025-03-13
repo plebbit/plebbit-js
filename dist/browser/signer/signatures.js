@@ -8,7 +8,6 @@ import { isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throw
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import assert from "assert";
-import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
@@ -18,6 +17,8 @@ import { SubplebbitIpfsReservedFields, SubplebbitSignedPropertyNames } from "../
 import { ChallengeRequestMessageSignedPropertyNames, ChallengeMessageSignedPropertyNames, ChallengeAnswerMessageSignedPropertyNames, ChallengeVerificationMessageSignedPropertyNames } from "../pubsub-messages/schema.js";
 import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema.js";
 import { SubplebbitEditPublicationSignedPropertyNames } from "../publications/subplebbit-edit/schema.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 const cborgEncodeOptions = {
     typeEncoders: {
         undefined: () => {
@@ -70,7 +71,15 @@ signer, log) {
     // we assume here that publication already has been cleaned
     //@ts-expect-error
     const propsToSign = remeda.pick(cleanedPublication, signedPropertyNames);
-    const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
+    let publicationEncoded;
+    try {
+        publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
+    }
+    catch (e) {
+        e.objectToEncode = propsToSign;
+        log.error("Failed to sign encode json with cborg", e);
+        throw e;
+    }
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
@@ -85,7 +94,14 @@ signer, log) {
     // we assume here that pubsub msg already has been cleaned
     //@ts-expect-error
     const propsToSign = remeda.pick(msg, signedPropertyNames);
-    const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    let publicationEncoded;
+    try {
+        publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    }
+    catch (e) {
+        log.error("Failed to encode pubsub message due to cborg error", e, propsToSign);
+        throw e;
+    }
     const signatureData = await signBufferEd25519(publicationEncoded, signer.privateKey);
     const publicKeyBuffer = uint8ArrayFromString(signer.publicKey, "base64");
     return {
@@ -157,7 +173,7 @@ export async function signChallengeVerification(challengeVerification, signer) {
     return (await _signPubsubMsg(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log));
 }
 // Verify functions
-const _verifyAuthor = async (publicationJson, resolveAuthorAddresses, clientsManager) => {
+const _verifyAuthorDomainResolvesToSignatureAddress = async (publicationJson, resolveAuthorAddresses, clientsManager) => {
     const log = Logger("plebbit-js:signatures:verifyAuthor");
     const derivedAddress = await getPlebbitAddressFromPublicKey(publicationJson.signature.publicKey);
     if (!publicationJson.author?.address)
@@ -177,7 +193,7 @@ const _verifyAuthor = async (publicationJson, resolveAuthorAddresses, clientsMan
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
-            log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) is invalid`);
+            log.error(`author address (${publicationJson.author.address}) resolved address (${resolvedAuthorAddress}) does not match signature address (${derivedAddress}). `);
             return { useDerivedAddress: true, derivedAddress, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE };
         }
     }
@@ -234,10 +250,10 @@ const _verifyPubsubSignature = async (msg) => {
         return false;
     }
 };
-const _verifyPublicationWithAuthor = async (publicationJson, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) => {
+const _verifyPublicationSignatureAndAuthor = async (publicationJson, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) => {
     // Validate author
     const log = Logger("plebbit-js:signatures:verifyPublicationWithAUthor");
-    const authorSignatureValidity = await _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager);
+    const authorSignatureValidity = await _verifyAuthorDomainResolvesToSignatureAddress(publicationJson, resolveAuthorAddresses, clientsManager);
     if (authorSignatureValidity.useDerivedAddress && !overrideAuthorAddressIfInvalid)
         return { valid: false, reason: authorSignatureValidity.reason };
     // Validate signature
@@ -245,7 +261,7 @@ const _verifyPublicationWithAuthor = async (publicationJson, resolveAuthorAddres
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress) {
-        log(`Will override publication.author.address (${publicationJson.author.address}) with signer address (${authorSignatureValidity.derivedAddress})`, publicationJson);
+        log.trace(`Will override publication.author.address (${publicationJson.author.address}) with signer address (${authorSignatureValidity.derivedAddress})`, publicationJson);
         publicationJson.author.address = authorSignatureValidity.derivedAddress;
     }
     const res = { valid: true };
@@ -256,7 +272,7 @@ const _verifyPublicationWithAuthor = async (publicationJson, resolveAuthorAddres
 export async function verifyVote(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     if (!_allFieldsOfRecordInSignedPropertyNames(vote))
         return { valid: false, reason: messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    const res = await _verifyPublicationWithAuthor(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    const res = await _verifyPublicationSignatureAndAuthor(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
@@ -264,7 +280,7 @@ export async function verifyVote(vote, resolveAuthorAddresses, clientsManager, o
 export async function verifySubplebbitEdit(subplebbitEdit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     if (!_allFieldsOfRecordInSignedPropertyNames(subplebbitEdit))
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    const res = await _verifyPublicationWithAuthor(subplebbitEdit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    const res = await _verifyPublicationSignatureAndAuthor(subplebbitEdit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
@@ -272,7 +288,7 @@ export async function verifySubplebbitEdit(subplebbitEdit, resolveAuthorAddresse
 export async function verifyCommentEdit(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     if (!_allFieldsOfRecordInSignedPropertyNames(edit))
         return { valid: false, reason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    const res = await _verifyPublicationWithAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    const res = await _verifyPublicationSignatureAndAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
@@ -280,7 +296,7 @@ export async function verifyCommentEdit(edit, resolveAuthorAddresses, clientsMan
 export async function verifyCommentModeration(moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     if (!_allFieldsOfRecordInSignedPropertyNames(moderation))
         return { valid: false, reason: messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    const res = await _verifyPublicationWithAuthor(moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    const res = await _verifyPublicationSignatureAndAuthor(moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
@@ -288,14 +304,23 @@ export async function verifyCommentModeration(moderation, resolveAuthorAddresses
 export async function verifyCommentPubsubMessage(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     if (!_allFieldsOfRecordInSignedPropertyNames(comment))
         return { valid: false, reason: messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    const validation = await _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    const validation = await _verifyPublicationSignatureAndAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!validation.valid)
         return validation;
     return validation;
 }
-export async function verifyCommentIpfs(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
-    const keysCasted = comment.signature.signedPropertyNames;
-    return verifyCommentPubsubMessage(remeda.pick(comment, ["signature", ...keysCasted]), resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+export async function verifyCommentIpfs(opts) {
+    const cacheKey = opts.calculatedCommentCid + Number(opts.resolveAuthorAddresses) + Number(opts.overrideAuthorAddressIfInvalid);
+    if (opts.clientsManager._plebbit._memCaches.commentVerificationCache.get(cacheKey))
+        return { valid: true };
+    const keysCasted = opts.comment.signature.signedPropertyNames;
+    const validRes = await verifyCommentPubsubMessage(remeda.pick(opts.comment, ["signature", ...keysCasted]), opts.resolveAuthorAddresses, opts.clientsManager, opts.overrideAuthorAddressIfInvalid);
+    if (!validRes.valid)
+        return validRes;
+    const shouldCache = !("derivedAddress" in validRes && opts.overrideAuthorAddressIfInvalid);
+    if (shouldCache)
+        opts.clientsManager._plebbit._memCaches.commentVerificationCache.set(cacheKey, true);
+    return validRes;
 }
 function _allFieldsOfRecordInSignedPropertyNames(record) {
     const fieldsOfRecord = remeda.keys.strict(remeda.omit(record, ["signature"]));
@@ -304,7 +329,7 @@ function _allFieldsOfRecordInSignedPropertyNames(record) {
             return false;
     return true;
 }
-export async function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, resolveDomainSubAddress = true) {
+export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages }) {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     if (!_allFieldsOfRecordInSignedPropertyNames(subplebbit))
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
@@ -313,10 +338,10 @@ export async function verifySubplebbit(subplebbit, resolveAuthorAddresses, clien
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
-    const cacheKey = sha256(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + resolveDomainSubAddress);
-    if (subplebbitVerificationCache.has(cacheKey))
+    const cacheKey = sha256(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + validatePages + subplebbitIpnsName);
+    if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey))
         return { valid: true };
-    if (subplebbit.posts?.pages)
+    if (subplebbit.posts?.pages && validatePages)
         for (const pageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
             const pageCid = subplebbit.posts.pageCids[pageSortName];
             if (typeof pageCid !== "string")
@@ -324,44 +349,36 @@ export async function verifySubplebbit(subplebbit, resolveAuthorAddresses, clien
             const page = subplebbit.posts.pages[pageSortName];
             if (!remeda.isPlainObject(page))
                 throw Error("failed to find page ipfs of subplebbit to verify");
-            const pageValidity = await verifyPage(pageCid, page, resolveAuthorAddresses, clientsManager, subplebbit.address, undefined, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
+            const pageValidity = await verifyPage({
+                pageCid,
+                page,
+                resolveAuthorAddresses,
+                clientsManager,
+                subplebbit,
+                parentComment: { cid: undefined, depth: -1, postCid: undefined },
+                overrideAuthorAddressIfInvalid,
+                validatePages,
+                validateUpdateSignature: false // no need because we already verified subplebbit signature
+            });
             if (!pageValidity.valid) {
                 log.error(`Subplebbit (${subplebbit.address}) page (${pageSortName} - ${subplebbit.posts.pageCids[pageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`);
                 return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
             }
         }
-    // Need to check if we should validate sub address here (if it's a domain)
-    const addressIsDomain = subplebbit.address.includes(".");
-    if (addressIsDomain && !resolveDomainSubAddress) {
-        subplebbitVerificationCache.set(cacheKey, true);
-        return { valid: true };
-    }
-    let resolvedSubAddress;
-    try {
-        resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
-    }
-    catch (e) {
-        log.error("failed to verify the subplebbit record due to domain resolving failure", e);
-        return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
-    }
-    if (addressIsDomain && resolveDomainSubAddress && !resolvedSubAddress)
-        return { valid: false, reason: messages.ERR_SUBPLEBBIT_DOMAIN_HAS_NO_TEXT_RECORD };
-    if (!resolvedSubAddress)
-        throw Error("resolved sub address should be defined at this point");
-    const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
+    const subPeerId = PeerId.createFromB58String(subplebbitIpnsName);
     const signaturePeerId = await getPeerIdFromPublicKey(subplebbit.signature.publicKey);
     if (!subPeerId.equals(signaturePeerId))
-        return { valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY };
-    subplebbitVerificationCache.set(cacheKey, true);
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_IPNS_NAME_DOES_NOT_MATCH_SIGNATURE_PUBLIC_KEY };
+    clientsManager._plebbit._memCaches.subplebbitVerificationCache.set(cacheKey, true);
     return { valid: true };
 }
-async function _getJsonValidationResult(publication) {
+async function _validateSignatureOfPlebbitRecord(publication) {
     const signatureValidity = await _verifyJsonSignature(publication);
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }
-async function _getBinaryValidationResult(publication) {
+async function _validateSignatureOfPubsubMsg(publication) {
     const signatureValidity = await _verifyPubsubSignature(publication);
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
@@ -370,65 +387,63 @@ async function _getBinaryValidationResult(publication) {
 function _isThereReservedFieldInRecord(record, reservedFields) {
     return remeda.intersection(Object.keys(record), reservedFields).length > 0;
 }
-export async function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid, resolveDomainSubAddress = true) {
+export async function verifyCommentUpdate({ update, resolveAuthorAddresses, clientsManager, subplebbit, comment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }) {
     if (!_allFieldsOfRecordInSignedPropertyNames(update))
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
-    const jsonValidation = await _getJsonValidationResult(update);
-    if (!jsonValidation.valid)
-        return jsonValidation;
+    if (validateUpdateSignature) {
+        const jsonValidation = await _validateSignatureOfPlebbitRecord(update);
+        if (!jsonValidation.valid)
+            return jsonValidation;
+    }
     const cacheKey = sha256(update.signature.signature +
         resolveAuthorAddresses +
-        subplebbitAddress +
+        subplebbit.address +
         JSON.stringify(comment) +
         overrideAuthorAddressIfInvalid +
-        resolveDomainSubAddress);
-    if (commentUpdateVerificationCache.has(cacheKey))
+        validatePages +
+        validateUpdateSignature);
+    if (clientsManager._plebbit._memCaches.commentUpdateVerificationCache.get(cacheKey))
         return { valid: true };
     if (update.edit) {
         if (update.edit.signature.publicKey !== comment.signature.publicKey)
             return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
-        const editSignatureValidation = await _getJsonValidationResult(update.edit);
+        const editSignatureValidation = await _validateSignatureOfPlebbitRecord(update.edit);
         if (!editSignatureValidation.valid)
             return { valid: false, reason: messages.ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID };
     }
     if (update.cid !== comment.cid)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
-    if (update.replies) {
+    if (update.replies && validatePages) {
         // Validate update.replies
         const replyPageKeys = remeda.keys.strict(update.replies.pages);
-        for (const replyKey of replyPageKeys) {
-            const pageCid = update.replies.pageCids[replyKey];
+        for (const replySortName of replyPageKeys) {
+            const pageCid = update.replies.pageCids[replySortName];
             if (!pageCid)
                 throw Error("Failed to find page cid of the page");
-            const page = update.replies.pages[replyKey];
+            const page = update.replies.pages[replySortName];
             if (!page)
                 throw Error("Failed to find page to verify within comment update");
-            const validity = await verifyPage(pageCid, page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
+            const validity = await verifyPage({
+                pageCid,
+                page,
+                resolveAuthorAddresses,
+                clientsManager,
+                subplebbit,
+                parentComment: comment,
+                overrideAuthorAddressIfInvalid,
+                validatePages,
+                validateUpdateSignature
+            });
             if (!validity.valid)
                 return validity;
         }
     }
-    if (subplebbitAddress.includes(".") && !resolveDomainSubAddress) {
-        commentUpdateVerificationCache.set(cacheKey, true);
-        return { valid: true };
-    }
-    const updateSignatureAddress = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
-    let subplebbitResolvedAddress;
-    try {
-        subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-    }
-    catch (e) {
-        log.error(e);
-        return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
-    }
-    if (updateSignatureAddress !== subplebbitResolvedAddress) {
-        log.error(`Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`);
+    if (subplebbit.signature && update.signature.publicKey !== subplebbit.signature.publicKey)
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
-    }
-    commentUpdateVerificationCache.set(cacheKey, true);
+    clientsManager._plebbit._memCaches.commentUpdateVerificationCache.set(cacheKey, true);
     return { valid: true };
 }
 export async function verifyCommentUpdateForChallengeVerification(update) {
@@ -437,7 +452,7 @@ export async function verifyCommentUpdateForChallengeVerification(update) {
     if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
     // Validate signature
-    const jsonValidation = await _getJsonValidationResult(update);
+    const jsonValidation = await _validateSignatureOfPlebbitRecord(update);
     if (!jsonValidation.valid)
         return jsonValidation;
     return { valid: true };
@@ -465,7 +480,7 @@ export async function verifyChallengeRequest(request, validateTimestampRange) {
         return idValid;
     if ((validateTimestampRange && _minimumTimestamp() > request.timestamp) || _maximumTimestamp() < request.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
-    return _getBinaryValidationResult(request);
+    return _validateSignatureOfPubsubMsg(request);
 }
 export async function verifyChallengeMessage(challenge, pubsubTopic, validateTimestampRange) {
     if (!_allFieldsOfRecordInSignedPropertyNames(challenge))
@@ -475,7 +490,7 @@ export async function verifyChallengeMessage(challenge, pubsubTopic, validateTim
         return { valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
     if ((validateTimestampRange && _minimumTimestamp() > challenge.timestamp) || _maximumTimestamp() < challenge.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
-    return _getBinaryValidationResult(challenge);
+    return _validateSignatureOfPubsubMsg(challenge);
 }
 export async function verifyChallengeAnswer(answer, validateTimestampRange) {
     if (!_allFieldsOfRecordInSignedPropertyNames(answer))
@@ -485,7 +500,7 @@ export async function verifyChallengeAnswer(answer, validateTimestampRange) {
         return idValid;
     if ((validateTimestampRange && _minimumTimestamp() > answer.timestamp) || _maximumTimestamp() < answer.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
-    return _getBinaryValidationResult(answer);
+    return _validateSignatureOfPubsubMsg(answer);
 }
 export async function verifyChallengeVerification(verification, pubsubTopic, validateTimestampRange) {
     if (!_allFieldsOfRecordInSignedPropertyNames(verification))
@@ -495,30 +510,81 @@ export async function verifyChallengeVerification(verification, pubsubTopic, val
         return { valid: false, reason: messages.ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
     if ((validateTimestampRange && _minimumTimestamp() > verification.timestamp) || _maximumTimestamp() < verification.timestamp)
         return { valid: false, reason: messages.ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED };
-    return _getBinaryValidationResult(verification);
+    return _validateSignatureOfPubsubMsg(verification);
 }
-export async function verifyPage(pageCid, page, resolveAuthorAddresses, clientsManager, subplebbitAddress, parentCommentCid, overrideAuthorAddressIfInvalid, resolveDomainSubAddress = true) {
-    const cacheKey = sha256(pageCid + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + subplebbitAddress + parentCommentCid + resolveDomainSubAddress);
-    if (pageVerificationCache.has(cacheKey))
+export async function verifyPageComment({ pageComment, subplebbit, parentComment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }) {
+    // we need to account for multiple cases:
+    // when we're verifying a page from a subplebbit.posts, that means there's no parent comment cid or any of its props
+    // another sceneario is with a flat page, where we don't have the parent comment cid or prop, but we do have its postCid
+    // another sceneario is when we're veriifying a nested page and we have the parent comment cid and all its props
+    if (pageComment.comment.subplebbitAddress !== subplebbit.address)
+        return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
+    if ("cid" in parentComment && parentComment.cid !== pageComment.comment.parentCid)
+        return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
+    if (pageComment.comment.depth > 0 && "cid" in parentComment && !parentComment?.cid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
+    if ("depth" in parentComment && typeof parentComment.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
+    if (pageComment.comment.postCid !== parentComment.postCid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
+    const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
+    const commentSignatureValidity = await verifyCommentIpfs({
+        comment: pageComment.comment,
+        resolveAuthorAddresses,
+        clientsManager,
+        overrideAuthorAddressIfInvalid,
+        calculatedCommentCid
+    });
+    if (!commentSignatureValidity.valid)
+        return commentSignatureValidity;
+    const postCid = parentComment.postCid || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
+    if (!postCid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID };
+    const commentUpdateSignatureValidity = await verifyCommentUpdate({
+        update: pageComment.commentUpdate,
+        resolveAuthorAddresses,
+        clientsManager,
+        subplebbit,
+        comment: {
+            signature: pageComment.comment.signature,
+            cid: calculatedCommentCid,
+            depth: pageComment.comment.depth,
+            postCid
+        },
+        overrideAuthorAddressIfInvalid,
+        validatePages,
+        validateUpdateSignature
+    });
+    if (!commentUpdateSignatureValidity.valid)
+        return commentUpdateSignatureValidity;
+    return commentSignatureValidity;
+}
+export async function verifyPage({ pageCid, page, resolveAuthorAddresses, clientsManager, subplebbit, parentComment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }) {
+    const cacheKey = sha256((pageCid || JSON.stringify(page)) +
+        resolveAuthorAddresses +
+        overrideAuthorAddressIfInvalid +
+        subplebbit.address +
+        subplebbit.signature?.publicKey +
+        JSON.stringify(parentComment) +
+        validatePages +
+        validateUpdateSignature);
+    if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey))
         return { valid: true };
-    let shouldCache = true;
     for (const pageComment of page.comments) {
-        if (pageComment.comment.subplebbitAddress !== subplebbitAddress)
-            return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
-        if (parentCommentCid !== pageComment.comment.parentCid)
-            return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
-        // it should not cache if there's overriding of author.address because we want calls to verify page to override it
-        const commentSignatureValidity = await verifyCommentIpfs(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
-        if (!commentSignatureValidity.valid)
-            return commentSignatureValidity;
-        if ("derivedAddress" in commentSignatureValidity && commentSignatureValidity.derivedAddress)
-            shouldCache = false;
-        const commentUpdateSignatureValidity = await verifyCommentUpdate(pageComment.commentUpdate, resolveAuthorAddresses, clientsManager, subplebbitAddress, { signature: pageComment.comment.signature, cid: pageComment.commentUpdate.cid }, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
-        if (!commentUpdateSignatureValidity.valid)
-            return commentUpdateSignatureValidity;
+        const verifyRes = await verifyPageComment({
+            pageComment,
+            subplebbit,
+            resolveAuthorAddresses,
+            clientsManager,
+            overrideAuthorAddressIfInvalid,
+            parentComment,
+            validatePages,
+            validateUpdateSignature
+        });
+        if (!verifyRes.valid)
+            return verifyRes;
     }
-    if (shouldCache)
-        pageVerificationCache.set(cacheKey, true);
+    clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
     return { valid: true };
 }
 //# sourceMappingURL=signatures.js.map

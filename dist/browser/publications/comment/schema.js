@@ -123,6 +123,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(remeda.uniqu
     "deleted",
     "signer",
     "comment",
+    "commentUpdate",
     "state",
     "clients",
     "publishingState",

@@ -4,7 +4,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Logger from "@plebbit/plebbit-logger";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import { throwWithErrorCode } from "../../util.js";
-const storedIpfsClients = {}; // ipfs api url -> Ipfs Client
+const storedKuboRpcClients = {}; // ipfs api url -> Ipfs Client
 // Functions should not be called in browser
 export const getDefaultDataPath = () => undefined;
 export const mkdir = () => {
@@ -16,7 +16,7 @@ export const listSubplebbits = () => {
 export const monitorSubplebbitsDirectory = () => {
     throw Error("monitorSubplebbitsDirectory should not be called in browser");
 };
-export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {
+export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, ipfsNode) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string")
         throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
@@ -37,16 +37,16 @@ export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {
     const resJson = await res.json();
     return { id: resJson.Id, name: resJson.Name };
 }
-export function createIpfsClient(ipfsHttpClientOptions) {
-    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
-    if (storedIpfsClients[cacheKey])
-        return storedIpfsClients[cacheKey];
-    const log = Logger("plebbit-js:plebbit:createIpfsClient");
-    log("Creating a new ipfs client on browser with options", ipfsHttpClientOptions);
-    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
-        ...ipfsHttpClientOptions
+export function createKuboRpcClient(kuboRpcClientOptions) {
+    const cacheKey = sha256(deterministicStringify(kuboRpcClientOptions));
+    if (storedKuboRpcClients[cacheKey])
+        return storedKuboRpcClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
+    log("Creating a new ipfs client on browser with options", kuboRpcClientOptions);
+    storedKuboRpcClients[cacheKey] = CreateKuboRpcClient({
+        ...kuboRpcClientOptions
     });
-    return storedIpfsClients[cacheKey];
+    return storedKuboRpcClients[cacheKey];
 }
 export const nativeFunctions = browserNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions) => {

@@ -43,7 +43,7 @@ export default class Stats {
         const gatewayType = type === "ipfs" || type === "ipns"
             ? "ipfsGateways"
             : type === "pubsub-publish" || type === "pubsub-subscribe"
-                ? "pubsubClients"
+                ? "pubsubKuboRpcClients"
                 : "chainProviders";
         assert(gatewayType, "Can't find the gateway type to sort");
         const gateways = gatewayType === "chainProviders"
