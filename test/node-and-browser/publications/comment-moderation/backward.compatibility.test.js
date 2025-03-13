@@ -25,13 +25,14 @@ getRemotePlebbitConfigs().map((config) => {
         let commentToMod;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            commentToMod = await publishRandomPost(signers[0].address, plebbit, {}, false);
+            commentToMod = await publishRandomPost(signers[0].address, plebbit);
             await commentToMod.update();
             await resolveWhenConditionIsTrue(commentToMod, () => typeof commentToMod.updatedAt === "number");
         });
 
         after(async () => {
             await commentToMod.stop();
+            await plebbit.destroy();
         });
 
         it(`Publishing commentModeration.extraProp should fail if it's not included in commentModeration.signature.signedPropertyNames`, async () => {
@@ -92,7 +93,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(challengeRequest.commentModeration.commentModeration.extraProp).to.equal("1234");
             expect(challengeRequest.commentModeration.commentModeration.locked).to.be.true;
 
-            await new Promise((resolve) => commentToMod.once("update", resolve));
+            await resolveWhenConditionIsTrue(commentToMod, () => commentToMod.locked);
             // if commentToEdit emits update that means the signature of update.edit is correct
             expect(commentToMod.locked).to.be.true; // should process only locked since it's the known field to the sub
             expect(commentToMod.extraProp).to.be.undefined;
