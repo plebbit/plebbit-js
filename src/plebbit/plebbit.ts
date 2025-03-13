@@ -247,7 +247,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 ttl: 600000
             }),
             pageCidToSortTypes: new LRUCache<string, string[]>({ max: 5000 }),
-            pagesMaxSize: new LRUCache<string, number>({ max: 5000 })
+            pagesMaxSize: new LRUCache<string, number>({ max: 50000 })
         };
     }
 

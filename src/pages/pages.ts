@@ -43,7 +43,12 @@ export class BasePages {
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
         this._pagesIpfs = props.pagesIpfs;
-        if (this.pageCids) this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
+        if (this.pageCids) {
+            this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
+            remeda
+                .unique(Object.values(this.pageCids))
+                .forEach((pageCid) => this._clientsManager._plebbit._memCaches.pagesMaxSize.set(pageCid, 1024 * 1024));
+        }
     }
 
     protected _initClientsManager(plebbit: Plebbit) {
