@@ -2117,11 +2117,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._publishLoopPromise = this.syncIpnsWithDb();
 
         this._publishLoopPromise
-            .then(() => this._publishLoop(this._plebbit.publishInterval))
             .catch((reason) => {
                 log.error(reason);
                 this.emit("error", reason);
-            });
+            })
+            .finally(() => this._publishLoop(this._plebbit.publishInterval));
     }
 
     private async _updateOnce() {
