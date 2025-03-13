@@ -284,8 +284,8 @@ export async function startSubplebbits(props: {
 }): Promise<TestServerSubs> {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, {
         ...remeda.pick(props, ["noData", "dataPath"]),
-        publishInterval: 3000,
-        updateInterval: 3000
+        publishInterval: 1000,
+        updateInterval: 1000
     });
     const mainSub = await createSubWithNoChallenge({ signer: props.signers[0] }, plebbit); // most publications will be on this sub
 
