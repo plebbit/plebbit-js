@@ -111,9 +111,9 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
     });
 
     it(`Correct order of ipfs gateway clients state when we update a comment but its subplebbit is not publishing new updates`, async () => {
-        const customPlebbit = await mockGatewayPlebbit();
+        const gatewayPlebbit = await mockGatewayPlebbit();
 
-        const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
+        const sub = await gatewayPlebbit.createSubplebbit({ address: signers[0].address });
 
         const updatePromise1 = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();
@@ -122,9 +122,9 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         const subRecord = JSON.parse(JSON.stringify(sub.toJSONIpfs()));
 
         const updatePromise2 = new Promise((resolve) => sub.once("update", resolve));
-        await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, subRecord);
+        await mockPlebbitToReturnSpecificSubplebbit(gatewayPlebbit, sub.address, subRecord);
         await updatePromise2;
-        const mockPost = await customPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
+        const mockPost = await gatewayPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
         const recordedStates = [];
 
@@ -137,8 +137,9 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
 
         await resolveWhenConditionIsTrue(mockPost, () => typeof mockPost.updatedAt === "number");
 
-        await new Promise((resolve) => setTimeout(resolve, customPlebbit.updateInterval * 4));
+        await new Promise((resolve) => setTimeout(resolve, gatewayPlebbit.updateInterval * 4));
 
+        await sub.stop();
         await mockPost.stop();
 
         const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-update-ipfs", "stopped"]; // for comment ipfs and comment update
@@ -152,8 +153,6 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
             expect(noNewUpdateStates[i]).to.equal("fetching-subplebbit-ipns");
             expect(noNewUpdateStates[i + 1]).to.equal("stopped");
         }
-
-        await sub.stop();
     });
 
     it(`Correct order of ipfs gateway states when we update a comment but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
