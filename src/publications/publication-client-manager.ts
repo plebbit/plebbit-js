@@ -28,7 +28,7 @@ export class PublicationClientsManager extends ClientsManager {
             ChainTicker,
             Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
         >;
-    } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
+    } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error" | "waiting-retry"> = undefined;
 
     constructor(publication: Publication) {
         super(publication._plebbit);
@@ -123,6 +123,11 @@ export class PublicationClientsManager extends ClientsManager {
         this._publication.emit("error", err);
     }
 
+    handleWaitingRetryEventFromSub(err: PlebbitError | Error) {
+        // a waiting retry event of the sub
+        // should be handled in comment-client-manager
+    }
+
     handleIpfsGatewaySubplebbitState(
         subplebbitNewGatewayState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"],
         gatewayUrl: string
@@ -152,7 +157,8 @@ export class PublicationClientsManager extends ClientsManager {
             subplebbit: sub,
             error: this.handleErrorEventFromSub,
             update: this.handleUpdateEventFromSub,
-            updatingstatechange: this.handleUpdatingStateChangeEventFromSub
+            updatingstatechange: this.handleUpdatingStateChangeEventFromSub,
+            "waiting-retry": this.handleWaitingRetryEventFromSub
         };
 
         if (!this._defaultIpfsProviderUrl) {
@@ -198,16 +204,12 @@ export class PublicationClientsManager extends ClientsManager {
         this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
 
         this._subplebbitForUpdating.subplebbit.on("error", this._subplebbitForUpdating.error);
-
+        this._subplebbitForUpdating.subplebbit.on("waiting-retry", this._subplebbitForUpdating["waiting-retry"]);
         return this._subplebbitForUpdating!;
     }
 
     async cleanUpUpdatingSubInstance() {
         if (!this._subplebbitForUpdating) throw Error("Need to define subplebbitForUpdating first");
-
-        this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
-        this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
-        this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
 
         if (this._subplebbitForUpdating.ipfsGatewayListeners)
             for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners))
@@ -227,6 +229,12 @@ export class PublicationClientsManager extends ClientsManager {
                 }
             }
         }
+
+        // make sure to remvoe update event at the end
+        this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
+        this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
+        this._subplebbitForUpdating.subplebbit.removeListener("waiting-retry", this._subplebbitForUpdating["waiting-retry"]);
+        this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
 
         if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
