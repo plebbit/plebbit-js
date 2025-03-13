@@ -565,6 +565,23 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
     return undefined;
 }
 
+export async function waitTillPostInSubplebbitInstancePages(
+    post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
+    sub: RemoteSubplebbit
+) {
+    const stateBeforeUpdate = sub.state;
+    if (stateBeforeUpdate === "stopped") await sub.update();
+    const isPostInSubPages = async () => {
+        if (!("new" in sub.posts.pageCids)) return false;
+        const postsNewPageCid = sub.posts.pageCids.new;
+        const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
+        return Boolean(postInPage);
+    };
+    await sub.update();
+    await resolveWhenConditionIsTrue(sub, isPostInSubPages);
+    if (stateBeforeUpdate === "stopped") await sub.stop();
+}
+
 export async function waitTillPostInSubplebbitPages(
     post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
     plebbit: Plebbit

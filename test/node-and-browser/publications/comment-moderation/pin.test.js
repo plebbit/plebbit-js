@@ -5,6 +5,7 @@ import {
     loadAllPages,
     publishRandomReply,
     findCommentInPage,
+    waitTillPostInSubplebbitInstancePages,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs
 } from "../../../../dist/node/test/test-util.js";
@@ -44,9 +45,15 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, postToPin, secondPostToPin, sub;
 
         const populateSub = async (subplebbit) => {
-            if (Object.keys(subplebbit.posts.pageCids).length === 0) {
-                await Promise.all(new Array(5).fill(null).map((x) => publishRandomPost(subplebbit.address, plebbit, {}, false)));
-                await new Promise((resolve) => subplebbit.once("update", resolve));
+            const postsComments = subplebbit.posts.pageCids.new ? await subplebbit.posts.getPage(subplebbit.posts.pageCids.new) : [];
+            if (postsComments.length < 10) {
+                await Promise.all(
+                    new Array(5).fill(null).map(async (x) => {
+                        const post = await publishRandomPost(subplebbit.address, plebbit);
+                        await waitTillPostInSubplebbitInstancePages(post, subplebbit);
+                        return post;
+                    })
+                );
             }
         };
         before(async () => {
@@ -60,6 +67,7 @@ getRemotePlebbitConfigs().map((config) => {
             await postToPin.update();
             await secondPostToPin.update();
             await populateSub(sub);
+            await waitTillPostInSubplebbitInstancePages(secondPostToPin, sub);
             const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
             await removeAllPins(postsComments, plebbit);
         });
