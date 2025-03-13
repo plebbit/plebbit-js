@@ -1962,8 +1962,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             try {
                 this._publishLoopPromise = this.syncIpnsWithDb();
                 await this._publishLoopPromise;
+            } finally {
                 await this._publishLoop(syncIntervalMs);
-            } catch {}
+            }
         };
         this._publishInterval = setTimeout(loop.bind(this), syncIntervalMs);
     }
