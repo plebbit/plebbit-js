@@ -40,6 +40,7 @@ getRemotePlebbitConfigs().map((config) => {
             await postToDelete.stop();
             await modPostToDelete.stop();
             await postReply.stop();
+            await plebbit.destroy();
         });
         it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
             const deleteEdit = await plebbit.createCommentEdit({
