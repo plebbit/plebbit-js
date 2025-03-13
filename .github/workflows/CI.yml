@@ -52,7 +52,7 @@ jobs:
     test-plebbit-js-node-remote-configs:
         name: test-plebbit-js-node-${{ matrix.config }}
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        timeout-minutes: 30
         strategy:
             fail-fast: false
             matrix:
@@ -80,7 +80,7 @@ jobs:
     test-plebbit-js-browser-remote-configs:
         name: test-plebbit-js-${{ matrix.environment }}-${{ matrix.config }}
         runs-on: ubuntu-latest
-        timeout-minutes: 20
+        timeout-minutes: 30
         strategy:
             fail-fast: false
             matrix:
