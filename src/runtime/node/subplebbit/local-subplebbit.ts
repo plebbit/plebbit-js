@@ -631,11 +631,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 "comment cid is",
                 modTableRow.commentCid
             );
-            const transactionName = challengeRequestId.toString();
-            const trx = await this._dbHandler.createTransaction(transactionName);
 
-            const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid, trx);
-            await this._dbHandler.commitTransaction(transactionName);
+            const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid);
 
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
             purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));

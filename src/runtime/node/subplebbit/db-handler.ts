@@ -1121,43 +1121,84 @@ export class DbHandler {
     }
 
     // will return a list of comment cids + comment updates + their pages that got purged
-    async purgeComment(cid: string, trx?: Transaction): Promise<string[]> {
-        // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
+    async purgeComment(cid: string): Promise<string[]> {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeComment");
 
-        const purgedCids: string[] = [];
         try {
-            await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
-        } catch {}
-        try {
-            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        } catch {}
+            // Begin an exclusive transaction
+            log(`Starting EXCLUSIVE transaction for purging comment ${cid}`);
+            await this._knex.raw("BEGIN EXCLUSIVE TRANSACTION");
 
-        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
-            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
+            const purgedCids: string[] = [];
+            const commentsToDelete: string[] = [];
 
-            let curCid: string | undefined = cid;
-            while (curCid) {
-                const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
-                if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
-                if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
-                try {
-                    await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
-                } catch {}
+            // First, collect all comments that need to be deleted (the target comment and all its descendants)
+            const collectComments = async (commentCid: string) => {
+                commentsToDelete.push(commentCid);
 
-                const comment = await this.queryComment(curCid, trx);
-                curCid = comment?.parentCid;
+                // Find all child comments
+                const children = await this._knex(TABLES.COMMENTS).where({ parentCid: commentCid }).select("cid");
+
+                // Recursively collect all descendants
+                for (const child of children) {
+                    await collectComments(child.cid);
+                }
+            };
+
+            // Collect all comments to delete
+            await collectComments(cid);
+
+            // Collect all comment updates that need to be deleted
+            if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES)) {
+                // Get all comment updates for the comments we're deleting
+                const commentUpdates = await this._knex(TABLES.COMMENT_UPDATES)
+                    .whereIn("cid", commentsToDelete)
+                    .select(["cid", "ipfsPath", "replies"]);
+
+                // Add paths to purgedCids
+                for (const update of commentUpdates) {
+                    if (update.ipfsPath) purgedCids.push(update.ipfsPath);
+                    if (update.replies?.pageCids) purgedCids.push(...Object.values(update.replies.pageCids));
+                }
+
+                // Delete all comment updates
+                await this._knex(TABLES.COMMENT_UPDATES).whereIn("cid", commentsToDelete).del();
+
+                // Also delete comment updates for parent comments to force regeneration
+                let curCid = (await this._knex(TABLES.COMMENTS).where({ cid }).first())?.parentCid;
+                while (curCid) {
+                    const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid });
+                    if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
+                    if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
+
+                    await this._knex(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+
+                    const comment = await this.queryComment(curCid);
+                    curCid = comment?.parentCid;
+                }
             }
+
+            // Delete all related data in a single batch for each table
+            await this._knex(TABLES.VOTES).whereIn("commentCid", commentsToDelete).del();
+            await this._knex(TABLES.COMMENT_EDITS).whereIn("commentCid", commentsToDelete).del();
+
+            // Finally delete the comments themselves
+            await this._knex(TABLES.COMMENTS).whereIn("cid", commentsToDelete).del();
+
+            // Add all deleted comment CIDs to the result
+            purgedCids.push(...commentsToDelete);
+
+            // Commit the transaction
+            log(`Committing EXCLUSIVE transaction for purging comment ${cid}`);
+            await this._knex.raw("COMMIT");
+
+            return remeda.unique(purgedCids);
+        } catch (error) {
+            // Roll back the transaction on error
+            log.error(`Error during comment purge, rolling back transaction: ${error}`);
+            await this._knex.raw("ROLLBACK");
+            throw error;
         }
-
-        // delete the replies tree of this comment (going down the tree here)
-        const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: cid });
-        for (const child of children) purgedCids.push(...(await this.purgeComment(child.cid, trx)));
-
-        try {
-            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
-        } catch {}
-        purgedCids.push(cid);
-        return remeda.unique(purgedCids);
     }
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");
