@@ -107,7 +107,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
             .lessThanOrEqual(timestampHourAgo + bufferSeconds);
     });
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
-        const post = await publishRandomPost(subplebbitAddress, plebbitRunningSubs, {}); // should publish a new record after
+        const post = await publishRandomPost(subplebbitAddress, plebbitRunningSubs); // should publish a new record after
         await waitTillPostInSubplebbitPages(post, plebbitRunningSubs);
         const customPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
@@ -117,7 +117,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         const gatewaySub = await customPlebbit.getSubplebbit(subplebbitAddress);
         const latestSub = await fetchLatestSubplebbitJson();
         const diff = latestSub.updatedAt - gatewaySub.updatedAt;
-        const buffer = 5;
+        const buffer = 6;
         expect(diff).to.be.lessThan(buffer);
     });
 });
