@@ -619,9 +619,9 @@ export async function generatePostToAnswerMathQuestion(props: CreateCommentOptio
 
 export function isRpcFlagOn(): boolean {
     const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
+    const allPlebbitConfigsAreRpcs = remotePlebbitConfigs.every((config) => config.name.includes("RPC"));
     // const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
-    const isRpcFlagOn = isPartOfProcessEnv;
-    return isRpcFlagOn;
+    return isPartOfProcessEnv || allPlebbitConfigsAreRpcs;
 }
 
 export function isRunningInBrowser(): boolean {
