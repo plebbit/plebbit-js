@@ -1820,21 +1820,36 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             })
         );
 
-        try {
-            await this._clientsManager.getDefaultIpfs()._client.files.rm(`/${this.address}`, { recursive: true });
-        } catch (e) {
-            const error = <Error>e;
-            if (!error.message?.includes("file does not exist")) throw error;
-        }
-
         const res = await genToArray(
             this._clientsManager.getDefaultIpfs()._client.addAll(globSource(postUpdatesDir, "**/*"), {
                 wrapWithDirectory: true
             })
         );
 
-        await this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + res[res.length - 1].cid.toString(), "/" + this.address);
-        log("Synced", res.length, "file nodes", "of FS post updates to IPFS");
+        try {
+            // Check if the file already exists
+            const exists = await this._clientsManager
+                .getDefaultIpfs()
+                ._client.files.stat("/" + this.address)
+                .then(() => true)
+                .catch(() => false);
+
+            if (exists) {
+                // If it exists, we can either:
+                // 1. Remove it first
+                await this._clientsManager.getDefaultIpfs()._client.files.rm("/" + this.address, { recursive: true });
+                // Or 2. Skip the copy operation (uncomment the line below instead of the rm operation)
+                // log("File already exists at /" + this.address + ", skipping copy operation");
+            }
+
+            // Now copy the file
+            await this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + res[res.length - 1].cid.toString(), "/" + this.address);
+            log("Synced", res.length, "file nodes", "of FS post updates to IPFS");
+        } catch (error) {
+            // Handle any other errors that might occur
+            log.error("Error syncing file nodes to IPFS:", error);
+            throw error;
+        }
     }
 
     private async _adjustPostUpdatesBucketsIfNeeded() {
