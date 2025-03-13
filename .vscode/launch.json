@@ -65,7 +65,8 @@
             ],
             "type": "node",
             "env": {
-                "DEBUG": "plebbit-js:*"
+                "DEBUG": "plebbit-js:*",
+                "PLEBBIT_CONFIGS": "remote-kubo-rpc"
             }
         },
         {
@@ -86,7 +87,7 @@
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*",
-                "USE_RPC": "1"
+                "PLEBBIT_CONFIGS": "remote-plebbit-rpc"
             }
         },
 
