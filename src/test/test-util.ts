@@ -619,7 +619,7 @@ export async function generatePostToAnswerMathQuestion(props: CreateCommentOptio
 
 export function isRpcFlagOn(): boolean {
     const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
-    const allPlebbitConfigsAreRpcs = remotePlebbitConfigs.every((config) => config.name.includes("RPC"));
+    const allPlebbitConfigsAreRpcs = getRemotePlebbitConfigs().every((config) => config.name.includes("RPC"));
     // const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
     return isPartOfProcessEnv || allPlebbitConfigsAreRpcs;
 }
@@ -996,8 +996,9 @@ export function setRemotePlebbitConfigs(configs: RemotePlebbitConfig[]) {
 
 export function getRemotePlebbitConfigs() {
     // Check if configs are passed via environment variable
-    if (process?.env?.PLEBBIT_CONFIGS) {
-        const configs = process.env.PLEBBIT_CONFIGS.split(",") as RemotePlebbitConfig[];
+    const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
+    if (plebbitConfigsFromEnv) {
+        const configs = plebbitConfigsFromEnv.split(",") as RemotePlebbitConfig[];
         // Set the configs if they're coming from the environment variable
         setRemotePlebbitConfigs(configs);
     }
@@ -1008,7 +1009,8 @@ export function getRemotePlebbitConfigs() {
         // Set the configs if they're coming from the environment variable
         setRemotePlebbitConfigs(configs);
     }
-    if (remotePlebbitConfigs.length === 0) throw Error("No remote plebbit configs set");
+    if (remotePlebbitConfigs.length === 0)
+        throw Error("No remote plebbit configs set, " + plebbitConfigsFromEnv + " " + plebbitConfigsFromWindow);
     return remotePlebbitConfigs;
 }
 

@@ -1,176 +1,144 @@
-const plebbitConfigTypes = ["remote-kubo-rpc", "remote-ipfs-gateway", "remote-plebbit-rpc"];
-const environment = ["node", "firefox", "chrome"];
-
-import { setRemotePlebbitConfigs } from "../dist/node/test/test-util.js";
+// Import necessary modules
 import { spawn } from "child_process";
-import { fileURLToPath } from "url";
 import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
 
-// Get __dirname equivalent in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Get command line arguments
+const args = process.argv.slice(2);
+const plebbitConfigIndex = args.indexOf("--plebbit-config");
+const environmentIndex = args.indexOf("--environment");
 
-// Parse command line arguments
-function parseArgs() {
-    const args = process.argv.slice(2);
-    const options = {
-        plebbitConfigs: [],
-        environment: "node" // Default to node environment
-    };
+// Check if plebbit configs are provided
+if (plebbitConfigIndex === -1 || plebbitConfigIndex + 1 >= args.length) {
+    console.error("========================================");
+    console.error("ERROR: No --plebbit-config argument provided!");
+    console.error("Usage: node test/run-test-config.js --plebbit-config <config1,config2,...> --environment <node|chrome|firefox>");
+    console.error("========================================");
+    process.exit(1); // Exit with error code
+}
 
-    for (let i = 0; i < args.length; i++) {
-        const arg = args[i];
-        if (arg === "--plebbit-config" && i + 1 < args.length) {
-            // Check if the next argument is a comma-separated list
-            const configValues = args[i + 1].split(",");
-            options.plebbitConfigs.push(...configValues);
-            i++; // Skip the next argument as it's the value
-        } else if (arg === "--environment" && i + 1 < args.length) {
-            options.environment = args[i + 1];
-            i++; // Skip the next argument as it's the value
+// Set up environment variables
+const plebbitConfigs = args[plebbitConfigIndex + 1];
+if (!plebbitConfigs || plebbitConfigs.trim() === "") {
+    console.error("========================================");
+    console.error("ERROR: Empty plebbit configs provided!");
+    console.error("Usage: node test/run-test-config.js --plebbit-config <config1,config2,...> --environment <node|chrome|firefox>");
+    console.error("========================================");
+    process.exit(1); // Exit with error code
+}
+
+// Set environment variable for child processes
+process.env.PLEBBIT_CONFIGS = plebbitConfigs;
+
+// Print the configs before running any tests
+console.log("========================================");
+console.log("PLEBBIT_CONFIGS set to:", plebbitConfigs);
+console.log("Configs array:", plebbitConfigs.split(","));
+console.log("========================================");
+
+// Get environment (node or browser)
+const environment = environmentIndex !== -1 && environmentIndex + 1 < args.length ? args[environmentIndex + 1] : "node";
+
+console.log(`Running tests in ${environment} environment`);
+
+// Create a new environment object with all current env variables
+const env = { ...process.env };
+
+// Run the appropriate test runner with the test directories
+if (environment === "node") {
+    // For Node.js, run Mocha with the node-and-browser test directory
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const projectRoot = path.resolve(__dirname, "..");
+    const testDir = path.join(__dirname, "node-and-browser");
+
+    // Use locally installed mocha from node_modules
+    const mochaBin = path.join(projectRoot, "node_modules", ".bin", "mocha");
+    const mochaArgs = ["--recursive", testDir];
+
+    console.log(`Running mocha with args:`, mochaArgs);
+    console.log(`Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}`);
+
+    const mochaProcess = spawn(mochaBin, mochaArgs, {
+        stdio: "inherit",
+        env: env
+    });
+
+    mochaProcess.on("exit", (code) => {
+        process.exit(code);
+    });
+} else {
+    // For browser environments, run Karma with the webpacked test files
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const projectRoot = path.resolve(__dirname, "..");
+
+    // Use locally installed karma from node_modules
+    const karmaBin = path.join(projectRoot, "node_modules", ".bin", "karma");
+    const karmaConfigPath = path.join(projectRoot, "config", "karma.conf.cjs");
+
+    // Set browser paths based on environment
+    if (environment.toLowerCase().includes("chrome")) {
+        // Try to find Chrome/Chromium executable
+        const possibleChromePaths = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+        ];
+
+        for (const chromePath of possibleChromePaths) {
+            if (fs.existsSync(chromePath)) {
+                env.CHROME_BIN = chromePath;
+                console.log(`Found Chrome at: ${chromePath}`);
+                break;
+            }
+        }
+
+        if (!env.CHROME_BIN) {
+            console.warn("Could not find Chrome executable. Please set CHROME_BIN environment variable manually.");
+            // Set a default value to avoid errors
+            env.CHROME_BIN = "chrome";
+        }
+    } else if (environment.toLowerCase().includes("firefox")) {
+        // Try to find Firefox executable
+        const possibleFirefoxPaths = [
+            "/usr/bin/firefox",
+            "/Applications/Firefox.app/Contents/MacOS/firefox",
+            "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+            "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe"
+        ];
+
+        for (const firefoxPath of possibleFirefoxPaths) {
+            if (fs.existsSync(firefoxPath)) {
+                env.FIREFOX_BIN = firefoxPath;
+                console.log(`Found Firefox at: ${firefoxPath}`);
+                break;
+            }
+        }
+
+        if (!env.FIREFOX_BIN) {
+            console.warn("Could not find Firefox executable. Please set FIREFOX_BIN environment variable manually.");
+            // Set a default value to avoid errors
+            env.FIREFOX_BIN = "firefox";
         }
     }
 
-    return options;
-}
+    console.log(`Running karma with environment: ${environment}`);
+    console.log(`Karma binary: ${karmaBin}`);
+    console.log(`Karma config: ${karmaConfigPath}`);
+    console.log(
+        `Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, CHROME_BIN=${env.CHROME_BIN}, FIREFOX_BIN=${env.FIREFOX_BIN}`
+    );
 
-// Validate plebbit configs
-function validatePlebbitConfigs(configs) {
-    const invalidConfigs = configs.filter((config) => !plebbitConfigTypes.includes(config));
-    if (invalidConfigs.length > 0) {
-        console.error(`Error: Invalid plebbit-config value(s): ${invalidConfigs.join(", ")}`);
-        console.error(`Valid options are: ${plebbitConfigTypes.join(", ")}`);
-        process.exit(1);
-    }
-    return true;
-}
+    const karmaProcess = spawn(karmaBin, ["start", karmaConfigPath], {
+        stdio: "inherit",
+        env: env,
+        shell: true // Use shell to handle path issues on different platforms
+    });
 
-// Validate environment
-function validateEnvironment(env) {
-    if (!environment.includes(env)) {
-        console.error(`Error: Invalid environment value: ${env}`);
-        console.error(`Valid options are: ${environment.join(", ")}`);
-        process.exit(1);
-    }
-    return true;
-}
-
-// Run mocha tests with the specified configuration
-function runMochaTests(plebbitConfigs) {
-    return new Promise((resolve, reject) => {
-        // Path to local mocha executable
-        const mochaBin = path.resolve(__dirname, "../node_modules/.bin/mocha");
-
-        const mochaArgs = ["--forbid-only", "--bail", "--exit", "--recursive", "--config", "config/.mocharc.json", "test/node-and-browser"];
-
-        console.log(`Running mocha with: ${mochaBin} ${mochaArgs.join(" ")}`);
-
-        const env = { ...process.env };
-        env.PLEBBIT_CONFIGS = plebbitConfigs.join(",");
-
-        const mochaProcess = spawn(mochaBin, mochaArgs, {
-            stdio: "inherit",
-            shell: true,
-            env: env
-        });
-
-        mochaProcess.on("close", (code) => {
-            if (code === 0) {
-                resolve();
-            } else {
-                reject(new Error(`Mocha exited with code ${code}`));
-            }
-        });
-
-        mochaProcess.on("error", (err) => {
-            reject(err);
-        });
+    karmaProcess.on("exit", (code) => {
+        process.exit(code);
     });
 }
-
-// Run karma tests with the specified configuration and browser
-function runKarmaTests(plebbitConfigs, browser) {
-    return new Promise((resolve, reject) => {
-        // Path to local karma executable
-        const karmaBin = path.resolve(__dirname, "../node_modules/.bin/karma");
-
-        // Pass plebbit configs as client.config to karma
-        const karmaArgs = ["start", "config/karma.conf.cjs"];
-
-        console.log(`Running karma with: ${karmaBin} ${karmaArgs.join(" ")}`);
-
-        const env = { ...process.env };
-        // Also set as environment variable for backward compatibility
-        env.PLEBBIT_CONFIGS = plebbitConfigs.join(",");
-
-        // Set browser environment variables
-        if (browser === "chrome") {
-            env.CHROME_BIN = process.env.CHROME_BIN || "chrome";
-            env.FIREFOX_BIN = "";
-        } else if (browser === "firefox") {
-            env.FIREFOX_BIN = process.env.FIREFOX_BIN || "firefox";
-            env.CHROME_BIN = "";
-        }
-
-        const karmaProcess = spawn(karmaBin, karmaArgs, {
-            stdio: "inherit",
-            shell: true,
-            env: env
-        });
-
-        karmaProcess.on("close", (code) => {
-            if (code === 0) {
-                resolve();
-            } else {
-                reject(new Error(`Karma exited with code ${code}`));
-            }
-        });
-
-        karmaProcess.on("error", (err) => {
-            reject(err);
-        });
-    });
-}
-
-// Main function to run the tool
-async function main() {
-    const options = parseArgs();
-
-    if (options.plebbitConfigs.length > 0) {
-        validatePlebbitConfigs(options.plebbitConfigs);
-        validateEnvironment(options.environment);
-
-        console.log(`Using plebbit-config(s): ${options.plebbitConfigs.join(", ")}`);
-        console.log(`Using environment: ${options.environment}`);
-
-        // Set the remote plebbit configs before running tests
-        setRemotePlebbitConfigs(options.plebbitConfigs);
-
-        try {
-            // Run tests based on environment
-            if (options.environment === "node") {
-                await runMochaTests(options.plebbitConfigs);
-            } else if (options.environment === "chrome" || options.environment === "firefox") {
-                await runKarmaTests(options.plebbitConfigs, options.environment);
-            }
-            process.exit(0);
-        } catch (error) {
-            console.error("Error running tests:", error.message);
-            process.exit(1);
-        }
-    } else {
-        console.log(`No plebbit-config specified. Available options: ${plebbitConfigTypes.join(", ")}`);
-        process.exit(1);
-    }
-}
-
-// Run the main function if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-    main().catch((error) => {
-        console.error("Error running tests:", error);
-        process.exit(1);
-    });
-}
-
-// Export variables and functions
-export { plebbitConfigTypes, environment, parseArgs, validatePlebbitConfigs, validateEnvironment, main, runMochaTests, runKarmaTests };
