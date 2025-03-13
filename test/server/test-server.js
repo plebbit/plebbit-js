@@ -392,7 +392,6 @@ const setupMockDelegatedRouter = async () => {
     if (process.env["NO_SUBPLEBBITS"] !== "1") {
         const subs = await startSubplebbits({
             signers: signers,
-            publishInterval: 1000,
             votesPerCommentToPublish: 1,
             numOfPostsToPublish: 1,
             numOfCommentsToPublish: 1,
