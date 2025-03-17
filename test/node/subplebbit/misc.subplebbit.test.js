@@ -109,7 +109,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     });
 
     it(`subplebbit.lastCommentCid reflects latest comment (post or reply)`, async () => {
-        await resolveWhenConditionIsTrue(sub, () => sub.posts.pages.hot.comments[0].replyCount > 0);
+        await resolveWhenConditionIsTrue(sub, () => sub.posts.pages.hot?.comments[0]?.replyCount > 0);
         expect(sub.lastCommentCid).to.equal(sub.posts.pages.hot.comments[0].replies.pages.topAll.comments[0].cid);
     });
 });
