@@ -212,11 +212,13 @@ export class PublicationClientsManager extends ClientsManager {
         if (!this._subplebbitForUpdating) throw Error("Need to define subplebbitForUpdating first");
 
         if (this._subplebbitForUpdating.ipfsGatewayListeners)
-            for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners))
+            for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners)) {
                 this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].removeListener(
                     "statechange",
                     this._subplebbitForUpdating.ipfsGatewayListeners[gatewayUrl]
                 );
+                this.updateGatewayState("stopped", gatewayUrl); // need to reset all gateway states
+            }
 
         // Clean up chain provider listeners
         if (this._subplebbitForUpdating.chainProviderListeners) {
@@ -226,6 +228,7 @@ export class PublicationClientsManager extends ClientsManager {
                         "statechange",
                         this._subplebbitForUpdating.chainProviderListeners[chainTicker][providerUrl]
                     );
+                    this.updateChainProviderState("stopped", chainTicker, providerUrl); // need to reset all chain provider states
                 }
             }
         }
