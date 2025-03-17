@@ -11,6 +11,7 @@ import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
+import { sha256 } from "js-sha256";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     clients: {
@@ -106,6 +107,16 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]) {
         for (const [sortType, pageCid] of Object.entries(newPageCids)) this._updatePageCidsSortCache(pageCid, [sortType]);
+    }
+
+    private _calculatePageMaxSizeCacheKey(pageCid: string) {
+        return sha256(this._pages._subplebbit.address + pageCid);
+    }
+
+    updatePagesMaxSizeCache(newPageCids: string[], pageMaxSizeBytes: number) {
+        remeda
+            .unique(newPageCids)
+            .forEach((pageCid) => this._plebbit._memCaches.pagesMaxSize.set(this._calculatePageMaxSizeCacheKey(pageCid), pageMaxSizeBytes));
     }
 
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string) {
@@ -212,8 +223,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.updatePageCidsToSortTypes(this._pages.pageCids);
         }
         const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
+
         const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
-        const pageMaxSize = isFirstPage ? 1024 * 1024 : this._plebbit._memCaches.pagesMaxSize.get(pageCid);
+        const pageMaxSize = isFirstPage
+            ? 1024 * 1024
+            : this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid));
         if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page: PageIpfs;
         if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
@@ -222,7 +236,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
         if (page.nextCid) {
             this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
-            this._plebbit._memCaches.pagesMaxSize.set(page.nextCid, pageMaxSize * 2);
+            this.updatePagesMaxSizeCache([page.nextCid], pageMaxSize * 2);
         }
         return page;
     }

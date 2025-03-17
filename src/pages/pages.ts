@@ -45,9 +45,7 @@ export class BasePages {
         this._pagesIpfs = props.pagesIpfs;
         if (this.pageCids) {
             this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
-            remeda
-                .unique(Object.values(this.pageCids))
-                .forEach((pageCid) => this._clientsManager._plebbit._memCaches.pagesMaxSize.set(pageCid, 1024 * 1024));
+            this._clientsManager.updatePagesMaxSizeCache(Object.values(this.pageCids), 1024 * 1024);
         }
     }
 
