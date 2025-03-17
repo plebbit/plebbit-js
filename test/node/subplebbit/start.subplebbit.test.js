@@ -125,6 +125,27 @@ describe(`subplebbit.start`, async () => {
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
     });
+
+    itSkipIfRpc(`subplebbit.start() recovers if subplebbit fails to calculate ipfs path for comment update`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        const originalFunc = sub._calculateIpfsPathForCommentUpdate.bind(sub);
+        sub._calculateIpfsPathForCommentUpdate = () => {
+            throw Error("Failed to calculate ipfs path for comment update");
+        };
+        publishRandomPost(sub.address, plebbit);
+
+        await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
+        expect(sub.startedState).to.equal("failed");
+
+        sub._calculateIpfsPathForCommentUpdate = originalFunc;
+
+        await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
+        const post = await publishRandomPost(sub.address, plebbit);
+        await waitTillPostInSubplebbitPages(post, plebbit);
+        await sub.delete();
+    });
 });
 
 describe(`subplebbit.started`, async () => {
