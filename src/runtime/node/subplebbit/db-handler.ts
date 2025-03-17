@@ -754,6 +754,10 @@ export class DbHandler {
             .select(`${TABLES.COMMENT_UPDATES}.*`);
     }
 
+    async queryCommentsWithPostCidSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where(`${TABLES.COMMENTS}.postCid`, postCid).orderBy("depth", "DESC");
+    }
+
     async queryCommentsOfAuthors(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]> {
         if (!Array.isArray(authorSignerAddresses)) authorSignerAddresses = [authorSignerAddresses];
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);

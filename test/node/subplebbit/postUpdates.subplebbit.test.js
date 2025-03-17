@@ -4,9 +4,11 @@ import {
     createSubWithNoChallenge,
     publishRandomReply,
     describeSkipIfRpc,
+    mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
-    waitTillPostInSubplebbitPages
-} from "../../../dist/node/test/test-util";
+    waitTillPostInSubplebbitPages,
+    mockPlebbitNoDataPathWithOnlyKuboClient
+} from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -23,7 +25,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`subplebbit.postUpdates is undefined if there are no comments`, async () => {
@@ -70,9 +72,11 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     });
 
     it(`Can still fetch updates from post and reply with new bucket`, async () => {
+        const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const postCid = subplebbit.posts.pages.hot.comments[0].cid;
-        const post = await plebbit.createComment({ cid: postCid });
-        post.update();
+        const post = await remotePlebbit.createComment({ cid: postCid });
+        await post.update();
+        mockCommentToNotUsePagesForUpdates(post);
         await new Promise((resolve) => post.once("update", resolve)); // CommentIpfs update
         expect(post.content).to.be.a("string");
         await new Promise((resolve) => post.once("update", resolve)); // CommentUpdate
@@ -80,8 +84,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await post.stop();
 
         // Now fetch the update of reply
-        const reply = await plebbit.createComment({ cid: post.replies.pages.topAll.comments[0].cid });
-        reply.update();
+        const reply = await remotePlebbit.createComment({ cid: post.replies.pages.topAll.comments[0].cid });
+        await reply.update();
+        mockCommentToNotUsePagesForUpdates(reply);
+
         await new Promise((resolve) => reply.once("update", resolve)); // CommentIpfs update
         expect(reply.content).to.be.a("string");
         await new Promise((resolve) => reply.once("update", resolve)); // CommentUpdate update
