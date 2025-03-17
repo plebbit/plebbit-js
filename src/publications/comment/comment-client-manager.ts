@@ -539,7 +539,10 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     override async handleWaitingRetryEventFromSub(error: PlebbitError | Error) {
         // we received a waiting retry event from sub instance
-        // no need to do anything here for now
+        if (this._comment.state === "publishing") return super.handleWaitingRetryEventFromSub(error);
+        // we're updating a comment
+        this._comment._setUpdatingState("waiting-retry");
+        this._comment.emit("waiting-retry", error);
     }
 
     override async handleErrorEventFromSub(error: PlebbitError | Error) {

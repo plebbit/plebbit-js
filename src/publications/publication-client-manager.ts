@@ -155,10 +155,10 @@ export class PublicationClientsManager extends ClientsManager {
 
         this._subplebbitForUpdating = {
             subplebbit: sub,
-            error: this.handleErrorEventFromSub,
-            update: this.handleUpdateEventFromSub,
-            updatingstatechange: this.handleUpdatingStateChangeEventFromSub,
-            "waiting-retry": this.handleWaitingRetryEventFromSub
+            error: this.handleErrorEventFromSub.bind(this),
+            update: this.handleUpdateEventFromSub.bind(this),
+            updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this),
+            "waiting-retry": this.handleWaitingRetryEventFromSub.bind(this)
         };
 
         if (!this._defaultIpfsProviderUrl) {
