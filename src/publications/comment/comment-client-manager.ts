@@ -594,17 +594,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         const translatedKuboState = subUpdatingStateToCommentKuboState[newSubUpdatingState];
         if (translatedKuboState) this.updateIpfsState(translatedKuboState);
     }
-    _translateSubUpdatingStateToCommentGatewayState(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
-        if (this._defaultIpfsProviderUrl) return;
-        if (newSubUpdatingState === "waiting-retry" || newSubUpdatingState === "failed" || newSubUpdatingState === "stopped")
-            for (const gatewayUrl of Object.keys(this.clients.ipfsGateways)) this.updateGatewayState("stopped", gatewayUrl);
-    }
 
     override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
         if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
 
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
-        this._translateSubUpdatingStateToCommentGatewayState(newSubUpdatingState);
         this._translateSubUpdatingStateToCommentKuboState(newSubUpdatingState);
     }
 }
