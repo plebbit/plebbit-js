@@ -437,6 +437,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         }
 
+        await this._syncPostUpdatesFilesystemWithIpfs();
         const newPostUpdates = await this._calculateNewPostUpdates();
 
         const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
@@ -645,8 +646,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             await this._cleanUpIpfsRepoRarely(true);
 
-            await this._syncPostUpdatesFilesystemWithIpfs();
-
             log(
                 "Purged comment",
                 modTableRow.commentCid,
@@ -655,7 +654,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 "out of DB and IPFS"
             );
 
-            this._subplebbitUpdateTrigger = true; // force plebbit-js to produce a new subplebbit.posts and an IPNS
+            this._subplebbitUpdateTrigger = true; // force plebbit-js to produce a new subplebbit.posts and an IPNS with no purged comments
             await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
         }
     }
@@ -1635,8 +1634,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const newIpfsPath = pathParts.join("/");
             await this._writeCommentUpdateToDatabase(commentUpdate, newIpfsPath, commentUpdate.ipfsPath);
         }
-
-        await this._syncPostUpdatesFilesystemWithIpfs();
     }
 
     private async _switchDbWhileRunningIfNeeded() {
@@ -1685,7 +1682,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         for (const depthKey of depthsKeySorted) {
             await Promise.all(commentsGroupedByDepth[depthKey].map(this._calculateNewCommentUpdateAndWriteToFilesystemAndDb.bind(this)));
         }
-        await this._syncPostUpdatesFilesystemWithIpfs();
     }
 
     private async _repinCommentsIPFSIfNeeded() {
@@ -1848,6 +1844,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } catch (error) {
             // Handle any other errors that might occur
             log.error("Error syncing file nodes to IPFS:", error);
+            this._subplebbitUpdateTrigger = true;
+            // make sure to delete so next time we run the sync it will be re-added
+            try {
+                await this._clientsManager.getDefaultIpfs()._client.files.rm("/" + this.address, { recursive: true });
+            } catch {}
             throw error;
         }
     }
@@ -1898,7 +1899,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 this._subplebbitUpdateTrigger = true;
             }
         }
-        if (this._subplebbitUpdateTrigger) await this._syncPostUpdatesFilesystemWithIpfs();
     }
 
     private async _cleanUpIpfsRepoRarely(force = false) {
