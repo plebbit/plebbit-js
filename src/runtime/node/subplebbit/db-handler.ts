@@ -360,6 +360,11 @@ export class DbHandler {
             );
 
             await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
+            if (fs.existsSync(path.join(this._subplebbit._getPostUpdatesDirOnFilesystem(), this._subplebbit.address)))
+                await fs.promises.rm(path.join(this._subplebbit._getPostUpdatesDirOnFilesystem(), this._subplebbit.address), {
+                    recursive: true,
+                    force: true
+                });
             if (currentDbVersion <= 16 && (await this._knex.schema.hasTable(TABLES.COMMENT_EDITS)))
                 await this._moveCommentEditsToModAuthorTables();
         }
