@@ -26,7 +26,10 @@ on:
 
 jobs:
     test-plebbit-js-node-local:
-        runs-on: ubuntu-latest
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest]
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@v4
@@ -37,10 +40,6 @@ jobs:
 
             - run: npm ci
             - run: npm run build
-
-            # disable hosts we shouldn't use
-            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run mocked challenge tests
@@ -67,10 +66,6 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            # disable hosts we shouldn't use
-            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
-
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node
@@ -96,10 +91,6 @@ jobs:
             - run: npm ci
             - run: npm run build
             - run: npm run webpack
-
-            # disable hosts we shouldn't use
-            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
 
@@ -129,9 +120,6 @@ jobs:
             - run: npm ci
             - run: npm run build
             - run: npm run webpack
-            # disable hosts we shouldn't use
-            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
             # Setup tests for plebbit-js using rpc here
             - run: DEBUG="plebbit*" npm run test:server:node:rpc |& tee test_server.log & npm run test:server:wait-on
             - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
