@@ -287,23 +287,3 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
 
     return watchAbortController;
 }
-
-export async function isDirectoryEmptyRecursive(dirPath: string): Promise<boolean> {
-    // does this directory have files or just empty directories
-    const items = await fs.readdir(dirPath);
-
-    for (const item of items) {
-        const fullPath = path.join(dirPath, item);
-        const stat = await fs.stat(fullPath);
-
-        if (stat.isFile()) {
-            return false;
-        }
-        if (stat.isDirectory()) {
-            if (!(await isDirectoryEmptyRecursive(fullPath))) {
-                return false;
-            }
-        }
-    }
-    return true;
-}

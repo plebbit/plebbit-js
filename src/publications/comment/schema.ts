@@ -172,7 +172,7 @@ export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessa
 // Comment table here
 
 export const CommentsTableRowSchema = CommentIpfsSchema.extend({
-    cid: CidStringSchema,
+    cid: CidStringSchema, // cid of CommentIpfs, cid v0
     postCid: CidStringSchema,
     id: z.number().nonnegative().int(),
     insertedAt: PlebbitTimestampSchema,

@@ -76,6 +76,7 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "i
 export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
     ipfsPath: string;
+    updateCid: string; // the cid of CommentUpdate, cid v0
 }
 
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}

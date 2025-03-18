@@ -218,7 +218,7 @@ export class DbHandler {
 
     private async _createCommentUpdatesTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
-            table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
+            table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS); // this refers to the cid of CommentIpfs, in tables comments
 
             table.json("edit").nullable();
             table.integer("upvoteCount").notNullable();
@@ -242,6 +242,7 @@ export class DbHandler {
 
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
             table.text("ipfsPath").notNullable().unique();
+            table.text("updateCid").notNullable().unique(); // the cid of CommentUpdate, cidv0
 
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
@@ -1172,6 +1173,7 @@ export class DbHandler {
                 try {
                     const commentUpdate = await this.queryStoredCommentUpdate({ cid });
                     if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
+                    if (commentUpdate?.updateCid) purgedCids.push(commentUpdate.updateCid);
                     if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
                     await this._knex(TABLES.COMMENT_UPDATES).where({ cid }).del();
                 } catch (error) {
@@ -1185,6 +1187,7 @@ export class DbHandler {
                         while (curCid) {
                             const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid });
                             if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
+                            if (commentUpdate?.updateCid) purgedCids.push(commentUpdate.updateCid);
                             if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
 
                             await this._knex(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
@@ -1346,5 +1349,22 @@ export class DbHandler {
 
     subAddress() {
         return this._subplebbit.address;
+    }
+
+    async queryCommentUpdatesOnlyCidAndIpfsPath(
+        trx?: Transaction
+    ): Promise<Record<CommentUpdatesRow["updateCid"], CommentUpdatesRow["ipfsPath"]>> {
+        const updates = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).select("updateCid", "ipfsPath");
+        return updates.reduce(
+            (acc, update) => {
+                acc[update.updateCid] = update.ipfsPath;
+                return acc;
+            },
+            {} as Record<string, string>
+        );
+    }
+
+    async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC");
     }
 }
