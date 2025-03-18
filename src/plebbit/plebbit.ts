@@ -645,7 +645,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         if (options instanceof RemoteSubplebbit) return options; // not sure why somebody would call createSubplebbit with an instance, will probably change later
         if ("clients" in options) return this._createSubInstanceFromJsonifiedSub(<SubplebbitJson>options);
-        const parsedOptions = parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails(options);
+        const parsedOptions = <z.infer<typeof CreateSubplebbitFunctionArgumentsSchema>>options;
         log.trace("Received options: ", parsedOptions);
 
         if ("address" in parsedOptions && parsedOptions?.address && doesDomainAddressHaveCapitalLetter(parsedOptions.address))
@@ -654,10 +654,14 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         // Creating a subplebbit when we're connected to RPC will be handled in plebbit-with-rpc-client
         // Code below is for NodeJS and browser using IPFS-P2P/gateway
 
-        const canCreateLocalSub = this._canCreateNewLocalSub();
+        const canCreateLocalSub = this._canCreateNewLocalSub(); // this is true if we're on NodeJS and have a dataPath
 
         if ("signer" in parsedOptions && !canCreateLocalSub)
-            throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+            throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", {
+                plebbitOptions: this._userPlebbitOptions,
+                isEnvNode: Boolean(process),
+                hasDataPath: Boolean(this.dataPath)
+            });
 
         if (!canCreateLocalSub) {
             // we're either on browser or on NodeJS with no dataPath
