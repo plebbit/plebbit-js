@@ -16,12 +16,13 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     after(async () => {
@@ -40,8 +41,9 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
 
     it(`Can fetch CommentUpdate for post and its children with subplebbit.postUpdates`, async () => {
         const postCid = subplebbit.posts.pages.hot.comments[0].cid;
-        const post = await plebbit.createComment({ cid: postCid });
-        post.update();
+        const post = await remotePlebbit.createComment({ cid: postCid });
+        await post.update();
+        mockCommentToNotUsePagesForUpdates(post);
         await new Promise((resolve) => post.once("update", resolve)); // CommentIpfs update
         expect(post.content).to.be.a("string");
         await new Promise((resolve) => post.once("update", resolve)); // CommentUpdate
@@ -49,9 +51,10 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await post.stop();
 
         // Now publish a reply under post
-        const replyTemp = await publishRandomReply(post, plebbit);
-        const reply = await plebbit.createComment({ cid: replyTemp.cid });
-        reply.update();
+        const replyTemp = await publishRandomReply(post, remotePlebbit);
+        const reply = await remotePlebbit.createComment({ cid: replyTemp.cid });
+        await reply.update();
+        mockCommentToNotUsePagesForUpdates(reply);
         await new Promise((resolve) => reply.once("update", resolve)); // CommentIpfs update
         expect(reply.content).to.be.a("string");
         await new Promise((resolve) => reply.once("update", resolve)); // CommentUpdate update
@@ -72,7 +75,6 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     });
 
     it(`Can still fetch updates from post and reply with new bucket`, async () => {
-        const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const postCid = subplebbit.posts.pages.hot.comments[0].cid;
         const post = await remotePlebbit.createComment({ cid: postCid });
         await post.update();
