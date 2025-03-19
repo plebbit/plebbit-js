@@ -77,6 +77,7 @@ export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
     ipfsPath: string;
     updateCid: string; // the cid of CommentUpdate, cid v0
+    publishedToPostUpdatesIpfs: boolean;
 }
 
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
@@ -100,7 +101,7 @@ declare module "knex/types/tables" {
         commentUpdates: Knex.CompositeTableType<
             CommentUpdatesRow,
             CommentUpdatesTableRowInsert,
-            Omit<CommentUpdatesTableRowInsert, "cid">,
+            Partial<Omit<CommentUpdatesTableRowInsert, "cid">>,
             Omit<CommentUpdatesTableRowInsert, "cid">
         >;
         votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;

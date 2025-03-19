@@ -241,8 +241,9 @@ export class DbHandler {
             table.timestamp("lastReplyTimestamp").nullable();
 
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
-            table.text("ipfsPath").notNullable().unique();
-            table.text("updateCid").notNullable().unique(); // the cid of CommentUpdate, cidv0
+            table.text("ipfsPath").notNullable();
+            table.text("updateCid").notNullable(); // the cid of CommentUpdate, cidv0
+            table.boolean("publishedToPostUpdatesIpfs").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
 
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
@@ -361,11 +362,6 @@ export class DbHandler {
             );
 
             await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
-            if (fs.existsSync(path.join(this._subplebbit._getPostUpdatesDirOnFilesystem(), this._subplebbit.address)))
-                await fs.promises.rm(path.join(this._subplebbit._getPostUpdatesDirOnFilesystem(), this._subplebbit.address), {
-                    recursive: true,
-                    force: true
-                });
             if (currentDbVersion <= 16 && (await this._knex.schema.hasTable(TABLES.COMMENT_EDITS)))
                 await this._moveCommentEditsToModAuthorTables();
         }
@@ -794,7 +790,7 @@ export class DbHandler {
 
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
         // Criteria:
-        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
+        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) or commentUpdate.publishedToPostUpdatesIpfs is false OR
         // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit or CommentModeration OR
         // 3 - Comments that new votes, CommentEdit, commentModeration or other comments were published under them
 
@@ -804,7 +800,8 @@ export class DbHandler {
         const criteriaOne: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`);
+            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
+            .orWhere(`${TABLES.COMMENT_UPDATES}.publishedToPostUpdatesIpfs`, false);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         // @ts-expect-error
         const criteriaTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -1366,5 +1363,27 @@ export class DbHandler {
 
     async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]> {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC");
+    }
+
+    async queryCommentUpdatesToPublishToIpfs(trx?: Transaction): Promise<CommentUpdatesRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("publishedToPostUpdatesIpfs", false);
+    }
+
+    async updateCommentUpdatesPublishedToPostUpdatesIpfs(commentUpdateCids: string[], trx?: Transaction): Promise<void> {
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+            .whereIn("updateCid", commentUpdateCids)
+            .update({ publishedToPostUpdatesIpfs: true });
+    }
+
+    async updateIpfsPathOfCommentUpdates(oldAddress: string, newAddress: string, trx?: Transaction): Promise<void> {
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({
+            //@ts-expect-error
+            ipfsPath: this._knex.raw("REPLACE(ipfsPath, ?, ?)", [oldAddress, newAddress])
+        });
+    }
+
+    async resetPublishedToPostUpdatesIpfs(trx?: Transaction): Promise<void> {
+        // force a new production of CommentUpdate of all Comments
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({ publishedToPostUpdatesIpfs: false });
     }
 }
