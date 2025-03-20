@@ -1348,29 +1348,20 @@ export class DbHandler {
         return this._subplebbit.address;
     }
 
-    async queryCommentUpdatesOnlyCidAndIpfsPath(
-        trx?: Transaction
-    ): Promise<Record<CommentUpdatesRow["updateCid"], CommentUpdatesRow["ipfsPath"]>> {
-        const updates = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).select("updateCid", "ipfsPath");
-        return updates.reduce(
-            (acc, update) => {
-                acc[update.updateCid] = update.ipfsPath;
-                return acc;
-            },
-            {} as Record<string, string>
-        );
+    async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC").select("cid");
     }
 
-    async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC");
+    async queryCommentUpdatesToPublishToIpfsSortedByDepth(trx?: Transaction): Promise<CommentUpdatesRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+            .join(TABLES.COMMENTS, `${TABLES.COMMENT_UPDATES}.cid`, "=", `${TABLES.COMMENTS}.cid`)
+            .where("publishedToPostUpdatesIpfs", false)
+            .orderBy(`${TABLES.COMMENTS}.depth`, "DESC")
+            .select(`${TABLES.COMMENT_UPDATES}.*`);
     }
 
-    async queryCommentUpdatesToPublishToIpfs(trx?: Transaction): Promise<CommentUpdatesRow[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("publishedToPostUpdatesIpfs", false);
-    }
-
-    async updateCommentUpdatesPublishedToPostUpdatesIpfs(commentUpdateCids: string[], trx?: Transaction): Promise<void> {
-        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+    async updateCommentUpdatesPublishedToPostUpdatesIpfs(commentUpdateCids: string[], trx?: Transaction) {
+        return await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
             .whereIn("updateCid", commentUpdateCids)
             .update({ publishedToPostUpdatesIpfs: true });
     }
@@ -1385,5 +1376,12 @@ export class DbHandler {
     async resetPublishedToPostUpdatesIpfs(trx?: Transaction): Promise<void> {
         // force a new production of CommentUpdate of all Comments
         await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({ publishedToPostUpdatesIpfs: false });
+    }
+    async resetPublishedToPostUpdatesIpfsWithPostCid(postCid: CommentsTableRow["postCid"], trx?: Transaction): Promise<void> {
+        // Update the publishedToPostUpdatesIpfs field for CommentUpdate rows where the postCid matches
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+            .join(TABLES.COMMENTS, `${TABLES.COMMENT_UPDATES}.cid`, "=", `${TABLES.COMMENTS}.cid`)
+            .where(`${TABLES.COMMENTS}.postCid`, postCid)
+            .update({ publishedToPostUpdatesIpfs: false });
     }
 }

@@ -1767,19 +1767,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _syncPostUpdatesFilesystemWithIpfs() {
         const log = Logger("plebbit-js:local-subplebbit:sync:_syncPostUpdatesFilesystemWithIpfs");
 
-        const commentUpdateRowsToPublishToIpfs = await this._dbHandler.queryCommentUpdatesToPublishToIpfs();
+        const commentUpdateRowsToPublishToIpfs = await this._dbHandler.queryCommentUpdatesToPublishToIpfsSortedByDepth();
         if (commentUpdateRowsToPublishToIpfs.length === 0) {
             log.trace("No new comment updates to publish to IPFS. Skipping updating postUpdates");
             return;
         }
 
-        console.time("ipfs.addAll");
         const newCommentUpdatesAddAll = await genToArray(
             this._clientsManager.getDefaultIpfs()._client.addAll(this._createCommentUpdateIterable(commentUpdateRowsToPublishToIpfs), {
                 wrapWithDirectory: true
             })
         );
-        console.timeEnd("ipfs.addAll");
         try {
             // Check if the file already exists
             const exists = await this._clientsManager
@@ -1797,8 +1795,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentUpdateCidsThatGotPublished: CommentUpdatesRow["updateCid"][] = newCommentUpdatesAddAll
                 .filter((updateAddRes) => updateAddRes.path.endsWith("/update"))
                 .map((updateAddRes) => updateAddRes.cid.toV0().toString());
+
             await this._dbHandler.updateCommentUpdatesPublishedToPostUpdatesIpfs(commentUpdateCidsThatGotPublished);
-            log("Synced", newCommentUpdatesAddAll.length, "file nodes", "of FS post updates to IPFS");
+            log(
+                "Subplebbit",
+                this.address,
+                "Synced",
+                commentUpdateCidsThatGotPublished.length,
+                "CommentUpdates",
+                "with MFS postUpdates directory",
+                postUpdatesDirectoryCid
+            );
         } catch (error) {
             // Handle any other errors that might occur
             log.error("Error syncing file nodes to IPFS:", error);
@@ -1822,13 +1829,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (typeof newTimestampBucketOfPost !== "number") throw Error("Failed to calculate the timestamp bucket of post");
             if (currentTimestampBucketOfPost !== newTimestampBucketOfPost) {
                 log(
-                    `Post (${post.cid}) current postUpdates timestamp bucket (${currentTimestampBucketOfPost}) is outdated. Will move it to bucket (${newTimestampBucketOfPost})`
+                    `Post (${post.cid}) current postUpdates timestamp bucket (${currentTimestampBucketOfPost}) is outdated. Will mark it to be republished under a new bucket (${newTimestampBucketOfPost})`
                 );
 
-                const commentsWithOutdatedIpfsPath = await this._dbHandler.queryCommentsUnderPostSortedByDepth(post.cid);
-                for (const comment of commentsWithOutdatedIpfsPath) await this._calculateNewCommentUpdateAndWriteToFilesystemAndDb(comment);
-
-                this._subplebbitUpdateTrigger = true;
+                await this._dbHandler.resetPublishedToPostUpdatesIpfsWithPostCid(post.cid);
             }
         }
     }
