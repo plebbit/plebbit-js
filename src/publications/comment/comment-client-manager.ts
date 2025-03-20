@@ -1,7 +1,7 @@
 import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../../clients/chain-provider-client.js";
 import { CommentPlebbitRpcStateClient } from "../../clients/rpc-client/plebbit-rpc-state-client.js";
-import { PageIpfs } from "../../pages/types.js";
+import type { PageIpfs } from "../../pages/types.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { ChainTicker } from "../../types.js";
 import { Comment } from "./comment.js";
@@ -24,7 +24,6 @@ import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import { findCommentInPages, findCommentInPagesRecrusively } from "../../pages/util.js";
 import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
-import { measurePerformance } from "../../decorator-util.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -66,7 +65,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
         if (this._comment.state === "updating" && !staleCache && txtRecordName === "plebbit-author-address")
-            this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs and author.address is a domain
+            this._comment._setUpdatingStateWithEmissionIfNewState("resolving-author-address"); // Resolving for CommentIpfs and author.address is a domain
     }
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, commentCidToLookFor: string) {
@@ -92,7 +91,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     ): Promise<{ comment: CommentIpfsType; commentUpdate: Pick<CommentUpdateType, "cid"> }> {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
-            this._comment._setUpdatingState("fetching-update-ipfs");
+            this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
             const commentTimeoutMs = this._plebbit._timeouts["comment-ipfs"];
             try {
                 const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
@@ -356,8 +355,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
                 this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
-            this._comment._setUpdatingState("succeeded");
+            this._comment._setUpdatingStateNoEmission("succeeded");
             this._comment.emit("update", this._comment);
+            this._comment.emit("updatingstatechange", "succeeded");
             return true;
         } else return false;
     }
@@ -365,12 +365,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     async useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitPostUpdatesToFetchCommentUpdate");
         if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
-        if (!subIpfs.postUpdates) {
-            log("Sub", subIpfs.address, "has no postUpdates field. Will wait for next update for comment", this._comment.cid);
-            this._comment._setUpdatingState("waiting-retry");
-            this._comment.emit("waiting-retry", new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs }));
-            return undefined;
-        }
+        if (!subIpfs.postUpdates) throw new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs, comment: this._comment });
 
         const parentsPostUpdatePath = this._comment._commentUpdateIpfsPath
             ? this._comment._commentUpdateIpfsPath.replace("/update", "").split("/").slice(1).join("/")
@@ -381,7 +376,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
         const timestampRanges = getPostUpdateTimestampRange(subIpfs.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
-        this._comment._setUpdatingState("fetching-update-ipfs");
+        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
 
         let newCommentUpdate: NewCommentUpdate;
         try {
@@ -394,8 +389,9 @@ export class CommentClientsManager extends PublicationClientsManager {
                     // this is a retriable error
                     // could be problems loading from the network or gateways
                     log.trace(`Comment`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
-                    this._comment._setUpdatingState("waiting-retry");
-                    this._comment.emit("waiting-retry", e);
+                    this._comment._setUpdatingStateNoEmission("waiting-retry");
+                    this._comment.emit("error", e);
+                    this._comment.emit("updatingstatechange", "waiting-retry");
                 } else {
                     // non retriable error, problem with schema/signature
                     log.error(
@@ -403,8 +399,9 @@ export class CommentClientsManager extends PublicationClientsManager {
                         this._comment.cid!,
                         e
                     );
-                    this._comment._setUpdatingState("failed");
+                    this._comment._setUpdatingStateNoEmission("failed");
                     this._comment.emit("error", e);
+                    this._comment.emit("updatingstatechange", "failed");
                 }
             }
             return;
@@ -413,8 +410,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._useLoadedCommentUpdateIfNewInfo(newCommentUpdate, subIpfs, log);
         } else if (newCommentUpdate === undefined) {
             log.trace(`Comment`, this._comment.cid, "loaded an old comment update. Ignoring it");
-            this._comment._setUpdatingState("waiting-retry");
-            this._comment.emit("waiting-retry", new PlebbitError("ERR_COMMENT_RECEIVED_ALREADY_PROCESSED_COMMENT_UPDATE"));
+            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
         }
     }
 
@@ -537,14 +533,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    override async handleWaitingRetryEventFromSub(error: PlebbitError | Error) {
-        // we received a waiting retry event from sub instance
-        if (this._comment.state === "publishing") return super.handleWaitingRetryEventFromSub(error);
-        // we're updating a comment
-        this._comment._setUpdatingState("waiting-retry");
-        this._comment.emit("waiting-retry", error);
-    }
-
     override async handleErrorEventFromSub(error: PlebbitError | Error) {
         // we received a non retriable error from sub instance
         if (this._comment.state === "publishing") return super.handleErrorEventFromSub(error);
@@ -557,7 +545,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 "received a non retriable error from its subplebbit instance. Will stop comment updating",
                 error
             );
-            this._comment._setUpdatingState("failed");
+            this._comment._setUpdatingStateWithEmissionIfNewState("failed");
             this._comment.emit("error", error);
             await this._comment.stop();
         }
@@ -573,35 +561,23 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     _translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
-        const subUpdatingStateToCommentUpdatingState: Partial<Record<typeof newSubUpdatingState, Comment["updatingState"]>> = {
+        const subUpdatingStateToCommentUpdatingState: Record<typeof newSubUpdatingState, Comment["updatingState"] | undefined> = {
             failed: "failed",
             "fetching-ipfs": "fetching-subplebbit-ipfs",
             "fetching-ipns": "fetching-subplebbit-ipns",
-            "resolving-address": "resolving-subplebbit-address"
+            "resolving-address": "resolving-subplebbit-address",
+            "waiting-retry": "waiting-retry",
+            stopped: "stopped",
+            succeeded: undefined,
+            "publishing-ipns": undefined
         };
         const translatedCommentUpdatingState = subUpdatingStateToCommentUpdatingState[newSubUpdatingState];
-        if (translatedCommentUpdatingState) this._comment._setUpdatingState(translatedCommentUpdatingState);
-    }
-    _translateSubUpdatingStateToCommentKuboState(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
-        if (!this._defaultIpfsProviderUrl) return;
-
-        const subUpdatingStateToCommentKuboState: Partial<
-            Record<typeof newSubUpdatingState, Comment["clients"]["kuboRpcClients"][string]["state"]>
-        > = {
-            "fetching-ipfs": "fetching-subplebbit-ipfs",
-            "waiting-retry": "stopped",
-            "fetching-ipns": "fetching-subplebbit-ipns",
-            stopped: "stopped",
-            failed: "stopped"
-        };
-        const translatedKuboState = subUpdatingStateToCommentKuboState[newSubUpdatingState];
-        if (translatedKuboState) this.updateIpfsState(translatedKuboState);
+        if (translatedCommentUpdatingState) this._comment._setUpdatingStateWithEmissionIfNewState(translatedCommentUpdatingState);
     }
 
     override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
         if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
 
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
-        this._translateSubUpdatingStateToCommentKuboState(newSubUpdatingState);
     }
 }

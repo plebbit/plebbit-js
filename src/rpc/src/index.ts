@@ -297,7 +297,7 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
         subplebbit.on("challengeverification", challengeVerificationListener);
 
-        const errorListener = (error: PlebbitError) => sendEvent("error", error);
+        const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
         subplebbit.on("error", errorListener);
 
         // cleanup function
@@ -562,16 +562,12 @@ class PlebbitWsServer extends EventEmitter {
         const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
         comment.on("error", errorListener);
 
-        const waitingRetryListener = (error: PlebbitError | Error) => sendEvent("waiting-retry", error);
-        comment.on("waiting-retry", waitingRetryListener);
-
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             comment.removeListener("update", updateListener);
             comment.removeListener("updatingstatechange", updatingStateListener);
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
-            comment.removeListener("waiting-retry", waitingRetryListener);
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
 
@@ -630,11 +626,8 @@ class PlebbitWsServer extends EventEmitter {
         const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
         if (isSubStarted) subplebbit.on("startedstatechange", startedStateListener);
 
-        const errorListener = (error: PlebbitError) => sendEvent("error", error);
+        const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
         subplebbit.on("error", errorListener);
-
-        const waitingRetryListener = (error: PlebbitError | Error) => sendEvent("waiting-retry", error);
-        subplebbit.on("waiting-retry", waitingRetryListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -642,7 +635,6 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
-            subplebbit.removeListener("waiting-retry", waitingRetryListener);
 
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")

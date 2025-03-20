@@ -56,13 +56,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _handleUpdatingStateChangeFromRpcUpdate(args: any) {
         const newUpdatingState: RpcRemoteSubplebbit["updatingState"] = args.params.result; // we're being optimistic that RPC server sent an appropiate updating state string
 
-        this._setUpdatingState(newUpdatingState);
+        this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
         this._updateRpcClientStateFromUpdatingState(newUpdatingState);
-    }
-
-    private _handleWaitingRetryEventFromRpcUpdate(args: any) {
-        const err = <PlebbitError | Error>args.params.result;
-        this.emit("waiting-retry", err);
     }
 
     override async update() {
@@ -76,14 +71,13 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
             this._setState("stopped");
-            this._setUpdatingState("failed");
+            this._setUpdatingStateWithEventEmissionIfNewState("failed");
             throw e;
         }
         this._plebbit
             ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
-            .on("waiting-retry", this._handleWaitingRetryEventFromRpcUpdate.bind(this))
             .on("error", (args) => this.emit("error", args.params.result)); // zod here
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
@@ -98,7 +92,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._setRpcClientState("stopped");
         this._updateRpcSubscriptionId = undefined;
         log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);
-        this._setUpdatingState("stopped");
+        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
     }
 }

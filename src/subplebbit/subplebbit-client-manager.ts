@@ -104,7 +104,8 @@ export class SubplebbitClientsManager extends ClientsManager {
         staleCache?: CachedTextRecordResolve
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
-        if (txtRecordName === "subplebbit-address" && !staleCache) this._subplebbit._setUpdatingState("resolving-address");
+        if (txtRecordName === "subplebbit-address" && !staleCache)
+            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("resolving-address");
     }
 
     override postResolveTextRecordSuccess(
@@ -117,7 +118,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     ): void {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
         if (!resolvedTextRecord && this._subplebbit.state === "updating") {
-            this._subplebbit._setUpdatingState("failed");
+            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("failed");
             const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
@@ -143,31 +144,28 @@ export class SubplebbitClientsManager extends ClientsManager {
                 log.trace(`Retrying to load subplebbit ${subplebbitAddress} for the ${curAttempt}th time`);
                 try {
                     const update = await this.fetchNewUpdateForSubplebbit(subplebbitAddress);
+
                     resolve(update);
                 } catch (e) {
-                    if (e instanceof Error && !this._subplebbit._isRetriableErrorWhenLoading(e)) {
+                    const error = <Error | PlebbitError>e;
+                    if (!this._subplebbit._isRetriableErrorWhenLoading(error)) {
                         // critical error that can't be retried
-                        resolve({ criticalError: e });
+                        resolve({ criticalError: error });
                     } else {
                         // we encountered a retriable error, could be gateways failing to load
                         // does not include gateways returning an old record
-                        if (e instanceof PlebbitError) e.details.countOfLoadAttempts = curAttempt;
-                        this._subplebbit._setUpdatingState("waiting-retry");
-                        log.trace(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, e);
-                        this._subplebbit.emit("waiting-retry", <Error>e);
+                        if (error instanceof PlebbitError) error.details.countOfLoadAttempts = curAttempt;
+                        log.trace(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, error);
+
+                        this._subplebbit._setUpdatingStateNoEmission("waiting-retry");
+                        this._subplebbit.emit("error", error);
+                        this._subplebbit.emit("updatingstatechange", this._subplebbit.updatingState);
+
                         this._ipnsLoadingOperation!.retry(<Error>e);
                     }
                 }
             });
         });
-    }
-
-    private _findInvalidCidInNonRetriableError(err: PlebbitError): string | undefined {
-        const findCidInErr = (err: any) => err.details?.cidOfSubIpns || err.details?.cid;
-        if (err.details.gatewayToError)
-            for (const gateway of Object.keys(err.details.gatewayToError))
-                if (findCidInErr(err.details.gatewayToError[gateway])) return findCidInErr(err.details.gatewayToError[gateway]);
-        return findCidInErr(err);
     }
 
     async updateOnce() {
@@ -181,13 +179,9 @@ export class SubplebbitClientsManager extends ClientsManager {
             log.error(
                 `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`
             );
-            this._subplebbit._setUpdatingState("failed");
-
-            if (subLoadingRes instanceof PlebbitError) {
-                const invalidCid = this._findInvalidCidInNonRetriableError(subLoadingRes);
-                if (invalidCid) this._subplebbit._lastInvalidSubplebbitCid = invalidCid;
-            }
+            this._subplebbit._setUpdatingStateNoEmission("failed");
             this._subplebbit.emit("error", <PlebbitError>subLoadingRes.criticalError);
+            this._subplebbit.emit("updatingstatechange", "failed");
         } else if (
             subLoadingRes?.subplebbit &&
             (this._subplebbit.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt &&
@@ -208,8 +202,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         } else if (subLoadingRes === undefined) {
             // we loaded a sub record that we already consumed
             // we will retry later
-            this._subplebbit._setUpdatingState("waiting-retry");
-            this._subplebbit.emit("waiting-retry", new PlebbitError("ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD"));
+            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("waiting-retry");
         }
     }
 
@@ -232,6 +225,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     async stopUpdatingLoop() {
         this._ipnsLoadingOperation?.stop();
         clearTimeout(this._updateTimeout);
+        // TODO need to abort here
         this._updateCidsAlreadyLoaded.clear();
     }
 
@@ -248,7 +242,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
         // only exception is if the ipnsRecord.value (ipfs path) is the same as as curSubplebbit.updateCid
         // in that case no need to fetch the subplebbitIpfs, we will return undefined
-        this._subplebbit._setUpdatingState("fetching-ipns");
+        this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipns");
         let subRes: ResultOfFetchingSubplebbit;
         if (this._defaultIpfsProviderUrl) {
             // we're connected to kubo or helia
@@ -265,8 +259,8 @@ export class SubplebbitClientsManager extends ClientsManager {
 
         if (subRes?.subplebbit) {
             // we found a new record that is verified
-            this._subplebbit._setUpdatingState("succeeded");
-
+            // TODO need to fix state order here
+            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("succeeded");
             this._plebbit._memCaches.subplebbitForPublishing.set(
                 subRes.subplebbit.address,
                 remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
@@ -290,7 +284,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         }
 
         this.updateIpfsState("fetching-ipfs");
-        this._subplebbit._setUpdatingState("fetching-ipfs");
+        this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipfs");
 
         const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
             maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,

@@ -104,13 +104,11 @@ export class Comment
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
     } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
 
-    private _updatingCommentInstance?: { comment: Comment } & Pick<
-        PublicationEvents,
-        "error" | "updatingstatechange" | "update" | "waiting-retry"
-    > = undefined;
+    private _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> =
+        undefined;
     constructor(plebbit: Plebbit) {
         super(plebbit);
-        this._setUpdatingState("stopped");
+        this._setUpdatingStateWithEmissionIfNewState("stopped");
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
@@ -444,17 +442,20 @@ export class Comment
                     if (commentInPage) {
                         resolve(commentInPage.comment);
                     } else {
-                        this._setUpdatingState("fetching-ipfs");
+                        this._setUpdatingStateWithEmissionIfNewState("fetching-ipfs");
                         const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
                         resolve(res);
                     }
                 } catch (e) {
-                    if (e instanceof PlebbitError && e.details) e.details = { ...e.details, commentCid: this.cid, retryCount: curAttempt };
-                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) {
-                        log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
+                    const error = <PlebbitError | Error>e;
+                    if (error instanceof PlebbitError && error.details)
+                        error.details = { ...error.details, commentCid: this.cid, retryCount: curAttempt };
+                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>error)) {
+                        log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, error);
 
-                        this._setUpdatingState("waiting-retry");
-                        this.emit("waiting-retry", <PlebbitError>e);
+                        this._setUpdatingStateNoEmission("waiting-retry");
+                        this.emit("error", error);
+                        this.emit("updatingstatechange", "waiting-retry");
                         this._commentIpfsloadingOperation!.retry(<Error>e);
                     } else {
                         // a non retriable error
@@ -478,15 +479,19 @@ export class Comment
                 );
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
-                this._setUpdatingState("failed");
-                this._updateState("stopped");
+                // TODO fix state order here
+                this._setUpdatingStateNoEmission("failed");
+                this._setStateNoEmission("stopped");
                 this.emit("error", newCommentIpfsOrNonRetriableError);
+                this.emit("updatingstatechange", "failed");
+                this.emit("statechange", "stopped");
                 return;
             } else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
-                this._setUpdatingState("succeeded");
                 this._initIpfsProps(newCommentIpfsOrNonRetriableError);
+                this._setUpdatingStateNoEmission("succeeded");
                 this.emit("update", this);
+                this.emit("updatingstatechange", "succeeded");
             }
         }
     }
@@ -520,7 +525,17 @@ export class Comment
         }
     }
 
-    _setUpdatingState(newState: Comment["updatingState"]) {
+    _setStateNoEmission(newState: Comment["state"]) {
+        if (newState === this.state) return;
+        this.state = newState;
+    }
+
+    _setUpdatingStateNoEmission(newState: Comment["updatingState"]) {
+        if (newState === this.updatingState) return;
+        this.updatingState = newState;
+    }
+
+    _setUpdatingStateWithEmissionIfNewState(newState: Comment["updatingState"]) {
         if (newState === this.updatingState) return;
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
@@ -585,7 +600,7 @@ export class Comment
 
     private _handleUpdatingStateChangeFromRpc(args: any) {
         const updateState: Comment["updatingState"] = args.params.result; // optimistic, rpc server could transmit an updating state that is not known to us
-        this._setUpdatingState(updateState);
+        this._setUpdatingStateWithEmissionIfNewState(updateState);
         this._updateRpcClientStateFromUpdatingState(updateState);
     }
 
@@ -594,20 +609,13 @@ export class Comment
         this._updateState(commentState);
     }
 
-    private _handleWaitingRetryEventFromRpc(args: any) {
-        const log = Logger("plebbit-js:comment:update:_handleWaitingRetryEventFromRpc");
-        const err = <PlebbitError>args.params.result;
-        log("Received 'waiting-retry' event for comment", this.cid, "from RPC", err);
-        this.emit("waiting-retry", err);
-    }
-
     private async _handleErrorEventFromRpc(args: any) {
         const log = Logger("plebbit-js:comment:update:_handleErrorEventFromRpc");
         const err = <PlebbitError>args.params.result;
         log("Received 'error' event from RPC", err);
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
-            this._setUpdatingState("failed");
+            this._setUpdatingStateWithEmissionIfNewState("failed");
             this._updateState("stopped");
             await this._stopUpdateLoop();
         }
@@ -625,7 +633,7 @@ export class Comment
         } catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
             this._updateState("stopped");
-            this._setUpdatingState("failed");
+            this._setUpdatingStateWithEmissionIfNewState("failed");
             throw e;
         }
         this._updateState("updating");
@@ -635,8 +643,7 @@ export class Comment
             .on("update", this._handleUpdateEventFromRpc.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
             .on("statechange", this._handleStateChangeFromRpc.bind(this))
-            .on("error", this._handleErrorEventFromRpc.bind(this))
-            .on("waiting-retry", this._handleWaitingRetryEventFromRpc.bind(this));
+            .on("error", this._handleErrorEventFromRpc.bind(this));
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
@@ -667,21 +674,19 @@ export class Comment
         this._updatingCommentInstance = {
             comment: updatingCommentInstance,
             update: () => this._useUpdatePropsFromUpdatingCommentIfPossible(),
-            updatingstatechange: (newState) => this._setUpdatingState(newState),
+            updatingstatechange: (newState) => this._setUpdatingStateWithEmissionIfNewState(newState),
             error: async (err) => {
                 if (!this._isRetriableLoadingError(err)) {
                     this._updateState("stopped");
                     await this._stopUpdateLoop();
                 }
                 this.emit("error", err);
-            },
-            "waiting-retry": (err) => this.emit("waiting-retry", err)
+            }
         };
         this._useUpdatePropsFromUpdatingCommentIfPossible();
 
         updatingCommentInstance.on("update", this._updatingCommentInstance.update);
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
-        updatingCommentInstance.on("waiting-retry", this._updatingCommentInstance["waiting-retry"]);
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
@@ -769,7 +774,6 @@ export class Comment
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
             this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
-            this._updatingCommentInstance.comment.removeListener("waiting-retry", this._updatingCommentInstance["waiting-retry"]);
 
             const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
 
@@ -792,7 +796,7 @@ export class Comment
 
     override async stop() {
         if (this.state === "publishing") await super.stop();
-        this._setUpdatingState("stopped");
+        this._setUpdatingStateWithEmissionIfNewState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();
     }

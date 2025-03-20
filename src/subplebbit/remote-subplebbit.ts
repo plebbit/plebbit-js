@@ -80,17 +80,16 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _plebbit: Plebbit;
     _clientsManager: SubplebbitClientsManager;
     _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
-    _lastInvalidSubplebbitCid?: string = undefined; // a subplebbit cid that's invalid signature/schema/etc
     _updatingSubInstanceWithListeners?: { subplebbit: RemoteSubplebbit } & Pick<
         SubplebbitEvents,
-        "error" | "updatingstatechange" | "update" | "waiting-retry"
+        "error" | "updatingstatechange" | "update"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
 
     constructor(plebbit: Plebbit) {
         super();
         this._plebbit = plebbit;
         this._setState("stopped");
-        this._setUpdatingState("stopped");
+        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
 
         // these functions might get separated from their `this` when used
         this.update = this.update.bind(this);
@@ -219,7 +218,12 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.emit("statechange", this.state);
     }
 
-    _setUpdatingState(newState: RemoteSubplebbit["updatingState"]) {
+    _setUpdatingStateNoEmission(newState: RemoteSubplebbit["updatingState"]) {
+        if (newState === this.updatingState) return;
+        this.updatingState = newState;
+    }
+
+    _setUpdatingStateWithEventEmissionIfNewState(newState: RemoteSubplebbit["updatingState"]) {
         if (newState === this.updatingState) return;
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
@@ -290,10 +294,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 this.emit("error", error);
             },
             updatingstatechange: async (newUpdatingState) => {
-                this._setUpdatingState(newUpdatingState);
-            },
-            "waiting-retry": async (error: Error) => {
-                this.emit("waiting-retry", error);
+                this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
             }
         };
     }
@@ -339,7 +340,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this._updatingSubInstanceWithListeners.updatingstatechange
         );
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
-        this._updatingSubInstanceWithListeners.subplebbit.on("waiting-retry", this._updatingSubInstanceWithListeners["waiting-retry"]);
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
@@ -379,7 +379,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     async stop() {
         if (this.state !== "updating") throw Error("User call remoteSubplebbit.stop() without updating first");
 
-        this._setUpdatingState("stopped");
+        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
         if (this._updatingSubInstanceWithListeners) {
             // this instance is subscribed to plebbit._updatingSubplebbit[address]
@@ -390,10 +390,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 this._updatingSubInstanceWithListeners.updatingstatechange
             );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
-            this._updatingSubInstanceWithListeners.subplebbit.removeListener(
-                "waiting-retry",
-                this._updatingSubInstanceWithListeners["waiting-retry"]
-            );
 
             const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"] as const;
 

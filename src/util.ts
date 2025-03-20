@@ -315,14 +315,14 @@ export async function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predica
 
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-    let updateError: PlebbitError | undefined;
-    const errorListener = (err: PlebbitError) => (updateError = err);
+    let updateError: PlebbitError | Error | undefined;
+    const errorListener = (err: PlebbitError | Error) => (updateError = err);
     subplebbit.on("error", errorListener);
     try {
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
+            message: updateError || new TimeoutError(`Subplebbit ${subplebbit.address} update timed out after ${timeoutMs}ms`)
         });
         if (updateError) throw updateError;
     } catch (e) {

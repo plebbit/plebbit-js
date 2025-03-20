@@ -24,11 +24,12 @@ export class PublicationClientsManager extends ClientsManager {
     _subplebbitForUpdating?: {
         subplebbit: RemoteSubplebbit;
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
+        kuboRpcListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]>;
         chainProviderListeners?: Record<
             ChainTicker,
             Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
         >;
-    } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error" | "waiting-retry"> = undefined;
+    } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
 
     constructor(publication: Publication) {
         super(publication._plebbit);
@@ -89,24 +90,10 @@ export class PublicationClientsManager extends ClientsManager {
         if (translatedState) this._publication._updatePublishingState(translatedState);
     }
 
-    _translateSubUpdatingStateToKuboClientState(newUpdatingState: RemoteSubplebbit["updatingState"]) {
-        if (!this._defaultIpfsProviderUrl) return;
-        const mapper: Partial<Record<typeof newUpdatingState, Publication["clients"]["kuboRpcClients"][string]["state"]>> = {
-            failed: "stopped",
-            stopped: "stopped",
-            succeeded: "stopped",
-            "fetching-ipfs": "fetching-subplebbit-ipfs",
-            "fetching-ipns": "fetching-subplebbit-ipns"
-        };
-        const translatedState = mapper[newUpdatingState];
-        if (translatedState) this.updateIpfsState(translatedState);
-    }
-
     handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]) {
         // will be overridden in comment-client-manager to provide a specific states relevant to comment updating
         // below is for handling translation to publishingState
         this._translateSubUpdatingStateToPublishingState(newUpdatingState);
-        this._translateSubUpdatingStateToKuboClientState(newUpdatingState);
     }
     handleUpdateEventFromSub() {
         // a new update has been emitted by sub
@@ -121,11 +108,6 @@ export class PublicationClientsManager extends ClientsManager {
 
         this._publication._updatePublishingState("failed");
         this._publication.emit("error", err);
-    }
-
-    handleWaitingRetryEventFromSub(err: PlebbitError | Error) {
-        // a waiting retry event of the sub
-        // should be handled in comment-client-manager
     }
 
     handleIpfsGatewaySubplebbitState(
@@ -146,6 +128,21 @@ export class PublicationClientsManager extends ClientsManager {
         this.updateChainProviderState(subplebbitNewChainState, chainTicker, providerUrl);
     }
 
+    handleKuboRpcSubplebbitState(
+        subplebbitNewKuboRpcState: RemoteSubplebbit["clients"]["kuboRpcClients"][string]["state"],
+        kuboRpcUrl: string
+    ) {
+        const stateMapper: Record<typeof subplebbitNewKuboRpcState, PublicationKuboRpcClient["state"] | undefined> = {
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            stopped: "stopped",
+            "publishing-ipns": undefined
+        };
+
+        const translatedState = stateMapper[subplebbitNewKuboRpcState];
+        if (translatedState) this.updateIpfsState(translatedState);
+    }
+
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
@@ -157,11 +154,10 @@ export class PublicationClientsManager extends ClientsManager {
             subplebbit: sub,
             error: this.handleErrorEventFromSub.bind(this),
             update: this.handleUpdateEventFromSub.bind(this),
-            updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this),
-            "waiting-retry": this.handleWaitingRetryEventFromSub.bind(this)
+            updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this)
         };
 
-        if (!this._defaultIpfsProviderUrl) {
+        if (Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways).length > 0) {
             // we're using gateways
             const ipfsGatewayListeners: (typeof this._subplebbitForUpdating)["ipfsGatewayListeners"] = {};
 
@@ -173,6 +169,20 @@ export class PublicationClientsManager extends ClientsManager {
                 ipfsGatewayListeners[gatewayUrl] = ipfsStateListener;
             }
             this._subplebbitForUpdating.ipfsGatewayListeners = ipfsGatewayListeners;
+        }
+
+        // Add Kubo RPC client state listeners
+        if (Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients).length > 0) {
+            const kuboRpcListeners: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]> = {};
+
+            for (const kuboRpcUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients)) {
+                const kuboRpcStateListener = (subplebbitNewKuboRpcState: RemoteSubplebbit["clients"]["kuboRpcClients"][string]["state"]) =>
+                    this.handleKuboRpcSubplebbitState(subplebbitNewKuboRpcState, kuboRpcUrl);
+
+                this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients[kuboRpcUrl].on("statechange", kuboRpcStateListener);
+                kuboRpcListeners[kuboRpcUrl] = kuboRpcStateListener;
+            }
+            this._subplebbitForUpdating.kuboRpcListeners = kuboRpcListeners;
         }
 
         // Add chain provider state listeners
@@ -204,14 +214,14 @@ export class PublicationClientsManager extends ClientsManager {
         this._subplebbitForUpdating.subplebbit.on("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
 
         this._subplebbitForUpdating.subplebbit.on("error", this._subplebbitForUpdating.error);
-        this._subplebbitForUpdating.subplebbit.on("waiting-retry", this._subplebbitForUpdating["waiting-retry"]);
         return this._subplebbitForUpdating!;
     }
 
     async cleanUpUpdatingSubInstance() {
         if (!this._subplebbitForUpdating) throw Error("Need to define subplebbitForUpdating first");
 
-        if (this._subplebbitForUpdating.ipfsGatewayListeners)
+        // Clean up IPFS Gateway listeners
+        if (this._subplebbitForUpdating.ipfsGatewayListeners) {
             for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners)) {
                 this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].removeListener(
                     "statechange",
@@ -219,6 +229,18 @@ export class PublicationClientsManager extends ClientsManager {
                 );
                 this.updateGatewayState("stopped", gatewayUrl); // need to reset all gateway states
             }
+        }
+
+        // Clean up Kubo RPC listeners
+        if (this._subplebbitForUpdating.kuboRpcListeners) {
+            for (const kuboRpcUrl of Object.keys(this._subplebbitForUpdating.kuboRpcListeners)) {
+                this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients[kuboRpcUrl].removeListener(
+                    "statechange",
+                    this._subplebbitForUpdating.kuboRpcListeners[kuboRpcUrl]
+                );
+                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+            }
+        }
 
         // Clean up chain provider listeners
         if (this._subplebbitForUpdating.chainProviderListeners) {
@@ -233,10 +255,9 @@ export class PublicationClientsManager extends ClientsManager {
             }
         }
 
-        // make sure to remvoe update event at the end
+        // Remove update event at the end
         this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
         this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
-        this._subplebbitForUpdating.subplebbit.removeListener("waiting-retry", this._subplebbitForUpdating["waiting-retry"]);
         this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
 
         if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)

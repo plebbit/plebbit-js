@@ -2078,12 +2078,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!dbSubState) throw Error("There is no internal sub state in db");
         await this._updateStartedValue();
         if (this._internalStateUpdateId !== dbSubState._internalStateUpdateId) {
-            this._setUpdatingState("succeeded");
             if ("updatedAt" in dbSubState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(dbSubState);
             else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(dbSubState);
             log(`Local Subplebbit (${this.address}) received a new update with updatedAt (${this.updatedAt}). Will emit an update event`);
 
+            this._setUpdatingStateNoEmission("succeeded");
             this.emit("update", this);
+            this.emit("updatingstatechange", "succeeded");
         }
     }
 
@@ -2143,7 +2144,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
             clearTimeout(this._updateLocalSubTimeout);
             await this._dbHandler.destoryConnection();
-            this._setUpdatingState("stopped");
+            this._setUpdatingStateWithEventEmissionIfNewState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");
         } else throw Error("User called localSubplebbit.stop() without updating or starting first on subplebbit" + this.address);

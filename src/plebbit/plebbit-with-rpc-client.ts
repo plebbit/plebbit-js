@@ -93,7 +93,7 @@ export class PlebbitWithRpcClient extends Plebbit {
                 sub.setAddress(parsedRpcOptions.address);
                 // wait for one update here, and then stop
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
-                let error: PlebbitError | undefined;
+                let error: PlebbitError | Error | undefined;
                 const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
                 await sub.update();
                 await Promise.race([updatePromise, errorPromise]);
