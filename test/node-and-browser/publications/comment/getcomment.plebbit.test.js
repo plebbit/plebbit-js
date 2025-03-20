@@ -1,7 +1,13 @@
 import signers from "../../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { loadAllPages, getRemotePlebbitConfigs, addStringToIpfs, itSkipIfRpc } from "../../../../dist/node/test/test-util.js";
+import {
+    loadAllPages,
+    getRemotePlebbitConfigs,
+    addStringToIpfs,
+    itSkipIfRpc,
+    isPlebbitFetchingUsingGateways
+} from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -89,12 +95,15 @@ getRemotePlebbitConfigs().map((config) => {
         itSkipIfRpc(`plebbit.getComment times out if commentCid does not exist`, async () => {
             const commentCid = "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGzx"; // random cid doesn't exist anywhere
             const customPlebbit = await config.plebbitInstancePromise();
-            customPlebbit._timeouts["comment-ipfs"] = 5 * 1000;
+            customPlebbit._timeouts["comment-ipfs"] = 100;
             try {
                 await customPlebbit.getComment(commentCid);
                 expect.fail("should not succeed");
             } catch (e) {
-                expect(["TimeoutError", "HTTPError"]).to.include(e.name);
+                if (isPlebbitFetchingUsingGateways(customPlebbit)) {
+                    expect(e.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
+                    expect(e.details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
+                } else expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
             }
         });
     });
