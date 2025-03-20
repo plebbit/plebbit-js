@@ -1379,9 +1379,17 @@ export class DbHandler {
     }
     async resetPublishedToPostUpdatesIpfsWithPostCid(postCid: CommentsTableRow["postCid"], trx?: Transaction): Promise<void> {
         // Update the publishedToPostUpdatesIpfs field for CommentUpdate rows where the postCid matches
-        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
-            .join(TABLES.COMMENTS, `${TABLES.COMMENT_UPDATES}.cid`, "=", `${TABLES.COMMENTS}.cid`)
-            .where(`${TABLES.COMMENTS}.postCid`, postCid)
-            .update({ publishedToPostUpdatesIpfs: false });
+        // First, get all the comment cids that match the postCid
+        const commentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).select("cid");
+
+        // Then update the comment updates table using those cids
+        if (commentCids.length > 0) {
+            await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+                .whereIn(
+                    "cid",
+                    commentCids.map((record) => record.cid)
+                )
+                .update({ publishedToPostUpdatesIpfs: false });
+        }
     }
 }
