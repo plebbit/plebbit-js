@@ -157,7 +157,10 @@ export class PublicationClientsManager extends ClientsManager {
             updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this)
         };
 
-        if (Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways).length > 0) {
+        if (
+            this._subplebbitForUpdating.subplebbit.clients.ipfsGateways &&
+            Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways).length > 0
+        ) {
             // we're using gateways
             const ipfsGatewayListeners: (typeof this._subplebbitForUpdating)["ipfsGatewayListeners"] = {};
 
@@ -172,7 +175,10 @@ export class PublicationClientsManager extends ClientsManager {
         }
 
         // Add Kubo RPC client state listeners
-        if (Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients).length > 0) {
+        if (
+            this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients &&
+            Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients).length > 0
+        ) {
             const kuboRpcListeners: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]> = {};
 
             for (const kuboRpcUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients)) {
