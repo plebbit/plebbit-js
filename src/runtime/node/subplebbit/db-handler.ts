@@ -241,9 +241,9 @@ export class DbHandler {
             table.timestamp("lastReplyTimestamp").nullable();
 
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
-            table.text("ipfsPath").notNullable();
+            table.text("localMfsPath").notNullable();
             table.text("updateCid").notNullable(); // the cid of CommentUpdate, cidv0
-            table.boolean("publishedToPostUpdatesIpfs").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
+            table.boolean("publishedToPostUpdatesMFS").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
 
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
@@ -738,10 +738,10 @@ export class DbHandler {
 
     async queryCommentUpdatesOfPostsForBucketAdjustment(
         trx?: Transaction
-    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]> {
+    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "localMfsPath">)[]> {
         return this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .select(`${TABLES.COMMENT_UPDATES}.ipfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
+            .select(`${TABLES.COMMENT_UPDATES}.localMfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
             .where("depth", 0);
     }
 
@@ -777,6 +777,17 @@ export class DbHandler {
         return comment;
     }
 
+    async queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">[]> {
+        const parents: Pick<CommentsTableRow, "cid">[] = [];
+        let curParentCid = rootComment.parentCid;
+        while (curParentCid) {
+            parents.push({ cid: curParentCid });
+            curParentCid = (await this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", curParentCid).select("parentCid").first())
+                ?.parentCid;
+        }
+        return parents;
+    }
+
     async queryParents(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
         let curParentCid = rootComment.parentCid;
@@ -790,7 +801,7 @@ export class DbHandler {
 
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
         // Criteria:
-        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) or commentUpdate.publishedToPostUpdatesIpfs is false OR
+        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) or commentUpdate.publishedToPostUpdatesMFS is false OR
         // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit or CommentModeration OR
         // 3 - Comments that new votes, CommentEdit, commentModeration or other comments were published under them
 
@@ -801,7 +812,7 @@ export class DbHandler {
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhere(`${TABLES.COMMENT_UPDATES}.publishedToPostUpdatesIpfs`, false);
+            .orWhere(`${TABLES.COMMENT_UPDATES}.publishedToPostUpdatesMFS`, false);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         // @ts-expect-error
         const criteriaTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -1169,7 +1180,7 @@ export class DbHandler {
             if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES)) {
                 try {
                     const commentUpdate = await this.queryStoredCommentUpdate({ cid });
-                    if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
+                    if (commentUpdate?.localMfsPath) purgedCids.push(commentUpdate.localMfsPath);
                     if (commentUpdate?.updateCid) purgedCids.push(commentUpdate.updateCid);
                     if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
                     await this._knex(TABLES.COMMENT_UPDATES).where({ cid }).del();
@@ -1183,7 +1194,7 @@ export class DbHandler {
                         let curCid = (await this._knex(TABLES.COMMENTS).where({ cid }).first())?.parentCid;
                         while (curCid) {
                             const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid });
-                            if (commentUpdate?.ipfsPath) purgedCids.push(commentUpdate.ipfsPath);
+                            if (commentUpdate?.localMfsPath) purgedCids.push(commentUpdate.localMfsPath);
                             if (commentUpdate?.updateCid) purgedCids.push(commentUpdate.updateCid);
                             if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
 
@@ -1352,33 +1363,25 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC").select("cid");
     }
 
-    async queryCommentUpdatesToPublishToIpfsSortedByDepth(trx?: Transaction): Promise<CommentUpdatesRow[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
-            .join(TABLES.COMMENTS, `${TABLES.COMMENT_UPDATES}.cid`, "=", `${TABLES.COMMENTS}.cid`)
-            .where("publishedToPostUpdatesIpfs", false)
-            .orderBy(`${TABLES.COMMENTS}.depth`, "DESC")
-            .select(`${TABLES.COMMENT_UPDATES}.*`);
-    }
-
-    async updateCommentUpdatesPublishedToPostUpdatesIpfs(commentUpdateCids: string[], trx?: Transaction) {
+    async updateCommentUpdatesPublishedToPostUpdatesMFS(commentCids: string[], trx?: Transaction) {
         return await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
-            .whereIn("updateCid", commentUpdateCids)
-            .update({ publishedToPostUpdatesIpfs: true });
+            .whereIn("cid", commentCids)
+            .update({ publishedToPostUpdatesMFS: true });
     }
 
-    async updateIpfsPathOfCommentUpdates(oldAddress: string, newAddress: string, trx?: Transaction): Promise<void> {
+    async updateMfsPathOfCommentUpdates(oldAddress: string, newAddress: string, trx?: Transaction): Promise<void> {
         await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({
             //@ts-expect-error
-            ipfsPath: this._knex.raw("REPLACE(ipfsPath, ?, ?)", [oldAddress, newAddress])
+            localMfsPath: this._knex.raw("REPLACE(localMfsPath, ?, ?)", [oldAddress, newAddress])
         });
     }
 
-    async resetPublishedToPostUpdatesIpfs(trx?: Transaction): Promise<void> {
+    async resetPublishedToPostUpdatesMFS(trx?: Transaction): Promise<void> {
         // force a new production of CommentUpdate of all Comments
-        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({ publishedToPostUpdatesIpfs: false });
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({ publishedToPostUpdatesMFS: false });
     }
-    async resetPublishedToPostUpdatesIpfsWithPostCid(postCid: CommentsTableRow["postCid"], trx?: Transaction): Promise<void> {
-        // Update the publishedToPostUpdatesIpfs field for CommentUpdate rows where the postCid matches
+    async resetPublishedToPostUpdatesMFSWithPostCid(postCid: CommentsTableRow["postCid"], trx?: Transaction): Promise<void> {
+        // Update the publishedToPostUpdatesMFS field for CommentUpdate rows where the postCid matches
         // First, get all the comment cids that match the postCid
         const commentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).select("cid");
 
@@ -1389,7 +1392,7 @@ export class DbHandler {
                     "cid",
                     commentCids.map((record) => record.cid)
                 )
-                .update({ publishedToPostUpdatesIpfs: false });
+                .update({ publishedToPostUpdatesMFS: false });
         }
     }
 }

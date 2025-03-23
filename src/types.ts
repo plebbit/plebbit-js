@@ -75,9 +75,9 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "i
 
 export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
-    ipfsPath: string;
+    localMfsPath: string; // the MFS path of the comment update within the kubo node
     updateCid: string; // the cid of CommentUpdate, cid v0
-    publishedToPostUpdatesIpfs: boolean;
+    publishedToPostUpdatesMFS: boolean;
 }
 
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
