@@ -30,7 +30,7 @@ export class BasePages {
     _clientsManager!: BasePagesClientsManager;
     _parentComment: Comment | undefined = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
     _subplebbit!: BaseProps["subplebbit"];
-    _loadedPages: Record<string, PageIpfs> = {}; // cid => pageIpfs. Will be reset on stop or when we update the record of pages cause of new subplebbit update or CommentUpdate
+    _loadedUniqueCommentFromGetPage: Record<string, PageIpfs["comments"][0]> = {}; // comment cid => CommentInPageIpfs. Will be reset on stop or when we update the record of pages cause of new subplebbit update or CommentUpdate
     protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: PostsProps | RepliesProps) {
@@ -41,7 +41,7 @@ export class BasePages {
 
     updateProps(props: Omit<PostsProps | RepliesProps, "plebbit">) {
         this.pages = props.pages;
-        if (!remeda.isDeepEqual(this.pageCids, props.pageCids)) this._loadedPages = {};
+        if (!remeda.isDeepEqual(this.pageCids, props.pageCids)) this._loadedUniqueCommentFromGetPage = {};
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
         this._pagesIpfs = props.pagesIpfs;
@@ -60,7 +60,7 @@ export class BasePages {
         this.pageCids = {};
         this.pages = {};
         this._pagesIpfs = undefined;
-        this._loadedPages = {};
+        this._loadedUniqueCommentFromGetPage = {};
     }
 
     async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
@@ -78,10 +78,11 @@ export class BasePages {
     async getPage(pageCid: string): Promise<PageTypeJson> {
         if (!this._subplebbit?.address) throw Error("Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        if (this._loadedPages[parsedCid]) return parsePageIpfs(this._loadedPages[parsedCid]);
 
         const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
-        this._loadedPages[parsedCid] = pageIpfs;
+        pageIpfs.comments.forEach((comment) => {
+            this._loadedUniqueCommentFromGetPage[comment.commentUpdate.cid] = comment;
+        });
         return parsePageIpfs(pageIpfs);
     }
 
@@ -106,7 +107,7 @@ export class BasePages {
     }
 
     _stop() {
-        this._loadedPages = {};
+        this._loadedUniqueCommentFromGetPage = {};
     }
 }
 

@@ -208,11 +208,11 @@ export function findCommentInPageInstance(
     if (!pageInstance) throw Error("should define page ipfs");
     if (!targetCommentCid) throw Error("should define target comment cid");
 
+    const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCommentCid];
+    if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
+
     for (const page of Object.values(pageInstance.pages))
         if (page) for (const pageComment of page.comments) if (pageComment.cid === targetCommentCid) return pageComment.pageComment;
-
-    for (const page of Object.values(pageInstance._loadedPages))
-        for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCommentCid) return pageComment;
 
     return undefined;
 }
@@ -247,6 +247,8 @@ export function findCommentInPageInstanceRecursively(
     if (!pageInstance) throw Error("should define page instance");
     if (!targetCid) throw Error("should define target comment cid");
 
+    const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCid];
+    if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
     const visited = new Set<string>();
     for (const [sortName, page] of Object.entries(pageInstance.pages)) {
         // Skip if we've visited this page
@@ -256,14 +258,6 @@ export function findCommentInPageInstanceRecursively(
 
         const pageIpfs = <PageIpfs>{ comments: page.comments.map((page) => page.pageComment), nextCid: page.nextCid };
         const foundComment = findCommentInPageIpfsRecursively(pageIpfs, targetCid);
-        visited.add(pageCid);
-        if (foundComment) return foundComment;
-    }
-
-    for (const [pageCid, page] of Object.entries(pageInstance._loadedPages)) {
-        if (visited.has(pageCid)) continue;
-
-        const foundComment = findCommentInPageIpfsRecursively(page, targetCid);
         visited.add(pageCid);
         if (foundComment) return foundComment;
     }
