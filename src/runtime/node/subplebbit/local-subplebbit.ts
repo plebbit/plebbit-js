@@ -110,15 +110,14 @@ import type {
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
 } from "../../../publications/comment/types.js";
-import { SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeAnswerMessageSchema,
     ChallengeMessageSchema,
     ChallengeRequestMessageSchema,
     ChallengeVerificationMessageSchema,
     DecryptedChallengeRequestPublicationSchema,
-    DecryptedChallengeRequestSchema,
-    DecryptedChallengeSchema
+    DecryptedChallengeRequestSchema
 } from "../../../pubsub-messages/schema.js";
 import {
     parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
@@ -139,14 +138,12 @@ import {
     CommentModerationReservedFields
 } from "../../../publications/comment-moderation/schema.js";
 import type { CommentModerationPubsubMessagePublication } from "../../../publications/comment-moderation/types.js";
-import path from "path";
-import fs from "fs";
-import fsPromises from "fs/promises";
-import { CID, globSource } from "kubo-rpc-client";
 import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
 import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
+
+type CommentUpdateToBeUpdated = CommentUpdatesRow & Pick<CommentsTableRow, "depth"> & { commentUpdateRecordString: string };
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -404,7 +401,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger || lastPublishTooOld;
     }
 
-    private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: (CommentUpdatesRow & Pick<CommentsTableRow, "depth">)[]) {
+    private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToBeUpdated[]) {
         const log = Logger("plebbit-js:local-subplebbit:sync");
 
         await this._calculateLatestUpdateTrigger();
@@ -1502,7 +1499,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return row;
     }
 
-    private async _calculateNewCommentUpdateAndWriteToDb(comment: CommentsTableRow): Promise<CommentUpdatesRow> {
+    private async _calculateNewCommentUpdateAndWriteToDb(
+        comment: CommentsTableRow
+    ): Promise<CommentUpdatesRow & { commentUpdateRecordString: string }> {
         const log = Logger("plebbit-js:local-subplebbit:_calculateNewCommentUpdateAndWriteToFilesystemAndDb");
 
         // If we're here that means we're gonna calculate the new update and publish it
@@ -1559,7 +1558,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (storedCommentUpdate.localMfsPath !== newLocalMfsPath) this._mfsPathsToUnPin.add(storedCommentUpdate.localMfsPath);
         }
 
-        return newCommentUpdateRow;
+        return { ...newCommentUpdateRow, commentUpdateRecordString: newCommentUpdateString };
     }
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
@@ -1635,7 +1634,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async _updateCommentsThatNeedToBeUpdated(): Promise<(CommentUpdatesRow & Pick<CommentsTableRow, "depth">)[]> {
+    private async _updateCommentsThatNeedToBeUpdated(): Promise<CommentUpdateToBeUpdated[]> {
         const log = Logger(`plebbit-js:local-subplebbit:_updateCommentsThatNeedToBeUpdated`);
 
         const trx = await this._dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
@@ -1643,7 +1642,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return [];
 
-        console.time("updateCommentsThatNeedToBeUpdated");
+        console.time("updateCommentsThatNeedToBeUpdated" + commentsToUpdate.length);
         this._subplebbitUpdateTrigger = true;
 
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
@@ -1652,7 +1651,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
 
-        const allCommentUpdateRows: (CommentUpdatesRow & Pick<CommentsTableRow, "depth">)[] = [];
+        const allCommentUpdateRows: CommentUpdateToBeUpdated[] = [];
         // TODO potential optimization here is to separate _calculateNewCommentUpdateAndWriteToDb based on postCid + depth
         // because we know the comment updates of two different posts are independent of each other
         for (const depthKey of depthsKeySorted) {
@@ -1662,7 +1661,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             allCommentUpdateRows.push(...commentUpdateResults.map((row) => ({ ...row, depth: Number(depthKey) })));
         }
         // Return the flat array of all comment update rows
-        console.timeEnd("updateCommentsThatNeedToBeUpdated");
+        console.timeEnd("updateCommentsThatNeedToBeUpdated" + commentsToUpdate.length);
 
         return allCommentUpdateRows;
     }
@@ -1770,18 +1769,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // plebbit-js will recalculate and publish all comment updates
     }
 
-    private *_createCommentUpdateIterable(commentUpdateRows: CommentUpdatesRow[]) {
+    private *_createCommentUpdateIterable(commentUpdateRows: CommentUpdateToBeUpdated[]) {
         for (const row of commentUpdateRows) {
-            const content = deterministicStringify(<CommentUpdateType>{
-                //@ts-expect-error
-                ...remeda.pick(row, row.signature.signedPropertyNames),
-                signature: row.signature
-            });
-            yield { content };
+            yield { content: row.commentUpdateRecordString };
         }
     }
 
-    private async _syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs: (CommentUpdatesRow & Pick<CommentsTableRow, "depth">)[]) {
+    private async _syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs: CommentUpdateToBeUpdated[]) {
         const log = Logger("plebbit-js:local-subplebbit:sync:_syncPostUpdatesFilesystemWithIpfs");
 
         const postUpdatesDirectory = "/" + this.address;
