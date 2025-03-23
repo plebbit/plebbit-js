@@ -59,6 +59,7 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit(subplebbitAddress);
+            await populateSub(sub);
             await sub.update();
 
             postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: Math.round(Date.now() / 1000) - 110 });
@@ -66,10 +67,14 @@ getRemotePlebbitConfigs().map((config) => {
 
             await postToPin.update();
             await secondPostToPin.update();
-            await populateSub(sub);
             await waitTillPostInSubplebbitInstancePages(secondPostToPin, sub);
             const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
             await removeAllPins(postsComments, plebbit);
+            // wait until all posts are unpinned
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
+                return postsComments.every((comment) => !comment.pinned);
+            });
         });
 
         after(async () => {
