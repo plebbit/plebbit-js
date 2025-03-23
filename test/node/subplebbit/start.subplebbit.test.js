@@ -10,8 +10,8 @@ import {
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
     mockPlebbitV2
-} from "../../../dist/node/test/test-util";
-import { messages } from "../../../dist/node/errors";
+} from "../../../dist/node/test/test-util.js";
+import { messages } from "../../../dist/node/errors.js";
 import path from "path";
 import fs from "fs";
 import signers from "../../fixtures/signers";

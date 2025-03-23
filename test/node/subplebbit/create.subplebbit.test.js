@@ -7,9 +7,9 @@ import {
     resolveWhenConditionIsTrue,
     jsonifySubplebbitAndRemoveInternalProps,
     waitTillPostInSubplebbitPages
-} from "../../../dist/node/test/test-util";
-import { timestamp } from "../../../dist/node/util";
-import { messages } from "../../../dist/node/errors";
+} from "../../../dist/node/test/test-util.js";
+import { timestamp } from "../../../dist/node/util.js";
+import { messages } from "../../../dist/node/errors.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
