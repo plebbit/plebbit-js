@@ -11,10 +11,10 @@ import { expect } from "chai";
 const subplebbitAddress = signers[0].address;
 getRemotePlebbitConfigs().map((config) => {
     describeSkipIfRpc(`plebbit._updatingComments - ${config.name}`, async () => {
-        let commentCid;
+        let commentCid, sub;
         before(async () => {
             const plebbit = await config.plebbitInstancePromise();
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            sub = await plebbit.getSubplebbit(subplebbitAddress);
             commentCid = sub.posts.pages.hot.comments[0].cid;
         });
 
@@ -128,6 +128,37 @@ getRemotePlebbitConfigs().map((config) => {
             await comment2.stop();
 
             expect(plebbit._updatingComments[commentCid]).to.be.undefined;
+        });
+
+        it(`Calling reply.stop() when it's subscribed to a post and post is updating only for reply should remove both reply and post from _updatingComments`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
+            const replyCid = sub.posts.pages.hot.comments[0].replies.pages.topAll.comments[0].cid;
+            const reply = await plebbit.createComment({ cid: replyCid });
+            await reply.update();
+            // Get the post CID from the reply's parent
+            const postCid = sub.posts.pages.hot.comments[0].cid;
+
+            await reply.update();
+
+            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+
+            // Verify that both the reply and its parent post are in _updatingComments
+            expect(Object.keys(plebbit._updatingComments).length).to.equal(2);
+            expect(plebbit._updatingComments[replyCid]).to.exist;
+            expect(plebbit._updatingComments[postCid]).to.exist;
+
+            // Verify the reply's CID matches replyCid
+            expect(plebbit._updatingComments[replyCid].cid).to.equal(replyCid);
+
+            // Verify the post's CID matches the expected postCid
+            expect(plebbit._updatingComments[postCid].cid).to.equal(postCid);
+
+            // Now stop the reply and verify both are removed from _updatingComments
+            await reply.stop();
+            await new Promise((resolve) => setTimeout(resolve, 500)); // need to wait some time to propgate events
+            expect(plebbit._updatingComments[replyCid]).to.be.undefined;
+            expect(plebbit._updatingComments[postCid]).to.be.undefined;
+            expect(Object.keys(plebbit._updatingComments).length).to.equal(0);
         });
     });
 });
