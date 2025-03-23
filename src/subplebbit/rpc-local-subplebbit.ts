@@ -236,6 +236,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
     }
 
     override async stop() {
+        this.posts._stop();
         if (this.state === "updating") {
             return super.stop();
         } else if (this.state === "started" || this.started) {

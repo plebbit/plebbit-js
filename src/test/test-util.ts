@@ -1154,7 +1154,7 @@ export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked
     if (updatingComment._subplebbitForUpdating?.subplebbit?._clientsManager?._updateCidsAlreadyLoaded)
         //@ts-expect-error
         updatingComment._subplebbitForUpdating.subplebbit._clientsManager._updateCidsAlreadyLoaded = new Set();
-    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
+    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
     if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
         const originalFetch = updatingComment._clientsManager.fetchFromMultipleGateways.bind(updatingComment._clientsManager);
 
@@ -1232,7 +1232,7 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
 
     if (comment._plebbit._plebbitRpcClient)
         throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
-    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
+    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 
 export function mockUpdatingCommentResolvingAuthor(

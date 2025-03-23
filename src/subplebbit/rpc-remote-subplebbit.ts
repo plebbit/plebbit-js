@@ -78,7 +78,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
-            .on("error", (args) => this.emit("error", args.params.result)); // zod here
+            .on("error", (args) => this.emit("error", args.params.result));
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
@@ -94,5 +94,6 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
+        this.posts._stop();
     }
 }

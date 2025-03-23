@@ -412,6 +412,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             await this._clientsManager.stopUpdatingLoop();
             delete this._plebbit._updatingSubplebbits[this.address];
         }
+        this.posts._stop();
     }
 
     // functions to be overridden in local subplebbit classes
