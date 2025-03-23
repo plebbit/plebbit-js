@@ -422,8 +422,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             remeda.omit(JSON.parse(JSON.stringify(options)), ["replies", "clients", "state", "publishingState", "updatingState"])
         );
 
-        if (options._rawCommentIpfs) commentInstance._initIpfsProps(options._rawCommentIpfs);
         if (options._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(options._pubsubMsgToPublish);
+        if (options._rawCommentIpfs) commentInstance._initIpfsProps(options._rawCommentIpfs);
         if (options._rawCommentUpdate) commentInstance._initCommentUpdate(options._rawCommentUpdate);
         return commentInstance;
     }
@@ -433,7 +433,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         Object.assign(commentInstance, remeda.omit(options, ["replies"])); // These two fields are instances so we shouldn't copy them
 
-        commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
+        if (options.pageComment.comment) commentInstance._initIpfsProps(options.pageComment.comment);
+        if (options.pageComment.commentUpdate) commentInstance._initCommentUpdate(options.pageComment.commentUpdate);
 
         return commentInstance;
     }
