@@ -99,13 +99,11 @@ export class Comment
     _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
     override challengeRequest?: CreateCommentOptions["challengeRequest"];
 
-    private _subplebbitForUpdating?: {
-        subplebbit: RemoteSubplebbit;
-        ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
-    } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error"> = undefined;
+    private _subplebbitForUpdating?: CommentClientsManager["_subplebbitForUpdating"];
 
-    private _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> =
-        undefined;
+    private _postForUpdating?: CommentClientsManager["_postForUpdating"];
+
+    _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined; // the comment instance we're mirroing
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this._setUpdatingStateWithEmissionIfNewState("stopped");
@@ -193,7 +191,7 @@ export class Comment
         }
     }
 
-    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson, subplebbit?: SubplebbitIpfsType) {
+    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson, subplebbit?: Pick<SubplebbitIpfsType, "signature">) {
         const log = Logger("plebbit-js:comment:_initCommentUpdate");
         if ("depth" in props)
             // CommentWithinPageJson
@@ -243,7 +241,7 @@ export class Comment
 
     _updateRepliesPostsInstance(
         newReplies: CommentUpdateType["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">,
-        subplebbit?: SubplebbitIpfsType
+        subplebbit?: Pick<SubplebbitIpfsType, "signature">
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
@@ -438,7 +436,7 @@ export class Comment
             this._commentIpfsloadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit();
+                    const commentInPage = this._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit();
                     if (commentInPage) {
                         resolve(commentInPage.comment);
                     } else {
@@ -479,7 +477,6 @@ export class Comment
                 );
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
-                // TODO fix state order here
                 this._setUpdatingStateNoEmission("failed");
                 this._setStateNoEmission("stopped");
                 this.emit("error", newCommentIpfsOrNonRetriableError);
@@ -506,12 +503,23 @@ export class Comment
 
     async startCommentUpdateSubplebbitSubscription() {
         const log = Logger("plebbit-js:comment:update");
-        if (!this._subplebbitForUpdating) this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
+        if (this.depth === 0) {
+            if (!this._subplebbitForUpdating)
+                this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
 
-        if (this._subplebbitForUpdating.subplebbit.state === "stopped") {
-            await this._subplebbitForUpdating!.subplebbit.update();
+            if (this._subplebbitForUpdating.subplebbit.state === "stopped") {
+                await this._subplebbitForUpdating!.subplebbit.update();
+            }
+            if (this._subplebbitForUpdating.subplebbit._rawSubplebbitIpfs)
+                await this._clientsManager.handleUpdateEventFromSub(this._subplebbitForUpdating.subplebbit);
+        } else {
+            if (!this._postForUpdating) this._postForUpdating = await this._clientsManager._createPostInstanceWithStateTranslation();
+            if (this._postForUpdating!.comment.state === "stopped") {
+                await this._postForUpdating!.comment.update();
+            }
+            if (this._postForUpdating!.comment._rawCommentUpdate)
+                await this._clientsManager.handleUpdateEventFromPost(this._postForUpdating!.comment);
         }
-        if (this._subplebbitForUpdating.subplebbit._rawSubplebbitIpfs) await this._clientsManager.handleUpdateEventFromSub();
     }
 
     async loadCommentIpfsAndStartCommentUpdateSubscription() {
@@ -768,6 +776,12 @@ export class Comment
             this._invalidCommentUpdateMfsPaths.clear();
         }
 
+        if (this._postForUpdating) {
+            // this reply instance is subscribed to an updating post
+            await this._clientsManager.cleanUpUpdatingPostInstance();
+            this._postForUpdating = undefined;
+        }
+
         if (this._updatingCommentInstance) {
             // this instance is subscribed to plebbit._updatingComments[cid]
 
@@ -799,6 +813,7 @@ export class Comment
         this._setUpdatingStateWithEmissionIfNewState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();
+        this.replies._stop();
     }
 
     private async _validateSignature() {

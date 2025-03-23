@@ -30,6 +30,7 @@ export class BasePages {
     _clientsManager!: BasePagesClientsManager;
     _parentComment: Comment | undefined = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
     _subplebbit!: BaseProps["subplebbit"];
+    _loadedPages: Record<string, PageIpfs> = {}; // cid => pageIpfs. Will be reset on stop or when we update the record of pages cause of new subplebbit update or CommentUpdate
     protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: PostsProps | RepliesProps) {
@@ -40,6 +41,7 @@ export class BasePages {
 
     updateProps(props: Omit<PostsProps | RepliesProps, "plebbit">) {
         this.pages = props.pages;
+        if (!remeda.isDeepEqual(this.pageCids, props.pageCids)) this._loadedPages = {};
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
         this._pagesIpfs = props.pagesIpfs;
@@ -58,6 +60,7 @@ export class BasePages {
         this.pageCids = {};
         this.pages = {};
         this._pagesIpfs = undefined;
+        this._loadedPages = {};
     }
 
     async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
@@ -75,7 +78,11 @@ export class BasePages {
     async getPage(pageCid: string): Promise<PageTypeJson> {
         if (!this._subplebbit?.address) throw Error("Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        return parsePageIpfs(await this._fetchAndVerifyPage(parsedCid));
+        if (this._loadedPages[parsedCid]) return parsePageIpfs(this._loadedPages[parsedCid]);
+
+        const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
+        this._loadedPages[parsedCid] = pageIpfs;
+        return parsePageIpfs(pageIpfs);
     }
 
     // method below will be present in both subplebbit.posts and comment.replies
@@ -96,6 +103,10 @@ export class BasePages {
             return;
         }
         return this._pagesIpfs;
+    }
+
+    _stop() {
+        this._loadedPages = {};
     }
 }
 
@@ -128,6 +139,27 @@ export class RepliesPages extends BasePages {
 
     override toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
         return <RepliesPagesTypeIpfs | undefined>super.toJSONIpfs();
+    }
+
+    override async getPage(pageCid: string): Promise<PageTypeJson> {
+        if (!this._parentComment?.cid)
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID", {
+                pageCid,
+                parentComment: this._parentComment
+            });
+
+        if (typeof this._parentComment?.depth !== "number")
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH", {
+                parentComment: this._parentComment,
+                pageCid
+            });
+
+        if (!this._parentComment?.postCid)
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID", {
+                pageCid,
+                parentComment: this._parentComment
+            });
+        return super.getPage(pageCid);
     }
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {

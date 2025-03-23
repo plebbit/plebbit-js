@@ -9,7 +9,7 @@ import type {
     PostsPagesTypeIpfs,
     PageTypeJson
 } from "./types.js";
-
+import { Comment } from "../publications/comment/comment.js";
 import assert from "assert";
 import { BasePages } from "./pages.js";
 
@@ -17,6 +17,7 @@ import * as remeda from "remeda";
 import type { CommentWithinPageJson } from "../publications/comment/types.js";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -200,49 +201,71 @@ export function parseRawPages(
 
 // finding comments within pages
 
-export function findCommentInPages(
-    pageIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs,
+export function findCommentInPageInstance(
+    pageInstance: RemoteSubplebbit["posts"] | Comment["replies"],
     targetCommentCid: string
 ): PageIpfs["comments"][0] | undefined {
-    if (!pageIpfs) throw Error("should define page ipfs");
+    if (!pageInstance) throw Error("should define page ipfs");
     if (!targetCommentCid) throw Error("should define target comment cid");
 
-    for (const page of Object.values(pageIpfs.pages))
+    for (const page of Object.values(pageInstance.pages))
+        if (page) for (const pageComment of page.comments) if (pageComment.cid === targetCommentCid) return pageComment.pageComment;
+
+    for (const page of Object.values(pageInstance._loadedPages))
         for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCommentCid) return pageComment;
 
     return undefined;
 }
 
-export function findCommentInPagesRecrusively(
-    pages: RepliesPagesTypeIpfs | PostsPagesTypeIpfs,
-    targetCid: string,
-    targetDepth: number | undefined,
-    visited = new Set<string>()
-): PageIpfs["comments"][0] | undefined {
-    if (!pages) throw Error("should define page ipfs");
+export function findCommentInParsedPages(pageJson: PageTypeJson, targetCommentCid: string): PageTypeJson["comments"][0] | undefined {
+    if (!pageJson) throw Error("should define page json");
+    if (!targetCommentCid) throw Error("should define target comment cid");
+
+    for (const pageComment of pageJson.comments) if (pageComment.cid === targetCommentCid) return pageComment;
+}
+
+export function findCommentInPageIpfsRecursively(page: PageIpfs, targetCid: string): PageIpfs["comments"][0] | undefined {
+    if (!page) throw Error("should define page ipfs");
     if (!targetCid) throw Error("should define target comment cid");
 
-    // Check all pages in the current level
-    for (const [pageCid, page] of Object.entries(pages.pages)) {
-        // Skip if we've visited this page
-        if (visited.has(pageCid)) continue;
-
-        visited.add(pageCid);
-
-        const currentDepth = page.comments[0].comment.depth;
-
-        if (currentDepth === targetDepth || targetDepth === undefined) {
-            for (const pageComment of page.comments) if (pageComment.commentUpdate.cid === targetCid) return pageComment;
-        }
-
-        if (targetDepth === undefined || currentDepth < targetDepth) {
-            for (const pageComment of page.comments) {
-                if (pageComment.commentUpdate.replies?.pages) {
-                    const result = findCommentInPagesRecrusively(pageComment.commentUpdate.replies, targetCid, targetDepth, visited);
-                    if (result) return result;
-                }
+    for (const pageComment of page.comments) {
+        if (pageComment.commentUpdate.cid === targetCid) return pageComment;
+        if (pageComment.commentUpdate.replies?.pages) {
+            for (const page of Object.values(pageComment.commentUpdate.replies.pages)) {
+                const result = findCommentInPageIpfsRecursively(page, targetCid);
+                if (result) return result;
             }
         }
+    }
+    return undefined;
+}
+
+export function findCommentInPageInstanceRecursively(
+    pageInstance: RemoteSubplebbit["posts"] | Comment["replies"],
+    targetCid: string
+): PageIpfs["comments"][0] | undefined {
+    if (!pageInstance) throw Error("should define page instance");
+    if (!targetCid) throw Error("should define target comment cid");
+
+    const visited = new Set<string>();
+    for (const [sortName, page] of Object.entries(pageInstance.pages)) {
+        // Skip if we've visited this page
+        const pageCid = pageInstance.pageCids[sortName];
+        if (visited.has(pageCid)) continue;
+        if (!page) continue;
+
+        const pageIpfs = <PageIpfs>{ comments: page.comments.map((page) => page.pageComment), nextCid: page.nextCid };
+        const foundComment = findCommentInPageIpfsRecursively(pageIpfs, targetCid);
+        visited.add(pageCid);
+        if (foundComment) return foundComment;
+    }
+
+    for (const [pageCid, page] of Object.entries(pageInstance._loadedPages)) {
+        if (visited.has(pageCid)) continue;
+
+        const foundComment = findCommentInPageIpfsRecursively(page, targetCid);
+        visited.add(pageCid);
+        if (foundComment) return foundComment;
     }
 
     return undefined;

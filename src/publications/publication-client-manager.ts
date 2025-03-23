@@ -95,7 +95,7 @@ export class PublicationClientsManager extends ClientsManager {
         // below is for handling translation to publishingState
         this._translateSubUpdatingStateToPublishingState(newUpdatingState);
     }
-    handleUpdateEventFromSub() {
+    handleUpdateEventFromSub(sub: RemoteSubplebbit) {
         // a new update has been emitted by sub
         // should be handled in comment-client-manager
     }

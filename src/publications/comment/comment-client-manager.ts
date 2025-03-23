@@ -3,7 +3,7 @@ import { GenericChainProviderClient } from "../../clients/chain-provider-client.
 import { CommentPlebbitRpcStateClient } from "../../clients/rpc-client/plebbit-rpc-state-client.js";
 import type { PageIpfs } from "../../pages/types.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
-import type { ChainTicker } from "../../types.js";
+import type { ChainTicker, PublicationEvents } from "../../types.js";
 import { Comment } from "./comment.js";
 import * as remeda from "remeda";
 import { commentPostUpdatesParentsPathConfig, postTimestampConfig } from "../../constants.js";
@@ -17,12 +17,12 @@ import {
 import { FailedToFetchCommentUpdateFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { verifyCommentIpfs, verifyCommentUpdate } from "../../signer/signatures.js";
 import Logger from "@plebbit/plebbit-logger";
-import { getPostUpdateTimestampRange, hideClassPrivateProps } from "../../util.js";
+import { getPostUpdateTimestampRange, hideClassPrivateProps, resolveWhenPredicateIsTrue } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
 import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
 import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
-import { findCommentInPages, findCommentInPagesRecrusively } from "../../pages/util.js";
+import { findCommentInPageInstance, findCommentInPageInstanceRecursively, findCommentInParsedPages } from "../../pages/util.js";
 import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
 
 type NewCommentUpdate =
@@ -36,7 +36,17 @@ export class CommentClientsManager extends PublicationClientsManager {
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
     };
+    private _postForUpdating?: {
+        comment: Comment;
+        ipfsGatewayListeners?: Record<string, Parameters<Comment["clients"]["ipfsGateways"][string]["on"]>[1]>;
+        kuboRpcListeners?: Record<string, Parameters<Comment["clients"]["kuboRpcClients"][string]["on"]>[1]>;
+        chainProviderListeners?: Record<
+            ChainTicker,
+            Record<string, Parameters<Comment["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
+        >;
+    } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined;
     private _comment: Comment;
+    private _flatFirstPagesAlreadyLoaded: Set<string> = new Set<string>();
 
     constructor(comment: Comment) {
         super(comment);
@@ -347,7 +357,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     _useLoadedCommentUpdateIfNewInfo(
         loadedCommentUpdate: NonNullable<NewCommentUpdate> | Pick<NonNullable<NewCommentUpdate>, "commentUpdate">,
-        subplebbit: SubplebbitIpfsType,
+        subplebbit: Pick<SubplebbitIpfsType, "signature">,
         log: Logger
     ) {
         if ((this._comment._rawCommentUpdate?.updatedAt || 0) < loadedCommentUpdate.commentUpdate.updatedAt) {
@@ -362,7 +372,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         } else return false;
     }
 
-    async useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs: SubplebbitIpfsType) {
+    async useSubplebbitPostUpdatesToFetchCommentUpdateForPost(subIpfs: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitPostUpdatesToFetchCommentUpdate");
         if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
         if (!subIpfs.postUpdates) throw new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs, comment: this._comment });
@@ -479,58 +489,132 @@ export class CommentClientsManager extends PublicationClientsManager {
         return this._comment.state === "publishing";
     }
 
-    _findCommentInPagesOfUpdatingCommentsSubplebbit(subIpfs?: SubplebbitIpfsType): PageIpfs["comments"][0] | undefined {
+    _findCommentInPagesOfUpdatingCommentsOrSubplebbit(opts?: {
+        sub?: RemoteSubplebbit;
+        post?: Comment;
+    }): PageIpfs["comments"][0] | undefined {
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
-        const updatingSubplebbitPosts = (subIpfs || this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress]?._rawSubplebbitIpfs)
-            ?.posts;
-        if (!updatingSubplebbitPosts) return undefined;
-
-        if (this._comment.depth === 0 || this._comment.postCid === this._comment.cid)
-            return findCommentInPages(updatingSubplebbitPosts, this._comment.cid);
+        if (!this._comment.postCid) throw Error("comment.postCid needs to be defined to fetch comment update of reply");
+        const sub: RemoteSubplebbit | undefined = opts?.sub || this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress];
+        const post: Comment | undefined = opts?.post || this._plebbit._updatingComments[this._comment.postCid];
+        if (sub && (this._comment.depth === 0 || this._comment.postCid === this._comment.cid))
+            return findCommentInPageInstance(sub.posts, this._comment.cid);
 
         if (this._comment.parentCid) {
-            const parentCommentReplyPages = this._plebbit._updatingComments[this._comment.parentCid]?._rawCommentUpdate?.replies;
-            if (parentCommentReplyPages) return findCommentInPages(parentCommentReplyPages, this._comment.cid);
+            const parentCommentReplyPages: Comment["replies"] | undefined =
+                this._plebbit._updatingComments[this._comment.parentCid]?.replies;
+            const commentInParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
+            if (commentInParent) return commentInParent;
         }
-        if (this._comment.postCid) {
-            const postCommentReplyPages = this._plebbit._updatingComments[this._comment.postCid]?._rawCommentUpdate?.replies;
-
-            if (postCommentReplyPages) return findCommentInPagesRecrusively(postCommentReplyPages, this._comment.cid, this._comment.depth);
+        if (post) {
+            const commentInPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
+            if (commentInPost) return commentInPost;
         }
 
         // need to look for comment recursively in this._subplebbitForUpdating
-        return findCommentInPagesRecrusively(updatingSubplebbitPosts, this._comment.cid, this._comment.depth);
+        if (sub.posts) return findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
     }
 
     // will handling sub states down here
-    override async handleUpdateEventFromSub() {
+    override async handleUpdateEventFromSub(sub: RemoteSubplebbit) {
         const log = Logger("plebbit-js:comment:update");
+        if (!this._comment.cid) throw Error("comment.cid needs to be defined to fetch comment update of reply");
         // a new update has been emitted by sub
-        if (this._comment.state === "stopped")
-            await this._comment.stop(); // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
-        else if (this._comment.cid) {
-            const subIpfs = this._subplebbitForUpdating?.subplebbit._rawSubplebbitIpfs;
-            if (!subIpfs) throw Error("Sub IPFS should be defined when an update is emitted");
-            // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
-            // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
-            try {
-                const commentInPage = this._findCommentInPagesOfUpdatingCommentsSubplebbit(subIpfs);
-
-                if (commentInPage) {
-                    const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
-                    const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
-                        { commentUpdate: commentInPage.commentUpdate },
-                        subIpfs,
-                        log
-                    );
-                    if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
-                }
-                // we didn't manage to find any update from pages, let's fetch an update from post updates
-                await this.useSubplebbitPostUpdatesToFetchCommentUpdate(subIpfs);
-            } catch (e) {
-                log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
-            }
+        if (this._comment.state === "stopped") {
+            // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
+            await this._comment.stop();
+            return;
         }
+
+        if (!sub._rawSubplebbitIpfs) throw Error("Subplebbit IPFS should be defined when an update is emitted");
+        // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
+        // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
+
+        const commentInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ sub });
+
+        if (commentInPage) {
+            const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
+            const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
+                { commentUpdate: commentInPage.commentUpdate },
+                sub._rawSubplebbitIpfs,
+                log
+            );
+            if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
+        }
+        try {
+            // this is only for posts with depth === 0
+            await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub._rawSubplebbitIpfs);
+        } catch (e) {
+            log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
+        }
+    }
+
+    _chooseWhichFlatPagesBasedOnPostAndReplyTimestamp(postTimestamp: number): "oldFlat" | "newFlat" {
+        // Choose which page type to search first based on our comment's timestamp
+        const replyTimestamp = this._comment.timestamp;
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        // Calculate if our reply is relatively newer or older within the reply timeline
+        // The reply timeline spans from post timestamp to current time
+        const replyTimelineSpan = currentTime - postTimestamp;
+
+        // Ensure our reply timestamp is at least the post timestamp
+        const adjustedReplyTimestamp = Math.max(replyTimestamp, postTimestamp);
+
+        // Calculate how far along the timeline our reply is (0 = oldest possible, 1 = newest possible)
+        const replyRelativeAge = (currentTime - adjustedReplyTimestamp) / replyTimelineSpan;
+
+        // If replyRelativeAge is closer to 0, the reply is newer (less age)
+        // If replyRelativeAge is closer to 1, the reply is older (more age)
+        // So we start with 'new' pages if replyRelativeAge < 0.5
+        const startWithNewPages = replyRelativeAge < 0.5;
+        return startWithNewPages ? "newFlat" : "oldFlat";
+    }
+
+    async useFlatPagesOfPostToFetchCommentUpdateForReply(postCommentInstance: Comment) {
+        const log = Logger("plebbit-js:comment:update:useFlatPagesOfPostToFetchCommentUpdateForReply");
+        if (!this._comment.cid) throw Error("comment.cid needs to be defined to fetch comment update of reply");
+        const subplebbitWithSignature = <Required<Pick<RemoteSubplebbit, "signature">>>this._comment.replies._subplebbit;
+        if (!subplebbitWithSignature.signature)
+            throw Error("comment.replies._subplebbit.signature needs to be defined to fetch comment update of reply");
+        await resolveWhenPredicateIsTrue(postCommentInstance, () => typeof postCommentInstance.timestamp === "number");
+        const pageSortName = this._chooseWhichFlatPagesBasedOnPostAndReplyTimestamp(postCommentInstance.timestamp!);
+        await postCommentInstance.update();
+
+        await resolveWhenPredicateIsTrue(postCommentInstance, () => Boolean(postCommentInstance.replies.pageCids[pageSortName]), "update");
+
+        let curPageCid: string | undefined = postCommentInstance.replies.pageCids[pageSortName];
+
+        if (this._flatFirstPagesAlreadyLoaded.has(curPageCid)) {
+            // we already loaded this flat page before and have its comment update, no need to do anything
+            return;
+        }
+
+        let foundCommentUpdate = false;
+        let pageNum = 0;
+        while (curPageCid) {
+            const flatPageLoaded = await postCommentInstance.replies.getPage(curPageCid);
+            if (pageNum === 0) this._flatFirstPagesAlreadyLoaded.add(curPageCid);
+            pageNum++;
+            const replyWithinFlatPage = findCommentInParsedPages(flatPageLoaded, this._comment.cid);
+            if (replyWithinFlatPage) {
+                this._useLoadedCommentUpdateIfNewInfo(
+                    { commentUpdate: replyWithinFlatPage.pageComment.commentUpdate },
+                    subplebbitWithSignature,
+                    log
+                );
+                foundCommentUpdate = true;
+                break;
+            }
+            curPageCid = flatPageLoaded.nextCid;
+        }
+        if (!foundCommentUpdate)
+            throw new PlebbitError("ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_POST_FLAT_PAGES", {
+                reply: this._comment,
+                post: postCommentInstance,
+                pageSortName,
+                pageLoadedCount: pageNum
+            });
     }
 
     override async handleErrorEventFromSub(error: PlebbitError | Error) {
@@ -545,8 +629,9 @@ export class CommentClientsManager extends PublicationClientsManager {
                 "received a non retriable error from its subplebbit instance. Will stop comment updating",
                 error
             );
-            this._comment._setUpdatingStateWithEmissionIfNewState("failed");
+            this._comment._setUpdatingStateNoEmission("failed");
             this._comment.emit("error", error);
+            this._comment.emit("updatingstatechange", "failed");
             await this._comment.stop();
         }
     }
@@ -579,5 +664,177 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
 
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
+    }
+
+    async handleErrorEventFromPost(error: PlebbitError | Error) {
+        this._comment.emit("error", error);
+    }
+
+    handleUpdatingStateChangeEventFromPost(newState: Comment["updatingState"]) {
+        this._comment._setUpdatingStateWithEmissionIfNewState(newState);
+    }
+
+    _handleIpfsGatewayPostState(newState: Comment["clients"]["ipfsGateways"][string]["state"], gatewayUrl: string) {
+        //@ts-expect-error
+        this.updateGatewayState(newState, gatewayUrl);
+    }
+
+    _handleKuboRpcPostState(newState: Comment["clients"]["kuboRpcClients"][string]["state"], kuboRpcUrl: string) {
+        this.updateIpfsState(newState);
+    }
+
+    _handleChainProviderPostState(
+        newState: Comment["clients"]["chainProviders"][ChainTicker][string]["state"],
+        chainTicker: ChainTicker,
+        providerUrl: string
+    ) {
+        this.updateChainProviderState(newState, chainTicker, providerUrl);
+    }
+
+    async handleUpdateEventFromPost(postInstance: Comment) {
+        // we need to fetch new CommentUpdate from post flat pages
+
+        const log = Logger("plebbit-js:comment:update:handleUpdateEventFromPost");
+        const commentInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: postInstance });
+
+        const repliesSubplebbit = <Pick<SubplebbitIpfsType, "signature" | "address">>postInstance.replies._subplebbit;
+        if (!repliesSubplebbit.signature) throw Error("repliesSubplebbit.signature needs to be defined to fetch comment update of reply");
+        if (commentInPage) {
+            const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
+            const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
+                { commentUpdate: commentInPage.commentUpdate },
+                repliesSubplebbit,
+                log
+            );
+            if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
+        }
+        try {
+            await this.useFlatPagesOfPostToFetchCommentUpdateForReply(postInstance);
+        } catch (error) {
+            log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
+            this._comment.emit("error", error as PlebbitError | Error);
+        }
+    }
+
+    async _createPostInstanceWithStateTranslation(): Promise<CommentClientsManager["_postForUpdating"]> {
+        // this function will be for translating between the states of the post and its clients to reply states
+        if (!this._comment.postCid) throw Error("comment.postCid needs to be defined to fetch comment update of reply");
+        const post = await this._plebbit.createComment({ cid: this._comment.postCid });
+
+        this._postForUpdating = {
+            comment: post,
+            error: this.handleErrorEventFromPost.bind(this),
+            update: this.handleUpdateEventFromPost.bind(this),
+            updatingstatechange: this.handleUpdatingStateChangeEventFromPost.bind(this)
+        };
+
+        if (
+            this._postForUpdating.comment.clients.ipfsGateways &&
+            Object.keys(this._postForUpdating.comment.clients.ipfsGateways).length > 0
+        ) {
+            // we're using gateways
+            const ipfsGatewayListeners: (typeof this._postForUpdating)["ipfsGatewayListeners"] = {};
+
+            for (const gatewayUrl of Object.keys(this._postForUpdating.comment.clients.ipfsGateways)) {
+                const ipfsStateListener = (postNewIpfsState: Comment["clients"]["ipfsGateways"][string]["state"]) =>
+                    this._handleIpfsGatewayPostState(postNewIpfsState, gatewayUrl);
+
+                this._postForUpdating.comment.clients.ipfsGateways[gatewayUrl].on("statechange", ipfsStateListener);
+                ipfsGatewayListeners[gatewayUrl] = ipfsStateListener;
+            }
+            this._postForUpdating.ipfsGatewayListeners = ipfsGatewayListeners;
+        }
+
+        // Add Kubo RPC client state listeners
+        if (
+            this._postForUpdating.comment.clients.kuboRpcClients &&
+            Object.keys(this._postForUpdating.comment.clients.kuboRpcClients).length > 0
+        ) {
+            const kuboRpcListeners: Record<string, Parameters<Comment["clients"]["kuboRpcClients"][string]["on"]>[1]> = {};
+
+            for (const kuboRpcUrl of Object.keys(this._postForUpdating.comment.clients.kuboRpcClients)) {
+                const kuboRpcStateListener = (postNewKuboRpcState: Comment["clients"]["kuboRpcClients"][string]["state"]) =>
+                    this._handleKuboRpcPostState(postNewKuboRpcState, kuboRpcUrl);
+
+                this._postForUpdating.comment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", kuboRpcStateListener);
+                kuboRpcListeners[kuboRpcUrl] = kuboRpcStateListener;
+            }
+            this._postForUpdating.kuboRpcListeners = kuboRpcListeners;
+        }
+
+        // Add chain provider state listeners
+        const chainProviderListeners: Record<
+            ChainTicker,
+            Record<string, Parameters<Comment["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
+        > = {};
+
+        for (const chainTicker of Object.keys(this._postForUpdating.comment.clients.chainProviders) as ChainTicker[]) {
+            chainProviderListeners[chainTicker] = {};
+
+            for (const providerUrl of Object.keys(this._postForUpdating.comment.clients.chainProviders[chainTicker])) {
+                const chainStateListener = (postNewChainState: Comment["clients"]["chainProviders"][ChainTicker][string]["state"]) =>
+                    this._handleChainProviderPostState(postNewChainState, chainTicker, providerUrl);
+
+                this._postForUpdating.comment.clients.chainProviders[chainTicker][providerUrl].on("statechange", chainStateListener);
+                chainProviderListeners[chainTicker][providerUrl] = chainStateListener;
+            }
+        }
+
+        this._postForUpdating.chainProviderListeners = chainProviderListeners;
+
+        this._postForUpdating.comment.on("update", this._postForUpdating.update);
+
+        this._postForUpdating.comment.on("updatingstatechange", this._postForUpdating.updatingstatechange);
+
+        this._postForUpdating.comment.on("error", this._postForUpdating.error);
+        return this._postForUpdating;
+    }
+
+    async cleanUpUpdatingPostInstance() {
+        if (!this._postForUpdating) throw Error("Need to define _postForUpdating first");
+
+        // Clean up IPFS Gateway listeners
+        if (this._postForUpdating.ipfsGatewayListeners) {
+            for (const gatewayUrl of Object.keys(this._postForUpdating.ipfsGatewayListeners)) {
+                this._postForUpdating.comment.clients.ipfsGateways[gatewayUrl].removeListener(
+                    "statechange",
+                    this._postForUpdating.ipfsGatewayListeners[gatewayUrl]
+                );
+                this.updateGatewayState("stopped", gatewayUrl); // need to reset all gateway states
+            }
+        }
+
+        // Clean up Kubo RPC listeners
+        if (this._postForUpdating.kuboRpcListeners) {
+            for (const kuboRpcUrl of Object.keys(this._postForUpdating.kuboRpcListeners)) {
+                this._postForUpdating.comment.clients.kuboRpcClients[kuboRpcUrl].removeListener(
+                    "statechange",
+                    this._postForUpdating.kuboRpcListeners[kuboRpcUrl]
+                );
+                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+            }
+        }
+
+        // Clean up chain provider listeners
+        if (this._postForUpdating.chainProviderListeners) {
+            for (const chainTicker of Object.keys(this._postForUpdating.chainProviderListeners) as ChainTicker[]) {
+                for (const providerUrl of Object.keys(this._postForUpdating.chainProviderListeners[chainTicker])) {
+                    this._postForUpdating.comment.clients.chainProviders[chainTicker][providerUrl].removeListener(
+                        "statechange",
+                        this._postForUpdating.chainProviderListeners[chainTicker][providerUrl]
+                    );
+                    this.updateChainProviderState("stopped", chainTicker, providerUrl); // need to reset all chain provider states
+                }
+            }
+        }
+
+        // Remove update event at the end
+        this._postForUpdating.comment.removeListener("updatingstatechange", this._postForUpdating.updatingstatechange);
+        this._postForUpdating.comment.removeListener("error", this._postForUpdating.error);
+        this._postForUpdating.comment.removeListener("update", this._postForUpdating.update);
+
+        if (this._postForUpdating.comment._updatingCommentInstance) await this._postForUpdating.comment.stop();
+        this._flatFirstPagesAlreadyLoaded.clear();
+        this._postForUpdating = undefined;
     }
 }

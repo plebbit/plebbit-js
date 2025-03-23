@@ -302,7 +302,11 @@ export function isRequestPubsubPublicationOfPost(
     return Boolean(request.comment && !request.comment.parentCid);
 }
 
-export async function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName = "update") {
+export async function resolveWhenPredicateIsTrue(
+    toUpdate: EventEmitter,
+    predicate: () => Promise<boolean> | boolean,
+    eventName = "update"
+) {
     // should add a timeout?
     if (!(await predicate()))
         await new Promise((resolve) => {
