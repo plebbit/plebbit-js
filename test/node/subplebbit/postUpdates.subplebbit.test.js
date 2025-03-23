@@ -27,40 +27,48 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`subplebbit.postUpdates is undefined if there are no comments`, async () => {
         expect(subplebbit.postUpdates).to.be.undefined;
     });
 
-    it(`subplebbit.postUpdates = {86400} when a comment is published`, async () => {
-        const post = await publishRandomPost(subplebbit.address, plebbit);
-        await waitTillPostInSubplebbitPages(post, plebbit);
+    it(`subplebbit.postUpdates = {86400} when a post is published`, async () => {
+        const post = await publishRandomPost(subplebbit.address, remotePlebbit);
+        await waitTillPostInSubplebbitPages(post, remotePlebbit);
+
+        const postRecreated = await remotePlebbit.createComment({ cid: post.cid });
+        await postRecreated.update();
+        mockCommentToNotUsePagesForUpdates(postRecreated);
+
+        await resolveWhenConditionIsTrue(postRecreated, () => typeof postRecreated.updatedAt === "number");
+
+        expect(postRecreated._commentUpdateIpfsPath?.endsWith("/update")).to.be.true; // should fetch from post updates directory
+        expect(postRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
+        expect(postRecreated.content).to.be.a("string"); // check for CommentIpfs props
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
+        await postRecreated.stop();
     });
 
-    it(`Can fetch CommentUpdate for post and its children with subplebbit.postUpdates`, async () => {
-        const postCid = subplebbit.posts.pages.hot.comments[0].cid;
-        const post = await remotePlebbit.createComment({ cid: postCid });
-        await post.update();
-        mockCommentToNotUsePagesForUpdates(post);
-        await new Promise((resolve) => post.once("update", resolve)); // CommentIpfs update
-        expect(post.content).to.be.a("string");
-        await new Promise((resolve) => post.once("update", resolve)); // CommentUpdate
-        expect(post.updatedAt).to.be.a("number");
-        await post.stop();
+    it(`Can publish a reply to a post and fetch updates from its flat pages`, async () => {
+        const post = await remotePlebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
+        const reply = await publishRandomReply(post, remotePlebbit);
 
-        // Now publish a reply under post
-        const replyTemp = await publishRandomReply(post, remotePlebbit);
-        const reply = await remotePlebbit.createComment({ cid: replyTemp.cid });
-        await reply.update();
-        mockCommentToNotUsePagesForUpdates(reply);
-        await new Promise((resolve) => reply.once("update", resolve)); // CommentIpfs update
-        expect(reply.content).to.be.a("string");
-        await new Promise((resolve) => reply.once("update", resolve)); // CommentUpdate update
-        expect(reply.updatedAt).to.be.a("number");
+        const replyRecreated = await remotePlebbit.createComment({ cid: reply.cid });
+        await replyRecreated.update();
+        mockCommentToNotUsePagesForUpdates(replyRecreated);
 
-        await reply.stop();
+        await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+
+        expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
+        expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
+        expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
+
+        expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
+
+        await replyRecreated.stop();
     });
 
     it(`subplebbit.postUpdates moves posts from bucket to more accurate bucket`, async () => {
@@ -74,27 +82,51 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["43200"]);
     });
 
-    it(`Can still fetch updates from post and reply with new bucket`, async () => {
+    it(`Can fetch updates from post with new bucket`, async () => {
         const postCid = subplebbit.posts.pages.hot.comments[0].cid;
         const post = await remotePlebbit.createComment({ cid: postCid });
         await post.update();
         mockCommentToNotUsePagesForUpdates(post);
-        await new Promise((resolve) => post.once("update", resolve)); // CommentIpfs update
-        expect(post.content).to.be.a("string");
-        await new Promise((resolve) => post.once("update", resolve)); // CommentUpdate
-        expect(post.updatedAt).to.be.a("number");
-        await post.stop();
 
-        // Now fetch the update of reply
-        const reply = await remotePlebbit.createComment({ cid: post.replies.pages.topAll.comments[0].cid });
+        // Wait for CommentIpfs update
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.content).to.be.a("string");
+
+        // Wait for CommentUpdate
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(post.updatedAt).to.be.a("number");
+
+        expect(post._commentUpdateIpfsPath?.endsWith("/update")).to.be.true; // should fetch from post updates directory
+
+        await post.stop();
+    });
+
+    it(`Can fetch updates from reply with new bucket`, async () => {
+        // First get the post to access its replies
+        const postCid = subplebbit.posts.pages.hot.comments[0].cid;
+        const post = await remotePlebbit.createComment({ cid: postCid });
+        await post.update();
+        await resolveWhenConditionIsTrue(post, () => post.replies.pages?.topAll);
+        expect(post.replyCount).to.be.greaterThan(0);
+
+        // Get the reply cid
+        const replyCid = post.replies.pages.topAll.comments[0].cid;
+
+        // Create and update the reply comment
+        const reply = await remotePlebbit.createComment({ cid: replyCid });
         await reply.update();
         mockCommentToNotUsePagesForUpdates(reply);
 
-        await new Promise((resolve) => reply.once("update", resolve)); // CommentIpfs update
+        // Wait for CommentIpfs update
+        await new Promise((resolve) => reply.once("update", resolve));
         expect(reply.content).to.be.a("string");
-        await new Promise((resolve) => reply.once("update", resolve)); // CommentUpdate update
+
+        // Wait for CommentUpdate update
+        await new Promise((resolve) => reply.once("update", resolve));
         expect(reply.updatedAt).to.be.a("number");
 
+        // Cleanup
         await reply.stop();
+        await post.stop();
     });
 });
