@@ -487,10 +487,12 @@ getRemotePlebbitConfigs().map((config) => {
             before(async () => {
                 plebbit = await config.plebbitInstancePromise({ validatePages: false });
                 postWithReplies = await publishRandomPost(subplebbitAddress, plebbit);
-                await publishRandomReply(postWithReplies, plebbit);
+                const reply = await publishRandomReply(postWithReplies, plebbit);
+                await publishRandomReply(reply, plebbit);
 
                 await postWithReplies.update();
                 await resolveWhenConditionIsTrue(postWithReplies, () => postWithReplies.replies.pageCids?.new);
+                await waitTillReplyInParentPages(reply, plebbit);
                 await postWithReplies.stop();
             });
 
@@ -547,6 +549,11 @@ getRemotePlebbitConfigs().map((config) => {
                 // Get a flat page
                 const flatSortName = Object.keys(REPLIES_SORT_TYPES).find((name) => REPLIES_SORT_TYPES[name].flat);
                 const flatPage = await postWithReplies.replies.getPage(postWithReplies.replies.pageCids[flatSortName]);
+                // Verify that flat pages contain comments with different depths
+                expect(flatPage.comments.some((comment) => comment.pageComment.comment.depth > 1)).to.be.true;
+                expect(flatPage.comments.map((comment) => comment.pageComment.comment.depth)).to.not.deep.equal(
+                    Array(flatPage.comments.length).fill(flatPage.comments[0].pageComment.comment.depth)
+                );
 
                 // This should pass validation
                 await postWithReplies.replies.validatePage(flatPage);
@@ -671,7 +678,7 @@ describe(`getPage`, async () => {
 
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const pageIpfs = sub.posts.toJSONIpfs().pages.hot;
+        const pageIpfs = JSON.parse(await plebbit.fetchCid(sub.posts.pageCids.active));
         expect(pageIpfs).to.exist;
 
         const invalidPageIpfs = JSON.parse(JSON.stringify(pageIpfs));
@@ -685,6 +692,7 @@ describe(`getPage`, async () => {
             expect.fail("should fail");
         } catch (e) {
             expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+            expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
         }
     });
 });
