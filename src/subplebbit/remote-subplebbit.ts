@@ -104,8 +104,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             pageCids: {},
             pages: {},
             plebbit: this._plebbit,
-            subplebbit: remeda.pick(this, ["address", "signature"]),
-            pagesIpfs: undefined
+            subplebbit: this
         });
         hideClassPrivateProps(this);
     }
@@ -114,6 +113,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">
     ) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
+        this.posts._subplebbit = this;
         if (!newPosts)
             // The sub has changed its address, need to reset the posts
             this.posts.resetPages();
@@ -128,7 +128,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>parseRawPages(newPosts);
                 this.posts.updateProps({
                     ...parsedPages,
-                    subplebbit: remeda.pick(this, ["address", "signature"]),
+                    subplebbit: this,
                     pageCids: newPosts?.pageCids || {}
                 });
             }
@@ -191,7 +191,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
-        this.posts._subplebbit = remeda.pick(this, ["address", "signature"]);
+        this.posts._subplebbit = this;
     }
 
     protected _toJSONIpfsBaseNoPosts() {

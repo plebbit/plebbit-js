@@ -117,7 +117,6 @@ export class Comment
             pageCids: {},
             plebbit: this._plebbit,
             subplebbit: { address: this.subplebbitAddress },
-            pagesIpfs: undefined,
             parentComment: this
         });
 
@@ -245,7 +244,9 @@ export class Comment
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
+        const subplebbitSignature = subplebbit?.signature || this.replies._subplebbit.signature;
 
+        this.replies._subplebbit.signature = subplebbitSignature;
         if (!newReplies) {
             this.replies.resetPages();
         } else if (!("pages" in newReplies)) {
@@ -259,7 +260,6 @@ export class Comment
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
                     parseRawPages(newReplies)
                 );
-                const subplebbitSignature = subplebbit?.signature || this.replies._subplebbit.signature;
                 this.replies.updateProps({
                     ...parsedPages,
                     subplebbit: { address: this.subplebbitAddress, signature: subplebbitSignature },
@@ -518,7 +518,7 @@ export class Comment
                 await this._postForUpdating!.comment.update();
             }
             if (this._postForUpdating!.comment._rawCommentUpdate)
-                await this._clientsManager.handleUpdateEventFromPost(this._postForUpdating!.comment);
+                await this._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate(this._postForUpdating!.comment);
         }
     }
 
@@ -768,7 +768,7 @@ export class Comment
         }
         // clean up _subplebbitForUpdating subscriptions
         if (this._subplebbitForUpdating) {
-            // this instance is plebbit._updatingComments[cid] and it's updating
+            // this post instance is plebbit._updatingComments[cid] and it's updating
 
             await this._clientsManager.cleanUpUpdatingSubInstance();
             this._subplebbitForUpdating = undefined;
@@ -780,10 +780,12 @@ export class Comment
             // this reply instance is subscribed to an updating post
             await this._clientsManager.cleanUpUpdatingPostInstance();
             this._postForUpdating = undefined;
+            if (!this._plebbit._updatingComments[this.cid!]) throw Error("this._plebbit._updatingComments[this.cid!] should exist");
+            delete this._plebbit._updatingComments[this.cid!]; // Add this line
         }
 
         if (this._updatingCommentInstance) {
-            // this instance is subscribed to plebbit._updatingComments[cid]
+            // this post|reply instance is subscribed to plebbit._updatingComments[cid]
 
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);

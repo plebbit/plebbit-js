@@ -493,10 +493,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         sub?: RemoteSubplebbit;
         post?: Comment;
     }): PageIpfs["comments"][0] | undefined {
+        // TODO rewrite this to use updating comments and subplebbit
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
-        if (!this._comment.postCid) throw Error("comment.postCid needs to be defined to fetch comment update of reply");
         const sub: RemoteSubplebbit | undefined = opts?.sub || this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress];
-        const post: Comment | undefined = opts?.post || this._plebbit._updatingComments[this._comment.postCid];
+        const post: Comment | undefined =
+            opts?.post || this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid!] : undefined;
         if (sub && (this._comment.depth === 0 || this._comment.postCid === this._comment.cid))
             return findCommentInPageInstance(sub.posts, this._comment.cid);
 
@@ -512,7 +513,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
 
         // need to look for comment recursively in this._subplebbitForUpdating
-        if (sub.posts) return findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
+        if (sub?.posts) return findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
     }
 
     // will handling sub states down here
@@ -574,7 +575,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     async useFlatPagesOfPostToFetchCommentUpdateForReply(postCommentInstance: Comment) {
         const log = Logger("plebbit-js:comment:update:useFlatPagesOfPostToFetchCommentUpdateForReply");
         if (!this._comment.cid) throw Error("comment.cid needs to be defined to fetch comment update of reply");
-        const subplebbitWithSignature = <Required<Pick<RemoteSubplebbit, "signature">>>this._comment.replies._subplebbit;
+        const subplebbitWithSignature = <Required<Pick<RemoteSubplebbit, "signature">>>postCommentInstance.replies._subplebbit;
         if (!subplebbitWithSignature.signature)
             throw Error("comment.replies._subplebbit.signature needs to be defined to fetch comment update of reply");
         await resolveWhenPredicateIsTrue(postCommentInstance, () => typeof postCommentInstance.timestamp === "number");
@@ -691,10 +692,20 @@ export class CommentClientsManager extends PublicationClientsManager {
         this.updateChainProviderState(newState, chainTicker, providerUrl);
     }
 
-    async handleUpdateEventFromPost(postInstance: Comment) {
+    async handleUpdateEventFromPostToFetchReplyCommentUpdate(postInstance: Comment) {
         // we need to fetch new CommentUpdate from post flat pages
 
         const log = Logger("plebbit-js:comment:update:handleUpdateEventFromPost");
+        if (Object.keys(postInstance.replies.pageCids).length === 0) {
+            log(
+                "Post",
+                postInstance.cid,
+                "Has no replies, therefore reply",
+                this._comment.cid,
+                "will wait until another update event by post"
+            );
+            return;
+        }
         const commentInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: postInstance });
 
         const repliesSubplebbit = <Pick<SubplebbitIpfsType, "signature" | "address">>postInstance.replies._subplebbit;
@@ -719,12 +730,13 @@ export class CommentClientsManager extends PublicationClientsManager {
     async _createPostInstanceWithStateTranslation(): Promise<CommentClientsManager["_postForUpdating"]> {
         // this function will be for translating between the states of the post and its clients to reply states
         if (!this._comment.postCid) throw Error("comment.postCid needs to be defined to fetch comment update of reply");
-        const post = await this._plebbit.createComment({ cid: this._comment.postCid });
+        const post =
+            this._plebbit._updatingComments[this._comment.postCid] || (await this._plebbit.createComment({ cid: this._comment.postCid }));
 
         this._postForUpdating = {
             comment: post,
             error: this.handleErrorEventFromPost.bind(this),
-            update: this.handleUpdateEventFromPost.bind(this),
+            update: this.handleUpdateEventFromPostToFetchReplyCommentUpdate.bind(this),
             updatingstatechange: this.handleUpdatingStateChangeEventFromPost.bind(this)
         };
 
@@ -833,6 +845,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._postForUpdating.comment.removeListener("error", this._postForUpdating.error);
         this._postForUpdating.comment.removeListener("update", this._postForUpdating.update);
 
+        // only stop if it's mirroring the actual comment instance updating at plebbit._updatingComments
         if (this._postForUpdating.comment._updatingCommentInstance) await this._postForUpdating.comment.stop();
         this._flatFirstPagesAlreadyLoaded.clear();
         this._postForUpdating = undefined;
