@@ -168,13 +168,10 @@ export function parsePagesIpfs(pagesRaw: PagesTypeIpfs): Omit<PagesTypeJson, "cl
 
 // To use for both subplebbit.posts and comment.replies
 
-export function parseRawPages(
-    pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | BasePages | undefined
-): Pick<BasePages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined } {
+export function parseRawPages(pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | BasePages | undefined): Pick<BasePages, "pages"> {
     if (!pages)
         return {
-            pages: {},
-            pagesIpfs: undefined
+            pages: {}
         };
 
     const isIpfs = typeof Object.values(pages.pages)[0]?.comments[0]?.["commentUpdate"]?.["cid"] === "string";
@@ -183,18 +180,14 @@ export function parseRawPages(
         pages = <PagesTypeIpfs>pages;
         // pages is a PagesTypeIpfs
         const parsedPages = parsePagesIpfs(pages);
-        return {
-            pages: parsedPages.pages,
-            pagesIpfs: <PagesTypeIpfs>pages
-        };
+        return { pages: parsedPages.pages };
     } else if (pages instanceof BasePages)
-        return { pages: pages.pages, pagesIpfs: pages.toJSONIpfs() }; // already parsed
+        return { pages: pages.pages }; // already parsed
     else {
         pages = pages as PagesTypeJson;
 
         return {
-            pages: pages.pages,
-            pagesIpfs: undefined
+            pages: pages.pages
         };
     }
 }

@@ -16,10 +16,9 @@ type BaseProps = {
     plebbit: Plebbit;
 };
 
-type PostsProps = Pick<PostsPages, "pages" | "pageCids"> & BaseProps & { pagesIpfs?: PostsPagesTypeIpfs };
+type PostsProps = Pick<PostsPages, "pages" | "pageCids"> & BaseProps & { subplebbit: RemoteSubplebbit };
 type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> &
     BaseProps & {
-        pagesIpfs?: RepliesPagesTypeIpfs;
         parentComment: Comment;
     };
 
@@ -31,7 +30,6 @@ export class BasePages {
     _parentComment: Comment | undefined = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
     _subplebbit!: BaseProps["subplebbit"];
     _loadedUniqueCommentFromGetPage: Record<string, PageIpfs["comments"][0]> = {}; // comment cid => CommentInPageIpfs. Will be reset on stop or when we update the record of pages cause of new subplebbit update or CommentUpdate
-    protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: PostsProps | RepliesProps) {
         this._initClientsManager(props.plebbit);
@@ -44,7 +42,6 @@ export class BasePages {
         if (!remeda.isDeepEqual(this.pageCids, props.pageCids)) this._loadedUniqueCommentFromGetPage = {};
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
-        this._pagesIpfs = props.pagesIpfs;
         if (this.pageCids) {
             this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
             this._clientsManager.updatePagesMaxSizeCache(Object.values(this.pageCids), 1024 * 1024);
@@ -59,7 +56,6 @@ export class BasePages {
         // Called when the sub changes address and needs to remove all the comments with the old subplebbit address
         this.pageCids = {};
         this.pages = {};
-        this._pagesIpfs = undefined;
         this._loadedUniqueCommentFromGetPage = {};
     }
 
@@ -95,17 +91,6 @@ export class BasePages {
         await this._validatePage(pageIpfs);
     }
 
-    toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
-        if (remeda.isEmpty(this.pages)) return undefined; // I forgot why this line is here
-        if (!this._pagesIpfs && !remeda.isEmpty(this.pages)) {
-            Logger("plebbit-js:pages:toJSONIpfs").error(
-                `toJSONIpfs() is called on sub(${this._subplebbit}) and parentCid (${this._parentComment}) even though _pagesIpfs is undefined. This error should not persist`
-            );
-            return;
-        }
-        return this._pagesIpfs;
-    }
-
     _stop() {
         this._loadedUniqueCommentFromGetPage = {};
     }
@@ -121,8 +106,6 @@ export class RepliesPages extends BasePages {
     override _clientsManager!: RepliesPagesClientsManager;
     override _parentComment: Comment; // is always defined but we need to check its field if they're initialized or not
 
-    protected override _pagesIpfs: RepliesPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
-
     constructor(props: RepliesProps) {
         super(props);
         this._parentComment = props.parentComment;
@@ -136,10 +119,6 @@ export class RepliesPages extends BasePages {
     protected override _initClientsManager(plebbit: Plebbit): void {
         this._clientsManager = new RepliesPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
-    }
-
-    override toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
-        return <RepliesPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
 
     override async getPage(pageCid: string): Promise<PageTypeJson> {
@@ -160,6 +139,11 @@ export class RepliesPages extends BasePages {
                 pageCid,
                 parentComment: this._parentComment
             });
+
+        // we need to make all updating comment instances do the getPage call to cache _loadedUniqueCommentFromGetPage in a centralized instance
+        if (this._parentComment._updatingCommentInstance?.comment?.replies)
+            return this._parentComment._updatingCommentInstance.comment.replies.getPage(pageCid);
+
         return super.getPage(pageCid);
     }
 
@@ -216,8 +200,8 @@ export class PostsPages extends BasePages {
     override clients!: PostsPagesClientsManager["clients"];
 
     override _clientsManager!: PostsPagesClientsManager;
-    protected override _pagesIpfs: PostsPagesTypeIpfs | undefined = undefined;
     override _parentComment: undefined = undefined; // would be undefined because we don't have a parent comment for posts
+    override _subplebbit!: RemoteSubplebbit;
 
     constructor(props: PostsProps) {
         super(props);
@@ -232,8 +216,12 @@ export class PostsPages extends BasePages {
         this.clients = this._clientsManager.clients;
     }
 
-    override toJSONIpfs(): PostsPagesTypeIpfs | undefined {
-        return <PostsPagesTypeIpfs | undefined>super.toJSONIpfs();
+    override getPage(pageCid: string): Promise<PageTypeJson> {
+        // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
+        if (this._subplebbit._updatingSubInstanceWithListeners?.subplebbit?.posts)
+            return this._subplebbit._updatingSubInstanceWithListeners.subplebbit.posts.getPage(pageCid);
+
+        return super.getPage(pageCid);
     }
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
