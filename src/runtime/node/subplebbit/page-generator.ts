@@ -159,6 +159,7 @@ export class PageGenerator {
     async sortAndChunkComments(
         unsortedComments: PageIpfs["comments"],
         sortName: PostSortName | ReplySortName,
+        baseTimestamp: number,
         options: PageOptions
     ): Promise<PageIpfs["comments"][]> {
         if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
@@ -192,7 +193,7 @@ export class PageGenerator {
 
         let unpinnedComments = unsortedComments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
         if (sortProps.timeframe) {
-            const timestampLower: number = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
+            const timestampLower: number = baseTimestamp - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);
         }
 
@@ -200,7 +201,7 @@ export class PageGenerator {
 
         if (commentsSorted.length === 0) return [];
 
-        const isPreloadedSort = options.preloadedPage?.includes(sortName) || false;
+        const isPreloadedSort = options.preloadedPage === sortName;
 
         const commentsChunks = this._chunkComments(commentsSorted, isPreloadedSort);
 
@@ -211,9 +212,10 @@ export class PageGenerator {
     async sortChunkAddIpfs(
         comments: PageIpfs["comments"],
         sortName: PostSortName | ReplySortName,
+        baseTimestamp: number,
         options: PageOptions
     ): Promise<PageGenerationRes | undefined> {
-        const commentsChunks = await this.sortAndChunkComments(comments, sortName, options);
+        const commentsChunks = await this.sortAndChunkComments(comments, sortName, baseTimestamp, options);
         if (commentsChunks.length === 0) return undefined;
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
@@ -244,13 +246,14 @@ export class PageGenerator {
         const rawPosts = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (rawPosts.length === 0) return undefined;
 
-        const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
+        const postsGenerationTimestamp = timestamp();
+        const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, postsGenerationTimestamp, pageOptions);
         if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
         for (const sortName of remeda.keys.strict(POSTS_SORT_TYPES))
-            sortResults.push(await this.sortChunkAddIpfs(rawPosts, sortName, pageOptions));
+            sortResults.push(await this.sortChunkAddIpfs(rawPosts, sortName, postsGenerationTimestamp, pageOptions));
 
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
@@ -272,13 +275,21 @@ export class PageGenerator {
         const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
-        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, pageOptions);
+        const repliesGenerationTimestamp = timestamp();
+        const preloadedChunk = await this.sortAndChunkComments(
+            hierarchalReplies,
+            preloadedReplyPageSortName,
+            repliesGenerationTimestamp,
+            pageOptions
+        );
         if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const hierarchalSorts = remeda.keys.strict(REPLIES_SORT_TYPES).filter((replySortName) => !REPLIES_SORT_TYPES[replySortName].flat);
         if (hierarchalSorts.length > 0) {
             for (const hierarchalSortName of hierarchalSorts)
-                sortResults.push(await this.sortChunkAddIpfs(hierarchalReplies, hierarchalSortName, pageOptions));
+                sortResults.push(
+                    await this.sortChunkAddIpfs(hierarchalReplies, hierarchalSortName, repliesGenerationTimestamp, pageOptions)
+                );
         }
 
         const flatSorts = remeda.keys.strict(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
@@ -290,7 +301,7 @@ export class PageGenerator {
             });
 
             for (const flatSortName of flatSorts)
-                sortResults.push(await this.sortChunkAddIpfs(flattenedReplies, flatSortName, pageOptions));
+                sortResults.push(await this.sortChunkAddIpfs(flattenedReplies, flatSortName, repliesGenerationTimestamp, pageOptions));
         }
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
