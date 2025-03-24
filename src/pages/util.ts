@@ -61,10 +61,14 @@ export const REPLIES_SORT_TYPES: ReplySort = {
 
 type CommentToSort = PageIpfs["comments"][0];
 
-export function activeScore(comments: CommentToSort[]) {
-    const commentsTimestamps: Record<CommentUpdateType["cid"], CommentIpfsType["timestamp"]> = {};
-    processAllCommentsRecursively(comments, (comment) => (commentsTimestamps[comment.commentUpdate.cid] = comment.comment.timestamp));
-    const sortedComments = comments.sort((a, b) => commentsTimestamps[b.commentUpdate.cid] - commentsTimestamps[a.commentUpdate.cid]);
+export function sortPostsByActiveScore(posts: CommentToSort[]) {
+    // active score is for posts, so we know comments are all posts with depth = 0
+    const postsTimestamps: Record<CommentUpdateType["cid"], CommentIpfsType["timestamp"]> = {};
+    processAllCommentsRecursively(posts, (postOrReply) => {
+        const postCid = postOrReply.comment.postCid || postOrReply.commentUpdate.cid;
+        postsTimestamps[postCid] = Math.max(postsTimestamps[postCid] || 0, postOrReply.comment.timestamp);
+    });
+    const sortedComments = posts.sort((a, b) => postsTimestamps[b.commentUpdate.cid] - postsTimestamps[a.commentUpdate.cid]);
     return sortedComments;
 }
 
@@ -184,7 +188,7 @@ export function processAllCommentsRecursively(comments: PageIpfs["comments"], pr
 }
 
 export function sortComments(unsortedComments: PageIpfs["comments"], sortName: ReplySortName | PostSortName, baseTimestamp: number) {
-    // we assume all comments of a page here, there are no next pages
+    // we assume all comments of a page are here, there are no next pages
     if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
     const sortProps = REPLIES_SORT_TYPES[<ReplySortName>sortName] || POSTS_SORT_TYPES[<PostSortName>sortName];
     const scoreFunction = sortProps.score;
@@ -192,13 +196,13 @@ export function sortComments(unsortedComments: PageIpfs["comments"], sortName: R
     const pinnedCommentsUnsorted = unsortedComments.filter((obj) => obj.commentUpdate.pinned === true);
     const pinnedCommentsSorted =
         sortName === "active"
-            ? activeScore(pinnedCommentsUnsorted)
+            ? sortPostsByActiveScore(pinnedCommentsUnsorted)
             : pinnedCommentsUnsorted.sort((a, b) => scoreFunction(b) - scoreFunction(a));
 
     const unpinnedCommentsUnsorted = unsortedComments.filter((obj) => !obj.commentUpdate.pinned);
     const unpinnedCommentsSorted =
         sortName === "active"
-            ? activeScore(unpinnedCommentsUnsorted)
+            ? sortPostsByActiveScore(unpinnedCommentsUnsorted)
             : unpinnedCommentsUnsorted.sort((a, b) => scoreFunction(b) - scoreFunction(a));
     const unpinnedCommentsSortedWithTimeframe = sortProps.timeframe
         ? unpinnedCommentsSorted.filter((obj) => obj.comment.timestamp >= baseTimestamp - TIMEFRAMES_TO_SECONDS[sortProps.timeframe!])
