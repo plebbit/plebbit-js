@@ -35,7 +35,7 @@ import {
     signSubplebbit
 } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
-import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
+import { findCommentInPageInstanceRecursively, TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -140,6 +140,7 @@ export async function generateMockVote(
 }
 
 export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
+    if (!pageCid) throw Error("Can't load all pages with undefined pageCid");
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
@@ -147,6 +148,50 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     return sortedComments;
+}
+
+export async function loadAllPagesBySortName(pageSortName: string, pagesInstance: BasePages) {
+    if (!pageSortName) throw Error("Can't load all pages with undefined pageSortName");
+    if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages[pageSortName])
+        return pagesInstance.pages[pageSortName].comments;
+    const pageCid = pagesInstance.pageCids[pageSortName];
+    if (!pageCid) throw Error(`Can't load all pages with undefined pageCid for pageSortName: ${pageSortName}`);
+    let sortedCommentsPage = await pagesInstance.getPage(pageCid);
+    let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
+    while (sortedCommentsPage.nextCid) {
+        sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        sortedComments = sortedComments.concat(sortedCommentsPage.comments);
+    }
+    return sortedComments;
+}
+
+export async function loadAllUniquePostsUnderSubplebbit(subplebbit: RemoteSubplebbit) {
+    if (Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length === 0)
+        throw Error("Page instance has no comments under it");
+    const allCommentsInPreloadedPages =
+        Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length > 0;
+    if (allCommentsInPreloadedPages) {
+        const allComments = subplebbit.posts.pages.hot?.comments;
+        if (!allComments) throw Error("No comments found under subplebbit.posts.pages.hot");
+        return allComments;
+    } else {
+        // we have multiple pages, need to load all pages and merge them
+        return loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+    }
+}
+
+export async function loadAllUniqueCommentsUnderCommentInstance(comment: Comment) {
+    if (Object.keys(comment.replies.pageCids).length === 0 && Object.keys(comment.replies.pages).length === 0)
+        throw Error("Comment replies instance has no comments under it");
+    const allCommentsInPreloadedPages = Object.keys(comment.replies.pageCids).length === 0 && Object.keys(comment.replies.pages).length > 0;
+    if (allCommentsInPreloadedPages) {
+        const allComments = comment.replies.pages.topAll?.comments;
+        if (!allComments) throw Error("No comments found under comment.replies.pages.topAll");
+        return allComments;
+    } else {
+        // we have multiple pages, need to load all pages and merge them
+        return loadAllPages(comment.replies.pageCids.new, comment.replies);
+    }
 }
 
 async function _mockSubplebbitPlebbit(signer: SignerType[], plebbitOptions: InputPlebbitOptions) {
@@ -412,9 +457,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
         for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
 
-    plebbit.on("error", (e) => {
-        console.error("Error emitted to plebbit instance", e);
-    });
+    plebbit.on("error", (e) => {});
     return plebbit;
 }
 
@@ -569,8 +612,6 @@ export async function waitTillPostInSubplebbitInstancePages(
     post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
     sub: RemoteSubplebbit
 ) {
-    const stateBeforeUpdate = sub.state;
-    if (stateBeforeUpdate === "stopped") await sub.update();
     const isPostInSubPages = async () => {
         if (!("new" in sub.posts.pageCids)) return false;
         const postsNewPageCid = sub.posts.pageCids.new;
@@ -579,7 +620,6 @@ export async function waitTillPostInSubplebbitInstancePages(
     };
     await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
-    if (stateBeforeUpdate === "stopped") await sub.stop();
 }
 
 export async function waitTillPostInSubplebbitPages(
@@ -588,14 +628,40 @@ export async function waitTillPostInSubplebbitPages(
 ) {
     const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
     const isPostInSubPages = async () => {
-        if (!("new" in sub.posts.pageCids)) return false;
-        const postsNewPageCid = sub.posts.pageCids.new;
-        const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
-        return Boolean(postInPage);
+        if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
+            // it's a single preloaded page
+            const postInPage = findCommentInPageInstanceRecursively(sub.posts, post.cid);
+            return Boolean(postInPage);
+        } else {
+            if (!("new" in sub.posts.pageCids)) return false;
+            const postsNewPageCid = sub.posts.pageCids.new;
+            const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
+            return Boolean(postInPage);
+        }
     };
     await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
     await sub.stop();
+}
+
+export async function waitTillReplyInParentPagesInstance(
+    reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>,
+    parentComment: Comment
+) {
+    const isReplyInParentPages = async () => {
+        if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
+            // it's a single preloaded page
+            const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
+            return Boolean(postInPage);
+        } else {
+            if (!("new" in parentComment.replies.pageCids)) return false;
+
+            const commentNewPageCid = parentComment.replies.pageCids.new;
+            const replyInPage = await findCommentInPage(reply.cid, commentNewPageCid, parentComment.replies);
+            return Boolean(replyInPage);
+        }
+    };
+    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
 }
 
 export async function waitTillReplyInParentPages(
