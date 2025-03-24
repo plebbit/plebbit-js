@@ -183,22 +183,38 @@ export function processAllCommentsRecursively(comments: PageIpfs["comments"], pr
             processAllCommentsRecursively(comment.commentUpdate.replies.pages.topAll.comments, processor);
 }
 
-export function sortComments(unsortedComments: PageIpfs["comments"], sortName: ReplySortName | PostSortName) {
+export function sortComments(unsortedComments: PageIpfs["comments"], sortName: ReplySortName | PostSortName, baseTimestamp: number) {
+    // we assume all comments of a page here, there are no next pages
     if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
     const sortProps = REPLIES_SORT_TYPES[<ReplySortName>sortName] || POSTS_SORT_TYPES[<PostSortName>sortName];
-    let sortedComments: PageIpfs["comments"];
-    if (sortName === "active") {
-        sortedComments = activeScore(unsortedComments);
-    } else {
-        const scoreFunction = sortProps.score;
-        sortedComments = unsortedComments.sort((a, b) => scoreFunction(b) - scoreFunction(a));
-    }
+    const scoreFunction = sortProps.score;
+
+    const pinnedCommentsUnsorted = unsortedComments.filter((obj) => obj.commentUpdate.pinned === true);
+    const pinnedCommentsSorted =
+        sortName === "active"
+            ? activeScore(pinnedCommentsUnsorted)
+            : pinnedCommentsUnsorted.sort((a, b) => scoreFunction(b) - scoreFunction(a));
+
+    const unpinnedCommentsUnsorted = unsortedComments.filter((obj) => !obj.commentUpdate.pinned);
+    const unpinnedCommentsSorted =
+        sortName === "active"
+            ? activeScore(unpinnedCommentsUnsorted)
+            : unpinnedCommentsUnsorted.sort((a, b) => scoreFunction(b) - scoreFunction(a));
+    const unpinnedCommentsSortedWithTimeframe = sortProps.timeframe
+        ? unpinnedCommentsSorted.filter((obj) => obj.comment.timestamp >= baseTimestamp - TIMEFRAMES_TO_SECONDS[sortProps.timeframe!])
+        : unpinnedCommentsSorted;
+
+    const sortedComments = pinnedCommentsSorted.concat(unpinnedCommentsSortedWithTimeframe);
+
     return sortedComments;
 }
 
 // To use for both subplebbit.posts and comment.replies
 
-export function parseRawPages(pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | BasePages | undefined): Pick<BasePages, "pages"> {
+export function parseRawPages(
+    pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | BasePages | undefined,
+    pageCreationTimestamp: number // to use to calculate sort pages client-side
+): Pick<BasePages, "pages"> {
     if (!pages)
         return {
             pages: {}
@@ -219,7 +235,7 @@ export function parseRawPages(pages: PagesTypeIpfs | Omit<PagesTypeJson, "client
             );
             for (const sortName of sortTypesToCalculate)
                 parsedPages.pages[sortName] = parsePageIpfs({
-                    comments: sortComments(pagesIpfs.pages[preloadedSortName].comments, sortName)
+                    comments: sortComments(pagesIpfs.pages[preloadedSortName].comments, sortName, pageCreationTimestamp)
                 });
         }
         return { pages: parsedPages.pages };
@@ -284,16 +300,13 @@ export function findCommentInPageInstanceRecursively(
 
     const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCid];
     if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
-    const visited = new Set<string>();
     for (const [sortName, page] of Object.entries(pageInstance.pages)) {
         // Skip if we've visited this page
         const pageCid = pageInstance.pageCids[sortName];
-        if (visited.has(pageCid)) continue;
         if (!page) continue;
 
         const pageIpfs = <PageIpfs>{ comments: page.comments.map((page) => page.pageComment), nextCid: page.nextCid };
         const foundComment = findCommentInPageIpfsRecursively(pageIpfs, targetCid);
-        visited.add(pageCid);
         if (foundComment) return foundComment;
     }
 

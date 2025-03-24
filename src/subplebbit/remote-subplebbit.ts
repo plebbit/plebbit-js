@@ -113,6 +113,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">
     ) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
+        const postsPagesCreationTimestamp = this.updatedAt;
         this.posts._subplebbit = this;
         if (!newPosts)
             // The sub has changed its address, need to reset the posts
@@ -126,7 +127,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             });
         } else if (!newPosts.pageCids && "pages" in newPosts && newPosts.pages) {
             // was only provided with a single preloaded page, no page cids
-            const parsedPages = parseRawPages(newPosts);
+            if (typeof postsPagesCreationTimestamp !== "number") throw Error("subplebbit.updatedAt should be defined when updating posts");
+            const parsedPages = parseRawPages(newPosts, postsPagesCreationTimestamp);
             this.posts.updateProps({
                 ...parsedPages,
                 subplebbit: this,
@@ -138,7 +140,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
             if (shouldUpdatePosts) {
                 log.trace(`Updating the props of subplebbit (${this.address}) posts`);
-                const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>parseRawPages(newPosts);
+                if (typeof postsPagesCreationTimestamp !== "number")
+                    throw Error("subplebbit.updatedAt should be defined when updating posts");
+                const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
+                    parseRawPages(newPosts, postsPagesCreationTimestamp)
+                );
                 this.posts.updateProps({
                     ...parsedPages,
                     subplebbit: this,

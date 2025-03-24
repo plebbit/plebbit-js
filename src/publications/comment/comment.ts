@@ -1,5 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyAddress, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
 import type { AuthorWithOptionalCommentUpdateJson, PublicationEvents, PublicationTypeName, SubplebbitEvents } from "../../types.js";
@@ -245,6 +245,8 @@ export class Comment
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
         const subplebbitSignature = subplebbit?.signature || this.replies._subplebbit.signature;
+        const repliesCreationTimestamp = this.updatedAt;
+        if (typeof repliesCreationTimestamp !== "number") throw Error("comment.updatedAt should be defined when updating replies");
 
         this.replies._subplebbit.signature = subplebbitSignature;
         const repliesSubplebbit = { address: this.subplebbitAddress, signature: subplebbitSignature };
@@ -260,7 +262,7 @@ export class Comment
         } else if (!newReplies.pageCids && "pages" in newReplies && newReplies.pages) {
             // only pages is provided
             this.replies.updateProps({
-                ...parseRawPages(newReplies),
+                ...parseRawPages(newReplies, repliesCreationTimestamp),
                 subplebbit: this.replies._subplebbit,
                 pageCids: {}
             });
@@ -271,7 +273,7 @@ export class Comment
             if (shouldUpdateReplies) {
                 log.trace(`Updating the props of comment instance (${this.cid}) replies`);
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
-                    parseRawPages(newReplies)
+                    parseRawPages(newReplies, repliesCreationTimestamp)
                 );
                 this.replies.updateProps({
                     ...parsedPages,
