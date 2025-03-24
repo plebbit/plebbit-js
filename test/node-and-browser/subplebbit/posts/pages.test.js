@@ -11,14 +11,14 @@ import {
     isPlebbitFetchingUsingGateways,
     resolveWhenConditionIsTrue,
     itSkipIfRpc
-} from "../../../dist/node/test/test-util.js";
-import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util.js";
-import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "./pages-test-util.js";
+} from "../../../../dist/node/test/test-util.js";
+import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
+import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../pages/pages-test-util.js";
 import { expect } from "chai";
-import signers from "../../fixtures/signers.js";
+import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { messages } from "../../../dist/node/errors.js";
+import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;
 const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
