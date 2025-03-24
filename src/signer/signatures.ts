@@ -921,17 +921,19 @@ export async function verifyPage({
     validatePages: boolean;
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult> {
-    const cacheKey = sha256(
-        (pageCid || pageSortName || "") +
-            resolveAuthorAddresses +
-            overrideAuthorAddressIfInvalid +
-            subplebbit.address +
-            subplebbit.signature?.publicKey +
-            JSON.stringify(parentComment) +
-            validatePages +
-            validateUpdateSignature
-    );
-    if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey)) return { valid: true };
+    const cacheKey =
+        pageCid &&
+        sha256(
+            pageCid +
+                resolveAuthorAddresses +
+                overrideAuthorAddressIfInvalid +
+                subplebbit.address +
+                subplebbit.signature?.publicKey +
+                JSON.stringify(parentComment) +
+                validatePages +
+                validateUpdateSignature
+        );
+    if (cacheKey) if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey)) return { valid: true };
 
     for (const pageComment of page.comments) {
         const verifyRes = await verifyPageComment({
@@ -947,7 +949,7 @@ export async function verifyPage({
         if (!verifyRes.valid) return verifyRes;
     }
 
-    clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
+    if (cacheKey) clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
 
     return { valid: true };
 }
