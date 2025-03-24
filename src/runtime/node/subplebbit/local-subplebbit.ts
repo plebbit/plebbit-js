@@ -166,8 +166,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     >;
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
 
-    private _cidsToUnPin: Set<string> = new Set<string>();
-    private _mfsPathsToUnPin: Set<string> = new Set<string>();
+    private _cidsToUnPin: InternalSubplebbitRecordAfterFirstUpdateType["_cidsToUnPin"] = new Set<string>();
+    private _mfsPathsToRemove: InternalSubplebbitRecordAfterFirstUpdateType["_mfsPathsToRemove"] = new Set<string>();
     private _subplebbitUpdateTrigger!: boolean;
 
     private _pageGenerator!: PageGenerator;
@@ -201,7 +201,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...remeda.omit(this.toJSONInternalRpcAfterFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
-            _internalStateUpdateId: this._internalStateUpdateId
+            _internalStateUpdateId: this._internalStateUpdateId,
+            _cidsToUnPin: this._cidsToUnPin,
+            _mfsPathsToRemove: this._mfsPathsToRemove
         };
     }
 
@@ -250,6 +252,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
         this._internalStateUpdateId = newProps._internalStateUpdateId;
+        newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
+        newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
@@ -477,7 +481,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
 
-        this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
+        this._unpinStaleCidsAndRemoveUnneededMfsPaths().catch((err) => log.error("Failed to unpin stale cids due to ", err));
 
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
@@ -635,9 +639,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             const purgedMfsPaths = cidsToPurgeOffIpfsNode.filter((ipfsPath) => ipfsPath.startsWith("/"));
 
-            purgedMfsPaths.forEach((path) => this._mfsPathsToUnPin.add(path));
+            purgedMfsPaths.forEach((path) => this._mfsPathsToRemove.add(path));
 
-            await this._unpinStaleCids();
+            await this._unpinStaleCidsAndRemoveUnneededMfsPaths();
 
             await this._cleanUpIpfsRepoRarely(true);
 
@@ -1566,7 +1570,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const newCommentUpdateRow = await this._writeCommentUpdateToDatabase(newCommentUpdate, commentUpdateCid, newLocalMfsPath);
         if (storedCommentUpdate && storedCommentUpdate.updateCid !== commentUpdateCid) {
             this._cidsToUnPin.add(storedCommentUpdate.updateCid);
-            if (storedCommentUpdate.localMfsPath !== newLocalMfsPath) this._mfsPathsToUnPin.add(storedCommentUpdate.localMfsPath);
+            if (storedCommentUpdate.localMfsPath !== newLocalMfsPath) this._mfsPathsToRemove.add(storedCommentUpdate.localMfsPath);
         }
 
         return { ...newCommentUpdateRow, commentUpdateRecordString: newCommentUpdateString };
@@ -1712,7 +1716,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
 
-    private async _unpinStaleCids() {
+    private async _unpinStaleCidsAndRemoveUnneededMfsPaths() {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
 
         if (this._cidsToUnPin.size > 0) {
@@ -1739,18 +1743,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _rmUnneededMfsPaths() {
         const log = Logger("plebbit-js:local-subplebbit:sync:_rmUnneededMfsPaths");
 
-        if (this._mfsPathsToUnPin.size > 0) {
-            const toDeleteMfsPaths = Array.from(this._mfsPathsToUnPin.values());
+        if (this._mfsPathsToRemove.size > 0) {
+            const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             try {
                 await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { recursive: true, flush: false });
                 log("Removed", toDeleteMfsPaths.length, "files from MFS directory", toDeleteMfsPaths);
-                toDeleteMfsPaths.forEach((path) => this._mfsPathsToUnPin.delete(path));
+                toDeleteMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
             } catch (e) {
                 const error = <Error>e;
                 if (!error.message.includes("file does not exist")) {
                     log.error("Failed to remove files from MFS", toDeleteMfsPaths, e);
                     throw e;
-                } else toDeleteMfsPaths.forEach((path) => this._mfsPathsToUnPin.delete(path));
+                } else toDeleteMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
             }
         }
     }
@@ -2156,7 +2160,32 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this.posts._stop();
 
         if (this.state === "started") {
-            await this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids and remove MFS before stopping", err));
+            try {
+                await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+            } catch (e) {
+                log.error("Failed to unsubscribe from challenge exchange pubsub when stopping subplebbit", e);
+            }
+            if (this._publishLoopPromise) {
+                try {
+                    await this._publishLoopPromise; // should be in try/catch
+                } catch (e) {
+                    log.error(`Failed to stop subplebbit`, e);
+                }
+                this._publishLoopPromise = undefined;
+            }
+
+            try {
+                await this._unpinStaleCidsAndRemoveUnneededMfsPaths();
+            } catch (e) {
+                log.error("Failed to unpin stale cids and remove mfs paths before stopping", e);
+            }
+
+            try {
+                await this._updateDbInternalState({ _cidsToUnPin: this._cidsToUnPin, _mfsPathsToRemove: this._mfsPathsToRemove });
+            } catch (e) {
+                log.error("Failed to update db internal state with cids to unpin and mfs paths to remove before stopping", e);
+            }
+
             try {
                 await this._clientsManager.getDefaultIpfs()._client.files.flush("/" + this.address);
             } catch (e) {
@@ -2167,15 +2196,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             } catch (e) {
                 log.error(`Failed to unlock start lock on sub (${this.address})`, e);
             }
-            if (this._publishLoopPromise) {
-                try {
-                    await this._publishLoopPromise; // should be in try/catch
-                } catch (e) {
-                    log.error(`Failed to stop subplebbit`, e);
-                }
-                this._publishLoopPromise = undefined;
-            }
-            await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+
             this._setStartedState("stopped");
             await this._dbHandler.rollbackAllTransactions();
             await this._dbHandler.unlockSubState();
