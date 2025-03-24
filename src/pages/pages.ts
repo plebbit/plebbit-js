@@ -172,8 +172,10 @@ export class RepliesPages extends BasePages {
         if (pageIpfs.comments.length === 0) return;
         const baseDepth = pageIpfs.comments[0].comment?.depth;
         const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
+        const pageSortName = Object.entries(this.pageCids).find(([_, pageCid]) => pageCid === pageCid)?.[0];
         const verificationOpts = {
             pageCid,
+            pageSortName,
             page: pageIpfs,
             resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,
@@ -226,8 +228,10 @@ export class PostsPages extends BasePages {
 
     override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
         if (pageIpfs.comments.length === 0) return;
+        const pageSortName = Object.entries(this.pageCids).find(([_, pageCid]) => pageCid === pageCid)?.[0];
         const verificationOpts = {
             pageCid,
+            pageSortName,
             page: pageIpfs,
             resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,

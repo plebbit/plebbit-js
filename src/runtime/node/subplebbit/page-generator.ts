@@ -23,10 +23,14 @@ export type PageOptions = {
     excludeCommentsWithDifferentSubAddress: boolean;
     commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[];
     parentCid: string | null;
-    preloadedPages: (PostSortName | ReplySortName)[] | undefined; // a list of sort types that will be preloaded on the subplebbit/comment instance
+    preloadedPage: (PostSortName | ReplySortName) | undefined; // a list of sort types that will be preloaded on the subplebbit/comment instance
 };
 
-type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
+type SinglePreloadedPageRes = Record<PostSortName | ReplySortName, PageIpfs>;
+
+type PageGenerationRes =
+    | Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>> // when there are multiple pages
+    | SinglePreloadedPageRes; // when there is only one preloaded page
 
 export class PageGenerator {
     private _subplebbit: LocalSubplebbit;
@@ -152,13 +156,12 @@ export class PageGenerator {
         return chunks;
     }
 
-    // Resolves to sortedComments
-    async sortComments(
-        comments: PageIpfs["comments"],
+    async sortAndChunkComments(
+        unsortedComments: PageIpfs["comments"],
         sortName: PostSortName | ReplySortName,
         options: PageOptions
-    ): Promise<PageGenerationRes | undefined> {
-        if (comments.length === 0) throw Error("Should not provide empty array of comments to sort");
+    ): Promise<PageIpfs["comments"][]> {
+        if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
         const sortProps: SortProps = options.parentCid
             ? REPLIES_SORT_TYPES[<ReplySortName>sortName]
             : POSTS_SORT_TYPES[<PostSortName>sortName];
@@ -168,7 +171,7 @@ export class PageGenerator {
 
         if (sortName === "active") {
             activeScores = {};
-            for (const comment of comments)
+            for (const comment of unsortedComments)
                 activeScores[comment.commentUpdate.cid] = await this._subplebbit._dbHandler.queryActiveScore({
                     cid: comment.commentUpdate.cid,
                     timestamp: comment.comment.timestamp
@@ -185,9 +188,9 @@ export class PageGenerator {
             return score2 - score1;
         };
 
-        const pinnedComments = comments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
+        const pinnedComments = unsortedComments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
 
-        let unpinnedComments = comments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
+        let unpinnedComments = unsortedComments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
         if (sortProps.timeframe) {
             const timestampLower: number = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);
@@ -195,12 +198,23 @@ export class PageGenerator {
 
         const commentsSorted = pinnedComments.concat(unpinnedComments);
 
-        if (commentsSorted.length === 0) return undefined;
+        if (commentsSorted.length === 0) return [];
 
-        const isPreloadedSort = options.preloadedPages?.includes(sortName) || false;
+        const isPreloadedSort = options.preloadedPage?.includes(sortName) || false;
 
         const commentsChunks = this._chunkComments(commentsSorted, isPreloadedSort);
 
+        return commentsChunks;
+    }
+
+    // Resolves to sortedComments
+    async sortChunkAddIpfs(
+        comments: PageIpfs["comments"],
+        sortName: PostSortName | ReplySortName,
+        options: PageOptions
+    ): Promise<PageGenerationRes | undefined> {
+        const commentsChunks = await this.sortAndChunkComments(comments, sortName, options);
+        if (commentsChunks.length === 0) return undefined;
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
         return res;
@@ -216,48 +230,55 @@ export class PageGenerator {
         };
     }
 
-    async generateSubplebbitPosts(preloadedPages: PostSortName[]): Promise<PostsPagesTypeIpfs | undefined> {
+    async generateSubplebbitPosts(
+        preloadedPageSortName: PostSortName
+    ): Promise<PostsPagesTypeIpfs | { singlePreloadedPage: SinglePreloadedPageRes } | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
             parentCid: null,
-            preloadedPages
+            preloadedPage: preloadedPageSortName
         };
         // Sorting posts on a subplebbit level
         const rawPosts = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
-
         if (rawPosts.length === 0) return undefined;
+
+        const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
+        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
         for (const sortName of remeda.keys.strict(POSTS_SORT_TYPES))
-            sortResults.push(await this.sortComments(rawPosts, sortName, pageOptions));
+            sortResults.push(await this.sortChunkAddIpfs(rawPosts, sortName, pageOptions));
 
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
     async generateRepliesPages(
         comment: Pick<CommentsTableRow, "cid" | "depth">,
-        preloadedPages: ReplySortName[]
-    ): Promise<RepliesPagesTypeIpfs | undefined> {
+        preloadedReplyPageSortName: ReplySortName
+    ): Promise<RepliesPagesTypeIpfs | { singlePreloadedPage: SinglePreloadedPageRes } | undefined> {
         const pageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
             parentCid: comment.cid,
-            preloadedPages
+            preloadedPage: preloadedReplyPageSortName
         };
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
 
+        const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        if (hierarchalReplies.length === 0) return undefined;
+
+        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, pageOptions);
+        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
+
         const hierarchalSorts = remeda.keys.strict(REPLIES_SORT_TYPES).filter((replySortName) => !REPLIES_SORT_TYPES[replySortName].flat);
         if (hierarchalSorts.length > 0) {
-            const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
-            if (hierarchalReplies.length === 0) return undefined;
-
             for (const hierarchalSortName of hierarchalSorts)
-                sortResults.push(await this.sortComments(hierarchalReplies, hierarchalSortName, pageOptions));
+                sortResults.push(await this.sortChunkAddIpfs(hierarchalReplies, hierarchalSortName, pageOptions));
         }
 
         const flatSorts = remeda.keys.strict(REPLIES_SORT_TYPES).filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat);
@@ -268,7 +289,8 @@ export class PageGenerator {
                 commentUpdateFieldsToExclude: ["replies"]
             });
 
-            for (const flatSortName of flatSorts) sortResults.push(await this.sortComments(flattenedReplies, flatSortName, pageOptions));
+            for (const flatSortName of flatSorts)
+                sortResults.push(await this.sortChunkAddIpfs(flattenedReplies, flatSortName, pageOptions));
         }
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);

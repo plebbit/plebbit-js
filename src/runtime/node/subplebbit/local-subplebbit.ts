@@ -413,13 +413,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const latestComment = await this._dbHandler.queryLatestCommentCid(trx);
         await this._dbHandler.commitTransaction("subplebbit");
 
-        const preloadedPostsPages = ["hot"];
+        const preloadedPostsPages = "hot";
         const [stats, subplebbitPosts] = await Promise.all([
             this._dbHandler.querySubplebbitStats(undefined),
             this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages)
         ]);
 
-        if (subplebbitPosts && this.posts?.pageCids) {
+        if (subplebbitPosts && this.posts?.pageCids && "pageCids" in subplebbitPosts && subplebbitPosts.pageCids) {
             const newPageCids = remeda.unique(Object.values(subplebbitPosts.pageCids));
             const pageCidsToUnPin = remeda.unique(
                 Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
@@ -428,9 +428,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         }
 
-        // console.time("syncPostUpdatesFilesystemWithIpfs");
+        await this._rmUnneededMfsPaths();
         await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
-        // console.timeEnd("syncPostUpdatesFilesystemWithIpfs");
         const newPostUpdates = await this._calculateNewPostUpdates();
 
         const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
@@ -451,12 +450,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             })
         };
         // posts should not be cleaned up because we want to make sure not to modify authors' posts
-        if (subplebbitPosts)
-            newIpns.posts = {
-                pageCids: subplebbitPosts.pageCids,
-                pages: remeda.pick(subplebbitPosts.pages, preloadedPostsPages)
-            };
-        else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
+
+        if (subplebbitPosts) {
+            if ("singlePreloadedPage" in subplebbitPosts) newIpns.posts = { pages: subplebbitPosts.singlePreloadedPage };
+            else if (subplebbitPosts.pageCids)
+                newIpns.posts = {
+                    pageCids: subplebbitPosts.pageCids,
+                    pages: remeda.pick(subplebbitPosts.pages, [preloadedPostsPages])
+                };
+        } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
@@ -1509,16 +1511,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
-        const preloadedRepliesPages = ["topAll"];
-        const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
+        const preloadedRepliesPages = "topAll";
+        const [calculatedCommentUpdate, storedCommentUpdate, generatedRepliesPages] = await Promise.all([
             this._dbHandler.queryCalculatedCommentUpdate(comment),
             this._dbHandler.queryStoredCommentUpdate(comment),
             this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages)
         ]);
-        if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
+        if (calculatedCommentUpdate.replyCount > 0) assert(generatedRepliesPages);
 
-        if (storedCommentUpdate?.replies?.pageCids && generatedPages) {
-            const newPageCids = remeda.unique(Object.values(generatedPages.pageCids));
+        if (
+            storedCommentUpdate?.replies?.pageCids &&
+            generatedRepliesPages &&
+            "pageCids" in generatedRepliesPages &&
+            generatedRepliesPages.pageCids
+        ) {
+            const newPageCids = remeda.unique(Object.values(generatedRepliesPages.pageCids));
             const pageCidsToUnPin = remeda.unique(
                 Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
             );
@@ -1534,11 +1541,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             })
         };
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
-        if (generatedPages)
-            commentUpdatePriorToSigning.replies = {
-                pageCids: generatedPages.pageCids,
-                pages: remeda.pick(generatedPages.pages, preloadedRepliesPages)
-            };
+        if (generatedRepliesPages) {
+            if ("singlePreloadedPage" in generatedRepliesPages)
+                commentUpdatePriorToSigning.replies = { pages: generatedRepliesPages.singlePreloadedPage };
+            else
+                commentUpdatePriorToSigning.replies = {
+                    pageCids: generatedRepliesPages.pageCids,
+                    pages: remeda.pick(generatedRepliesPages.pages, [preloadedRepliesPages])
+                };
+        }
 
         const newCommentUpdate: CommentUpdateType = {
             ...commentUpdatePriorToSigning,
@@ -1722,11 +1733,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }
+        await this._rmUnneededMfsPaths();
+    }
+
+    private async _rmUnneededMfsPaths() {
+        const log = Logger("plebbit-js:local-subplebbit:sync:_rmUnneededMfsPaths");
 
         if (this._mfsPathsToUnPin.size > 0) {
             const toDeleteMfsPaths = Array.from(this._mfsPathsToUnPin.values());
             try {
-                await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { recursive: true });
+                await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { recursive: true, flush: false });
                 log("Removed", toDeleteMfsPaths.length, "files from MFS directory", toDeleteMfsPaths);
                 toDeleteMfsPaths.forEach((path) => this._mfsPathsToUnPin.delete(path));
             } catch (e) {
@@ -2140,7 +2156,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this.posts._stop();
 
         if (this.state === "started") {
-            this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids before stopping", err));
+            await this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids and remove MFS before stopping", err));
+            try {
+                await this._clientsManager.getDefaultIpfs()._client.files.flush("/" + this.address);
+            } catch (e) {
+                log.error("Failed to flush MFS before stopping", e);
+            }
             try {
                 await this._dbHandler.unlockSubStart();
             } catch (e) {

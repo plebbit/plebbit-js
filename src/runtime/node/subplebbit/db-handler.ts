@@ -599,7 +599,7 @@ export class DbHandler {
             .first();
     }
 
-    private _basePageQuery(options: Omit<PageOptions, "pageSize" | "preloadedPages">, trx?: Transaction) {
+    private _basePageQuery(options: Omit<PageOptions, "pageSize" | "preloadedPage">, trx?: Transaction) {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .jsonExtract(`${TABLES.COMMENT_UPDATES}.edit`, "$.deleted", "deleted", true)
@@ -631,7 +631,7 @@ export class DbHandler {
         const updateMaxTimestamp = async (localComments: (typeof comment)[]) => {
             for (const commentChild of localComments) {
                 if (commentChild.timestamp > maxTimestamp) maxTimestamp = commentChild.timestamp;
-                const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPages"> = {
+                const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage"> = {
                     excludeCommentsWithDifferentSubAddress: true,
                     excludeDeletedComments: true,
                     excludeRemovedComments: true,
@@ -645,7 +645,7 @@ export class DbHandler {
             }
         };
 
-        const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPages"> = {
+        const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage"> = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,

@@ -247,12 +247,25 @@ export class Comment
         const subplebbitSignature = subplebbit?.signature || this.replies._subplebbit.signature;
 
         this.replies._subplebbit.signature = subplebbitSignature;
+        const repliesSubplebbit = { address: this.subplebbitAddress, signature: subplebbitSignature };
         if (!newReplies) {
             this.replies.resetPages();
-        } else if (!("pages" in newReplies)) {
+        } else if (!("pages" in newReplies) && newReplies.pageCids) {
             // only pageCids is provided
-            this.replies.pageCids = newReplies.pageCids;
-        } else {
+            this.replies.updateProps({
+                subplebbit: repliesSubplebbit,
+                pageCids: newReplies.pageCids,
+                pages: {}
+            });
+        } else if (!newReplies.pageCids && "pages" in newReplies && newReplies.pages) {
+            // only pages is provided
+            this.replies.updateProps({
+                ...parseRawPages(newReplies),
+                subplebbit: this.replies._subplebbit,
+                pageCids: {}
+            });
+        } else if ("pages" in newReplies && newReplies.pages && "pageCids" in newReplies && newReplies.pageCids) {
+            // both pageCids and pages are provided
             const shouldUpdateReplies = !remeda.isDeepEqual(this.replies.pageCids, newReplies.pageCids);
 
             if (shouldUpdateReplies) {
@@ -262,7 +275,7 @@ export class Comment
                 );
                 this.replies.updateProps({
                     ...parsedPages,
-                    subplebbit: { address: this.subplebbitAddress, signature: subplebbitSignature },
+                    subplebbit: repliesSubplebbit,
                     pageCids: newReplies.pageCids
                 });
             }

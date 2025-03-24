@@ -22,7 +22,7 @@ export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
 
 export interface RepliesPagesIpfsDefinedManuallyType {
     pages: Record<ReplySortName, PageIpfsManuallyDefined>;
-    pageCids: Record<ReplySortName, string>;
+    pageCids?: Record<ReplySortName, string>;
 }
 
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";

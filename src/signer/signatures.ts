@@ -591,13 +591,13 @@ export async function verifySubplebbit({
 
     if (subplebbit.posts?.pages && validatePages)
         for (const pageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
-            const pageCid = subplebbit.posts.pageCids[pageSortName];
-            if (typeof pageCid !== "string") throw Error("Failed to find page cid of subplebbit to verify");
+            const pageCid: string | undefined = subplebbit.posts.pageCids?.[pageSortName];
             const page = subplebbit.posts.pages[pageSortName];
             if (!remeda.isPlainObject(page)) throw Error("failed to find page ipfs of subplebbit to verify");
             const pageValidity = await verifyPage({
                 pageCid,
                 page,
+                pageSortName,
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
@@ -609,7 +609,7 @@ export async function verifySubplebbit({
 
             if (!pageValidity.valid) {
                 log.error(
-                    `Subplebbit (${subplebbit.address}) page (${pageSortName} - ${subplebbit.posts.pageCids[pageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`
+                    `Subplebbit (${subplebbit.address}) page (${pageSortName} - ${subplebbit.posts.pageCids?.[pageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`
                 );
                 return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
             }
@@ -697,13 +697,13 @@ export async function verifyCommentUpdate({
         // Validate update.replies
         const replyPageKeys = remeda.keys.strict(update.replies.pages);
         for (const replySortName of replyPageKeys) {
-            const pageCid = update.replies.pageCids[replySortName];
-            if (!pageCid) throw Error("Failed to find page cid of the page");
+            const pageCid: string | undefined = update.replies.pageCids?.[replySortName];
             const page = update.replies.pages[replySortName];
             if (!page) throw Error("Failed to find page to verify within comment update");
             const validity = await verifyPage({
                 pageCid,
                 page,
+                pageSortName: replySortName,
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
@@ -899,6 +899,7 @@ export async function verifyPageComment({
 
 export async function verifyPage({
     pageCid,
+    pageSortName,
     page,
     resolveAuthorAddresses,
     clientsManager,
@@ -910,6 +911,7 @@ export async function verifyPage({
     validateUpdateSignature
 }: {
     pageCid: string | undefined;
+    pageSortName: string | undefined;
     page: PageIpfs;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
@@ -920,7 +922,7 @@ export async function verifyPage({
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult> {
     const cacheKey = sha256(
-        (pageCid || JSON.stringify(page)) +
+        (pageCid || pageSortName || "") +
             resolveAuthorAddresses +
             overrideAuthorAddressIfInvalid +
             subplebbit.address +

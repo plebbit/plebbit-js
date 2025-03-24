@@ -5,16 +5,16 @@ import type {
     PostSort,
     ReplySort,
     Timeframe,
-    RepliesPagesTypeIpfs,
-    PostsPagesTypeIpfs,
-    PageTypeJson
+    PageTypeJson,
+    ReplySortName,
+    PostSortName
 } from "./types.js";
 import { Comment } from "../publications/comment/comment.js";
 import assert from "assert";
 import { BasePages } from "./pages.js";
 
 import * as remeda from "remeda";
-import type { CommentWithinPageJson } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentUpdateType, CommentWithinPageJson } from "../publications/comment/types.js";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
@@ -60,6 +60,13 @@ export const REPLIES_SORT_TYPES: ReplySort = {
 };
 
 type CommentToSort = PageIpfs["comments"][0];
+
+export function activeScore(comments: CommentToSort[]) {
+    const commentsTimestamps: Record<CommentUpdateType["cid"], CommentIpfsType["timestamp"]> = {};
+    processAllCommentsRecursively(comments, (comment) => (commentsTimestamps[comment.commentUpdate.cid] = comment.comment.timestamp));
+    const sortedComments = comments.sort((a, b) => commentsTimestamps[b.commentUpdate.cid] - commentsTimestamps[a.commentUpdate.cid]);
+    return sortedComments;
+}
 
 export function hotScore(comment: CommentToSort) {
     assert(
@@ -163,7 +170,30 @@ export function parsePagesIpfs(pagesRaw: PagesTypeIpfs): Omit<PagesTypeJson, "cl
     const keys = remeda.keys.strict(pagesRaw.pages);
     const parsedPages = Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs));
     const pagesType = remeda.fromEntries.strict(keys.map((key, i) => [key, parsedPages[i]]));
-    return { pages: pagesType, pageCids: pagesRaw.pageCids };
+    return { pages: pagesType, pageCids: pagesRaw.pageCids || {} };
+}
+
+export function processAllCommentsRecursively(comments: PageIpfs["comments"], processor: (comment: PageIpfs["comments"][0]) => void): void {
+    if (!comments || comments.length === 0) return;
+
+    comments.forEach((comment) => processor(comment));
+
+    for (const comment of comments)
+        if (comment.commentUpdate.replies?.pages?.topAll?.comments)
+            processAllCommentsRecursively(comment.commentUpdate.replies.pages.topAll.comments, processor);
+}
+
+export function sortComments(unsortedComments: PageIpfs["comments"], sortName: ReplySortName | PostSortName) {
+    if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
+    const sortProps = REPLIES_SORT_TYPES[<ReplySortName>sortName] || POSTS_SORT_TYPES[<PostSortName>sortName];
+    let sortedComments: PageIpfs["comments"];
+    if (sortName === "active") {
+        sortedComments = activeScore(unsortedComments);
+    } else {
+        const scoreFunction = sortProps.score;
+        sortedComments = unsortedComments.sort((a, b) => scoreFunction(b) - scoreFunction(a));
+    }
+    return sortedComments;
 }
 
 // To use for both subplebbit.posts and comment.replies
@@ -177,9 +207,21 @@ export function parseRawPages(pages: PagesTypeIpfs | Omit<PagesTypeJson, "client
     const isIpfs = typeof Object.values(pages.pages)[0]?.comments[0]?.["commentUpdate"]?.["cid"] === "string";
 
     if (isIpfs) {
-        pages = <PagesTypeIpfs>pages;
+        const pagesIpfs = <PagesTypeIpfs>pages;
         // pages is a PagesTypeIpfs
-        const parsedPages = parsePagesIpfs(pages);
+        const parsedPages = parsePagesIpfs(pagesIpfs);
+        if (Object.keys(parsedPages.pages).length === 1 && Object.keys(parsedPages.pageCids).length === 0) {
+            const preloadedSortName = Object.keys(parsedPages.pages)[0];
+            // it's a single preloaded page, let's calculate all other sorts on the client side
+            const isSubplebbitPages = Object.values(pagesIpfs.pages)[0]?.comments[0]?.comment.depth === 0;
+            const sortTypesToCalculate = (isSubplebbitPages ? Object.keys(POSTS_SORT_TYPES) : Object.keys(REPLIES_SORT_TYPES)).filter(
+                (sortName) => sortName !== preloadedSortName
+            );
+            for (const sortName of sortTypesToCalculate)
+                parsedPages.pages[sortName] = parsePageIpfs({
+                    comments: sortComments(pagesIpfs.pages[preloadedSortName].comments, sortName)
+                });
+        }
         return { pages: parsedPages.pages };
     } else if (pages instanceof BasePages)
         return { pages: pages.pages }; // already parsed

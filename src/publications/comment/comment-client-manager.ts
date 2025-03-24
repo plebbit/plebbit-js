@@ -214,7 +214,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate, subIpns);
                 return { commentUpdate, commentUpdateIpfsPath: path };
             } catch (e) {
-                // there's a problem with the record itself
+                // there's a problem with the record itself, could be signature or schema or bad json
                 this._comment._invalidCommentUpdateMfsPaths.add(path);
                 if (e instanceof PlebbitError) e.details = { ...e.details, commentUpdatePath: path, commentCid: this._comment.cid };
                 throw e;
@@ -495,9 +495,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     }): PageIpfs["comments"][0] | undefined {
         // TODO rewrite this to use updating comments and subplebbit
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
-        const sub: RemoteSubplebbit | undefined = opts?.sub || this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress];
-        const post: Comment | undefined =
-            opts?.post || this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid!] : undefined;
+        const sub: RemoteSubplebbit | undefined = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress] || opts?.sub;
+        const post: Comment | undefined = this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid!] : opts?.post;
         if (sub && (this._comment.depth === 0 || this._comment.postCid === this._comment.cid))
             return findCommentInPageInstance(sub.posts, this._comment.cid);
 
@@ -580,9 +579,6 @@ export class CommentClientsManager extends PublicationClientsManager {
             throw Error("comment.replies._subplebbit.signature needs to be defined to fetch comment update of reply");
         await resolveWhenPredicateIsTrue(postCommentInstance, () => typeof postCommentInstance.timestamp === "number");
         const pageSortName = this._chooseWhichFlatPagesBasedOnPostAndReplyTimestamp(postCommentInstance.timestamp!);
-        await postCommentInstance.update();
-
-        await resolveWhenPredicateIsTrue(postCommentInstance, () => Boolean(postCommentInstance.replies.pageCids[pageSortName]), "update");
 
         let curPageCid: string | undefined = postCommentInstance.replies.pageCids[pageSortName];
 

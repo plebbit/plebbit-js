@@ -117,10 +117,23 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (!newPosts)
             // The sub has changed its address, need to reset the posts
             this.posts.resetPages();
-        else if (!("pages" in newPosts)) {
+        else if (!("pages" in newPosts) && newPosts.pageCids) {
             // only pageCids is provided
-            this.posts.pageCids = newPosts.pageCids;
-        } else {
+            this.posts.updateProps({
+                pageCids: newPosts.pageCids,
+                subplebbit: this,
+                pages: {}
+            });
+        } else if (!newPosts.pageCids && "pages" in newPosts && newPosts.pages) {
+            // was only provided with a single preloaded page, no page cids
+            const parsedPages = parseRawPages(newPosts);
+            this.posts.updateProps({
+                ...parsedPages,
+                subplebbit: this,
+                pageCids: {}
+            });
+        } else if ("pages" in newPosts && newPosts.pages && "pageCids" in newPosts && newPosts.pageCids) {
+            // both pageCids and pages are provided
             const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
 
             if (shouldUpdatePosts) {
