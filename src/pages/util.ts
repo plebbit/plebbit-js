@@ -306,7 +306,6 @@ export function findCommentInPageInstanceRecursively(
     if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
     for (const [sortName, page] of Object.entries(pageInstance.pages)) {
         // Skip if we've visited this page
-        const pageCid = pageInstance.pageCids[sortName];
         if (!page) continue;
 
         const pageIpfs = <PageIpfs>{ comments: page.comments.map((page) => page.pageComment), nextCid: page.nextCid };
