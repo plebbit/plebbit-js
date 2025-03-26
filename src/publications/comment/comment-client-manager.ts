@@ -28,6 +28,8 @@ import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
     | undefined;
+
+export const MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE = 1024 * 1024;
 export class CommentClientsManager extends PublicationClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
@@ -201,7 +203,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             let res: string;
             const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update-ipfs"];
             try {
-                res = await this._fetchCidP2P(path, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentUpdateTimeoutMs });
+                res = await this._fetchCidP2P(path, {
+                    maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE,
+                    timeoutMs: commentUpdateTimeoutMs
+                });
             } catch (e) {
                 log.trace(`Failed to fetch CommentUpdate from path (${path}) with IPFS P2P. Trying the next timestamp range`);
                 attemptedPathsToLoadErrors[path] = <Error>e;
@@ -328,7 +333,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     recordPlebbitType: "comment-update",
                     validateGatewayResponseFunc: validateCommentFromGateway,
                     log,
-                    maxFileSizeBytes: 1024 * 1024,
+                    maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE,
                     timeoutMs: this._plebbit._timeouts["comment-update-ipfs"]
                 });
                 if (!commentUpdate) throw Error("Failed to load comment update from gateways. This is a critical logic error");

@@ -25,6 +25,7 @@ import * as remeda from "remeda";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
+import type { CommentUpdateType } from "../../publications/comment/types.js";
 
 const storedKuboRpcClients: Record<string, ReturnType<typeof createKuboRpcClient>> = {};
 
@@ -286,4 +287,22 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
         plebbit.emit("subplebbitschange", currentListedSubs);
 
     return watchAbortController;
+}
+
+export function calculateExpectedSignatureSize(
+    newIpns: Omit<SubplebbitIpfsType, "signature" | "posts"> | Omit<CommentUpdateType, "signature" | "posts">
+) {
+    // Get all non-undefined properties as they'll be in signedPropertyNames
+    const signedProps = Object.entries(newIpns)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key]) => key);
+
+    const mockSignature = {
+        signature: "A".repeat(88), // ed25519 sig is 64 bytes -> 88 bytes in base64
+        publicKey: "A".repeat(44), // ed25519 pubkey is 32 bytes -> 44 bytes in base64
+        type: "ed25519",
+        signedPropertyNames: signedProps
+    };
+
+    return Buffer.byteLength(JSON.stringify(mockSignature), "utf8");
 }

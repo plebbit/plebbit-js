@@ -72,7 +72,13 @@ import {
     verifyCommentUpdate,
     verifySubplebbitEdit
 } from "../../../signer/signatures.js";
-import { getThumbnailUrlOfLink, importSignerIntoKuboNode, listSubplebbits, moveSubplebbitDbToDeletedDirectory } from "../util.js";
+import {
+    calculateExpectedSignatureSize,
+    getThumbnailUrlOfLink,
+    importSignerIntoKuboNode,
+    listSubplebbits,
+    moveSubplebbitDbToDeletedDirectory
+} from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
 import {
     SignerWithPublicKeyAddress,
@@ -142,6 +148,7 @@ import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publicat
 import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
+import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 
 type CommentUpdateToBeUpdated = CommentUpdatesRow & Pick<CommentsTableRow, "depth"> & { commentUpdateRecordString: string };
 
@@ -417,20 +424,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const latestComment = await this._dbHandler.queryLatestCommentCid(trx);
         await this._dbHandler.commitTransaction("subplebbit");
 
-        const preloadedPostsPages = "hot";
-        const [stats, subplebbitPosts] = await Promise.all([
-            this._dbHandler.querySubplebbitStats(undefined),
-            this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages)
-        ]);
-
-        if (subplebbitPosts && this.posts?.pageCids && "pageCids" in subplebbitPosts && subplebbitPosts.pageCids) {
-            const newPageCids = remeda.unique(Object.values(subplebbitPosts.pageCids));
-            const pageCidsToUnPin = remeda.unique(
-                Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
-            );
-
-            pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
-        }
+        const stats = await this._dbHandler.querySubplebbitStats(undefined);
 
         await this._rmUnneededMfsPaths();
         await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
@@ -453,15 +447,36 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 protocolVersion: env.PROTOCOL_VERSION
             })
         };
+
+        const preloadedPostsPages = "hot";
+        // Calculate size taken by subplebbit without posts and signature
+        const subplebbitWithoutPostsSignatureSize = Buffer.byteLength(JSON.stringify(newIpns), "utf8");
+
+        // Calculate expected signature size
+        const expectedSignatureSize = calculateExpectedSignatureSize(newIpns);
+
+        // Calculate remaining space for posts
+        const availablePostsSize = MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize;
+
+        const generatedPosts = await this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages, availablePostsSize);
+
         // posts should not be cleaned up because we want to make sure not to modify authors' posts
 
-        if (subplebbitPosts) {
-            if ("singlePreloadedPage" in subplebbitPosts) newIpns.posts = { pages: subplebbitPosts.singlePreloadedPage };
-            else if (subplebbitPosts.pageCids)
+        if (generatedPosts) {
+            if ("singlePreloadedPage" in generatedPosts) newIpns.posts = { pages: generatedPosts.singlePreloadedPage };
+            else if (generatedPosts.pageCids) {
+                // multiple pages
                 newIpns.posts = {
-                    pageCids: subplebbitPosts.pageCids,
-                    pages: remeda.pick(subplebbitPosts.pages, [preloadedPostsPages])
+                    pageCids: generatedPosts.pageCids,
+                    pages: remeda.pick(generatedPosts.pages, [preloadedPostsPages])
                 };
+                const newPageCids = remeda.unique(Object.values(generatedPosts.pageCids));
+                const pageCidsToUnPin = remeda.unique(
+                    Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
+                );
+
+                pageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
+            }
         } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         const signature = await signSubplebbit(newIpns, this.signer);
@@ -1515,26 +1530,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
-        const preloadedRepliesPages = "topAll";
-        const [calculatedCommentUpdate, storedCommentUpdate, generatedRepliesPages] = await Promise.all([
+        const [calculatedCommentUpdate, storedCommentUpdate] = await Promise.all([
             this._dbHandler.queryCalculatedCommentUpdate(comment),
-            this._dbHandler.queryStoredCommentUpdate(comment),
-            this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages)
+            this._dbHandler.queryStoredCommentUpdate(comment)
         ]);
-        if (calculatedCommentUpdate.replyCount > 0) assert(generatedRepliesPages);
 
-        if (
-            storedCommentUpdate?.replies?.pageCids &&
-            generatedRepliesPages &&
-            "pageCids" in generatedRepliesPages &&
-            generatedRepliesPages.pageCids
-        ) {
-            const newPageCids = remeda.unique(Object.values(generatedRepliesPages.pageCids));
-            const pageCidsToUnPin = remeda.unique(
-                Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
-            );
-            pageCidsToUnPin.forEach((pageCid) => this._cidsToUnPin.add(pageCid));
-        }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
         const commentUpdatePriorToSigning: Omit<CommentUpdateType, "signature"> = {
@@ -1544,15 +1544,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 protocolVersion: env.PROTOCOL_VERSION
             })
         };
+
+        const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
+
+        const repliesAvailableSize =
+            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning);
+        const preloadedRepliesPages = "topAll";
+
+        const generatedRepliesPages = await this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages, repliesAvailableSize);
+
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedRepliesPages) {
             if ("singlePreloadedPage" in generatedRepliesPages)
                 commentUpdatePriorToSigning.replies = { pages: generatedRepliesPages.singlePreloadedPage };
-            else
+            else if (generatedRepliesPages.pageCids) {
                 commentUpdatePriorToSigning.replies = {
                     pageCids: generatedRepliesPages.pageCids,
                     pages: remeda.pick(generatedRepliesPages.pages, [preloadedRepliesPages])
                 };
+                const newPageCids = remeda.unique(Object.values(generatedRepliesPages.pageCids));
+                const pageCidsToUnPin = remeda.unique(
+                    Object.values(storedCommentUpdate?.replies?.pageCids || {}).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
+                );
+                pageCidsToUnPin.forEach((pageCid) => this._cidsToUnPin.add(pageCid));
+            }
         }
 
         const newCommentUpdate: CommentUpdateType = {
