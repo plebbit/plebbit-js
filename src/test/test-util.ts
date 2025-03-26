@@ -669,15 +669,8 @@ export async function waitTillReplyInParentPages(
     plebbit: Plebbit
 ) {
     const parentComment = await plebbit.createComment({ cid: reply.parentCid });
-    const isReplyInParentPages = async () => {
-        if (!("new" in parentComment.replies.pageCids)) return false;
-
-        const commentNewPageCid = parentComment.replies.pageCids.new;
-        const replyInPage = await findCommentInPage(reply.cid, commentNewPageCid, parentComment.replies);
-        return Boolean(replyInPage);
-    };
     await parentComment.update();
-    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
+    await waitTillReplyInParentPagesInstance(reply, parentComment);
     await parentComment.stop();
 }
 
