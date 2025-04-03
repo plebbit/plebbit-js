@@ -368,6 +368,18 @@ describe(`Start lock`, async () => {
             expect(sub.state).to.equal("stopped");
         }
     });
+
+    itSkipIfRpc(`subplebbit.stop() should remove stale cids and MFS paths from kubo node`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await publishRandomPost(sub.address, plebbit);
+        await resolveWhenConditionIsTrue(sub, () => sub._cidsToUnPin.size > 0);
+        await sub.stop();
+        const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
+        expect(recreatedSub._cidsToUnPin.size).to.equal(0);
+        expect(recreatedSub._mfsPathsToRemove.size).to.equal(0);
+    });
 });
 
 describe(`Publish loop resiliency`, async () => {
