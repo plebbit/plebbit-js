@@ -173,8 +173,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     >;
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
 
-    private _cidsToUnPin: InternalSubplebbitRecordAfterFirstUpdateType["_cidsToUnPin"] = new Set<string>();
-    private _mfsPathsToRemove: InternalSubplebbitRecordAfterFirstUpdateType["_mfsPathsToRemove"] = new Set<string>();
+    private _cidsToUnPin: Set<string> = new Set<string>();
+    private _mfsPathsToRemove: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger!: boolean;
 
     private _pageGenerator!: PageGenerator;
@@ -209,8 +209,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
             _internalStateUpdateId: this._internalStateUpdateId,
-            _cidsToUnPin: this._cidsToUnPin,
-            _mfsPathsToRemove: this._mfsPathsToRemove
+            _cidsToUnPin: [...this._cidsToUnPin],
+            _mfsPathsToRemove: [...this._mfsPathsToRemove]
         };
     }
 
@@ -259,8 +259,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
         this._internalStateUpdateId = newProps._internalStateUpdateId;
-        newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
-        newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
+        if (newProps._cidsToUnPin) newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
+        if (newProps._mfsPathsToRemove) newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
@@ -494,9 +494,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
+        await this._unpinStaleCidsAndRemoveUnneededMfsPaths();
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
-
-        this._unpinStaleCidsAndRemoveUnneededMfsPaths().catch((err) => log.error("Failed to unpin stale cids due to ", err));
 
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
@@ -2196,7 +2195,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
             try {
-                await this._updateDbInternalState({ _cidsToUnPin: this._cidsToUnPin, _mfsPathsToRemove: this._mfsPathsToRemove });
+                await this._updateDbInternalState({ _cidsToUnPin: [...this._cidsToUnPin], _mfsPathsToRemove: [...this._mfsPathsToRemove] });
             } catch (e) {
                 log.error("Failed to update db internal state with cids to unpin and mfs paths to remove before stopping", e);
             }

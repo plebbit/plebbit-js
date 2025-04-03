@@ -147,8 +147,8 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
 
 export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
     updateCid: string;
-    _cidsToUnPin: Set<string>; // cids that we need to unpin from kubo node
-    _mfsPathsToRemove: Set<string>; // mfs paths that we need to rm from kubo node
+    _cidsToUnPin: string[]; // cids that we need to unpin from kubo node
+    _mfsPathsToRemove: string[]; // mfs paths that we need to rm from kubo node
 }
 
 // RPC server transmitting Internal Subplebbit records to clients
