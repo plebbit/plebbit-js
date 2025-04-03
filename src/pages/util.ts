@@ -61,17 +61,6 @@ export const REPLIES_SORT_TYPES: ReplySort = {
 
 type CommentToSort = PageIpfs["comments"][0];
 
-export function sortPostsByActiveScore(posts: CommentToSort[]) {
-    // active score is for posts, so we know comments are all posts with depth = 0
-    const postsTimestamps: Record<CommentUpdateType["cid"], CommentIpfsType["timestamp"]> = {};
-    processAllCommentsRecursively(posts, (postOrReply) => {
-        const postCid = postOrReply.comment.postCid || postOrReply.commentUpdate.cid;
-        postsTimestamps[postCid] = Math.max(postsTimestamps[postCid] || 0, postOrReply.comment.timestamp);
-    });
-    const sortedComments = posts.sort((a, b) => postsTimestamps[b.commentUpdate.cid] - postsTimestamps[a.commentUpdate.cid]);
-    return sortedComments;
-}
-
 export function hotScore(comment: CommentToSort) {
     assert(
         typeof comment.commentUpdate.downvoteCount === "number" &&
@@ -187,32 +176,6 @@ export function processAllCommentsRecursively(comments: PageIpfs["comments"], pr
             processAllCommentsRecursively(comment.commentUpdate.replies.pages.topAll.comments, processor);
 }
 
-export function sortComments(unsortedComments: PageIpfs["comments"], sortName: ReplySortName | PostSortName, baseTimestamp: number) {
-    // we assume all comments of a page are here, there are no next pages
-    if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
-    const sortProps = REPLIES_SORT_TYPES[<ReplySortName>sortName] || POSTS_SORT_TYPES[<PostSortName>sortName];
-    const scoreFunction = sortProps.score;
-
-    const pinnedCommentsUnsorted = unsortedComments.filter((obj) => obj.commentUpdate.pinned === true);
-    const pinnedCommentsSorted =
-        sortName === "active"
-            ? sortPostsByActiveScore(pinnedCommentsUnsorted)
-            : pinnedCommentsUnsorted.sort((a, b) => scoreFunction(b) - scoreFunction(a));
-
-    const unpinnedCommentsUnsorted = unsortedComments.filter((obj) => !obj.commentUpdate.pinned);
-    const unpinnedCommentsSorted =
-        sortName === "active"
-            ? sortPostsByActiveScore(unpinnedCommentsUnsorted)
-            : unpinnedCommentsUnsorted.sort((a, b) => scoreFunction(b) - scoreFunction(a));
-    const unpinnedCommentsSortedWithTimeframe = sortProps.timeframe
-        ? unpinnedCommentsSorted.filter((obj) => obj.comment.timestamp >= baseTimestamp - TIMEFRAMES_TO_SECONDS[sortProps.timeframe!])
-        : unpinnedCommentsSorted;
-
-    const sortedComments = pinnedCommentsSorted.concat(unpinnedCommentsSortedWithTimeframe);
-
-    return sortedComments;
-}
-
 // To use for both subplebbit.posts and comment.replies
 
 export function parseRawPages(
@@ -230,18 +193,6 @@ export function parseRawPages(
         const pagesIpfs = <PagesTypeIpfs>pages;
         // pages is a PagesTypeIpfs
         const parsedPages = parsePagesIpfs(pagesIpfs);
-        if (Object.keys(parsedPages.pages).length === 1 && Object.keys(parsedPages.pageCids).length === 0) {
-            const preloadedSortName = Object.keys(parsedPages.pages)[0];
-            // it's a single preloaded page, let's calculate all other sorts on the client side
-            const isSubplebbitPages = Object.values(pagesIpfs.pages)[0]?.comments[0]?.comment.depth === 0;
-            const sortTypesToCalculate = (isSubplebbitPages ? Object.keys(POSTS_SORT_TYPES) : Object.keys(REPLIES_SORT_TYPES)).filter(
-                (sortName) => sortName !== preloadedSortName
-            );
-            for (const sortName of sortTypesToCalculate)
-                parsedPages.pages[sortName] = parsePageIpfs({
-                    comments: sortComments(pagesIpfs.pages[preloadedSortName].comments, sortName, pageCreationTimestamp)
-                });
-        }
         return { pages: parsedPages.pages };
     } else if (pages instanceof BasePages)
         return { pages: pages.pages }; // already parsed
