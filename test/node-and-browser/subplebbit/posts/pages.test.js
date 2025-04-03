@@ -44,13 +44,28 @@ getRemotePlebbitConfigs().map((config) => {
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 
-        it(`Stringified subplebbit.posts still have all props`, async () => {
-            const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot;
-            for (const post of stringifedPosts.comments) {
-                testCommentFieldsInPageJson(post);
-                if (post.replies) for (const reply of post.replies.pages.topAll.comments) testCommentFieldsInPageJson(reply);
+        it(`Stringified comment.replies still have all props`, async () => {
+            const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot.comments;
+
+            for (const post of stringifedPosts) {
+                if (!post.replies?.pages) continue;
+                const pages = post.replies.pages;
+                for (const preloadedSortType of Object.keys(pages)) {
+                    const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages[preloadedSortType].comments;
+                    for (const reply of stringifiedReplies) testCommentFieldsInPageJson(reply);
+                }
             }
         });
+
+        it(`If all posts fit in a single preloaded page, there should not be any pageCids on SubplebbitIpfs`, async () => {
+            if (subplebbit.posts.pages.hot.nextCid) return;
+            expect(subplebbit.posts.pageCids).to.deep.equal({});
+        });
+        it(`A preloaded page should not have a corresponding CID in subplebbit.posts.pageCids`, async () => {
+            for (const preloadedPageSortName of Object.keys(subplebbit.posts.pages))
+                expect(subplebbit.posts.pageCids[preloadedPageSortName]).to.be.undefined;
+        });
+
         it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
                 const postInPage = await findCommentInPage(newPost.cid, pageCid, subplebbit.posts);
@@ -64,7 +79,8 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
         });
         Object.keys(POSTS_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages are sorted correctly`, async () => await testPostsSort(sortName, subplebbit))
+            it(`${sortName} pages are sorted correctly if there's more than a single page`, async () =>
+                Object.keys(subplebbit.posts.pageCids).length > 0 && (await testPostsSort(sortName, subplebbit)))
         );
         it(`posts are the same within all pages`, async () => {
             // We need to separate pages by timeframe
