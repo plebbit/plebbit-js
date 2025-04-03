@@ -241,8 +241,8 @@ export class DbHandler {
             table.timestamp("lastReplyTimestamp").nullable();
 
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
-            table.text("localMfsPath").notNullable();
-            table.text("updateCid").notNullable(); // the cid of CommentUpdate, cidv0
+            table.text("localMfsPath").nullable(); // the mfs path of post CommentUpdate, not applicable to replies
+            table.text("postCommentUpdateCid").nullable(); // the cid of CommentUpdate, cidv0, not applicable to replies
             table.boolean("publishedToPostUpdatesMFS").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
 
             // Columns with defaults
@@ -1184,7 +1184,7 @@ export class DbHandler {
                 try {
                     const commentUpdate = await this.queryStoredCommentUpdate({ cid });
                     if (commentUpdate?.localMfsPath) purgedCids.push(commentUpdate.localMfsPath);
-                    if (commentUpdate?.updateCid) purgedCids.push(commentUpdate.updateCid);
+                    if (commentUpdate?.postCommentUpdateCid) purgedCids.push(commentUpdate.postCommentUpdateCid);
                     if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
                     await this._knex(TABLES.COMMENT_UPDATES).where({ cid }).del();
                 } catch (error) {
@@ -1198,7 +1198,7 @@ export class DbHandler {
                         while (curCid) {
                             const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid });
                             if (commentUpdate?.localMfsPath) purgedCids.push(commentUpdate.localMfsPath);
-                            if (commentUpdate?.updateCid) purgedCids.push(commentUpdate.updateCid);
+                            if (commentUpdate?.postCommentUpdateCid) purgedCids.push(commentUpdate.postCommentUpdateCid);
                             if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
 
                             await this._knex(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();

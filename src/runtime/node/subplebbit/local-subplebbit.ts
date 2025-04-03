@@ -150,7 +150,8 @@ import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 
-type CommentUpdateToBeUpdated = CommentUpdatesRow & Pick<CommentsTableRow, "depth"> & { commentUpdateRecordString: string };
+type CommentUpdateToBeUpdated = CommentUpdatesRow &
+    Pick<CommentsTableRow, "depth"> & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined };
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -1486,42 +1487,38 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return ["/" + this.address, "postUpdates", timestampRange, ...pathParts.slice(4)].join("/");
     }
 
-    private async _calculateLocalMfsPathForCommentUpdate(dbComment: CommentsTableRow, storedCommentUpdate?: CommentUpdatesRow) {
+    private async _calculateLocalMfsPathForCommentUpdate(postDbComment: CommentsTableRow, postStoredCommentUpdate?: CommentUpdatesRow) {
         // TODO Can optimize the call below by only asking for timestamp field
-        const postTimestamp =
-            dbComment.depth === 0 ? dbComment.timestamp : (await this._dbHandler.queryComment(dbComment.postCid))?.timestamp;
-        if (typeof postTimestamp !== "number") throw Error("failed to query the comment in db to look for its postTimestamp");
+        if (postDbComment.depth !== 0) return undefined;
+        const postTimestamp = postDbComment.timestamp;
         const timestampRange = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= postTimestamp);
-        if (typeof timestampRange !== "number") throw Error("Failed to find timestamp range for comment update");
-        if (storedCommentUpdate?.localMfsPath)
-            return this._calculatePostUpdatePathForExistingCommentUpdate(timestampRange, storedCommentUpdate.localMfsPath);
-        else {
-            const parentsCids = (await this._dbHandler.queryParentsCids(dbComment)).map((parent) => parent.cid).reverse();
-            return ["/" + this.address, "postUpdates", timestampRange, ...parentsCids, dbComment.cid, "update"].join("/");
-        }
+        if (typeof timestampRange !== "number") throw Error("Failed to find timestamp range for post comment update");
+        if (postStoredCommentUpdate?.localMfsPath)
+            return this._calculatePostUpdatePathForExistingCommentUpdate(timestampRange, postStoredCommentUpdate.localMfsPath);
+        else return ["/" + this.address, "postUpdates", timestampRange, postDbComment.cid, "update"].join("/");
     }
 
     private async _writeCommentUpdateToDatabase(
         newCommentUpdate: CommentUpdatesRow | CommentUpdateType,
-        commentUpdateCid: string,
-        ipfsPath: string
+        postCommentUpdateCid: string | undefined,
+        mfsPath: string | undefined
     ) {
         const log = Logger("plebbit-js:local-subplebibt:_writeCommentUpdateToDatabase");
         // TODO need to exclude reply.replies here
         const row = <CommentUpdatesRow>{
             ...newCommentUpdate,
-            localMfsPath: ipfsPath,
-            updateCid: commentUpdateCid,
+            localMfsPath: mfsPath,
+            postCommentUpdateCid,
             publishedToPostUpdatesMFS: false
         };
         await this._dbHandler.upsertCommentUpdate(row);
-        log.trace("Wrote comment update of comment", newCommentUpdate.cid, "to database successfully with cid", commentUpdateCid);
+        log.trace("Wrote comment update of comment", newCommentUpdate.cid, "to database successfully with cid", postCommentUpdateCid);
         return row;
     }
 
     private async _calculateNewCommentUpdateAndWriteToDb(
         comment: CommentsTableRow
-    ): Promise<CommentUpdatesRow & { commentUpdateRecordString: string }> {
+    ): Promise<CommentUpdatesRow & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined }> {
         const log = Logger("plebbit-js:local-subplebbit:_calculateNewCommentUpdateAndWriteToFilesystemAndDb");
 
         // If we're here that means we're gonna calculate the new update and publish it
@@ -1574,20 +1571,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
 
-        const newCommentUpdateString = deterministicStringify(newCommentUpdate);
-        const commentUpdateCid = await calculateIpfsHash(newCommentUpdateString);
+        const newPostCommentUpdateString = comment.depth === 0 ? deterministicStringify(newCommentUpdate) : undefined;
+        const postCommentUpdateCid = newPostCommentUpdateString && (await calculateIpfsHash(newPostCommentUpdateString));
 
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
 
         const newLocalMfsPath = await this._calculateLocalMfsPathForCommentUpdate(comment, storedCommentUpdate);
 
-        const newCommentUpdateRow = await this._writeCommentUpdateToDatabase(newCommentUpdate, commentUpdateCid, newLocalMfsPath);
-        if (storedCommentUpdate && storedCommentUpdate.updateCid !== commentUpdateCid) {
-            this._cidsToUnPin.add(storedCommentUpdate.updateCid);
-            if (storedCommentUpdate.localMfsPath !== newLocalMfsPath) this._mfsPathsToRemove.add(storedCommentUpdate.localMfsPath);
-        }
+        const newCommentUpdateRow = await this._writeCommentUpdateToDatabase(newCommentUpdate, postCommentUpdateCid, newLocalMfsPath);
 
-        return { ...newCommentUpdateRow, commentUpdateRecordString: newCommentUpdateString };
+        if (storedCommentUpdate?.localMfsPath && newLocalMfsPath && storedCommentUpdate.localMfsPath !== newLocalMfsPath) {
+            this._mfsPathsToRemove.add(storedCommentUpdate.localMfsPath);
+        }
+        if (
+            storedCommentUpdate?.postCommentUpdateCid &&
+            postCommentUpdateCid &&
+            storedCommentUpdate.postCommentUpdateCid !== postCommentUpdateCid
+        )
+            this._cidsToUnPin.add(storedCommentUpdate.postCommentUpdateCid);
+
+        return { ...newCommentUpdateRow, postCommentUpdateRecordString: newPostCommentUpdateString, postCommentUpdateCid };
     }
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
@@ -1805,7 +1808,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private *_createCommentUpdateIterable(commentUpdateRows: CommentUpdateToBeUpdated[]) {
         for (const row of commentUpdateRows) {
-            yield { content: row.commentUpdateRecordString };
+            if (!row.postCommentUpdateRecordString) throw Error("Should be defined");
+            yield { content: row.postCommentUpdateRecordString };
         }
     }
 
@@ -1830,9 +1834,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // TODO need to do this in parallel
         for (const commentUpdateFile of newCommentUpdatesAddAll) {
             const commentUpdateFilePath = commentUpdatesOfPosts.find(
-                (row) => row.updateCid === commentUpdateFile.cid.toV0().toString()
+                (row) => row.postCommentUpdateCid! === commentUpdateFile.cid.toV0().toString()
             )?.localMfsPath;
-            if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the comment update");
+            if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
             try {
                 await this._clientsManager.getDefaultIpfs()._client.files.rm(commentUpdateFilePath);
             } catch (e) {
@@ -1872,6 +1876,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // TODO we can optimize this by excluding posts in the last bucket
         const commentUpdateOfPosts = await this._dbHandler.queryCommentUpdatesOfPostsForBucketAdjustment();
         for (const post of commentUpdateOfPosts) {
+            if (!post.localMfsPath) throw Error("localMfsPath Should be defined");
             const currentTimestampBucketOfPost = Number(post.localMfsPath.split("/")[3]);
             const newTimestampBucketOfPost = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= post.timestamp);
             if (typeof newTimestampBucketOfPost !== "number") throw Error("Failed to calculate the timestamp bucket of post");
