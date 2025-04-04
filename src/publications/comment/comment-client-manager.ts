@@ -366,7 +366,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         log: Logger
     ) {
         if ((this._comment._rawCommentUpdate?.updatedAt || 0) < loadedCommentUpdate.commentUpdate.updatedAt) {
-            log(`Comment (${this._comment.cid}) received a new CommentUpdate`);
+            log(`${this._comment.depth === 0 ? "Post" : "Reply"} (${this._comment.cid}) received a new CommentUpdate`);
             this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
                 this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
