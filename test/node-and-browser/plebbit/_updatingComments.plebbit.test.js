@@ -160,5 +160,34 @@ getRemotePlebbitConfigs().map((config) => {
             expect(plebbit._updatingComments[postCid]).to.be.undefined;
             expect(Object.keys(plebbit._updatingComments).length).to.equal(0);
         });
+
+        it(`calling plebbit._updatingComments[cid].stop() should stop all instances listening to that instance`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
+
+            const post = await publishRandomPost(subplebbitAddress, plebbit);
+
+            const comment1 = await plebbit.createComment({ cid: post.cid });
+            await comment1.update();
+            expect(comment1.state).to.equal("updating");
+            // plebbit._updatingComments[comment.cid] should be defined now
+            const comment2 = await plebbit.createComment({ cid: post.cid });
+            await comment2.update();
+            expect(comment2.state).to.equal("updating");
+
+            const comment3 = await plebbit.createComment({ cid: post.cid });
+            await comment3.update();
+            expect(comment3.state).to.equal("updating");
+
+            // stopping plebbit._updatingComments should stop all of them
+
+            await plebbit._updatingComments[post.cid].stop();
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propgate events
+
+            for (const comment of [comment1, comment2, comment3]) {
+                expect(comment.state).to.equal("stopped");
+                expect(comment.updatingState).to.equal("stopped");
+            }
+            expect(plebbit._updatingComments[post.cid]).to.be.undefined;
+        });
     });
 });
