@@ -34,8 +34,13 @@ import {
     signChallengeVerification,
     signSubplebbit
 } from "../signer/signatures.js";
-import { BasePages } from "../pages/pages.js";
-import { findCommentInPageInstanceRecursively, TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
+import { BasePages, PostsPages, RepliesPages } from "../pages/pages.js";
+import {
+    findCommentInPageInstance,
+    findCommentInPageInstanceRecursively,
+    mapPageIpfsCommentToPageJsonComment,
+    TIMEFRAMES_TO_SECONDS
+} from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -54,6 +59,7 @@ import type { CommentModerationPubsubMessagePublication } from "../publications/
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import { createHeliaNode } from "../helia/helia-for-plebbit.js";
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
+import type { PageTypeJson } from "../pages/types.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -597,7 +603,9 @@ export async function publishWithExpectedResult(publication: Publication, expect
     await validateResponsePromise;
 }
 
-export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages) {
+export async function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: BasePages) {
+    if (!commentCid) throw Error("Can't find comment with undefined commentCid");
+    if (!pageCid) throw Error("Can't find comment with undefined pageCid");
     let currentPageCid: string | undefined = remeda.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);
@@ -613,10 +621,15 @@ export async function waitTillPostInSubplebbitInstancePages(
     sub: RemoteSubplebbit
 ) {
     const isPostInSubPages = async () => {
-        if (!("new" in sub.posts.pageCids)) return false;
-        const postsNewPageCid = sub.posts.pageCids.new;
-        const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
-        return Boolean(postInPage);
+        if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
+            // it's a single preloaded page
+            const postInPage = findCommentInPageInstanceRecursively(sub.posts, post.cid);
+            return Boolean(postInPage);
+        } else {
+            const postsNewPageCid = sub.posts.pageCids.new;
+            const postInPage = await iterateThroughPageCidToFindComment(post.cid, postsNewPageCid, sub.posts);
+            return Boolean(postInPage);
+        }
     };
     await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
@@ -627,21 +640,26 @@ export async function waitTillPostInSubplebbitPages(
     plebbit: Plebbit
 ) {
     const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
-    const isPostInSubPages = async () => {
-        if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
-            // it's a single preloaded page
-            const postInPage = findCommentInPageInstanceRecursively(sub.posts, post.cid);
-            return Boolean(postInPage);
-        } else {
-            if (!("new" in sub.posts.pageCids)) return false;
-            const postsNewPageCid = sub.posts.pageCids.new;
-            const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
-            return Boolean(postInPage);
-        }
-    };
+
     await sub.update();
-    await resolveWhenConditionIsTrue(sub, isPostInSubPages);
+    await waitTillPostInSubplebbitInstancePages(post, sub);
     await sub.stop();
+}
+
+export async function iterateThroughPagesToFindCommentInParentPagesInstance(
+    commentCid: string,
+    pages: PostsPages | RepliesPages
+): Promise<PageTypeJson["comments"][0] | undefined> {
+    const preloadedPage = Object.keys(pages.pages)[0];
+
+    const commentInPage = findCommentInPageInstance(pages, commentCid);
+    if (commentInPage) return mapPageIpfsCommentToPageJsonComment(commentInPage);
+
+    if (pages.pages[preloadedPage]?.nextCid) {
+        // means we have multiple pages
+        return iterateThroughPageCidToFindComment(commentCid, pages.pageCids.new, pages);
+    }
+    return undefined;
 }
 
 export async function waitTillReplyInParentPagesInstance(

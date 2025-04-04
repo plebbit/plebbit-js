@@ -4,14 +4,14 @@ import {
     setExtraPropOnCommentAndSign,
     getRemotePlebbitConfigs,
     publishWithExpectedResult,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
     waitTillPostInSubplebbitPages
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../../../dist/node/errors.js";
-import { _signJson, verifyCommentIpfs } from "../../../../dist/node/signer/signatures.js";
+import { _signJson } from "../../../../dist/node/signer/signatures.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -112,7 +112,11 @@ getRemotePlebbitConfigs().map((config) => {
 
             it(`Can load pages with comments that has extra props in them`, async () => {
                 const subplebbit = await plebbit.getSubplebbit(commentWithExtraProps.subplebbitAddress);
-                const commentInPage = await findCommentInPage(commentWithExtraProps.cid, subplebbit.posts.pageCids.new, subplebbit.posts);
+
+                const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
+                    commentWithExtraProps.cid,
+                    subplebbit.posts
+                );
 
                 const shapes = [
                     JSON.parse(JSON.stringify(commentInPage)),
@@ -194,7 +198,10 @@ getRemotePlebbitConfigs().map((config) => {
                 await waitTillPostInSubplebbitPages(postWithExtraAuthorProp, plebbit);
 
                 const subplebbit = await plebbit.getSubplebbit(postWithExtraAuthorProp.subplebbitAddress);
-                const postInPage = await findCommentInPage(postWithExtraAuthorProp.cid, subplebbit.posts.pageCids.new, subplebbit.posts);
+                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
+                    postWithExtraAuthorProp.cid,
+                    subplebbit.posts
+                );
                 // postInPage is the json representation of page.comments
 
                 const shapes = [postInPage, await plebbit.createComment(postInPage)];
