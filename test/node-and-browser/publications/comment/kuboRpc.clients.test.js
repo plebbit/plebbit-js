@@ -36,7 +36,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         expect(Object.values(mockPost.clients.kuboRpcClients)[0].state).to.equal("stopped");
     });
 
-    it(`Correct order of kuboRpcClients state when updating a comment that was created with plebbit.createComment({cid})`, async () => {
+    it(`Correct order of kuboRpcClients state when updating a post that was created with plebbit.createComment({cid})`, async () => {
         const sub = await plebbit.getSubplebbit(signers[0].address);
 
         const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
@@ -46,6 +46,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
             "stopped",
             "fetching-subplebbit-ipns",
             "fetching-subplebbit-ipfs",
+            "stopped",
             "fetching-update-ipfs",
             "stopped"
         ];
@@ -65,12 +66,46 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`Correct order of kuboRpcClients state when updating a comment that was created with plebbit.getComment(cid)`, async () => {
+    it(`Correct order of kuboRpcClients state when updating a reply that was created with plebbit.createComment({cid}) and the post has a single preloaded page`, async () => {
+        const sub = await plebbit.getSubplebbit(signers[0].address);
+        const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.topAll.comments[0].cid;
+        const reply = await plebbit.createComment({ cid: replyCid });
+
+        const expectedStates = [
+            "fetching-ipfs", // fetching comment ipfs of reply
+            "stopped",
+            "fetching-ipfs", // fetching post ipfs of reply
+            "stopped",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "stopped"
+        ];
+
+        const actualStates = [];
+
+        const kuboRpcUrl = Object.keys(reply.clients.kuboRpcClients)[0];
+
+        reply.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+
+        await reply.update();
+        mockCommentToNotUsePagesForUpdates(reply);
+
+        await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+        await reply.stop();
+
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
+
+    it(
+        `Correct order of kuboRpcClients state when updating a reply that was created with plebbit.createComment({cid}) and the post has multiple pages`
+    );
+
+    it(`Correct order of kuboRpcClients state when updating a post that was created with plebbit.getComment(cid)`, async () => {
         const sub = await plebbit.getSubplebbit(signers[0].address);
 
         const mockPost = await plebbit.getComment(sub.posts.pages.hot.comments[0].cid);
 
-        const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "stopped"];
+        const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped", "fetching-update-ipfs", "stopped"];
 
         const actualStates = [];
 
@@ -85,6 +120,8 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
 
         expect(actualStates).to.deep.equal(expectedStates);
     });
+
+    it(`Correct order of kuboRpcClients state when updating a reply that was created with plebbit.getComment(cid)`);
 
     it(`Correct order of kuboRpcClients state when publishing a comment (uncached)`, async () => {
         const mockPost = await generateMockPost(signers[0].address, plebbit);
@@ -118,7 +155,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         expect(actualStates).to.deep.equal(expectedStates);
     });
 
-    it(`Correct order of ipfs clients state when we update a comment but its subplebbit is not publishing new subplebbit records`, async () => {
+    it(`Correct order of ipfs clients state when we update a post but its subplebbit is not publishing new subplebbit records`, async () => {
         const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
@@ -165,7 +202,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         await sub.stop();
     });
 
-    it(`Correct order of kubo rpc clients when we update a comment but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
+    it(`Correct order of kubo rpc clients when we update a post but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
         const sub = await plebbit.getSubplebbit(signers[0].address);
 
         const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
@@ -197,6 +234,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
             "stopped",
             "fetching-subplebbit-ipns", // fetching subplebbit + comment update
             "fetching-subplebbit-ipfs",
+            "stopped",
             "fetching-update-ipfs",
             "stopped"
         ];
