@@ -82,7 +82,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
     _updatingSubInstanceWithListeners?: { subplebbit: RemoteSubplebbit } & Pick<
         SubplebbitEvents,
-        "error" | "updatingstatechange" | "update"
+        "error" | "updatingstatechange" | "update" | "statechange"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
 
     constructor(plebbit: Plebbit) {
@@ -314,6 +314,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             },
             updatingstatechange: async (newUpdatingState) => {
                 this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
+            },
+            statechange: async (newState) => {
+                if (newState === "stopped") await this.stop();
             }
         };
     }
@@ -359,6 +362,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this._updatingSubInstanceWithListeners.updatingstatechange
         );
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
+        this._updatingSubInstanceWithListeners.subplebbit.on("statechange", this._updatingSubInstanceWithListeners.statechange);
+
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
@@ -403,6 +408,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (this._updatingSubInstanceWithListeners) {
             // this instance is subscribed to plebbit._updatingSubplebbit[address]
             // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
+            this._updatingSubInstanceWithListeners.subplebbit.removeListener(
+                "statechange",
+                this._updatingSubInstanceWithListeners.statechange
+            );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingSubInstanceWithListeners.update);
             this._updatingSubInstanceWithListeners.subplebbit.removeListener(
                 "updatingstatechange",

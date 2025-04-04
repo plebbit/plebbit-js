@@ -103,7 +103,8 @@ export class Comment
 
     private _postForUpdating?: CommentClientsManager["_postForUpdating"];
 
-    _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined; // the comment instance we're mirroing
+    _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update" | "statechange"> =
+        undefined; // the comment instance we're mirroing
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this._setUpdatingStateWithEmissionIfNewState("stopped");
@@ -696,6 +697,11 @@ export class Comment
         const updatingCommentInstance = this._plebbit._updatingComments[this.cid!]!;
         this._updatingCommentInstance = {
             comment: updatingCommentInstance,
+            statechange: async (newState) => {
+                if (newState === "stopped")
+                    // plebbit._updatingComments[this.cid].stop() has been called
+                    await this.stop();
+            },
             update: () => this._useUpdatePropsFromUpdatingCommentIfPossible(),
             updatingstatechange: (newState) => this._setUpdatingStateWithEmissionIfNewState(newState),
             error: async (err) => {
@@ -711,6 +717,7 @@ export class Comment
         updatingCommentInstance.on("update", this._updatingCommentInstance.update);
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
+        updatingCommentInstance.on("statechange", this._updatingCommentInstance.statechange);
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
@@ -802,6 +809,7 @@ export class Comment
         if (this._updatingCommentInstance) {
             // this post|reply instance is subscribed to plebbit._updatingComments[cid]
 
+            this._updatingCommentInstance.comment.removeListener("statechange", this._updatingCommentInstance.statechange);
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
             this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
