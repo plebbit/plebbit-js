@@ -255,11 +255,10 @@ export function findCommentInPageInstanceRecursively(
 
     const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCid];
     if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
-    for (const [sortName, page] of Object.entries(pageInstance.pages)) {
-        // Skip if we've visited this page
-        if (!page) continue;
+    for (const preloadedPage of Object.values(pageInstance.pages)) {
+        if (!preloadedPage) continue;
 
-        const pageIpfs = <PageIpfs>{ comments: page.comments.map((page) => page.pageComment), nextCid: page.nextCid };
+        const pageIpfs = <PageIpfs>{ comments: preloadedPage.comments.map((page) => page.pageComment), nextCid: preloadedPage.nextCid };
         const foundComment = findCommentInPageIpfsRecursively(pageIpfs, targetCid);
         if (foundComment) return foundComment;
     }
