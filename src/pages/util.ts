@@ -106,55 +106,55 @@ export function oldScore(comment: CommentToSort) {
     return -comment.comment.timestamp;
 }
 
+export function mapPageIpfsCommentToPageJsonComment(pageComment: PageIpfs["comments"][0]): CommentWithinPageJson {
+    const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
+    const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
+    if (!postCid) throw Error("Failed to infer postCid from pageIpfs.comments.comment");
+
+    const spoiler =
+        typeof pageComment.commentUpdate.spoiler === "boolean"
+            ? pageComment.commentUpdate.spoiler
+            : typeof pageComment.commentUpdate.edit?.spoiler === "boolean"
+              ? pageComment.commentUpdate.edit?.spoiler
+              : pageComment.comment.spoiler;
+
+    const nsfw =
+        typeof pageComment.commentUpdate.nsfw === "boolean"
+            ? pageComment.commentUpdate.nsfw
+            : typeof pageComment.commentUpdate.edit?.nsfw === "boolean"
+              ? pageComment.commentUpdate.edit?.nsfw
+              : pageComment.comment.nsfw;
+
+    return {
+        ...pageComment.comment,
+        ...pageComment.commentUpdate,
+        signature: pageComment.comment.signature,
+        author: {
+            ...pageComment.comment.author,
+            ...pageComment.commentUpdate.author,
+            shortAddress: shortifyAddress(pageComment.comment.author.address),
+            flair:
+                pageComment.commentUpdate?.author?.subplebbit?.flair ||
+                pageComment.commentUpdate?.edit?.author?.flair ||
+                pageComment.comment.author.flair
+        },
+        shortCid: shortifyCid(pageComment.commentUpdate.cid),
+        shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
+        original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
+        deleted: pageComment.commentUpdate.edit?.deleted,
+        replies: parsedPages,
+        content: pageComment.commentUpdate.edit?.content || pageComment.comment.content,
+        reason: pageComment.commentUpdate.reason,
+        spoiler,
+        nsfw,
+        flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
+        postCid,
+        pageComment
+    };
+}
+
 export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
-    const finalComments = pageIpfs.comments.map((pageComment) => {
-        // This code below is duplicated in comment._initCommentUpdate
-        // TODO move it to a shared function
-        const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
-        const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
-        if (!postCid) throw Error("Failed to infer postCid from pageIpfs.comments.comment");
-
-        const spoiler =
-            typeof pageComment.commentUpdate.spoiler === "boolean"
-                ? pageComment.commentUpdate.spoiler
-                : typeof pageComment.commentUpdate.edit?.spoiler === "boolean"
-                  ? pageComment.commentUpdate.edit?.spoiler
-                  : pageComment.comment.spoiler;
-
-        const nsfw =
-            typeof pageComment.commentUpdate.nsfw === "boolean"
-                ? pageComment.commentUpdate.nsfw
-                : typeof pageComment.commentUpdate.edit?.nsfw === "boolean"
-                  ? pageComment.commentUpdate.edit?.nsfw
-                  : pageComment.comment.nsfw;
-        const finalJson: CommentWithinPageJson = {
-            ...pageComment.comment,
-            ...pageComment.commentUpdate,
-            signature: pageComment.comment.signature,
-            author: {
-                ...pageComment.comment.author,
-                ...pageComment.commentUpdate.author,
-                shortAddress: shortifyAddress(pageComment.comment.author.address),
-                flair:
-                    pageComment.commentUpdate?.author?.subplebbit?.flair ||
-                    pageComment.commentUpdate?.edit?.author?.flair ||
-                    pageComment.comment.author.flair
-            },
-            shortCid: shortifyCid(pageComment.commentUpdate.cid),
-            shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
-            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
-            deleted: pageComment.commentUpdate.edit?.deleted,
-            replies: parsedPages,
-            content: pageComment.commentUpdate.edit?.content || pageComment.comment.content,
-            reason: pageComment.commentUpdate.reason,
-            spoiler,
-            nsfw,
-            flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
-            postCid,
-            pageComment
-        };
-        return finalJson;
-    });
+    const finalComments = pageIpfs.comments.map(mapPageIpfsCommentToPageJsonComment);
 
     return { comments: finalComments, ...remeda.pick(pageIpfs, ["nextCid"]) };
 }
