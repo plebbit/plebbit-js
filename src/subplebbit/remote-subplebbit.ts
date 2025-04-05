@@ -136,21 +136,17 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             });
         } else if ("pages" in newPosts && newPosts.pages && "pageCids" in newPosts && newPosts.pageCids) {
             // both pageCids and pages are provided
-            const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
 
-            if (shouldUpdatePosts) {
-                log.trace(`Updating the props of subplebbit (${this.address}) posts`);
-                if (typeof postsPagesCreationTimestamp !== "number")
-                    throw Error("subplebbit.updatedAt should be defined when updating posts");
-                const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
-                    parseRawPages(newPosts, postsPagesCreationTimestamp)
-                );
-                this.posts.updateProps({
-                    ...parsedPages,
-                    subplebbit: this,
-                    pageCids: newPosts?.pageCids || {}
-                });
-            }
+            log.trace(`Updating the props of subplebbit (${this.address}) posts`);
+            if (typeof postsPagesCreationTimestamp !== "number") throw Error("subplebbit.updatedAt should be defined when updating posts");
+            const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
+                parseRawPages(newPosts, postsPagesCreationTimestamp)
+            );
+            this.posts.updateProps({
+                ...parsedPages,
+                subplebbit: this,
+                pageCids: newPosts?.pageCids || {}
+            });
         }
     }
 
@@ -325,11 +321,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
 
         if (!this._plebbit._updatingSubplebbits[this.address]) {
-            const updatingSub = await this._plebbit.createSubplebbit({
-                address: this.address,
-                ...this._rawSubplebbitIpfs,
-                updateCid: this.updateCid
-            });
+            const updatingSub = await this._plebbit.createSubplebbit({ address: this.address });
             this._plebbit._updatingSubplebbits[this.address] = updatingSub;
             log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
 
