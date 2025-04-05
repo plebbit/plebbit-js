@@ -260,8 +260,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
         this._internalStateUpdateId = newProps._internalStateUpdateId;
-        if (newProps._cidsToUnPin) newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
-        if (newProps._mfsPathsToRemove) newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
+        if (Array.isArray(newProps._cidsToUnPin)) newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
+        if (Array.isArray(newProps._mfsPathsToRemove)) newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
