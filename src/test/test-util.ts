@@ -675,7 +675,7 @@ export async function waitTillReplyInParentPagesInstance(
             if (!("new" in parentComment.replies.pageCids)) return false;
 
             const commentNewPageCid = parentComment.replies.pageCids.new;
-            const replyInPage = await findCommentInPage(reply.cid, commentNewPageCid, parentComment.replies);
+            const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
             return Boolean(replyInPage);
         }
     };
