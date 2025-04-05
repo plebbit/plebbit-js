@@ -618,6 +618,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         } else if (this._subplebbit) {
+            // the client is publishing to pubsub without using plebbit RPC
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this._handleChallengeExchange);
             this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
         }
