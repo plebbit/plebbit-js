@@ -168,7 +168,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
         });
 
-        it(`calling plebbit._updatingComments[cid].stop() should stop all instances listening to that instance`, async () => {
+        it(`calling plebbit._updatingSubplebbits[subplebbitAddress].stop() should stop all instances listening to that instance`, async () => {
             const plebbit = await config.plebbitInstancePromise();
 
             const sub1 = await plebbit.createSubplebbit({ address: subplebbitAddress });
