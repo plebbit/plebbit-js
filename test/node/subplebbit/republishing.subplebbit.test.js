@@ -9,9 +9,9 @@ import {
     publishWithExpectedResult,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     describeSkipIfRpc,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../dist/node/test/test-util";
 
 import chai from "chai";
@@ -82,7 +82,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
 
     it(`Post with extra prop retains its extra prop in pages`, async () => {
         const loadedSub = await remotePlebbit.getSubplebbit(postWithExtraProps.subplebbitAddress);
-        const loadedPost = await findCommentInPage(postWithExtraProps.cid, loadedSub.posts.pageCids.new, loadedSub.posts);
+        const loadedPost = await iterateThroughPagesToFindCommentInParentPagesInstance(postWithExtraProps.cid, loadedSub.posts);
         expect(loadedPost.extraProp).to.equal("1234");
     });
 

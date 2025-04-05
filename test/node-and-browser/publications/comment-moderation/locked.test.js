@@ -6,9 +6,10 @@ import {
     publishRandomReply,
     publishWithExpectedResult,
     mockRemotePlebbit,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
+    iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
@@ -92,22 +93,22 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+                const lockedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
                 return lockedPostInPage?.locked === true;
             });
 
             await sub.stop();
 
             for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, pageCid, sub.posts);
+                const lockedPostInPage = await iterateThroughPageCidToFindComment(postToBeLocked.cid, pageCid, sub.posts);
                 expect(lockedPostInPage.locked).to.be.true;
                 expect(lockedPostInPage.reason).to.equal("To lock an author post");
             }
         });
 
-        it(`locked=true for author post when it's locked by mod in getPage of subplebbit`, async () => {
+        it(`locked=true for author post when it's locked by mod in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
-            const postInSubplebbitPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+            const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.true;
         });
 
@@ -132,7 +133,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`locked=true for mod post when it's locked by mod in getPage of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
-            const postInSubplebbitPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.true;
         });
 
@@ -177,7 +178,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`locked=false in getPage of subplebbit after the mod unlocks it`, async () => {
             const sub = await plebbit.getSubplebbit(postToBeLocked.subplebbitAddress);
-            const postInSubplebbitPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+            const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToBeLocked.cid, sub.posts);
             expect(postInSubplebbitPage.locked).to.be.false;
         });
 

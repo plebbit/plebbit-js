@@ -1,7 +1,7 @@
 import signers from "../../../fixtures/signers.js";
 import {
-    findCommentInPage,
     getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
@@ -67,9 +67,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.spoiler).to.be.true;
         });
 
-        it(`spoiler=true appears in getPage of subplebbit`, async () => {
+        it(`spoiler=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.true;
         });
 
@@ -127,9 +127,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.spoiler).to.be.false;
         });
 
-        it(`spoiler=false appears in getPage`, async () => {
+        it(`spoiler=false appears pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;
         });
     });
@@ -172,9 +172,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.spoiler).to.be.true;
         });
 
-        it(`spoiler=true appears in getPage of subplebbit`, async () => {
+        it(`spoiler=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.true;
         });
 
@@ -203,9 +203,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.spoiler).to.be.false;
         });
 
-        it(`spoiler=false appears in getPage`, async () => {
+        it(`spoiler=false appears pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.spoiler).to.be.false;
         });
     });

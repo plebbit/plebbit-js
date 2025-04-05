@@ -6,10 +6,10 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     itSkipIfRpc,
     itIfRpc,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
-    mockPlebbitV2
+    mockPlebbitV2,
+    iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 import path from "path";
@@ -413,7 +413,7 @@ describe(`Publish loop resiliency`, async () => {
 
         const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
 
-        const loadedPost = await findCommentInPage(mockPost.cid, loadedSub.posts.pageCids.new, loadedSub.posts);
+        const loadedPost = await iterateThroughPagesToFindCommentInParentPagesInstance(mockPost.cid, loadedSub.posts);
 
         expect(loadedPost.cid).to.equal(mockPost.cid);
     });

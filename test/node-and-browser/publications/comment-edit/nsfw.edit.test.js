@@ -1,7 +1,7 @@
 import signers from "../../../fixtures/signers.js";
 import {
-    findCommentInPage,
     getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
@@ -67,9 +67,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.nsfw).to.be.true;
         });
 
-        it(`nsfw=true appears in getPage of subplebbit`, async () => {
+        it(`nsfw=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.true;
         });
 
@@ -127,9 +127,13 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.nsfw).to.be.false;
         });
 
-        it(`nsfw=false appears in getPage of subplebbit`, async () => {
+        it(`nsfw=false appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(authorPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
+                authorPost.cid,
+                sub.posts.pageCids.new,
+                sub.posts
+            );
             expect(commentInPage.nsfw).to.be.false;
         });
     });
@@ -174,7 +178,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`nsfw=true appears in getPage of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.true;
         });
 
@@ -203,9 +207,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.nsfw).to.be.false;
         });
 
-        it(`nsfw=false appears in getPage of subplebbit`, async () => {
+        it(`nsfw=false appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(modPost.subplebbitAddress);
-            const commentInPage = await findCommentInPage(modPost.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(modPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.false;
         });
     });

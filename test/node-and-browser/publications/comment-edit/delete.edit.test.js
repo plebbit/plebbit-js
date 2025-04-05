@@ -5,9 +5,9 @@ import {
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
@@ -89,17 +89,18 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const postInPage = await findCommentInPage(postToDelete.cid, sub.posts.pageCids.new, sub.posts);
+                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToDelete.cid, sub.posts);
                 return postInPage === undefined;
             });
 
             await sub.stop();
 
-            for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const postInPage = await findCommentInPage(postToDelete.cid, pageCid, sub.posts);
+            if (Object.keys(sub.posts.pageCids).length > 0)
+                for (const pageCid of Object.values(sub.posts.pageCids)) {
+                    const postInPage = await iterateThroughPageCidToFindComment(postToDelete.cid, pageCid, sub.posts);
 
-                expect(postInPage).to.be.undefined;
-            }
+                    expect(postInPage).to.be.undefined;
+                }
         });
 
         it(`Can't publish vote on deleted post`, async () => {
@@ -201,9 +202,8 @@ getRemotePlebbitConfigs().map((config) => {
             await parentComment.update();
 
             await resolveWhenConditionIsTrue(parentComment, async () => {
-                const deletedReplyUnderPost = await findCommentInPage(
+                const deletedReplyUnderPost = await iterateThroughPagesToFindCommentInParentPagesInstance(
                     replyToDelete.cid,
-                    parentComment.replies.pageCids.new,
                     parentComment.replies
                 );
                 return deletedReplyUnderPost?.deleted === true;
@@ -212,8 +212,9 @@ getRemotePlebbitConfigs().map((config) => {
             // Need to test for all pages here
 
             await parentComment.stop();
+
             for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                const replyInPage = await findCommentInPage(replyToDelete.cid, pageCid, parentComment.replies);
+                const replyInPage = await iterateThroughPageCidToFindComment(replyToDelete.cid, pageCid, parentComment.replies);
                 expect(replyInPage.deleted).to.be.true;
             }
         });

@@ -4,7 +4,6 @@ import {
     publishWithExpectedResult,
     loadAllPages,
     publishRandomReply,
-    findCommentInPage,
     waitTillPostInSubplebbitInstancePages,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs
@@ -121,9 +120,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postToPin._rawCommentUpdate.reason).to.equal("To pin a post");
         });
 
-        it(`pinned=true appears in getPage of subplebbit`, async () => {
+        it(`pinned=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(postToPin.subplebbitAddress);
-            const commentInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.true;
         });
         it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
@@ -131,7 +130,7 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const postInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
+                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPin.cid, sub.posts);
                 return postInPage?.pinned;
             });
 
@@ -164,7 +163,7 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
                 return postInPage?.pinned;
             });
 
@@ -211,9 +210,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(secondPostToPin._rawCommentUpdate.reason).to.equal("To unpin the second post");
         });
 
-        it(`pinned=true appears in getPage of subplebbit`, async () => {
+        it(`pinned=true appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(secondPostToPin.subplebbitAddress);
-            const commentInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
             expect(commentInPage.pinned).to.be.false;
         });
         it(`Unpinned posts is sorted like regular posts`, async () => {
@@ -221,7 +220,7 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+                const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(secondPostToPin.cid, sub.posts);
                 return !postInPage?.pinned;
             });
 
@@ -300,14 +299,8 @@ getRemotePlebbitConfigs().map((config) => {
             await postToRecreate.update();
 
             await resolveWhenConditionIsTrue(postToRecreate, async () => {
-                if (postToRecreate.replies?.pageCids) {
-                    const replyInPage = await findCommentInPage(
-                        replyToPin.cid,
-                        postToRecreate.replies.pageCids.new,
-                        postToRecreate.replies
-                    );
-                    return replyInPage?.pinned;
-                }
+                const replyInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(replyToPin.cid, postToRecreate.replies);
+                return replyInPage?.pinned;
             });
 
             await postToRecreate.stop();
@@ -324,8 +317,8 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
-        it(`pinned=true appears in getPage of parent comment`, async () => {
-            const pinnedReplyInPage = await findCommentInPage(replyToPin.cid, post.replies.pageCids.new, post.replies);
+        it(`pinned=true appears in pages of parent comment`, async () => {
+            const pinnedReplyInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(replyToPin.cid, post.replies);
             expect(pinnedReplyInPage.pinned).to.be.true;
         });
     });

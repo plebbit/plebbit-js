@@ -5,9 +5,10 @@ import {
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
+    iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
@@ -57,14 +58,14 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const removedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
+                const removedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToRemove.cid, sub.posts);
                 return removedPostInPage === undefined;
             });
 
             await sub.stop();
 
             for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const removedPostInPage = await findCommentInPage(postToRemove.cid, pageCid, sub.posts);
+                const removedPostInPage = await iterateThroughPageCidToFindComment(postToRemove.cid, pageCid, sub.posts);
 
                 expect(removedPostInPage).to.be.undefined;
             }
@@ -125,14 +126,14 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, async () => {
-                const unremovedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
+                const unremovedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToRemove.cid, sub.posts);
                 return Boolean(unremovedPostInPage);
             });
 
             await sub.stop();
 
             for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const unremovedPostInPage = await findCommentInPage(postToRemove.cid, pageCid, sub.posts);
+                const unremovedPostInPage = await iterateThroughPageCidToFindComment(postToRemove.cid, pageCid, sub.posts);
                 expect(unremovedPostInPage).to.exist;
                 expect(unremovedPostInPage.removed).to.equal(false);
                 expect(unremovedPostInPage.reason).to.equal("To unremove a post");
@@ -212,9 +213,8 @@ getRemotePlebbitConfigs().map((config) => {
             await recreatedPost.update();
 
             await resolveWhenConditionIsTrue(recreatedPost, async () => {
-                const removedReply = await findCommentInPage(
+                const removedReply = await iterateThroughPagesToFindCommentInParentPagesInstance(
                     replyToBeRemoved.cid,
-                    recreatedPost.replies.pageCids.new,
                     recreatedPost.replies
                 );
                 return removedReply?.removed === true;
@@ -222,7 +222,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await recreatedPost.stop();
             for (const pageCid of Object.values(recreatedPost.replies.pageCids)) {
-                const removedReplyInPage = await findCommentInPage(replyToBeRemoved.cid, pageCid, recreatedPost.replies);
+                const removedReplyInPage = await iterateThroughPageCidToFindComment(replyToBeRemoved.cid, pageCid, recreatedPost.replies);
                 expect(removedReplyInPage).to.exist;
                 expect(removedReplyInPage.removed).to.be.true;
                 expect(removedReplyInPage.reason).to.equal("To remove a reply");

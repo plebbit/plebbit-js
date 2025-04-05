@@ -1,7 +1,7 @@
 import signers from "../../../fixtures/signers.js";
 import {
-    findCommentInPage,
     getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
@@ -93,7 +93,10 @@ getRemotePlebbitConfigs().map((config) => {
             const subplebbit2 = await plebbit.createSubplebbit(subplebbit1); // we're testing if posts from subplebbit are parsed correctly
             const subplebbit3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(subplebbit1)));
             for (const subplebbit of [subplebbit1, subplebbit2, subplebbit3]) {
-                const editedCommentInPage = await findCommentInPage(commentToBeEdited.cid, subplebbit.posts.pageCids.new, subplebbit.posts);
+                const editedCommentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
+                    commentToBeEdited.cid,
+                    subplebbit.posts
+                );
                 expect(editedCommentInPage).to.be.a("object");
                 // Should reflect the new content, and also have original.content
                 expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;

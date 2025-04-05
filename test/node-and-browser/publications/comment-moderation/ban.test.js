@@ -1,12 +1,11 @@
 import signers from "../../../fixtures/signers.js";
 import {
-    mockRemotePlebbit,
     generateMockPost,
     publishRandomPost,
     publishWithExpectedResult,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
@@ -65,9 +64,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentToBeBanned.reason).to.equal(reasonOfBan);
         });
 
-        it(`author.banExpires is included in getPage`, async () => {
+        it(`author.banExpires is included in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(commentToBeBanned.subplebbitAddress);
-            const postInSubplebbitPage = await findCommentInPage(commentToBeBanned.cid, sub.posts.pageCids.new, sub.posts);
+            const postInSubplebbitPage = await iterateThroughPagesToFindCommentInParentPagesInstance(commentToBeBanned.cid, sub.posts);
             expect(postInSubplebbitPage.author.subplebbit.banExpiresAt).to.be.a("number");
         });
 

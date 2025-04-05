@@ -5,12 +5,12 @@ import {
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    findCommentInPage,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     waitTillReplyInParentPages,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    describeSkipIfRpc
+    describeSkipIfRpc,
+    iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
@@ -108,15 +108,17 @@ getRemotePlebbitConfigs().map((config) => {
 
             await sub.update();
 
+            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+
             await resolveWhenConditionIsTrue(sub, async () => {
-                const purgedPostInPage = await findCommentInPage(postToPurge.cid, sub.posts.pageCids.new, sub.posts);
+                const purgedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPurge.cid, sub.posts);
                 return purgedPostInPage === undefined; // if we can't find it then it's purged
             });
 
             await sub.stop();
 
             for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const purgedPostInPage = await findCommentInPage(postToPurge.cid, pageCid, sub.posts);
+                const purgedPostInPage = await iterateThroughPageCidToFindComment(postToPurge.cid, pageCid, sub.posts);
 
                 expect(purgedPostInPage).to.be.undefined;
             }

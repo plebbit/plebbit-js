@@ -1,6 +1,5 @@
 import {
     publishRandomPost,
-    findCommentInPage,
     mockGatewayPlebbit,
     mockPlebbit,
     addStringToIpfs,
@@ -10,7 +9,9 @@ import {
     publishRandomReply,
     isPlebbitFetchingUsingGateways,
     resolveWhenConditionIsTrue,
-    itSkipIfRpc
+    itSkipIfRpc,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
+    iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
 import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../pages/pages-test-util.js";
@@ -67,8 +68,10 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
+            const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(newPost.cid, subplebbit.posts);
+            expect(postInPage).to.exist;
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                const postInPage = await findCommentInPage(newPost.cid, pageCid, subplebbit.posts);
+                const postInPage = await iterateThroughPageCidToFindComment(newPost.cid, pageCid, subplebbit.posts);
                 expect(postInPage).to.exist;
             }
         });
