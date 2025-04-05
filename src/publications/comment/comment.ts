@@ -785,7 +785,7 @@ export class Comment
     }
 
     private async _stopUpdateLoop() {
-        if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
+        if (!this.cid) return;
         this._commentIpfsloadingOperation?.stop();
         if (this._updateRpcSubscriptionId) {
             await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
