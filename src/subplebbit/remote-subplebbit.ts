@@ -316,7 +316,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
             },
             statechange: async (newState) => {
-                if (newState === "stopped") await this.stop();
+                if (newState === "stopped" && this.state !== "stopped") await this.stop();
             }
         };
     }
@@ -363,7 +363,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         );
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
         this._updatingSubInstanceWithListeners.subplebbit.on("statechange", this._updatingSubInstanceWithListeners.statechange);
-
 
         const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
         for (const clientType of clientKeys)
