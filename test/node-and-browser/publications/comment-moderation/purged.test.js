@@ -4,6 +4,7 @@ import {
     publishRandomReply,
     generateMockComment,
     generateMockVote,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
@@ -179,10 +180,10 @@ getRemotePlebbitConfigs().map((config) => {
             await Promise.all(
                 commentsWithDifferentPlebbit.map(async (purgedComment) => {
                     const waitingRetryErrs = [];
-                    purgedComment.on("waiting-retry", (err) => waitingRetryErrs.push(err));
+                    purgedComment.on("error", (err) => waitingRetryErrs.push(err));
                     await purgedComment.update();
 
-                    await resolveWhenConditionIsTrue(purgedComment, () => waitingRetryErrs.length === 2, "waiting-retry");
+                    await resolveWhenConditionIsTrue(purgedComment, () => waitingRetryErrs.length === 2, "error");
 
                     // we've attempted to load twice but it's not defined yet
                     // plebbit-js keeps on retrying to load the comment update, but it's not loading because ipfs node removed it from MFS

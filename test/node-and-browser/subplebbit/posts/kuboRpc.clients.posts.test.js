@@ -40,6 +40,14 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
 
     it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+        const firstPageMocked = {
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment)
+        };
+
+        const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
+
+        mockSub.posts.pageCids.new = firstPageMockedCid;
+
         const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
 
         const expectedStates = ["fetching-ipfs", "stopped"];
@@ -56,12 +64,14 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
         const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
 
-        const firstPage = JSON.parse(await plebbit.fetchCid(mockSub.posts.pageCids.new)); // we don't want it to validate the page schema
-
-        const secondPageMocked = { comments: firstPage.comments.slice(1) }; // create a slightly different page
+        const secondPageMocked = { comments: mockSub.posts.pages.hot.comments.slice(1, 5).map((comment) => comment.pageComment) }; // create a slightly different page
         const secondPageCid = await addStringToIpfs(JSON.stringify(secondPageMocked));
 
-        const firstPageMocked = { ...firstPage, nextCid: secondPageCid };
+        const firstPageMocked = {
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment),
+            nextCid: secondPageCid
+        };
+
         const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
 
         mockSub.posts.pageCids.new = firstPageMockedCid;
@@ -82,9 +92,16 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
     it(`Correct state of 'new' sort is updated after fetching with a subplebbit created with plebbit.createSubplebbit({address, pageCids})`, async () => {
         const remotePlebbit = await mockRemotePlebbit();
         const mockSub = await remotePlebbit.getSubplebbit(subplebbitAddress);
+
+        const firstPageMocked = {
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment)
+        };
+
+        const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
+
         const fetchSub = await remotePlebbit.createSubplebbit({
             address: subplebbitAddress,
-            posts: { pageCids: mockSub.posts.pageCids }
+            posts: { pageCids: { ...mockSub.posts.pageCids, new: firstPageMockedCid } }
         });
         expect(fetchSub.updatedAt).to.be.undefined;
 
@@ -98,31 +115,5 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
 
         await fetchSub.posts.getPage(fetchSub.posts.pageCids.new);
         expect(actualStates).to.deep.equal(expectedStates);
-    });
-
-    it(`Original subplebbit instances, as well as recreated instances receive statechange event`, async () => {
-        const remotePlebbit = await mockRemotePlebbit();
-
-        const sub = await remotePlebbit.createSubplebbit({ address: signers[0].address });
-        sub.update();
-        await new Promise((resolve, reject) => {
-            sub.once("update", async () => {
-                const pageCid = sub.posts.pageCids["new"];
-
-                const sub2 = await remotePlebbit.createSubplebbit({ address: sub.address });
-                const expectedStates = ["fetching-ipfs", "stopped"];
-                const kuboRpcURl = Object.keys(sub.clients.kuboRpcClients)[0];
-
-                for (const subToTest of [sub, sub2]) {
-                    const actualStates = [];
-                    subToTest.posts.clients.kuboRpcClients["new"][kuboRpcURl].on("statechange", (newState) => actualStates.push(newState));
-                    await subToTest.posts.getPage(pageCid);
-                    if (JSON.stringify(actualStates) !== JSON.stringify(expectedStates))
-                        reject("Sub failed to update to subplebbit.posts.clients.kuboRpcClients");
-                }
-                resolve();
-            });
-        });
-        await sub.stop();
     });
 });

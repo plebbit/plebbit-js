@@ -8,7 +8,6 @@ import {
     isPlebbitFetchingUsingGateways,
     waitTillReplyInParentPagesInstance,
     resolveWhenConditionIsTrue,
-    waitTillReplyInParentPages,
     itSkipIfRpc
 } from "../../../../../dist/node/test/test-util.js  ";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";

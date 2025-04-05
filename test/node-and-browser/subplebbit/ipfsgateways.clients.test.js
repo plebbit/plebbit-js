@@ -74,7 +74,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         let updateCount = 0;
         sub.on("update", () => updateCount++);
         let waitingRetryCount = 0;
-        sub.on("waiting-retry", () => waitingRetryCount++);
+        sub.on("updatingstatechange", (newState) => newState === "waiting-retry" && waitingRetryCount++);
 
         const recordedStates = [];
         const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
@@ -88,7 +88,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, JSON.parse(JSON.stringify(sub.toJSONIpfs())));
 
         const expectedWaitingRetryCount = 3;
-        await resolveWhenConditionIsTrue(sub, () => waitingRetryCount === expectedWaitingRetryCount, "waiting-retry");
+        await resolveWhenConditionIsTrue(sub, () => waitingRetryCount === expectedWaitingRetryCount, "updatingstatechange");
 
         await sub.stop();
 
@@ -111,7 +111,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         sub.on("update", () => updateCount++);
 
         let waitingRetryCount = 0;
-        sub.on("waiting-retry", () => waitingRetryCount++);
+        sub.on("updatingstatechange", (newState) => newState === "waiting-retry" && waitingRetryCount++);
 
         const emittedErrors = [];
         sub.on("error", (error) => emittedErrors.push(error));

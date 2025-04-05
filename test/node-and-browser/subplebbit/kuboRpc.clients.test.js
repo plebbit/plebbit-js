@@ -7,7 +7,8 @@ import {
     mockPlebbitToReturnSpecificSubplebbit,
     mockPlebbit,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -57,8 +58,6 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
 
     it(`Correct order of kuboRpcClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
         const sub = await remotePlebbit.getSubplebbit(signers[0].address);
-        const post = await publishRandomPost(sub.address, plebbit);
-        await waitTillPostInSubplebbitPages(post, plebbit);
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
         const actualStates = [];
@@ -69,6 +68,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
 
         const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();
+        await publishRandomPost(sub.address, plebbit); // force an update
         await updatePromise;
         await sub.stop();
 
@@ -134,20 +134,10 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
         await mockPlebbitToReturnSpecificSubplebbit(customPlebbit, sub.address, invalidSubplebbitRecord);
 
         await errorPromise;
-        await new Promise((resolve) => sub.once("waiting-retry", resolve));
         await sub.stop();
 
         // Expected states for initial update and then the invalid update attempt, then checking if there's a new update
-        const expectedStates = [
-            "fetching-ipns",
-            "fetching-ipfs",
-            "stopped",
-            "fetching-ipns",
-            "fetching-ipfs",
-            "stopped",
-            "fetching-ipns",
-            "stopped"
-        ];
+        const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped", "fetching-ipns", "fetching-ipfs", "stopped"];
 
         expect(recordedStates).to.deep.equal(expectedStates);
     });

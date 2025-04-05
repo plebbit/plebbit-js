@@ -3,6 +3,7 @@ import {
     publishRandomPost,
     publishWithExpectedResult,
     loadAllPages,
+    iterateThroughPagesToFindCommentInParentPagesInstance,
     publishRandomReply,
     waitTillPostInSubplebbitInstancePages,
     resolveWhenConditionIsTrue,
@@ -44,8 +45,10 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, postToPin, secondPostToPin, sub;
 
         const populateSub = async (subplebbit) => {
-            const postsComments = subplebbit.posts.pageCids.new ? await subplebbit.posts.getPage(subplebbit.posts.pageCids.new) : [];
-            if (postsComments.length < 10) {
+            const subplebbitPage = subplebbit.posts.pageCids.new
+                ? await subplebbit.posts.getPage(subplebbit.posts.pageCids.new)
+                : subplebbit.posts.pages.hot;
+            if (subplebbitPage.comments.length < 10) {
                 await Promise.all(
                     new Array(5).fill(null).map(async (x) => {
                         const post = await publishRandomPost(subplebbit.address, plebbit);
@@ -67,12 +70,14 @@ getRemotePlebbitConfigs().map((config) => {
             await postToPin.update();
             await secondPostToPin.update();
             await waitTillPostInSubplebbitInstancePages(secondPostToPin, sub);
-            const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
-            await removeAllPins(postsComments, plebbit);
+            const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage(sub.posts.pageCids.new) : sub.posts.pages.hot;
+            const posts = firstPage.comments;
+            await removeAllPins(posts, plebbit);
             // wait until all posts are unpinned
             await resolveWhenConditionIsTrue(sub, async () => {
-                const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
-                return postsComments.every((comment) => !comment.pinned);
+                const firstPage = sub.posts.pageCids.new ? await sub.posts.getPage(sub.posts.pageCids.new) : sub.posts.pages.hot;
+                const posts = firstPage.comments;
+                return posts.every((comment) => !comment.pinned);
             });
         });
 
@@ -271,13 +276,19 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit(subplebbitAddress);
-            const allPosts = await loadAllPages(sub.posts.pageCids.new, sub.posts);
+
+            const allPosts = sub.posts.pageCids.new ? await loadAllPages(sub.posts.pageCids.new, sub.posts) : sub.posts.pages.hot.comments;
             post = await plebbit.createComment(remeda.maxBy(allPosts, (c) => c.replyCount));
             await post.update();
             await populatePost();
             expect(post.replyCount).to.be.greaterThan(5); // Arbitary number
             replyToPin = await publishRandomReply(post, plebbit);
-            await removeAllPins(await loadAllPages(post.replies.pageCids.topAll, post.replies), plebbit);
+            await removeAllPins(
+                post.replies.pageCids.topAll
+                    ? await loadAllPages(post.replies.pageCids.topAll, post.replies)
+                    : post.replies.pages.topAll.comments,
+                plebbit
+            );
         });
 
         after(async () => await plebbit.destroy());

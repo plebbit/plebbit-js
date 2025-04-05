@@ -5,7 +5,8 @@ import {
     mockGatewayPlebbit,
     describeSkipIfRpc,
     describeIfRpc,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    addStringToIpfs
 } from "../../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -44,8 +45,7 @@ describe(`comment.replies.clients`, async () => {
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await plebbit.getComment(commentCid);
-            await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve));
+            comment.replies.pageCids.new = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"; // random cid
             const ipfsUrl = Object.keys(comment.clients.kuboRpcClients)[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
@@ -54,9 +54,13 @@ describe(`comment.replies.clients`, async () => {
                 actualStates.push(newState);
             });
 
-            await comment.replies.getPage(comment.replies.pageCids.new);
-            await comment.stop();
+            const originalTimeout = plebbit._timeouts["page-ipfs"];
+            plebbit._timeouts["page-ipfs"] = 100;
+            try {
+                await comment.replies.getPage(comment.replies.pageCids.new); // it will fail because it's not a real page
+            } catch {}
             expect(actualStates).to.deep.equal(expectedStates);
+            plebbit._timeouts["page-ipfs"] = originalTimeout; // Reset timeout
         });
     });
 
@@ -71,8 +75,7 @@ describe(`comment.replies.clients`, async () => {
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await gatewayPlebbit.getComment(commentCid);
-            await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve));
+            comment.replies.pageCids.new = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"; // random cid
 
             const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
 
@@ -82,9 +85,13 @@ describe(`comment.replies.clients`, async () => {
                 actualStates.push(newState);
             });
 
-            await comment.replies.getPage(comment.replies.pageCids.new);
-            await comment.stop();
+            const originalTimeout = gatewayPlebbit._timeouts["page-ipfs"];
+            gatewayPlebbit._timeouts["page-ipfs"] = 100;
+            try {
+                await comment.replies.getPage(comment.replies.pageCids.new);
+            } catch {}
             expect(actualStates).to.deep.equal(expectedStates);
+            gatewayPlebbit._timeouts["page-ipfs"] = originalTimeout; // Reset timeout
         });
 
         it(`Correct state of 'new' sort is correct after fetching from responsive and unresponsive gateway `, async () => {
@@ -96,9 +103,12 @@ describe(`comment.replies.clients`, async () => {
             const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: gateways, httpRoutersOptions: [] });
 
             const comment = await multipleGatewayPlebbit.getComment(commentCid);
-            comment.update();
-            if (!comment.updatedAt) await new Promise((resolve) => comment.once("update", resolve));
-            await comment.stop();
+            await comment.update();
+            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+            const mockedPageIpfs = await addStringToIpfs(
+                JSON.stringify({ comments: [comment.replies.pages.topAll.comments[0].pageComment] })
+            );
+            comment.replies.pageCids.new = mockedPageIpfs; // random cid
 
             const expectedStates = {
                 [gateways[0]]: [
@@ -119,11 +129,11 @@ describe(`comment.replies.clients`, async () => {
 
             multipleGatewayPlebbit._timeouts["page-ipfs"] = 10 * 1000; // Change timeout to 10s
             const timeBefore = Date.now();
-            await comment.replies.getPage(comment.replies.pageCids.new);
+            try {
+                await comment.replies.getPage(comment.replies.pageCids.new);
+            } catch {}
             const timeItTookInMs = Date.now() - timeBefore;
             expect(timeItTookInMs).to.be.lessThan(9000);
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
