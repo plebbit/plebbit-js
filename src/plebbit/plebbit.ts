@@ -454,7 +454,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             ])
         );
 
-        if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
+        if (commentInstance.cid && commentInstance.updatedAt) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
 
         if (options.publishingState !== "succeeded" && !options.cid && !options.updatedAt) {
             // only initialze when comment is not published
