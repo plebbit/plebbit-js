@@ -7,7 +7,8 @@ import {
     loadAllPages,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
-    publishWithExpectedResult
+    publishWithExpectedResult,
+    addStringToIpfs
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -91,25 +92,23 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
-            const commentToCloneFromPage = newComments.find((comment) => comment.replyCount > 0);
-            expect(commentToCloneFromPage.replies).to.be.a("object");
-            const commentCloneInstance = await plebbit.createComment(commentToCloneFromPage);
+            const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0);
+            expect(postWithReplyToCloneFromPage.replies).to.be.a("object");
+            const commentCloneInstance = await plebbit.createComment(postWithReplyToCloneFromPage);
             expect(commentCloneInstance.replies).to.be.a("object");
             const commentCloneInstanceJson = jsonifyCommentAndRemoveInstanceProps(commentCloneInstance);
-            const commentToCloneFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentToCloneFromPage);
+            const commentToCloneFromPageJson = jsonifyCommentAndRemoveInstanceProps(postWithReplyToCloneFromPage);
             expect(commentToCloneFromPageJson).to.deep.equal(commentCloneInstanceJson);
         });
 
         it(`Can recreate a stringified Comment instance with replies with plebbit.createComment`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
-            const commentToCloneFromPage = newComments.find((comment) => comment.replyCount > 0);
-            expect(commentToCloneFromPage.replies).to.be.a("object");
-            const commentCloneInstance = await plebbit.createComment(JSON.parse(JSON.stringify(commentToCloneFromPage)));
+            const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0);
+            expect(postWithReplyToCloneFromPage.replies).to.be.a("object");
+            const commentCloneInstance = await plebbit.createComment(JSON.parse(JSON.stringify(postWithReplyToCloneFromPage)));
             expect(commentCloneInstance.replies).to.be.a("object");
             const commentCloneInstanceJson = jsonifyCommentAndRemoveInstanceProps(commentCloneInstance);
-            const commentToCloneFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentToCloneFromPage);
+            const commentToCloneFromPageJson = jsonifyCommentAndRemoveInstanceProps(postWithReplyToCloneFromPage);
             expect(commentCloneInstanceJson).to.deep.equal(commentToCloneFromPageJson);
         });
 
@@ -133,7 +132,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await post.stop();
 
-            const pageCid = post.replies.pageCids.new;
+            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [post.replies.pages.topAll["comments"][0].pageComment] }));
             expect(pageCid).to.be.a("string");
 
             const postClone = await plebbit.createComment({
@@ -148,6 +147,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(postClone.depth).to.equal(post.depth);
             expect(postClone.postCid).to.equal(post.postCid);
 
+            postClone.replies.pageCids.new = pageCid; // mock it to have pageCids
             const page = await postClone.replies.getPage(pageCid);
             expect(page.comments.length).to.be.equal(1);
         });

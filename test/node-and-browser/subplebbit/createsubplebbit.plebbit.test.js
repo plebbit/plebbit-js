@@ -6,7 +6,8 @@ import {
     isRpcFlagOn,
     mockPlebbit,
     jsonifySubplebbitAndRemoveInternalProps,
-    isRunningInBrowser
+    isRunningInBrowser,
+    addStringToIpfs
 } from "../../../dist/node/test/test-util.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -38,7 +39,6 @@ getRemotePlebbitConfigs().map((config) =>
         });
 
         it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
-            // This test will fail because plebbit.createSubplebbit doesn't accept spread
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const spread = { ...loadedSubplebbit };
             const createdSubplebbit = await plebbit.createSubplebbit(spread);
@@ -77,7 +77,7 @@ getRemotePlebbitConfigs().map((config) =>
             expect(actualSub.createdAt).to.be.a("number");
 
             expect(actualSub.posts.pages.hot).to.be.a("object");
-            const pageCid = actualSub.posts.pageCids.new; // get it somehow
+            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [actualSub.posts.pages.hot.comments[0].pageComment] })); // get it somehow
             expect(pageCid).to.be.a("string");
             const newSubplebbit = await plebbit.createSubplebbit({ address: actualSub.address });
             expect(newSubplebbit.createdAt).to.be.undefined;

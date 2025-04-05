@@ -147,7 +147,7 @@ getRemotePlebbitConfigs().map((config) => {
                 signers[0]
             );
 
-            const pageIpfs = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new));
+            const pageIpfs = subplebbit._rawSubplebbitIpfs.posts.pages.hot;
 
             pageIpfs.comments.push({
                 comment: post._rawCommentIpfs,

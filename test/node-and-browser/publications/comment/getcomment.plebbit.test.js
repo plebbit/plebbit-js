@@ -38,31 +38,30 @@ getRemotePlebbitConfigs().map((config) => {
 
         it("reply props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
-            const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
-            expect(comment).to.exist;
-            const expectedCommentProps = JSON.parse(await plebbit.fetchCid(comment.cid));
-            expect(expectedCommentProps.postCid).to.be.a("string");
-            expect(expectedCommentProps.postCid).to.equal(expectedCommentProps.parentCid);
-            expect(expectedCommentProps.protocolVersion).to.be.a("string");
-            expect(expectedCommentProps.depth).to.equal(1);
-            expect(expectedCommentProps.subplebbitAddress).to.equal(subplebbit.address);
-            expect(expectedCommentProps.timestamp).to.be.a("number");
-            expect(expectedCommentProps.signature).to.be.a("object");
-            expect(expectedCommentProps.author).to.be.a("object");
-            expect(expectedCommentProps.author.address).to.be.a("string");
-            expect(expectedCommentProps.protocolVersion).to.be.a("string");
-            expectedCommentProps.cid = comment.cid;
-            if (!expectedCommentProps.author.address.includes("."))
+            const reply = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).replies.pages.topAll.comments[0];
+            expect(reply).to.exist;
+            const expectedReplyProps = JSON.parse(await plebbit.fetchCid(reply.cid));
+            expect(expectedReplyProps.postCid).to.be.a("string");
+            expect(expectedReplyProps.postCid).to.equal(expectedReplyProps.parentCid);
+            expect(expectedReplyProps.protocolVersion).to.be.a("string");
+            expect(expectedReplyProps.depth).to.equal(1);
+            expect(expectedReplyProps.subplebbitAddress).to.equal(subplebbit.address);
+            expect(expectedReplyProps.timestamp).to.be.a("number");
+            expect(expectedReplyProps.signature).to.be.a("object");
+            expect(expectedReplyProps.author).to.be.a("object");
+            expect(expectedReplyProps.author.address).to.be.a("string");
+            expect(expectedReplyProps.protocolVersion).to.be.a("string");
+            expectedReplyProps.cid = reply.cid;
+            if (!expectedReplyProps.author.address.includes("."))
                 // only shorten address when it's not a domain
-                expectedCommentProps.author.shortAddress = expectedCommentProps.author.address.slice(8).slice(0, 12);
-            else expectedCommentProps.author.shortAddress = expectedCommentProps.author.address;
+                expectedReplyProps.author.shortAddress = expectedReplyProps.author.address.slice(8).slice(0, 12);
+            else expectedReplyProps.author.shortAddress = expectedReplyProps.author.address;
 
-            const loadedComment = await plebbit.getComment(comment.cid);
-            expect(loadedComment.constructor.name).to.equal("Comment");
-            if (loadedComment.author.subplebbit) delete loadedComment.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
-            for (const key of Object.keys(expectedCommentProps))
-                expect(deterministicStringify(expectedCommentProps[key])).to.equal(deterministicStringify(loadedComment[key]));
+            const loadedReply = await plebbit.getComment(reply.cid);
+            expect(loadedReply.constructor.name).to.equal("Comment");
+            if (loadedReply.author.subplebbit) delete loadedReply.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
+            for (const key of Object.keys(expectedReplyProps))
+                expect(deterministicStringify(expectedReplyProps[key])).to.equal(deterministicStringify(loadedReply[key]));
         });
 
         it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {

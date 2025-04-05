@@ -129,11 +129,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`nsfw=false appears in pages of subplebbit`, async () => {
             const sub = await plebbit.getSubplebbit(authorPost.subplebbitAddress);
-            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(
-                authorPost.cid,
-                sub.posts.pageCids.new,
-                sub.posts
-            );
+            const commentInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(authorPost.cid, sub.posts);
             expect(commentInPage.nsfw).to.be.false;
         });
     });
