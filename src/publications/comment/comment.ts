@@ -519,6 +519,7 @@ export class Comment
 
     async startCommentUpdateSubplebbitSubscription() {
         const log = Logger("plebbit-js:comment:update");
+        if (this.state === "stopped") return; // we may have called stop() before reaching comment update subscription and after loading commentipfs
         if (this.depth === 0) {
             if (!this._subplebbitForUpdating)
                 this._subplebbitForUpdating = await this._clientsManager._createSubInstanceWithStateTranslation();
