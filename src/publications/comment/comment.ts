@@ -756,7 +756,9 @@ export class Comment
 
         const cleanUpUpdatingCommentInstance = async () => {
             updatingCommentInstance.removeListener("removeListener", updatingCommentRemoveListenerListener);
-            await updatingCommentInstance.stop();
+            if (updatingCommentInstance.state !== "stopped")
+                // it could be stopped already if plebbit._updatingComments[this.cid] was called
+                await updatingCommentInstance.stop();
         };
 
         updatingCommentInstance.on("removeListener", updatingCommentRemoveListenerListener);
