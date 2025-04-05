@@ -968,15 +968,17 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     async destroy() {
         // Clean up connections
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
-        await this._storage.destroy();
-        await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
 
         await this._domainResolver.destroy();
 
-        await Promise.all(Object.values(this._updatingComments).map((comment) => comment.stop()));
-        await Promise.all(Object.values(this._updatingSubplebbits).map((sub) => sub.stop()));
+        for (const comment of Object.values(this._updatingComments)) await comment.stop();
+
+        for (const subplebbit of Object.values(this._updatingSubplebbits)) await subplebbit.stop();
+
         this._updatingSubplebbits = this._updatingComments = {};
 
+        await this._storage.destroy();
+        await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
         Object.values(this._memCaches).forEach((cache) => cache.clear());
     }
 }
