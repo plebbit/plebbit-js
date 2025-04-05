@@ -707,10 +707,13 @@ export class Comment
             updatingstatechange: (newState) => this._setUpdatingStateWithEmissionIfNewState(newState),
             error: async (err) => {
                 if (!this._isRetriableLoadingError(err)) {
-                    this._updateState("stopped");
+                    this._setStateNoEmission("stopped");
+                    this._setUpdatingStateNoEmission("failed");
+                    this.emit("error", err);
+                    this.emit("updatingstatechange", "failed");
+                    this.emit("statechange", "stopped");
                     await this._stopUpdateLoop();
-                }
-                this.emit("error", err);
+                } else this.emit("error", err);
             }
         };
         this._useUpdatePropsFromUpdatingCommentIfPossible();
