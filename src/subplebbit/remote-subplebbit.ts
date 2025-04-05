@@ -392,7 +392,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     async stop() {
-        if (this.state !== "updating") throw Error("User call remoteSubplebbit.stop() without updating first");
+        if (this.state === "stopped") return;
 
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
