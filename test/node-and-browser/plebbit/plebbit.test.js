@@ -8,7 +8,8 @@ import {
     mockPlebbit,
     itIfRpc,
     describeIfRpc,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -141,6 +142,24 @@ describe("plebbit.createSigner", async () => {
         expect(signer.publicKey).to.equal(signer2.publicKey);
         expect(signer.address).to.equal(signer2.address);
         expect(signer.type).to.equal(signer2.type);
+    });
+});
+
+describe(`plebbit.destroy`, async () => {
+    it("Should succeed if we have a comment and a subplebbit already updating", async () => {
+        const plebbit = await mockPlebbit();
+        const subplebbit = await plebbit.getSubplebbit(fixtureSigner.address);
+        const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
+
+        const comment = await plebbit.createComment({ cid: commentCid });
+        await comment.update();
+        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+        expect(plebbit._updatingComments[commentCid]).to.exist;
+
+        await plebbit.destroy(); // should not fail
+        expect(plebbit._updatingComments[commentCid]).to.not.exist;
+        expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
+        expect(comment.state).to.equal("stopped");
     });
 });
 
