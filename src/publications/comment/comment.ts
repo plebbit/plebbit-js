@@ -783,11 +783,19 @@ export class Comment
     }
 
     private async _stopUpdateLoop() {
+        if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
         this._commentIpfsloadingOperation?.stop();
         if (this._updateRpcSubscriptionId) {
             await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
             this._setRpcClientState("stopped");
+        }
+
+        // what if it didn't have enough time to set up _subplebbitForUpdating and _postForUpdating? These are defined after loading CommentIpfs
+
+        if (!this._postForUpdating && !this._subplebbitForUpdating && !this._updatingCommentInstance) {
+            // comment.stop got called before updating subplebbit or post instance was created
+            delete this._plebbit._updatingComments[this.cid];
         }
         // clean up _subplebbitForUpdating subscriptions
         if (this._subplebbitForUpdating) {
@@ -795,7 +803,7 @@ export class Comment
 
             await this._clientsManager.cleanUpUpdatingSubInstance();
             this._subplebbitForUpdating = undefined;
-            delete this._plebbit._updatingComments[this.cid!];
+            delete this._plebbit._updatingComments[this.cid];
             this._invalidCommentUpdateMfsPaths.clear();
         }
 
@@ -803,8 +811,8 @@ export class Comment
             // this reply instance is subscribed to an updating post
             await this._clientsManager.cleanUpUpdatingPostInstance();
             this._postForUpdating = undefined;
-            if (!this._plebbit._updatingComments[this.cid!]) throw Error("this._plebbit._updatingComments[this.cid!] should exist");
-            delete this._plebbit._updatingComments[this.cid!]; // Add this line
+            if (!this._plebbit._updatingComments[this.cid]) throw Error("this._plebbit._updatingComments[this.cid!] should exist");
+            delete this._plebbit._updatingComments[this.cid];
         }
 
         if (this._updatingCommentInstance) {
@@ -835,7 +843,7 @@ export class Comment
     }
 
     override async stop() {
-        if (this.state === "publishing") await super.stop();
+        if (this.state === "publishing") return super.stop();
         this._setUpdatingStateWithEmissionIfNewState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();
