@@ -213,12 +213,11 @@ getRemotePlebbitConfigs().map((config) => {
             const reply = await plebbit.createComment({ cid: replyCid });
             await reply.update();
             // Get the post CID from the reply's parent
-            const postCid = sub.posts.pages.hot.comments[0].cid;
 
             await reply.update();
 
             await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
-
+            const postCid = reply.postCid;
             // Verify that both the reply and its parent post are in _updatingComments
             expect(Object.keys(plebbit._updatingComments).length).to.equal(2);
             expect(plebbit._updatingComments[replyCid]).to.exist;
