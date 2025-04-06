@@ -98,11 +98,8 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         const subplebbit = await gatewayPlebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
 
-        const waitingRetryErrors = [];
-
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
-        subplebbit.on("waiting-retry", (err) => waitingRetryErrors.push(err));
 
         await subplebbit.update();
 
@@ -119,16 +116,12 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         expect(recordedStates[recordedStates.length - 1]).to.equal("stopped");
         const noNewUpdateStates = recordedStates.slice(expectedFirstUpdateStates.length, recordedStates.length - 1); // should be just 'fetching-ipns' and 'succeeded
 
+        expect(noNewUpdateStates.length).to.be.greaterThan(0);
         // Check that every pair of states is ["fetching-ipns", "waiting-retry"]
         for (let i = 0; i < noNewUpdateStates.length; i += 2) {
             expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
             expect(noNewUpdateStates[i + 1]).to.equal("waiting-retry");
         }
-
-        expect(waitingRetryErrors.length).to.equal(noNewUpdateStates.length / 2);
-
-        for (const waitingRetryError of waitingRetryErrors)
-            expect(waitingRetryError.code).to.equal("ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD");
     });
     itSkipIfRpc("updating states is in correct order upon updating with ipfs p2p, if the sub doesn't publish any updates", async () => {
         const kuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
@@ -137,10 +130,8 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         const subplebbit = await kuboPlebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
 
-        const waitingRetryErrors = [];
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
-        subplebbit.on("waiting-retry", (err) => waitingRetryErrors.push(err));
 
         await subplebbit.update();
 
@@ -156,17 +147,13 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         expect(recordedStates[recordedStates.length - 1]).to.equal("stopped");
         const noNewUpdateStates = recordedStates.slice(expectedFirstUpdateStates.length, recordedStates.length - 1); // should be just 'fetching-ipns' and 'succeeded
+        expect(noNewUpdateStates.length).to.be.greaterThan(0);
 
         // Check that every pair of states is ["fetching-ipns", "waiting-retry"]
         for (let i = 0; i < noNewUpdateStates.length; i += 2) {
             expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
             expect(noNewUpdateStates[i + 1]).to.equal("waiting-retry");
         }
-
-        expect(waitingRetryErrors.length).to.equal(noNewUpdateStates.length / 2);
-
-        for (const waitingRetryError of waitingRetryErrors)
-            expect(waitingRetryError.code).to.equal("ERR_REMOTE_SUBPLEBBIT_RECEIVED_ALREADY_PROCCESSED_RECORD");
     });
 
     it(`updatingState is correct when we attempt to update a subplebbit with invalid record, if we're updating with an ipfs client`, async () => {

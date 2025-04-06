@@ -125,7 +125,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(post.replies).to.be.a("object");
             await publishRandomReply(post, plebbit);
             await post.update();
-            await resolveWhenConditionIsTrue(post, () => post.replyCount > 1);
+            await resolveWhenConditionIsTrue(post, () => post.replyCount >= 1);
             expect(post.content).to.be.a("string");
             expect(post.replyCount).to.equal(1);
             expect(post.replies.pages.topAll.comments.length).to.equal(1);

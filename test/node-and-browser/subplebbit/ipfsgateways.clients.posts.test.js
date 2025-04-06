@@ -1,4 +1,4 @@
-import { describeSkipIfRpc, mockGatewayPlebbit } from "../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, mockGatewayPlebbit, addStringToIpfs } from "../../../dist/node/test/test-util.js";
 
 import signers from "../../fixtures/signers.js";
 
@@ -15,6 +15,10 @@ describeSkipIfRpc(`subplebbit.posts.clients.ipfsGateways`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
     });
 
+    after(async () => {
+        await gatewayPlebbit.destroy();
+    });
+
     it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         const gatewayUrl = Object.keys(mockSub.clients.ipfsGateways)[0];
@@ -25,6 +29,12 @@ describeSkipIfRpc(`subplebbit.posts.clients.ipfsGateways`, async () => {
 
     it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+        const firstPageMocked = {
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment)
+        };
+        const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
+        mockSub.posts.pageCids.new = firstPageMockedCid;
+
         const gatewayUrl = Object.keys(mockSub.clients.ipfsGateways)[0];
 
         const expectedStates = ["fetching-ipfs", "stopped"];
