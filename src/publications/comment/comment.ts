@@ -675,8 +675,7 @@ export class Comment
 
     _useUpdatePropsFromUpdatingCommentIfPossible() {
         if (!this.cid) throw Error("should have cid at this point");
-        const updatingCommentInstance = this._plebbit._updatingComments[this.cid];
-
+        const updatingCommentInstance = this._plebbit._updatingComments[this.cid] || this._updatingCommentInstance?.comment;
         if (updatingCommentInstance) {
             // TODO maybe we should just copy props with Object.assign? not sure
             if (!this._rawCommentIpfs && updatingCommentInstance._rawCommentIpfs) {
@@ -798,7 +797,12 @@ export class Comment
 
         // what if it didn't have enough time to set up _subplebbitForUpdating and _postForUpdating? These are defined after loading CommentIpfs
 
-        if (!this._postForUpdating && !this._subplebbitForUpdating && !this._updatingCommentInstance) {
+        if (
+            !this._postForUpdating &&
+            !this._subplebbitForUpdating &&
+            !this._updatingCommentInstance &&
+            this._plebbit._updatingComments[this.cid] === this
+        ) {
             // comment.stop got called before updating subplebbit or post instance was created
             delete this._plebbit._updatingComments[this.cid];
         }
