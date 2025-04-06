@@ -530,7 +530,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 `Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)}MB). Maximum size is 1MB.`,
                 error
             );
-            this.emit("error", error);
             throw error;
         }
 
@@ -541,7 +540,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 err: parseRes.error
             });
             log.error(`Local subplebbit (${this.address}) produced an invalid SubplebbitIpfs schema`, error);
-            this.emit("error", error);
             throw error;
         }
 
@@ -563,7 +561,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
         } catch (e) {
             log.error(`Local subplebbit (${this.address}) produced an invalid signature`, e);
-            this.emit("error", <PlebbitError>e);
             throw e;
         }
 
@@ -1970,9 +1967,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const loop = async () => {
             try {
                 this._publishLoopPromise = this.syncIpnsWithDb();
-                await this._publishLoopPromise.catch(() => {});
+                await this._publishLoopPromise.catch((err) => this.emit("error", err));
             } finally {
-                await this._publishLoop(syncIntervalMs).catch(() => {});
+                await this._publishLoop(syncIntervalMs);
             }
         };
         this._publishInterval = setTimeout(loop.bind(this), syncIntervalMs);
