@@ -28,7 +28,6 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await commentToBeEdited.stop();
             await plebbit.destroy();
         });
 

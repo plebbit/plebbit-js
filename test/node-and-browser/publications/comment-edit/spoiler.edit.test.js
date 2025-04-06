@@ -140,7 +140,7 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
-            modPost.update();
+            await modPost.update();
         });
 
         after(async () => {

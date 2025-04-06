@@ -13,10 +13,11 @@ import {
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
-import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { messages } from "../../../../../dist/node/errors.js";
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../../pages/pages-test-util.js";
+
+// TODO we need to test the case where a comment has a single preloaded page, how do we test the other sorts?
 
 const testRepliesSort = async (commentsWithReplies, replySortName, subplebbit) => {
     if (commentsWithReplies.length === 0) throw Error("Can't test replies with when parent comment has no replies");
@@ -33,7 +34,9 @@ const testRepliesSort = async (commentsWithReplies, replySortName, subplebbit) =
         const commentInstance = await subplebbit._plebbit.createComment(commentWithReplies);
         const commentPages = commentWithReplies.replies.pages.topAll.nextCid
             ? await loadAllPages(commentWithReplies.replies.pageCids[replySortName], commentInstance.replies)
-            : commentWithReplies.replies.pages.topAll.comments;
+            : replySortName === "topAll"
+              ? commentWithReplies.replies.pages.topAll.comments
+              : [];
         await testPageCommentsIfSortedCorrectly(commentPages, replySortName, subplebbit);
         const repliesWithReplies = commentPages.filter((pageComment) => pageComment.replies);
         if (repliesWithReplies.length > 0) await testRepliesSort(repliesWithReplies, replySortName, subplebbit);
