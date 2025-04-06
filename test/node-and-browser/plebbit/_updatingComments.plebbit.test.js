@@ -10,6 +10,7 @@ import { expect } from "chai";
 
 const subplebbitAddress = signers[0].address;
 
+// TODO write a better way to wait for events to propgate other than setTimeout
 getRemotePlebbitConfigs().map((config) => {
     describeSkipIfRpc(`plebbit._updatingComments - ${config.name}`, async () => {
         let sub;
@@ -58,7 +59,7 @@ getRemotePlebbitConfigs().map((config) => {
 
                     await comment2.stop();
 
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propgate events
+                    await new Promise((resolve) => setTimeout(resolve, 100)); // need to wait some time to propgate events
 
                     expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
                 });
@@ -81,7 +82,7 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(plebbit._updatingComments[comment.cid].listenerCount("update")).to.equal(1);
 
                     await comment.stop();
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propagate events
+                    await new Promise((resolve) => setTimeout(resolve, 100)); // need to wait some time to propagate events
 
                     expect(plebbit._updatingComments[comment.cid]).to.be.undefined;
                     expect(plebbit._updatingComments).to.deep.equal({}); // post should be undefined too
@@ -97,7 +98,7 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(plebbit._updatingComments[comment.cid].listenerCount("update")).to.equal(1);
 
                     await comment.stop();
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propagate events
+                    await new Promise((resolve) => setTimeout(resolve, 100)); // need to wait some time to propagate events
 
                     expect(plebbit._updatingComments[comment.cid]).to.be.undefined;
                     expect(plebbit._updatingComments[comment.postCid]).to.be.undefined;
@@ -136,7 +137,7 @@ getRemotePlebbitConfigs().map((config) => {
 
                     await comment3.stop();
 
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propgate events
+                    await new Promise((resolve) => setTimeout(resolve, 100)); // need to wait some time to propgate events
 
                     expect(plebbit._updatingComments[replyPostConfig.cid]).to.be.undefined;
                     expect(plebbit._updatingComments[comment1.postCid]).to.be.undefined;
@@ -160,13 +161,46 @@ getRemotePlebbitConfigs().map((config) => {
                     // stopping plebbit._updatingComments should stop all of them
 
                     await plebbit._updatingComments[comment1.cid].stop();
-                    await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propgate events
+                    await new Promise((resolve) => setTimeout(resolve, 100)); // need to wait some time to propgate events
 
                     for (const comment of [comment1, comment2, comment3]) {
                         expect(comment.state).to.equal("stopped");
                         expect(comment.updatingState).to.equal("stopped");
                     }
                     expect(plebbit._updatingComments[comment1.cid]).to.be.undefined;
+                });
+
+                it(`Calling plebbit.getComment(${replyPostConfig.commentType}Cid) should load both CommentIpfs and CommentUpdate if updating comment instance already has them`, async () => {
+                    const plebbit = await config.plebbitInstancePromise();
+                    const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
+                    await comment1.update();
+                    await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
+
+                    expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
+
+                    const comment2 = await plebbit.getComment(comment1.cid);
+                    expect(comment2.content).to.be.a("string");
+                    expect(comment2.updatedAt).to.be.a("number");
+                    expect(comment2.state).to.equal("stopped");
+                    expect(comment2.updatingState).to.equal("stopped");
+
+                    await plebbit.destroy();
+                });
+
+                it(`Calling ${replyPostConfig.commentType}FromGetComment.stop() should not stop other updating comments`, async () => {
+                    const plebbit = await config.plebbitInstancePromise();
+                    const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
+                    await comment1.update();
+
+                    expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
+
+                    const comment2 = await plebbit.getComment(comment1.cid);
+                    await comment2.stop();
+
+                    expect(plebbit._updatingComments[comment1.cid]).to.exist; // comment1 should still be updating
+                    expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
+
+                    await plebbit.destroy();
                 });
             });
         }

@@ -54,7 +54,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await sub3.stop();
 
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 100));
 
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
         });
@@ -186,13 +186,36 @@ getRemotePlebbitConfigs().map((config) => {
             // stopping plebbit._updatingSubplebbits should stop all of them
 
             await plebbit._updatingSubplebbits[subplebbitAddress].stop();
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait some time to propgate events
+            await new Promise((resolve) => setTimeout(resolve, 100)); // need to wait some time to propgate events
 
             for (const subplebbit of [sub1, sub2, sub3]) {
                 expect(subplebbit.state).to.equal("stopped");
                 expect(subplebbit.updatingState).to.equal("stopped");
             }
             expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.be.undefined;
+        });
+
+        it(`Calling subplebbitFromGetSubplebbit.stop() should not stop updating instance from plebbit._updatingSubplebbits`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
+            const sub1 = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await sub1.update();
+            expect(sub1.state).to.equal("updating");
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
+
+            // plebbit._updatingSubplebbits[subplebbitAddress] should be defined now
+            const sub2 = await plebbit.getSubplebbit(subplebbitAddress);
+            expect(sub2.state).to.equal("stopped");
+
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
+
+            await sub2.stop();
+            expect(plebbit._updatingSubplebbits[subplebbitAddress]).to.exist;
+
+            expect(sub1.state).to.equal("updating");
+            expect(plebbit._updatingSubplebbits[subplebbitAddress].state).to.equal("updating");
+
+            await plebbit.destroy();
         });
     });
 });
