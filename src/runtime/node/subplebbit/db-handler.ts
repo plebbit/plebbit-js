@@ -60,6 +60,7 @@ export class DbHandler {
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
+        hideClassPrivateProps(this);
     }
 
     async initDbConfigIfNeeded() {
@@ -80,6 +81,7 @@ export class DbHandler {
         const dbFilePath = <string>(<any>this._dbConfig.connection).filename;
         if (!this._knex) {
             this._knex = knex(this._dbConfig);
+
             log.trace("initialized a new connection to db", dbFilePath);
         }
         if (!this._keyv) this._keyv = new Keyv(new KeyvSqlite(`sqlite://${dbFilePath}`));
@@ -140,6 +142,21 @@ export class DbHandler {
         this._knex = this._keyv = undefined;
 
         log.trace("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
+    }
+
+    async _attemptToRepairDb() {
+        // we're gonna call this if we're getting "database disk image is malformed" error
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_attemptToRepairDb");
+        await this.destoryConnection();
+        await this.initDbConfigIfNeeded();
+        const knexTemp = knex(this._dbConfig);
+        const integrityCheck = await knexTemp.raw("PRAGMA integrity_check;");
+        log("integrity check result", integrityCheck);
+        const vaccum = await knexTemp.raw("VACUUM;");
+        log("vaccum result", vaccum);
+
+        await knexTemp.destroy();
+        await this.initDbIfNeeded();
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
@@ -1285,7 +1302,7 @@ export class DbHandler {
             log(`Locked the start of subplebbit (${subAddress}) successfully`);
         } catch (e: unknown) {
             if (e instanceof Error && e.message === "Lock file is already being held")
-                throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress });
+                throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress, error: e });
             else {
                 log(`Error while trying to lock start of sub (${subAddress}): ${e}`);
                 throw e;
@@ -1319,10 +1336,10 @@ export class DbHandler {
 
     // Subplebbit state lock
 
-    async lockSubState(subAddress = this._subplebbit.address) {
+    async lockSubState() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:lockSubState");
-        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${this._subplebbit.address}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", this._subplebbit.address);
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
@@ -1330,36 +1347,25 @@ export class DbHandler {
                 onCompromised: () => {}
             });
         } catch (e: unknown) {
-            log.error(`Error when attempting to lock sub state`, subAddress, e);
+            log.error(`Error when attempting to lock sub state`, this._subplebbit.address, e);
             if (e instanceof Error && e.message === "Lock file is already being held")
-                throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
+                throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: this._subplebbit.address, error: e });
             // Not sure, do we need to throw error here
         }
     }
 
-    async unlockSubState(subAddress = this._subplebbit.address) {
+    async unlockSubState() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:unlockSubState");
 
-        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${this._subplebbit.address}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", this._subplebbit.address);
         if (!fs.existsSync(lockfilePath)) return;
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
         } catch (e: unknown) {
-            log.error(`Error when attempting to unlock sub state`, subAddress, e);
+            log.error(`Error when attempting to unlock sub state`, this._subplebbit.address, e);
             if (e instanceof Error && "code" in e && e.code !== "ENOTACQUIRED") throw e;
         }
-    }
-
-    // Misc functions
-
-    subDbExists(subAddress = this._subplebbit.address) {
-        const dbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
-        return fs.existsSync(dbPath);
-    }
-
-    subAddress() {
-        return this._subplebbit.address;
     }
 
     async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction) {

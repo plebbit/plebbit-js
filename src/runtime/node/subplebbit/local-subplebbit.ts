@@ -1927,10 +1927,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
         } catch (e) {
+            const errorTyped = <Error>e;
             this._setStartedState("failed");
             this._clientsManager.updateIpfsState("stopped");
 
-            log.error(`Failed to sync sub`, this.address, `due to error,`, e);
+            log.error(`Failed to sync sub`, this.address, `due to error,`, errorTyped, "Error.message", errorTyped.message);
+            if (errorTyped.message.includes("database disk image is malformed")) {
+                log("Subplebbit", this.address, "DB came across a sqlite error, attempting to repair it and continue the publish loop");
+                await this._dbHandler._attemptToRepairDb();
+            }
             throw e;
         }
     }
