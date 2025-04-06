@@ -7,7 +7,6 @@ import {
     mockPlebbitV2,
     mockCacheOfTextRecord,
     resolveWhenConditionIsTrue,
-    mockPlebbit,
     publishRandomReply,
     waitTillReplyInParentPages
 } from "../../../../dist/node/test/test-util.js";
@@ -22,7 +21,12 @@ const subplebbitAddress = signers[0].address;
 describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: undefined }, false, false, true); // do not stub storage
+        plebbit = await mockPlebbitV2({
+            plebbitOptions: { dataPath: undefined },
+            forceMockPubsub: false,
+            stubStorage: false,
+            mockResolve: true
+        });
     });
     it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, plebbit);

@@ -1,9 +1,9 @@
 import {
     publishRandomPost,
     mockGatewayPlebbit,
-    mockPlebbit,
     addStringToIpfs,
     getRemotePlebbitConfigs,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     loadAllPagesBySortName,
     waitTillPostInSubplebbitPages,
     publishRandomReply,
@@ -119,7 +119,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         itSkipIfRpc("posts.getPage will throw a timeout error when request times out", async () => {
             // Create a plebbit instance with a very short timeout for page-ipfs
-            const plebbit = await mockPlebbit({ validatePages: false });
+            const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: false });
 
             plebbit._timeouts["page-ipfs"] = 100;
 
@@ -293,7 +293,7 @@ describe(`getPage`, async () => {
         }
     });
     itSkipIfRpc(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
-        const plebbit = await mockPlebbit({ validatePages: true });
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: true });
 
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
 

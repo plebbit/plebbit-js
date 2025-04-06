@@ -11,15 +11,15 @@ const subplebbitAddress = signers[0].address;
 import {
     describeSkipIfRpc,
     publishRandomPost,
-    mockPlebbit,
     mockGatewayPlebbit,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, async () => {
     // these test gateways will be set in test-server.js
     const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond
-    const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record
+    const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record because it's the same node running the subs
     const errorGateway = `http://localhost:13416`; // this gateway will respond with an error immedietly
     const normalWithStallingGateway = `http://localhost:14002`; // This gateway will fetch from normal gateway, await some time (less than 10s) than respond
     const errorGateway2 = `http://localhost:14003`; // this gateway will respond with an error immedietly
@@ -30,14 +30,15 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     const twoHoursLateGateway = `http://localhost:14006`; // This gateway will respond immedietly with subplebbitRecordHourOld;
 
     const subAddress = signers[0].address;
-    let plebbitRunningSubs;
 
     const fetchLatestSubplebbitJson = async () => {
+        const plebbitRunningSubs = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway] });
         const subRecord = (await plebbitRunningSubs.getSubplebbit(subAddress)).toJSONIpfs();
         return subRecord;
     };
+    let regularKuboPlebbit;
     before(async () => {
-        plebbitRunningSubs = await mockPlebbit();
+        regularKuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`plebbit.getSubplebbit times out if a single gateway is not responding (timeout)`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
@@ -75,8 +76,8 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     });
 
     it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
-        const post = await publishRandomPost(subAddress, plebbitRunningSubs); // Force sub to publish a new update
-        await waitTillPostInSubplebbitPages(post, plebbitRunningSubs);
+        const post = await publishRandomPost(subAddress, regularKuboPlebbit); // Force sub to publish a new update
+        await waitTillPostInSubplebbitPages(post, regularKuboPlebbit);
         // normalWithStallingGateway gateway will return the latest SubplebbitIpfs
 
         // gateway that responds quickly with updatedAt > 2 min => thirtyMinuteLateGateway
@@ -107,11 +108,13 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
             .lessThanOrEqual(timestampHourAgo + bufferSeconds);
     });
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
-        const post = await publishRandomPost(subplebbitAddress, plebbitRunningSubs); // should publish a new record after
-        await waitTillPostInSubplebbitPages(post, plebbitRunningSubs);
+        // the problem here is that the normalGateway cache IPNS for 3s, and when we do getSubplebbit it's gonna use the cache
+        const post = await publishRandomPost(subplebbitAddress, regularKuboPlebbit); // should publish a new record after
+        await waitTillPostInSubplebbitPages(post, regularKuboPlebbit);
         const customPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
         });
+        // await new Promise((resolve) => setTimeout(resolve, customPlebbit.publishInterval * 3)); // wait for the cache to expire
         customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
         const [gatewaySub, latestSub] = await Promise.all([customPlebbit.getSubplebbit(subplebbitAddress), fetchLatestSubplebbitJson()]);

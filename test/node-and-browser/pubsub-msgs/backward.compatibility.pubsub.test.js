@@ -4,12 +4,11 @@ import {
     generateMockPost,
     setExtraPropOnChallengeRequestAndSign,
     describeSkipIfRpc,
-    getRemotePlebbitConfigs,
     publishChallengeVerificationMessageWithEncryption,
     publishChallengeMessageWithExtraProps,
     publishChallengeAnswerMessageWithExtraProps,
     publishChallengeVerificationMessageWithExtraProps,
-    mockPlebbit
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
@@ -24,7 +23,7 @@ describeSkipIfRpc(`Publishing  and receiving pubsub messages with extra props`, 
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     describe(`ChallengeRequest with extra props`, async () => {
         it(`A challenge request with an extra prop not included in signature.signedPropertyNames will get ignored`, async () => {

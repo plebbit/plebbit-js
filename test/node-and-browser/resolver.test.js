@@ -12,7 +12,6 @@ import {
     itSkipIfRpc,
     describeSkipIfRpc,
     mockViemClient,
-    mockPlebbit,
     resolveWhenConditionIsTrue,
     mockCacheOfTextRecord,
     mockPlebbitV2
@@ -60,7 +59,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
     describe.skip(`Resolving solana domains`, async () => {
         let plebbit;
         before(async () => {
-            plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
+            plebbit = await mockPlebbitV2({ forceMockPubsub: true, stubStorage: true, mockResolve: false }); // Should not mock resolver
         });
 
         it(`A solana domain that has no subplebbit-address will return null when resolved`, async () => {
@@ -70,14 +69,12 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         });
 
         it(`Can resolve A solana domain with correct subplebbit-address subdomain correctly`, async () => {
-            const plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
             const subAddress = "redditdeath.sol";
             const ipnsAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(subAddress);
             expect(ipnsAddress).to.equal("12D3KooWKuojPWVJRMsQGMHzKKHY8ZVbU84vaetkaiymoqvDMe9z");
         });
 
         it(`Can resolve A solana domain with correct plebbit-author-address subdomain correctly`, async () => {
-            const plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
             const authorAddress = "redditdeath.sol";
             const ipnsAddress = await plebbit.resolveAuthorAddress(authorAddress);
             expect(ipnsAddress).to.equal("12D3KooWAszaoiJKCZCSeeKsjycPDrjdYG1zABbFdsgVenxdi9ma");

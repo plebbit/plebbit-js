@@ -9,11 +9,11 @@ import {
     waitTillReplyInParentPages,
     getRemotePlebbitConfigs,
     describeSkipIfRpc,
-    mockPlebbit,
     waitTillPostInSubplebbitPages,
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
-    iterateThroughPagesToFindCommentInParentPagesInstance
+    iterateThroughPagesToFindCommentInParentPagesInstance,
+    mockPlebbitV2
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
@@ -382,12 +382,11 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
     it(`comment.publish succeeds if provider 1 is not responding and 2 is responding`, async () => {
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
         const upPubsubUrl = "http://localhost:15002/api/v0";
-        const plebbit = await mockPlebbit(
-            {
-                pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
-            },
-            true
-        );
+        const plebbit = await mockPlebbitV2({
+            plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, upPubsubUrl] },
+            forceMockPubsub: true,
+            remotePlebbit: true
+        });
 
         // make the pubsub provider unresponsive
         plebbit.clients.pubsubKuboRpcClients[notRespondingPubsubUrl]._client.pubsub.publish = () => {};

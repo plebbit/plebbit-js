@@ -5,10 +5,7 @@ import {
     describeSkipIfRpc,
     mockGatewayPlebbit,
     mockPlebbitToReturnSpecificSubplebbit,
-    mockPlebbit,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    waitTillPostInSubplebbitPages,
-    resolveWhenConditionIsTrue
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -19,14 +16,13 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
-    let gatewayPlebbit, plebbit, remotePlebbit;
+    let plebbit;
 
     before(async () => {
-        gatewayPlebbit = await mockGatewayPlebbit();
-        plebbit = await mockPlebbit();
-        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`subplebbit.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         expect(mockSub.clients.kuboRpcClients).to.be.undefined;
     });
@@ -38,7 +34,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
     });
 
     it(`Correct order of kuboRpcClients state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
-        const sub = await remotePlebbit.createSubplebbit({ address: signers[0].address });
+        const sub = await plebbit.createSubplebbit({ address: signers[0].address });
 
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
@@ -57,7 +53,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
     });
 
     it(`Correct order of kuboRpcClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
-        const sub = await remotePlebbit.getSubplebbit(signers[0].address);
+        const sub = await plebbit.getSubplebbit(signers[0].address);
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
         const actualStates = [];

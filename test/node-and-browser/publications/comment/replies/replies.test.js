@@ -1,10 +1,10 @@
 import {
     loadAllPages,
     publishRandomPost,
-    mockPlebbit,
     loadAllUniquePostsUnderSubplebbit,
     getRemotePlebbitConfigs,
     publishRandomReply,
+    mockPlebbitV2,
     isPlebbitFetchingUsingGateways,
     waitTillReplyInParentPagesInstance,
     resolveWhenConditionIsTrue,
@@ -134,7 +134,7 @@ getRemotePlebbitConfigs().map((config) => {
         describe(`comment.replies.getPage - ${config.name}`, async () => {
             itSkipIfRpc("replies.getPage will throw a timeout error when request times out", async () => {
                 // Create a plebbit instance with a very short timeout for page-ipfs
-                const plebbit = await mockPlebbit({ validatePages: false });
+                const plebbit = await mockPlebbitV2({ plebbitOptions: { validatePages: false }, remotePlebbit: true });
 
                 plebbit._timeouts["page-ipfs"] = 100;
 

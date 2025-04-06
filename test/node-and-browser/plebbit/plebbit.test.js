@@ -5,11 +5,12 @@ import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../../dist/node/errors.js";
 import {
     mockRemotePlebbit,
-    mockPlebbit,
     itIfRpc,
     describeIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockRpcRemotePlebbit,
+    mockGatewayPlebbit
 } from "../../../dist/node/test/test-util.js";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -42,7 +43,7 @@ describe("Plebbit options", async () => {
     it("Plebbit Options is set up correctly when only kuboRpcClientsOptions is provided", async () => {
         // RPC exception
         const url = "http://localhost:15018/api/v0"; // offline API
-        const options = { kuboRpcClientsOptions: [url], httpRoutersOptions: [] };
+        const options = { kuboRpcClientsOptions: [url], httpRoutersOptions: [], dataPath: undefined };
         const testPlebbit = await Plebbit(options);
         expect(testPlebbit.clients.kuboRpcClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubKuboRpcClients[url]).to.exist;
@@ -88,7 +89,7 @@ describe("Plebbit options", async () => {
     });
 
     itIfRpc("Error is thrown if RPC is down", async () => {
-        const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+        const plebbit = await mockRpcRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
         // plebbit.subplebbits will take 20s to timeout and throw this error
         await assert.isRejected(
             plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"), // random cid
@@ -147,7 +148,7 @@ describe("plebbit.createSigner", async () => {
 
 describe(`plebbit.destroy`, async () => {
     it("Should succeed if we have a comment and a subplebbit already updating", async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.getSubplebbit(fixtureSigner.address);
         const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
 
@@ -167,7 +168,7 @@ describe("plebbit.fetchCid", async () => {
     let plebbit, gatewayPlebbit, ipfsPlebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit(); // Here this should be alternated for RPC
-        gatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
+        gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
         ipfsPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
@@ -187,7 +188,11 @@ describe("plebbit.fetchCid", async () => {
             await Promise.all([fileString1, fileString2].map((file) => ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(file)))
         ).map((res) => res.path);
 
-        const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:13415"], httpRoutersOptions: [] });
+        const plebbitWithMaliciousGateway = await Plebbit({
+            ipfsGatewayUrls: ["http://127.0.0.1:13415"],
+            httpRoutersOptions: [],
+            dataPath: undefined
+        });
         const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
         expect(fileString1).to.equal(fileString1FromGateway);
 
@@ -243,7 +248,8 @@ describe("plebbit.fetchCid", async () => {
         // RPC exception
         const multipleGatewayPlebbit = await Plebbit({
             ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"],
-            httpRoutersOptions: []
+            httpRoutersOptions: [],
+            dataPath: undefined
         });
 
         const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
@@ -258,7 +264,7 @@ describe("plebbit.fetchCid", async () => {
 
 describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
     it(`plebbit.clients.plebbitRpcClients.state`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockRpcRemotePlebbit();
         const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
 
         const rpcStates = [];
@@ -274,7 +280,7 @@ describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
     });
     it(`plebbit.clients.plebbitRpcClients.rpcCall`);
     it(`plebbit.clients.plebbitRpcClients.setSettings`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockRpcRemotePlebbit();
         const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
         const settingsPromise = new Promise((resolve) => rpcClient.once("settingschange", resolve));
         const allSettings = [];
@@ -295,7 +301,7 @@ describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
         await plebbit.destroy();
     });
     it(`plebbit.clients.plebbitRpcClients.settings is defined after awaiting settingschange`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockRpcRemotePlebbit();
         const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
         if (!rpcClient.settings) await new Promise((resolve) => rpcClient.once("settingschange", resolve));
         expect(rpcClient.settings.plebbitOptions).to.be.a("object");
@@ -312,7 +318,8 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
             const plebbit = await Plebbit({
                 kuboRpcClientsOptions: ["http://user:password@localhost:15001/api/v0"],
                 pubsubKuboRpcClientsOptions: ["http://user:password@localhost:15002/api/v0"],
-                httpRoutersOptions: []
+                httpRoutersOptions: [],
+                dataPath: undefined
             });
 
             expect(Object.keys(plebbit.clients.kuboRpcClients)).to.deep.equal(["http://localhost:15001/api/v0"]);

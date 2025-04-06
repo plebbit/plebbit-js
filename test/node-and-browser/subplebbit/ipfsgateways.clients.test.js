@@ -7,7 +7,6 @@ import {
     describeSkipIfRpc,
     publishRandomPost,
     mockGatewayPlebbit,
-    mockPlebbit,
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
@@ -16,11 +15,10 @@ const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
     // All tests below use Plebbit instance that doesn't have clients.kuboRpcClients
-    let gatewayPlebbit, plebbit;
+    let gatewayPlebbit;
 
     before(async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
-        plebbit = await mockPlebbit();
     });
 
     it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
@@ -49,7 +47,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
     it(`Correct order of ipfsGateways state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
         const sub = await gatewayPlebbit.getSubplebbit(signers[0].address);
-        await publishRandomPost(sub.address, plebbit);
+        await publishRandomPost(sub.address, gatewayPlebbit);
 
         const expectedStates = ["fetching-ipns", "stopped"];
 
@@ -80,7 +78,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         const gatewayUrl = Object.keys(sub.clients.ipfsGateways)[0];
         sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => recordedStates.push(newState));
 
-        // now plebbit._updatingSubplebbits will be defined
+        // now customPlebbit._updatingSubplebbits will be defined
 
         const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();

@@ -1,4 +1,4 @@
-import { describeIfRpc, mockPlebbit } from "../../../../dist/node/test/test-util.js";
+import { describeIfRpc, mockRpcRemotePlebbit } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -10,7 +10,7 @@ describeIfRpc(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRpcRemotePlebbit();
     });
     it(`subplebbit.posts.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);

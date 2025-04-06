@@ -1,4 +1,9 @@
-import { generateMockPost, mockPlebbit, publishWithExpectedResult, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
+import {
+    generateMockPost,
+    publishWithExpectedResult,
+    describeSkipIfRpc,
+    mockPlebbitNoDataPathWithOnlyKuboClient
+} from "../../../dist/node/test/test-util.js";
 import {
     verifyChallengeRequest,
     verifyChallengeAnswer,
@@ -40,7 +45,7 @@ const parsePubsubMsgFixture = (json) => {
 describeSkipIfRpc("challengerequest", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
         const request = parsePubsubMsgFixture(remeda.clone(validChallengeRequestFixture));
@@ -197,7 +202,7 @@ describeSkipIfRpc("challengerequest", async () => {
 describeSkipIfRpc(`challengemessage`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
         const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
@@ -236,7 +241,7 @@ describeSkipIfRpc(`challengemessage`, async () => {
 describeSkipIfRpc("challengeanswer", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
         const answer = parsePubsubMsgFixture(remeda.clone(validChallengeAnswerFixture));
@@ -315,7 +320,7 @@ describeSkipIfRpc("challengeanswer", async () => {
     });
 
     it(`Sub responds with error to a challenge answer with answers that can't be decrypted`, async () => {
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
@@ -397,7 +402,7 @@ describeSkipIfRpc("challengeanswer", async () => {
 describeSkipIfRpc("challengeverification", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
         const challengeVerification = parsePubsubMsgFixture(remeda.clone(validChallengeVerificationFixture));

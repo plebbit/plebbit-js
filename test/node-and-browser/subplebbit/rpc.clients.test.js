@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { describeIfRpc, mockPlebbit, createNewIpns, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import { describeIfRpc, createNewIpns, resolveWhenConditionIsTrue, mockRpcRemotePlebbit } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -12,7 +12,7 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRpcRemotePlebbit();
     });
 
     after(async () => {

@@ -22,11 +22,11 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             randomPost = await publishRandomPost(subplebbitAddress, plebbit, {});
-            randomPost.update();
+            await randomPost.update();
         });
 
         after(async () => {
-            await randomPost.stop();
+            await plebbit.destroy();
         });
 
         it(`Mod can mark an author comment as spoiler`, async () => {

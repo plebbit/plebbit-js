@@ -6,8 +6,7 @@ import {
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
     itSkipIfRpc,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    mockPlebbit
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
@@ -20,7 +19,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 
 describe(`comment.publishingState`, async () => {
     it(`publishingState is stopped by default`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const comment = await generateMockPost(subplebbitAddress, plebbit);
         expect(comment.publishingState).to.equal("stopped");
     });

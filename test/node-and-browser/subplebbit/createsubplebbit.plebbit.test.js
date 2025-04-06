@@ -4,10 +4,10 @@ import { messages } from "../../../dist/node/errors.js";
 import {
     getRemotePlebbitConfigs,
     isRpcFlagOn,
-    mockPlebbit,
     jsonifySubplebbitAndRemoveInternalProps,
     isRunningInBrowser,
-    addStringToIpfs
+    addStringToIpfs,
+    mockPlebbitV2
 } from "../../../dist/node/test/test-util.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -92,7 +92,7 @@ describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbitV2({ remotePlebbit: true });
     });
     it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
         await assert.isRejected(plebbit.createSubplebbit({ address: "testSub.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);

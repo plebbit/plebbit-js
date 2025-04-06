@@ -16,7 +16,7 @@ const { expect, assert } = chai;
 
 describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
-        const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false } });
+        const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true });
         const mockSub = await plebbit.getSubplebbit(signers[0].address);
         expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(1);
         for (const chain of Object.keys(mockSub.clients.chainProviders)) {
@@ -27,7 +27,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     });
 
     it(`Correct order of chainProviders state when sub pages has comments with author.address as domain - uncached`, async () => {
-        const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false } }); // no storage so it wouldn't be cached
+        const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true }); // no storage so it wouldn't be cached
 
         const mockPost = await publishRandomPost(signers[0].address, plebbit, {
             author: { address: "plebbit.eth" },

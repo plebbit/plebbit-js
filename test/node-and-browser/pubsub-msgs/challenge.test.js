@@ -6,8 +6,8 @@ import {
     publishRandomPost,
     generatePostToAnswerMathQuestion,
     mockRemotePlebbit,
-    mockPlebbit,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    mockPlebbitV2
 } from "../../../dist/node/test/test-util.js";
 
 const mathCliSubplebbitAddress = signers[1].address;
@@ -32,7 +32,12 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit;
 
         before(async () => {
-            plebbit = await mockPlebbit({ pubsubKuboRpcClientsOptions: [`http://localhost:15002/api/v0`] }, true); // Singular pubsub provider to avoid multiple challenge request/answers collision
+            plebbit = await mockPlebbitV2({
+                // Singular pubsub provider to avoid multiple challenge request/answers collision
+                plebbitOptions: { pubsubKuboRpcClientsOptions: [`http://localhost:15002/api/v0`] },
+                forceMockPubsub: true,
+                remotePlebbit: true
+            });
         });
         it("can post after answering correctly", async function () {
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
