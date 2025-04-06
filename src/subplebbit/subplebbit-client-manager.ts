@@ -18,7 +18,7 @@ import { SubplebbitKuboPubsubClient } from "../clients/pubsub-client.js";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
 import { CID } from "kubo-rpc-client";
-import { measurePerformance } from "../decorator-util.js";
+import { LimitedSet } from "../general-util/limited-set.js";
 
 type SubplebbitGatewayFetch = {
     [gatewayUrl: string]: {
@@ -45,7 +45,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     private _subplebbit: RemoteSubplebbit;
     _ipnsLoadingOperation?: RetryOperation = undefined;
     _updateTimeout?: NodeJS.Timeout = undefined;
-    _updateCidsAlreadyLoaded: Set<string> = new Set<string>();
+    _updateCidsAlreadyLoaded: LimitedSet<string> = new LimitedSet<string>(50); // we will keep track of the last 50 subplebbit update cids that we loaded
 
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
         super(subplebbit._plebbit);
@@ -385,19 +385,10 @@ export class SubplebbitClientsManager extends ClientsManager {
                 }
             };
 
-            const checkIpnsCidFromGateway: OptionsToLoadFromGateway["shouldAbortRequestFunc"] = async (res: Response) => {
-                const ipnsCidFromGateway = res.headers.get("x-ipfs-roots")
-                    ? CID.parse(res.headers.get("x-ipfs-roots")!).toV0().toString()
+            const requestHeaders =
+                this._updateCidsAlreadyLoaded.size > 0
+                    ? { "If-None-Match": '"' + Array.from(this._updateCidsAlreadyLoaded.values()).join(",") + '"' } // tell the gateway we already loaded these records
                     : undefined;
-                if (ipnsCidFromGateway && this._updateCidsAlreadyLoaded.has(ipnsCidFromGateway)) {
-                    // an old update cid we don't need anymore
-                    const error = new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
-                        ipnsCidFromGatewayHeaders: ipnsCidFromGateway
-                    });
-                    // this gateway responded with a subplebbit whose record we already loaded before
-                    return error;
-                }
-            };
             gatewayFetches[gatewayUrl] = {
                 abortController,
                 promise: queueLimit(() =>
@@ -406,11 +397,11 @@ export class SubplebbitClientsManager extends ClientsManager {
                         root: ipnsName,
                         recordPlebbitType: "subplebbit",
                         validateGatewayResponseFunc: throwIfGatewayRespondsWithInvalidSubplebbit,
-                        shouldAbortRequestFunc: checkIpnsCidFromGateway,
                         abortController,
                         maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
                         timeoutMs: this._plebbit._timeouts["subplebbit-ipns"],
-                        log
+                        log,
+                        requestHeaders: requestHeaders
                     })
                 ),
                 timeoutId: setTimeout(
@@ -497,8 +488,8 @@ export class SubplebbitClientsManager extends ClientsManager {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
             const allGatewaysAborted = Object.keys(gatewayFetches)
-                .map((gatewayUrl) => gatewayFetches[gatewayUrl].error?.code)
-                .every((errCode) => errCode === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD");
+                .map((gatewayUrl) => gatewayFetches[gatewayUrl].error?.details?.statusText)
+                .every((errStatus) => errStatus === "Not Modified");
             if (allGatewaysAborted) return undefined; // all gateways returned old update cids we already consumed
 
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({

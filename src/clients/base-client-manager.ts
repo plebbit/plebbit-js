@@ -44,6 +44,7 @@ export type CachedTextRecordResolve = { timestampSeconds: number; valueOfTextRec
 export type OptionsToLoadFromGateway = {
     recordIpfsType: "ipfs" | "ipns";
     maxFileSizeBytes: number;
+    requestHeaders?: Record<string, string>;
     root: string;
     path?: string;
     recordPlebbitType: LoadType;
@@ -229,7 +230,7 @@ export class BaseClientsManager {
         url: string,
         options: { cache: RequestCache; signal: AbortSignal } & Pick<
             OptionsToLoadFromGateway,
-            "shouldAbortRequestFunc" | "maxFileSizeBytes"
+            "shouldAbortRequestFunc" | "maxFileSizeBytes" | "requestHeaders"
         >
     ): Promise<{ resText: string | undefined; res: Response; abortError?: PlebbitError }> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
@@ -265,11 +266,12 @@ export class BaseClientsManager {
                 cache: options.cache,
                 signal: options.signal,
                 //@ts-expect-error, this option is for node-fetch
-                size: options.maxFileSizeBytes
+                size: options.maxFileSizeBytes,
+                headers: options.requestHeaders
             });
 
             if (res.status !== 200)
-                throw Error("Failed to fetch due to status code: " + res.status + " And res.statusText" + res.statusText);
+                throw Error(`Failed to fetch due to status code: ${res.status} + ", res.statusText" + (${res.statusText})`);
             if (options.shouldAbortRequestFunc) {
                 const abortError = await options.shouldAbortRequestFunc(res);
                 if (abortError) {
