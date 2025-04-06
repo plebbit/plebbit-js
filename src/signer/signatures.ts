@@ -590,14 +590,14 @@ export async function verifySubplebbit({
     if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey)) return { valid: true };
 
     if (subplebbit.posts?.pages && validatePages)
-        for (const pageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
-            const pageCid: string | undefined = subplebbit.posts.pageCids?.[pageSortName];
-            const page = subplebbit.posts.pages[pageSortName];
-            if (!remeda.isPlainObject(page)) throw Error("failed to find page ipfs of subplebbit to verify");
+        for (const preloadedPageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
+            const pageCid: string | undefined = subplebbit.posts.pageCids?.[preloadedPageSortName];
+            const preloadedPage = subplebbit.posts.pages[preloadedPageSortName];
+            if (!remeda.isPlainObject(preloadedPage)) throw Error("failed to find page ipfs of subplebbit to verify");
             const pageValidity = await verifyPage({
                 pageCid,
-                page,
-                pageSortName,
+                page: preloadedPage,
+                pageSortName: preloadedPageSortName,
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
@@ -609,7 +609,7 @@ export async function verifySubplebbit({
 
             if (!pageValidity.valid) {
                 log.error(
-                    `Subplebbit (${subplebbit.address}) page (${pageSortName} - ${subplebbit.posts.pageCids?.[pageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`
+                    `Subplebbit (${subplebbit.address}) page (${preloadedPageSortName} - ${subplebbit.posts.pageCids?.[preloadedPageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`
                 );
                 return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
             }
