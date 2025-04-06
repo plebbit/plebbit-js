@@ -488,8 +488,11 @@ export class SubplebbitClientsManager extends ClientsManager {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error!);
             const allGatewaysAborted = Object.keys(gatewayFetches)
-                .map((gatewayUrl) => gatewayFetches[gatewayUrl].error?.details?.statusText)
-                .every((errStatus) => errStatus === "Not Modified");
+                .map((gatewayUrl) => gatewayFetches[gatewayUrl].error!)
+                .every(
+                    (err) =>
+                        err.details?.status === 304 || err.code === "ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD"
+                );
             if (allGatewaysAborted) return undefined; // all gateways returned old update cids we already consumed
 
             const combinedError = new FailedToFetchSubplebbitFromGatewaysError({
