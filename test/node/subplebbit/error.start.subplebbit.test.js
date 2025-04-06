@@ -21,7 +21,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await plebbit.destroy();
     });
 
-    it(`subplebbit.start() recovers if the sync loop crashes once`, async () => {
+    it(`subplebbit.start() emits errors if the sync loop crashes once`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
@@ -41,7 +41,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         }
     });
 
-    it(`subplebbit.start() recovers if kubo API call  fails`, async () => {
+    it(`subplebbit.start() emits errors if kubo API call  fails`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
@@ -66,7 +66,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         }
     });
 
-    it(`subplebbit.start() recovers if subplebbit fails to calculate ipfs path for comment update`, async () => {
+    it(`subplebbit.start() emits errors if subplebbit fails to calculate ipfs path for comment update`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
