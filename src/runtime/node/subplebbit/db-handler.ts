@@ -797,6 +797,22 @@ export class DbHandler {
         return comment;
     }
 
+    async queryCommentModerationBySignatureEncoded(signatureEncoded: string, trx?: Transaction) {
+        const commentMod = await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+            .whereJsonPath("signature", "$.signature", "=", signatureEncoded)
+            .first();
+
+        return commentMod;
+    }
+
+    async queryCommentEditBySignatureEncoded(signatureEncoded: string, trx?: Transaction) {
+        const commentEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+            .whereJsonPath("signature", "$.signature", "=", signatureEncoded)
+            .first();
+
+        return commentEdit;
+    }
+
     async queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">[]> {
         const parents: Pick<CommentsTableRow, "cid">[] = [];
         let curParentCid = rootComment.parentCid;

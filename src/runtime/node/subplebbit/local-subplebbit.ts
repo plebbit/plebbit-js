@@ -1174,6 +1174,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
+            const commentModInDb = await this._dbHandler.queryCommentModerationBySignatureEncoded(
+                commentModerationPublication.signature.signature
+            );
+            if (commentModInDb) return messages.ERR_DUPLICATE_COMMENT_MODERATION;
         } else if (request.subplebbitEdit) {
             const subplebbitEdit = request.subplebbitEdit;
             if (remeda.intersection(SubplebbitEditPublicationPubsubReservedFields, remeda.keys.strict(subplebbitEdit)).length > 0)
@@ -1207,6 +1211,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const editSignedByOriginalAuthor = commentEditPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
 
             if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
+
+            const commentEditInDb = await this._dbHandler.queryCommentEditBySignatureEncoded(commentEditPublication.signature.signature);
+            if (commentEditInDb) return messages.ERR_DUPLICATE_COMMENT_EDIT;
         }
 
         return undefined;
