@@ -223,7 +223,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-describeSkipIfRpc(`Subplebbit emitting waiting-retry`, () => {
+describeSkipIfRpc(`Subplebbit waiting-retry`, () => {
     it(`subplebbit.update() emits error if loading subplebbit record times out - IPFS Gateway`, async () => {
         const stallingGateway = "http://127.0.0.1:14000"; // this gateway will wait for 11s before responding
         const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway], validatePages: true });
