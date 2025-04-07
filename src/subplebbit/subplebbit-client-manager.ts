@@ -150,12 +150,18 @@ export class SubplebbitClientsManager extends ClientsManager {
                     const error = <Error | PlebbitError>e;
                     if (!this._subplebbit._isRetriableErrorWhenLoading(error)) {
                         // critical error that can't be retried
+                        if (error instanceof PlebbitError)
+                            error.details = { ...error.details, countOfLoadAttempts: curAttempt, retriableError: false };
                         resolve({ criticalError: error });
                     } else {
                         // we encountered a retriable error, could be gateways failing to load
                         // does not include gateways returning an old record
-                        if (error instanceof PlebbitError) error.details.countOfLoadAttempts = curAttempt;
-                        log.trace(`Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt`, error);
+                        if (error instanceof PlebbitError)
+                            error.details = { ...error.details, countOfLoadAttempts: curAttempt, retriableError: true };
+                        log.trace(
+                            `Failed to load Subplebbit ${this._subplebbit.address} record for the ${curAttempt}th attempt. We will retry`,
+                            error
+                        );
 
                         this._subplebbit._setUpdatingStateNoEmission("waiting-retry");
                         this._subplebbit.emit("error", error);
@@ -343,18 +349,6 @@ export class SubplebbitClientsManager extends ClientsManager {
                     });
 
                 this._updateCidsAlreadyLoaded.add(calculatedSubCidFromBody);
-
-                const subCidFromResponseHeader = gatewayRes.res.headers.get("x-ipfs-roots")
-                    ? CID.parse(gatewayRes.res.headers.get("x-ipfs-roots")!).toV0().toString()
-                    : undefined;
-                if (subCidFromResponseHeader && calculatedSubCidFromBody !== subCidFromResponseHeader)
-                    throw new PlebbitError("ERR_GATEWAY_PROVIDED_INCORRECT_X_IPFS_ROOTS", {
-                        "header-x-ipfs-roots": subCidFromResponseHeader,
-                        "calculated-x-ipfs-roots": calculatedSubCidFromBody,
-                        bodyText: gatewayRes.resText,
-                        gatewayRes,
-                        gatewayUrl
-                    });
 
                 let subIpfs: SubplebbitIpfsType;
                 try {
