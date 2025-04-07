@@ -48,7 +48,7 @@ getRemotePlebbitConfigs().map((config) => {
             const subplebbitPage = subplebbit.posts.pageCids.new
                 ? await subplebbit.posts.getPage(subplebbit.posts.pageCids.new)
                 : subplebbit.posts.pages.hot;
-            if (subplebbitPage.comments.length < 10) {
+            if (!subplebbitPage || subplebbitPage.comments.length < 10) {
                 await Promise.all(
                     new Array(5).fill(null).map(async (x) => {
                         const post = await publishRandomPost(subplebbit.address, plebbit);
