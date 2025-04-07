@@ -46,6 +46,8 @@ export class BasePages {
             this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
             this._clientsManager.updatePagesMaxSizeCache(Object.values(this.pageCids), 1024 * 1024);
         }
+        for (const preloadedPage of Object.values(this.pages))
+            if (preloadedPage?.nextCid) this._clientsManager.updatePagesMaxSizeCache([preloadedPage.nextCid], 1024 * 1024);
     }
 
     protected _initClientsManager(plebbit: Plebbit) {
