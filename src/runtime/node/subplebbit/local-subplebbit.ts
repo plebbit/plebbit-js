@@ -1938,8 +1938,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setStartedState("failed");
             this._clientsManager.updateIpfsState("stopped");
 
-            log.error(`Failed to sync sub`, this.address, `due to error,`, errorTyped, "Error.message", errorTyped.message);
-            if (errorTyped.message.includes("database disk image is malformed")) {
+            log.error(
+                `Failed to sync sub`,
+                this.address,
+                `due to error,`,
+                errorTyped,
+                "Error.message",
+                errorTyped.message,
+                "Error keys",
+                Object.keys(errorTyped)
+            );
+
+            if ("code" in errorTyped && errorTyped.code === "SQLITE_CORRUPT") {
                 log("Subplebbit", this.address, "DB came across a sqlite error, attempting to repair it and continue the publish loop");
                 await this._dbHandler._attemptToRepairDb();
             }

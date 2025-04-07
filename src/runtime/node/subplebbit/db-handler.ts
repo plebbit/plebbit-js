@@ -40,6 +40,11 @@ import type { CommentModerationTableRow } from "../../../publications/comment-mo
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import KeyvSqlite from "@keyv/sqlite";
 
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execPromise = promisify(exec);
+
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -144,18 +149,69 @@ export class DbHandler {
         log.trace("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
 
+    // Check if SQLite3 CLI is available
+    async _isSqlite3Available(): Promise<boolean> {
+        try {
+            await execPromise("sqlite3 --version");
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async recoverUsingCliIfAvailable(dbPath: string): Promise<string> {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:recoverUsingCliIfAvailable");
+
+        const isCliAvailable = await this._isSqlite3Available();
+        if (!isCliAvailable) {
+            const errorMsg =
+                "SQLite3 CLI not found. Please install it to recover from database corruption:\n" +
+                "- Ubuntu/Debian: sudo apt install sqlite3\n" +
+                "- macOS: brew install sqlite3\n" +
+                "- Windows: Download from https://www.sqlite.org/download.html";
+
+            log.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        // Create paths for recovery
+        const dbDir = path.dirname(dbPath);
+        const dbName = path.basename(dbPath);
+        const recoveryDir = path.join(dbDir, ".recovery");
+        await fs.promises.mkdir(recoveryDir, { recursive: true });
+
+        const recoveredDbPath = path.join(recoveryDir, `recovered_${dbName}_${Date.now()}`);
+
+        try {
+            // Run the SQLite recovery command
+            log.trace(`Attempting to recover database using sqlite3 CLI: ${dbPath}`);
+
+            // Use sqlite3's .recover command and pipe to new database
+            const command = `sqlite3 "${dbPath}" ".recover" | sqlite3 "${recoveredDbPath}"`;
+            await execPromise(command);
+
+            // Verify the new database has basic integrity
+            await execPromise(`sqlite3 "${recoveredDbPath}" "PRAGMA integrity_check;"`);
+
+            log.trace(`Database successfully recovered to: ${recoveredDbPath}`);
+            return recoveredDbPath;
+        } catch (error) {
+            log.error(`Database recovery failed: ${error}`);
+            throw error;
+        }
+    }
+
     async _attemptToRepairDb() {
         // we're gonna call this if we're getting "database disk image is malformed" error
         const log = Logger("plebbit-js:local-subplebbit:db-handler:_attemptToRepairDb");
         await this.destoryConnection();
         await this.initDbConfigIfNeeded();
-        const knexTemp = knex(this._dbConfig);
-        const integrityCheck = await knexTemp.raw("PRAGMA integrity_check;");
-        log("integrity check result", integrityCheck);
-        const vaccum = await knexTemp.raw("VACUUM;");
-        log("vaccum result", vaccum);
+        //@ts-expect-error
+        const dbPath = <string>this._dbConfig.connection!.filename;
+        const recoveredDbPath = await this.recoverUsingCliIfAvailable(dbPath);
+        await fs.promises.rename(recoveredDbPath, dbPath);
+        log("Recovered db from", recoveredDbPath, "to", dbPath);
 
-        await knexTemp.destroy();
         await this.initDbIfNeeded();
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
