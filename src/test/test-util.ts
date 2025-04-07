@@ -160,9 +160,7 @@ export async function loadAllPagesBySortName(pageSortName: string, pagesInstance
     if (!pageSortName) throw Error("Can't load all pages with undefined pageSortName");
     if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages[pageSortName])
         return pagesInstance.pages[pageSortName].comments;
-    const pageCid = pagesInstance.pageCids[pageSortName];
-    if (!pageCid) throw Error(`Can't load all pages with undefined pageCid for pageSortName: ${pageSortName}`);
-    let sortedCommentsPage = await pagesInstance.getPage(pageCid);
+    let sortedCommentsPage = pagesInstance.pages[pageSortName] || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
@@ -1310,6 +1308,81 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     if (comment._plebbit._plebbitRpcClient)
         throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
+}
+
+export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment) {
+    // max comment size is 40kb = 40000
+    const rawCommentUpdateRecord = comment._rawCommentUpdate;
+    if (!rawCommentUpdateRecord) throw Error("Subplebbit should be updating before forcing to generate all pages");
+
+    if (Object.keys(comment.replies.pageCids).length > 0) return;
+    const curRecordSize = Buffer.byteLength(JSON.stringify(rawCommentUpdateRecord));
+
+    const maxCommentSize = 30000;
+    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+
+    let lastPublishedReply: Comment;
+    await Promise.all(
+        new Array(numOfCommentsToPublish).fill(null).map(async () => {
+            const content = "x".repeat(1024 * 30); //30kb
+
+            //@ts-expect-error
+            const reply = await publishRandomReply(comment, comment._plebbit, { content });
+
+            lastPublishedReply = reply;
+            return reply;
+        })
+    );
+
+    const updatingComment = await comment._plebbit.createComment(comment);
+    await updatingComment.update();
+    //@ts-expect-error
+    await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
+    if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
+}
+
+export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
+    // max comment size is 40kb = 40000
+    const rawSubplebbitRecord = subplebbit._rawSubplebbitIpfs;
+    if (!rawSubplebbitRecord) throw Error("Subplebbit should be updating before forcing to generate all pages");
+
+    if (Object.keys(subplebbit.posts.pageCids).length > 0) return;
+    const curRecordSize = Buffer.byteLength(JSON.stringify(rawSubplebbitRecord));
+
+    const maxCommentSize = 30000;
+    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+
+    let lastPublishedPost: Comment;
+    await Promise.all(
+        new Array(numOfCommentsToPublish).fill(null).map(async () => {
+            const content = "x".repeat(1024 * 30); //30kb
+            const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
+            lastPublishedPost = post;
+        })
+    );
+
+    //@ts-expect-error
+    await waitTillPostInSubplebbitPages(lastPublishedPost, subplebbit._plebbit);
+    const newSubplebbit = await subplebbit._plebbit.getSubplebbit(subplebbit.address);
+    if (Object.keys(newSubplebbit.posts.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
+}
+
+export function mockReplyToUsePostFlatPagesForUpdates(reply: Comment) {
+    const updatingComment = reply._plebbit._updatingComments[reply.cid!];
+    if (!updatingComment) throw Error("Reply should be updating before starting to mock");
+    if (updatingComment.depth === 0) throw Error("Should not call this function on a post");
+
+    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
+
+    const originalFunc = updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate.bind(
+        updatingComment._clientsManager
+    );
+
+    updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate = (postInstance) => {
+        // this should stop plebbit-js from assuming the post replies is a single preloaded page
+        postInstance.replies.pageCids.randomPage = "QmRCzp6x9QTYAjhFuj3CgGgruknMqvSJb8oJ77GHecTkKb";
+        return originalFunc(postInstance);
+    };
 }
 
 export function mockUpdatingCommentResolvingAuthor(

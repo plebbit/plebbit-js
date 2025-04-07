@@ -6,6 +6,7 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     loadAllPagesBySortName,
     waitTillPostInSubplebbitPages,
+    forceSubplebbitToGenerateAllPostsPages,
     publishRandomReply,
     isPlebbitFetchingUsingGateways,
     resolveWhenConditionIsTrue,
@@ -43,6 +44,8 @@ getRemotePlebbitConfigs().map((config) => {
             newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
             await waitTillPostInSubplebbitPages(newPost, plebbit);
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            await forceSubplebbitToGenerateAllPostsPages(subplebbit); // the goal of this is to force the subplebbit to have all pages
+            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 
         it(`Stringified comment.replies still have all props`, async () => {
@@ -76,10 +79,22 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
         it(`Hot page is pre-loaded`, () => expect(Object.keys(subplebbit.posts.pages)).to.include("hot"));
-        it(`All pageCids exists`, () => {
+        it(`All pageCids exists except preloaded`, () => {
             // If we have pre-loaded pages, we don't need to check for pageCids
-            if (Object.keys(subplebbit.posts.pageCids).length !== 0)
-                expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
+            if (Object.keys(subplebbit.posts.pageCids).length > 0) {
+                const pageCidsWithoutPreloaded = Object.keys(subplebbit.posts.pageCids).filter(
+                    (pageCid) => !Object.keys(subplebbit.posts.pages).includes(pageCid)
+                );
+
+                expect(pageCidsWithoutPreloaded.length).to.be.greaterThan(0);
+                expect(pageCidsWithoutPreloaded.sort()).to.deep.equal(Object.keys(subplebbit.posts.pageCids).sort());
+
+                const allSortsWithoutPreloaded = Object.keys(POSTS_SORT_TYPES).filter(
+                    (sortName) => !Object.keys(subplebbit.posts.pages).includes(sortName)
+                );
+                expect(allSortsWithoutPreloaded.length).to.be.greaterThan(0);
+                expect(allSortsWithoutPreloaded.sort()).to.deep.equal(Object.keys(subplebbit.posts.pageCids).sort());
+            }
         });
         Object.keys(POSTS_SORT_TYPES).map((sortName) =>
             it(`${sortName} pages are sorted correctly if there's more than a single page`, async () =>
