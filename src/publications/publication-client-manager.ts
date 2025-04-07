@@ -100,16 +100,7 @@ export class PublicationClientsManager extends ClientsManager {
         // should be handled in comment-client-manager
     }
 
-    handleErrorEventFromSub(err: PlebbitError | Error) {
-        // a non retriable error of the sub
-        const log = Logger("plebbit-js:publication:publish");
-
-        log.error("Publication received a non retriable error from its subplebbit instance. Will stop publishing", err);
-
-        this._publication._updatePublishingStateNoEmission("failed");
-        this._publication.emit("error", err);
-        this._publication.emit("publishingstatechange", "failed");
-    }
+    handleErrorEventFromSub(err: PlebbitError | Error) {}
 
     handleIpfsGatewaySubplebbitState(
         subplebbitNewGatewayState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"],
