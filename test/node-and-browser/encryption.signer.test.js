@@ -1,12 +1,9 @@
+import { expect } from "chai";
 import fixtureSigners from "../fixtures/signers.js";
 const authorSignerFixture = fixtureSigners[1];
 const subplebbitSignerFixture = fixtureSigners[2];
 import { comment as fixtureComment } from "../fixtures/publications.js";
 import { encryptEd25519AesGcm, decryptEd25519AesGcm, encryptStringAesGcm, decryptStringAesGcm } from "../../dist/node/signer/encryption.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect } = chai;
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { mockRemotePlebbit } from "../../dist/node/test/test-util.js";

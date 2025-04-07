@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -15,13 +16,8 @@ import {
     waitTillReplyInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { signComment } from "../../../../dist/node/signer/signatures.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
@@ -254,7 +250,6 @@ getRemotePlebbitConfigs().map((config) => {
                 expect.fail("should fail");
             } catch (e) {
                 expect(e.code).to.be.oneOf(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]);
-                // await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
             }
             expect(post.publishingState).to.equal("failed");
             expect(post.state).to.equal("stopped");
@@ -437,7 +432,12 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
 
         const errorPromise = new Promise((resolve) => mockPost.once("error", resolve));
 
-        await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
+        try {
+            await mockPost.publish();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+        }
         const emittedError = await errorPromise;
         expect(emittedError.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
 

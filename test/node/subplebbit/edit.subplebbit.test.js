@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     publishRandomPost,
     mockPlebbit,
@@ -20,12 +21,7 @@ import fs from "fs";
 import path from "path";
 import * as remeda from "remeda";
 
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { v4 as uuidV4 } from "uuid";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describeSkipIfRpc(`subplebbit.edit`, async () => {
     let plebbit, remotePlebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
@@ -411,7 +407,7 @@ describe(`Editing subplebbit.roles`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
-        await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
+        await remotePlebbit.getSubplebbit(newSub.address); // no problem with signature
 
         const newRoles = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
         await newSub.edit({ roles: newRoles });

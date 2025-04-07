@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     getPendingChallengesOrChallengeVerification,
     getChallengeVerificationFromChallengeAnswers,
@@ -5,12 +6,11 @@ import {
     plebbitJsChallenges,
     getSubplebbitChallengeFromSubplebbitChallengeSettings
 } from "../../dist/node/runtime/node/subplebbit/challenges/index";
-import { expect } from "chai";
 import * as remeda from "remeda";
 import { Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results } from "./fixtures/fixtures";
 
-import validChallengeRequestFixture from "../fixtures/signatures/challenges/valid_challenge_request.json" assert { type: "json" };
-import validCommentIpfsFixture from "../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" assert { type: "json" };
+import validChallengeRequestFixture from "../fixtures/signatures/challenges/valid_challenge_request.json" with { type: "json" };
+import validCommentIpfsFixture from "../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
 
 const parsePubsubMsgFixture = (json) => {
     // Convert stringified pubsub msg with buffers to regular pubsub msg with uint8Array for buffers

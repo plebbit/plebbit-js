@@ -1,12 +1,8 @@
+import { expect } from "chai";
 import PlebbitWsServer from "../../dist/node/rpc/src/index";
 import { describeSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import os from "os";
 import Plebbit from "../../dist/node";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const getLanIpV4Address = () => {
     const allInterfaces = os.networkInterfaces();
     for (const k in allInterfaces) {

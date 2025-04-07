@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import Plebbit from "../../../../../dist/node/index.js";
 import signers from "../../../../fixtures/signers.js";
 import {
@@ -8,12 +9,6 @@ import {
     resolveWhenConditionIsTrue,
     addStringToIpfs
 } from "../../../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const subplebbitAddress = signers[0].address;
 
 describe(`comment.replies.clients`, async () => {

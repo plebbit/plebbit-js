@@ -1,9 +1,5 @@
+import { expect } from "chai";
 import { mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
-import chai from "chai";
-
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 describe(`Subplebbit.updateCid`, async () => {
     let plebbit;
     before(async () => {

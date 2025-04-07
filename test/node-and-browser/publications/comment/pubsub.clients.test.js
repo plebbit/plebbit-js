@@ -1,4 +1,4 @@
-import Plebbit from "../../../../dist/node/index.js";
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -8,14 +8,7 @@ import {
     generatePostToAnswerMathQuestion,
     describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import { messages } from "../../../../dist/node/errors.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-
 import { createMockPubsubClient } from "../../../../dist/node/test/mock-ipfs-client.js";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
@@ -97,7 +90,12 @@ describeSkipIfRpc(`comment.clients.pubsubKuboRpcClients`, async () => {
 
         mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
-        await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
+        try {
+            await mockPost.publish();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+        }
 
         expect(actualStates).to.deep.equal(expectedStates);
     });

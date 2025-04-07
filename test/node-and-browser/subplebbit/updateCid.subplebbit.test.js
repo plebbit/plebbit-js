@@ -1,10 +1,5 @@
+import { expect } from "chai";
 import { getRemotePlebbitConfigs, resolveWhenConditionIsTrue, createMockedSubplebbitIpns } from "../../../dist/node/test/test-util.js";
-import chai from "chai";
-
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 getRemotePlebbitConfigs().map((config) =>
     describe(`subplebbit.updateCid (Remote) - ${config.name}`, async () => {
         let plebbit;

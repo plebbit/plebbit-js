@@ -10,7 +10,7 @@ import {
     publishChallengeVerificationMessageWithExtraProps,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
-import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
+import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import * as remeda from "remeda";
 

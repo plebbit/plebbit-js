@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     generateMockPost,
     publishWithExpectedResult,
@@ -14,7 +15,6 @@ import {
     verifyCommentPubsubMessage
 } from "../../../dist/node/signer/signatures.js";
 import signers from "../../fixtures/signers.js";
-import { expect, assert } from "chai";
 import { messages } from "../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { default as PlebbitJsVersion } from "../../../dist/node/version.js";
@@ -22,10 +22,10 @@ import { encode as cborgEncode, decode as cborgDecode } from "cborg";
 import { getBufferedPlebbitAddressFromPublicKey } from "../../../dist/node/signer/util.js";
 import { encryptEd25519AesGcm } from "../../../dist/node/signer/index.js";
 import { timestamp } from "../../../dist/node/util.js";
-import validChallengeRequestFixture from "../../fixtures/signatures/challenges/valid_challenge_request.json" assert { type: "json" };
-import validChallengeFixture from "../../fixtures/signatures/challenges/valid_challenge_message.json" assert { type: "json" };
-import validChallengeAnswerFixture from "../../fixtures/signatures/challenges/valid_challenge_answer.json" assert { type: "json" };
-import validChallengeVerificationFixture from "../../fixtures/signatures/challenges/valid_challenge_verification.json" assert { type: "json" };
+import validChallengeRequestFixture from "../../fixtures/signatures/challenges/valid_challenge_request.json" with { type: "json" };
+import validChallengeFixture from "../../fixtures/signatures/challenges/valid_challenge_message.json" with { type: "json" };
+import validChallengeAnswerFixture from "../../fixtures/signatures/challenges/valid_challenge_answer.json" with { type: "json" };
+import validChallengeVerificationFixture from "../../fixtures/signatures/challenges/valid_challenge_verification.json" with { type: "json" };
 
 const mathCliSubplebbitAddress = signers[1].address;
 
@@ -188,7 +188,7 @@ describeSkipIfRpc("challengerequest", async () => {
                     msgParsed.type === "CHALLENGEVERIFICATION" &&
                     msgParsed.challengeRequestId === requestWithInvalidSignature.challengeRequestId
                 ) {
-                    assert.fail("Subplebbit should not respond to a challenge request with invalid signature");
+                    expect.fail("Subplebbit should not respond to a challenge request with invalid signature");
                 }
             };
             await plebbit._clientsManager.pubsubSubscribe(comment._subplebbit.pubsubTopic, subMethod);
@@ -311,7 +311,7 @@ describeSkipIfRpc("challengeanswer", async () => {
         const subMethod = (pubsubMsg) => {
             const msgParsed = cborgDecode(pubsubMsg["data"]);
             if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === challengeRequest.challengeRequestId) {
-                assert.fail("Subplebbit should ignore a challenge answer with invalid signature");
+                expect.fail("Subplebbit should ignore a challenge answer with invalid signature");
             }
         };
 

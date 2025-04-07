@@ -1,6 +1,5 @@
-import { testRateLimit, addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter.js";
 import { expect } from "chai";
-
+import { testRateLimit, addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter.js";
 // sometimes use random addresses because the rate limiter
 // is based on author addresses and doesn't reset between tests
 const getRandomAddress = () => String(Math.random());

@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -8,12 +9,6 @@ import {
     itSkipIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
-import { messages } from "../../../../dist/node/errors.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
@@ -187,7 +182,12 @@ describe(`comment.publishingState`, async () => {
         offlinePubsubPlebbit.on("error", () => {});
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 
-        await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
+        try {
+            await mockPost.publish();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+        }
 
         expect(mockPost.publishingState).to.equal("failed");
         expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].state).to.equal("stopped");

@@ -1,12 +1,12 @@
+import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { verifyPage } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
-import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { v4 as uuidV4 } from "uuid";
 
-import validPageIpfsFixture from "../../fixtures/valid_page.json" assert { type: "json" };
+import validPageIpfsFixture from "../../fixtures/valid_page.json" with { type: "json" };
 
 const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 

@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
@@ -6,8 +7,6 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
-
 const subplebbitAddress = signers[0].address;
 const roles = [
     { role: "owner", signer: signers[1] },

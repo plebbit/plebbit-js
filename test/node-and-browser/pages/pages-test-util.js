@@ -1,6 +1,6 @@
+import { expect } from "chai";
 import { loadAllUniqueCommentsUnderCommentInstance } from "../../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
-import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 const subplebbitAddress = signers[0].address;

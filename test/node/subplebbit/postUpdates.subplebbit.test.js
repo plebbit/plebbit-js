@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     publishRandomPost,
@@ -9,11 +10,6 @@ import {
     waitTillPostInSubplebbitPages,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit, remotePlebbit;

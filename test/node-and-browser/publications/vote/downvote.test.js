@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockVote,
@@ -8,11 +9,6 @@ import {
     getRemotePlebbitConfigs
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
-
-import chai from "chai";
-import { expect, assert } from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
 
 const subplebbitAddress = signers[0].address;
 

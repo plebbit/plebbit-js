@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     generateMockPost,
     publishWithExpectedResult,
@@ -9,16 +10,11 @@ import {
 
 import signers from "../../../fixtures/signers";
 import Sinon from "sinon";
-import chai from "chai";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import chaiAsPromised from "chai-as-promised";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
 import { v4 as uuidV4 } from "uuid";
 
 import { createPublicClient, http } from "viem";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describeSkipIfRpc(`Test evm-contract challenge`, async () => {
     const viemSandbox = Sinon.createSandbox();
 

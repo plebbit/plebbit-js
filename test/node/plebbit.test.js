@@ -1,5 +1,5 @@
-import Plebbit from "../../dist/node";
 import { expect } from "chai";
+import Plebbit from "../../dist/node";
 import { itIfRpc, itSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util";
 
 // example of node only tests

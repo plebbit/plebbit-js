@@ -1,13 +1,9 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import { describeIfRpc, createNewIpns, resolveWhenConditionIsTrue, mockRpcRemotePlebbit } from "../../../dist/node/test/test-util.js";
 
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
     let plebbit;
 

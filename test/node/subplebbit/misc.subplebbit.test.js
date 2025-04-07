@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     publishRandomPost,
@@ -20,12 +21,7 @@ import signers from "../../fixtures/signers";
 import path from "path";
 import fs from "fs";
 
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import EventEmitter from "events";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describe("plebbit.subplebbits", async () => {
     let plebbit, subSigner;
     before(async () => {

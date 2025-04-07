@@ -1,5 +1,4 @@
 import { expect } from "chai";
-
 import { getRemotePlebbitConfigs, publishRandomPost, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 

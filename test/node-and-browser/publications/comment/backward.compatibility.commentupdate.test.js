@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
@@ -9,16 +10,11 @@ import {
     mockCommentToReturnSpecificCommentUpdate,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../../../dist/node/errors.js";
 import { _signJson } from "../../../../dist/node/signer/signatures.js";
-import validCommentUpdateFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
+import validCommentUpdateFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 

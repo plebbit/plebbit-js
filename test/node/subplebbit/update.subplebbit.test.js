@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     createSubWithNoChallenge,
     isRpcFlagOn,
@@ -5,10 +6,6 @@ import {
     publishRandomPost,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 describe(`subplebbit.update - Local subs`, async () => {
     let plebbit;
     before(async () => {

@@ -1,5 +1,5 @@
-import Plebbit from "../../dist/node";
 import { expect } from "chai";
+import Plebbit from "../../dist/node";
 import { createSubWithNoChallenge } from "../../dist/node/test/test-util";
 
 import tcpPortUsed from "tcp-port-used";
@@ -13,7 +13,7 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     let plebbit;
 
     it(`Plebbit({kuboRpcClientsOptions}) sets correct default http routers`, async () => {
-        const plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter] });
+        const plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], dataPath: undefined });
         expect(plebbit.httpRoutersOptions).to.deep.equal([
             "https://peers.pleb.bot",
             "https://routing.lol",
@@ -25,7 +25,7 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     });
 
     it(`Plebbit({kuboRpcClientsOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+        plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls, dataPath: undefined });
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
 
         expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);

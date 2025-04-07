@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -7,7 +8,6 @@ import {
     getRemotePlebbitConfigs,
     iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
 import { timestamp } from "../../../../dist/node/util.js";
 

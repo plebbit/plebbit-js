@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     getRemotePlebbitConfigs,
     publishRandomPost,
@@ -5,8 +6,6 @@ import {
     resolveWhenConditionIsTrue,
     setExtraPropOnCommentEditAndSign
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
-
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
 

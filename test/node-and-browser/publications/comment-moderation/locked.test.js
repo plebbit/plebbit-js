@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     publishRandomPost,
@@ -11,7 +12,6 @@ import {
     iterateThroughPagesToFindCommentInParentPagesInstance,
     iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;

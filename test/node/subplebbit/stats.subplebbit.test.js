@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     publishRandomPost,
@@ -10,11 +11,6 @@ import {
 } from "../../../dist/node/test/test-util";
 
 import signers from "../../fixtures/signers";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 const activeUserCountKeys = [
     "allActiveUserCount",

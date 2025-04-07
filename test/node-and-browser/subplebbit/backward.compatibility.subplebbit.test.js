@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
 
 import {
@@ -6,11 +7,6 @@ import {
     publishSubplebbitRecordWithExtraProp,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 getRemotePlebbitConfigs().map((config) => {
     describe(`plebbit.createSubplebbit - Backward Compatiblity - ${config.name}`, async () => {

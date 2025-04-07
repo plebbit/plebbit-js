@@ -8,7 +8,7 @@ import {
 import signers from "../../fixtures/signers.js";
 import { sha256 } from "js-sha256";
 
-import validPageFixture from "../../fixtures/valid_page.json" assert { type: "json" };
+import validPageFixture from "../../fixtures/valid_page.json" with { type: "json" };
 
 const subplebbitAddress = signers[0].address;
 

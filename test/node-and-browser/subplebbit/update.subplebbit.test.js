@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import {
@@ -14,12 +15,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import { _signJson } from "../../../dist/node/signer/signatures.js";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const ensSubplebbitSigner = signers[3];
 
 getRemotePlebbitConfigs().map((config) => {

@@ -1,7 +1,4 @@
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
+import { expect } from "chai";
 import signers from "../../fixtures/signers";
 
 import path from "path";
@@ -118,7 +115,7 @@ describeSkipIfRpc("DB Migration", () => {
             const subplebbit = await plebbit.createSubplebbit({ address: databaseInfo.address });
             expect(subplebbit.started).to.be.a("boolean"); // make sure it's creating a local sub instance
 
-            await assert.isFulfilled(subplebbit.start());
+            await subplebbit.start();
 
             await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
             await subplebbit.edit({ settings: { ...subplebbit.settings, challenges: [] } });

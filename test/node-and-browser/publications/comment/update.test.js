@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     publishRandomPost,
@@ -13,13 +14,7 @@ import {
     isPlebbitFetchingUsingGateways,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-
 import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
@@ -186,6 +181,10 @@ getRemotePlebbitConfigs().map((config) => {
             cidOfCommentIpfsWithInvalidSchema = await addCommentIpfsWithInvalidSchemaToIpfs();
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(sub.posts.pages.hot.comments[0].cid);
+        });
+
+        after(async () => {
+            await plebbit.destroy();
         });
 
         it(`plebbit.createComment({cid}).update() emits error and stops updating if signature of CommentIpfs is invalid`, async () => {

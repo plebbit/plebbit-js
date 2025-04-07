@@ -31,8 +31,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await postToVote.stop();
-            await replyToVote.stop();
+            await plebbit.destroy();
         });
 
         it(`(vote: Vote) === plebbit.createVote(JSON.parse(JSON.stringify(vote)))`, async () => {

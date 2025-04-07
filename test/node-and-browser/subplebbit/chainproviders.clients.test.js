@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import {
@@ -8,11 +9,6 @@ import {
     mockPlebbitV2,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {

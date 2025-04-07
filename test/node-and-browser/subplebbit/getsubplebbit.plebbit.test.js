@@ -1,10 +1,6 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import { messages } from "../../../dist/node/errors.js";
 
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { createNewIpns, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
 
@@ -41,7 +37,12 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
-            await assert.isRejected(plebbit.getSubplebbit("testSub.eth"), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+            try {
+                await plebbit.getSubplebbit("testSub.eth");
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");
+            }
         });
 
         it(`plebbit.getSubplebbit is not fetching subplebbit updates in background after fulfilling its promise`, async () => {

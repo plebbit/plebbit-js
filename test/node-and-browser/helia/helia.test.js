@@ -1,3 +1,4 @@
+import { expect } from "chai";
 // should connect to a kubo node and exchange pubsub messages with it
 // DO NOT MOCK PUBSUB
 
@@ -8,8 +9,6 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
-import { expect } from "chai";
-
 const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
 
 describe.skip(`Test publishing pubsub`, async () => {

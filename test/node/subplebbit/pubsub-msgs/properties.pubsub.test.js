@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     generateMockPost,
@@ -5,11 +6,6 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describe("Validate props of subplebbit Pubsub messages", async () => {
     let plebbit, subplebbit, commentSigner;
     before(async () => {

@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
@@ -6,12 +7,6 @@ import {
     publishVote,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs().map((config) => {
@@ -26,8 +21,6 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await post.stop();
-            await reply.stop();
             await plebbit.destroy();
         });
 
@@ -59,7 +52,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await post.stop();
+            await plebbit.destroy();
         });
 
         it(`commentUpdate.lastChildCid updates to the latest child comment when replying to post directly`, async () => {

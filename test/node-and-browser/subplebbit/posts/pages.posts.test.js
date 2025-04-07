@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     publishRandomPost,
     mockGatewayPlebbit,
@@ -16,7 +17,6 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "../../pages/pages-test-util.js";
-import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";

@@ -1,11 +1,6 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import { generateMockPost, mockRemotePlebbit, publishWithExpectedResult } from "../../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const subplebbitAddress = signers[0].address;
 
 describe(`comment.state`, async () => {

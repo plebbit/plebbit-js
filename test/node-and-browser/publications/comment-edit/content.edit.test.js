@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
@@ -6,7 +7,6 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 const subplebbitAddress = signers[0].address;

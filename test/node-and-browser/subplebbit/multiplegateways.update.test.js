@@ -1,10 +1,6 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
@@ -71,8 +67,12 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] });
         customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
-        // should faill
-        await assert.isRejected(customPlebbit.getSubplebbit(subAddress), messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
+        try {
+            await customPlebbit.getSubplebbit(subAddress);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+        }
     });
 
     it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {

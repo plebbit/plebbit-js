@@ -1,9 +1,6 @@
+import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
 import { parseDbResponses } from "../../dist/node/util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 import { describeSkipIfRpc } from "../../dist/node/test/test-util.js";
 
 describeSkipIfRpc(`Test parsing of database queries`, async () => {

@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
 
@@ -13,11 +14,7 @@ import {
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import * as remeda from "remeda";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-import validSubplebbitJsonfiedFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_jsonfied.json" assert { type: "json" };
+import validSubplebbitJsonfiedFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_jsonfied.json" with { type: "json" };
 
 const subplebbitAddress = signers[0].address;
 
@@ -95,12 +92,22 @@ describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
         plebbit = await mockPlebbitV2({ remotePlebbit: true });
     });
     it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
-        await assert.isRejected(plebbit.createSubplebbit({ address: "testSub.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+        try {
+            await plebbit.createSubplebbit({ address: "testSub.eth" });
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");
+        }
     });
 
     it("plebbit.createSubplebbit({address}) throws if subplebbit address isn't an ipns or domain", async () => {
         const invalidAddress = "0xdeadbeef";
-        await assert.isRejected(plebbit.createSubplebbit({ address: invalidAddress }), messages.ERR_INVALID_SUBPLEBBIT_ADDRESS);
+        try {
+            await plebbit.createSubplebbit({ address: invalidAddress });
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA");
+        }
     });
     if (!isRpcFlagOn() && isRunningInBrowser())
         it(`plebbit.createSubplebbit({}) should throw if no rpc and on browser`, async () => {

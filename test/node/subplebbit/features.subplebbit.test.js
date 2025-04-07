@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     createSubWithNoChallenge,
@@ -11,11 +12,6 @@ import {
     publishRandomReply
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;

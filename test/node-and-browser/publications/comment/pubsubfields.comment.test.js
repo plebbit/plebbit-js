@@ -1,7 +1,6 @@
+import { expect } from "chai";
 import { generateMockPost, getRemotePlebbitConfigs, publishWithExpectedResult } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
-import { expect } from "chai";
-
 getRemotePlebbitConfigs().map((config) => {
     describe(`Pubsub request fields in plebbit.createComment - ${config.name}`, async () => {
         let plebbit;

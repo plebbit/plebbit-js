@@ -1,14 +1,11 @@
+import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 import * as remeda from "remeda";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures.js";
-import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
+import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" with { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
     before(async () => {
@@ -44,12 +41,22 @@ describe("Sign commentedit", async () => {
     it(`signCommentEdit throws with author.address not being an IPNS or domain`, async () => {
         const cloneEdit = remeda.clone(editProps);
         cloneEdit.author.address = "gibbreish";
-        assert.isRejected(signCommentEdit(cloneEdit, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
+        try {
+            await signCommentEdit({ ...cloneEdit, signer: signers[7] }, plebbit);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER");
+        }
     });
     it(`SignCommentEdit throws with author.address=undefined`, async () => {
         const cloneEdit = remeda.clone(editProps);
         cloneEdit.author.address = undefined;
-        assert.isRejected(signCommentEdit(cloneEdit, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
+        try {
+            await signCommentEdit({ ...cloneEdit, signer: signers[7] }, plebbit);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_UNDEFINED");
+        }
     });
 });
 

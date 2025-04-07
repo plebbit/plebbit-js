@@ -1,10 +1,7 @@
+import { expect } from "chai";
 import { mockPlebbitNoDataPathWithOnlyKuboClient } from "../../dist/node/test/test-util.js";
 import fixtureSigners from "../fixtures/signers.js";
 import { signBufferEd25519, verifyBufferEd25519 } from "../../dist/node/signer/signatures.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 const authorSignerFixture = fixtureSigners[1];
 
@@ -30,11 +27,22 @@ describe("signer (node and browser)", async () => {
 
         it("can't sign strings", async () => {
             //signBufferEd25519 should not be used to sign strings it dosn't encode properly in the browser
-            await assert.isRejected(signBufferEd25519(string, authorSigner.privateKey));
+
+            try {
+                await signBufferEd25519(string, authorSigner.privateKey);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.message).to.equal("signBufferEd25519 invalid bufferToSign '1111111111111111' not buffer");
+            }
         });
 
         it("can't sign undefined", async () => {
-            await assert.isRejected(signBufferEd25519(undefined, authorSigner.privateKey));
+            try {
+                await signBufferEd25519(undefined, authorSigner.privateKey);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.message).to.equal("signBufferEd25519 invalid bufferToSign 'undefined' not buffer");
+            }
         });
 
         it("can sign buffers and uint8arrays", () => {

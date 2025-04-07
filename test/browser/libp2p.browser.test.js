@@ -1,6 +1,6 @@
+import { expect } from "chai";
 // In this test we're gonna publish a couple of publications to the online sub we started in test-server.js
 import Plebbit from "../../dist/node/index.js";
-import { expect } from "chai";
 import {
     createOnlinePlebbit,
     fetchTestServerSubs,

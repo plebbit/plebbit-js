@@ -1,6 +1,5 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
 import {
     loadAllPages,
     getRemotePlebbitConfigs,
@@ -9,9 +8,6 @@ import {
     isPlebbitFetchingUsingGateways
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const fixtureSigner = signers[0];
 const subplebbitSigner = signers[0];
 

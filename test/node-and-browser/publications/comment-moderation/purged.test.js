@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     publishRandomPost,
@@ -13,7 +14,6 @@ import {
     describeSkipIfRpc,
     iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
 import { CID } from "kubo-rpc-client";
 

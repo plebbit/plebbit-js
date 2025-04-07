@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
@@ -13,11 +14,6 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const subplebbitAddress = signers[0].address;
 
 describe(`Client side verification`, async () => {
@@ -30,7 +26,13 @@ describe(`Client side verification`, async () => {
         const pubsubPublication = JSON.parse(JSON.stringify(mockComment.toJSONPubsubMessagePublication()));
         pubsubPublication.timestamp += 1; // corrupts signature
         mockComment.toJSONPubsubMessagePublication = () => pubsubPublication;
-        await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
+
+        try {
+            await mockComment.publish();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SIGNATURE_IS_INVALID");
+        }
     });
 
     itSkipIfRpc(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {

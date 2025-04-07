@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     loadAllPages,
     publishRandomPost,
@@ -5,13 +6,13 @@ import {
     getRemotePlebbitConfigs,
     publishRandomReply,
     mockPlebbitV2,
+    forceSubplebbitToGenerateAllRepliesPages,
     isPlebbitFetchingUsingGateways,
     waitTillReplyInParentPagesInstance,
     resolveWhenConditionIsTrue,
     itSkipIfRpc
 } from "../../../../../dist/node/test/test-util.js  ";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";
-import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { messages } from "../../../../../dist/node/errors.js";
@@ -60,11 +61,13 @@ getRemotePlebbitConfigs().map((config) => {
             secondLevelReply = await publishRandomReply(firstLevelReply, plebbit);
             thirdLevelReply = await publishRandomReply(secondLevelReply, plebbit);
             await postWithNestedReplies.update();
+            await resolveWhenConditionIsTrue(postWithNestedReplies, () => typeof postWithNestedReplies.updatedAt === "number");
+            await forceSubplebbitToGenerateAllRepliesPages(postWithNestedReplies, plebbit);
             await waitTillReplyInParentPagesInstance(thirdLevelReply, postWithNestedReplies);
         });
 
         after(async () => {
-            await postWithNestedReplies.stop();
+            await plebbit.destroy();
         });
 
         it(`Stringified comment.replies still have all props`, async () => {

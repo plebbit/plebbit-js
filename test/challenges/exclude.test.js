@@ -1,15 +1,15 @@
+import { expect } from "chai";
 import {
     shouldExcludeChallengeCommentCids,
     shouldExcludePublication,
     shouldExcludeChallengeSuccess
 } from "../../dist/node/runtime/node/subplebbit/challenges/exclude";
 import { addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter";
-import { expect } from "chai";
 import * as remeda from "remeda";
 import { Plebbit, authors } from "./fixtures/fixtures";
-import validCommentEditFixture from "../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
-import validCommentFixture from "..//fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" assert { type: "json" };
-import validVoteFixture from "../fixtures/valid_vote.json" assert { type: "json" };
+import validCommentEditFixture from "../fixtures/signatures/commentEdit/valid_comment_edit.json" with { type: "json" };
+import validCommentFixture from "..//fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
+import validVoteFixture from "../fixtures/valid_vote.json" with { type: "json" };
 
 // sometimes use random addresses because the rate limiter
 // is based on author addresses and doesn't reset between tests

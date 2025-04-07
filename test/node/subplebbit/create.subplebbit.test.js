@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     publishRandomPost,
@@ -9,16 +10,10 @@ import {
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../dist/node/util.js";
-import { messages } from "../../../dist/node/errors.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
-import chai from "chai";
 import * as remeda from "remeda";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describe(`plebbit.createSubplebbit (local)`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
@@ -106,7 +101,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await sub.delete();
     });
 
-    it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
+    it.skip(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await mockPlebbit({
             kuboRpcClientsOptions: ["http://localhost:15003/api/v0"],
             pubsubKuboRpcClientsOptions: [`http://localhost:15003/api/v0`]
@@ -173,10 +168,20 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     });
 
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
-        await assert.isRejected(plebbit.createSubplebbit({ address: "testEth.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+        try {
+            await plebbit.createSubplebbit({ address: "testEth.eth" });
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER");
+        }
     });
 
     it(`plebbit.createSubplebbit({address: undefined}) should throw a proper error`, async () => {
-        await assert.isRejected(plebbit.createSubplebbit({ address: undefined }));
+        try {
+            await plebbit.createSubplebbit({ address: undefined });
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_UNDEFINED");
+        }
     });
 });

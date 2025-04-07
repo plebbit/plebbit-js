@@ -1,8 +1,5 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 import {
     describeSkipIfRpc,
     publishRandomPost,
@@ -57,8 +54,8 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
         sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
-        sub.update();
-        await new Promise((resolve) => sub.once("update", resolve));
+        await sub.update();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await sub.stop();
 
         expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);

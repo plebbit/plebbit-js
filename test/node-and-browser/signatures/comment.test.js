@@ -1,7 +1,4 @@
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
+import { expect } from "chai";
 import { mockRemotePlebbit, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import {
     signComment,
@@ -15,12 +12,12 @@ import { messages } from "../../../dist/node/errors.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
 import * as remeda from "remeda";
-import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" assert { type: "json" };
-import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
-import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json" assert { type: "json" };
-import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
-import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_update.json" assert { type: "json" };
-import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_ipfs.json" assert { type: "json" };
+import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
+import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" with { type: "json" };
+import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json" with { type: "json" };
+import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
+import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_update.json" with { type: "json" };
+import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_ipfs.json" with { type: "json" };
 import { comment as fixtureComment } from "../../fixtures/publications.js";
 
 const fixtureSignature = {
@@ -82,26 +79,33 @@ describe("sign comment", async () => {
         const randomSigner = signers[3];
         // Trying to sign a publication with author.address !== randomSigner.address
         // should throw an error
-        await assert.isRejected(
-            signComment({ ...fixtureComment, signer: randomSigner }, plebbit),
-            messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER
-        );
+        try {
+            await signComment({ ...fixtureComment, signer: randomSigner }, plebbit);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER");
+        }
     });
 
     it(`signComment throws with author.address not being an IPNS or domain`, async () => {
         const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = "gibbreish";
-        await assert.isRejected(
-            signComment({ ...cloneComment, signer: signers[7] }, plebbit),
-            messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER
-        );
+        try {
+            await signComment({ ...cloneComment, signer: signers[7] }, plebbit);
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER");
+        }
     });
     it(`signComment throws with author.address=undefined`, async () => {
         const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = undefined;
-        await assert.isRejected(signComment({ ...cloneComment, signer: signers[7] }, plebbit), messages.ERR_AUTHOR_ADDRESS_UNDEFINED);
+        try {
+            await signComment({ ...cloneComment, signer: signers[7] }, plebbit);
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_UNDEFINED");
+        }
     });
     it("can sign a comment with author.displayName = undefined", async () => {
         const signer = signers[4];

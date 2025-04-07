@@ -1,8 +1,6 @@
+import { expect } from "chai";
 import Plebbit from "../../../dist/node/index.js";
 import signers from "../../fixtures/signers.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-import { messages } from "../../../dist/node/errors.js";
 import {
     mockRemotePlebbit,
     itIfRpc,
@@ -10,11 +8,9 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     mockRpcRemotePlebbit,
-    mockGatewayPlebbit
+    mockGatewayPlebbit,
+    itSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const fixtureSigner = signers[0];
 
 let defaultIpfsGatewayUrls;
@@ -91,10 +87,12 @@ describe("Plebbit options", async () => {
     itIfRpc("Error is thrown if RPC is down", async () => {
         const plebbit = await mockRpcRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
         // plebbit.subplebbits will take 20s to timeout and throw this error
-        await assert.isRejected(
-            plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"), // random cid
-            messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]
-        ); // Use the rpc so it would detect it's not loading
+        try {
+            await plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"); // random cid
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"); // Use the rpc so it would detect it's not loading
+        }
     });
 
     it(`Plebbit({ipfsGateways: undefined}) uses default gateways`, async () => {
@@ -181,7 +179,7 @@ describe("plebbit.fetchCid", async () => {
         expect(contentFromGatewayFetchCid).to.equal(fileString);
     });
 
-    it(`Throws an error if malicious gateway modifies content of file`, async () => {
+    itSkipIfRpc(`Throws an error if malicious gateway modifies content of file`, async () => {
         // RPC exception
         const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
         const cids = (
@@ -197,7 +195,14 @@ describe("plebbit.fetchCid", async () => {
         expect(fileString1).to.equal(fileString1FromGateway);
 
         // The following line should throw since the malicious gateway would send a content that differs from original content
-        await assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
+
+        try {
+            await plebbitWithMaliciousGateway.fetchCid(cids[1]);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
+            expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
+        }
     });
 
     it(`Throws an error if malicious RPC modifies content of file in plebbit.fetchCid`);
@@ -205,8 +210,19 @@ describe("plebbit.fetchCid", async () => {
     it("plebbit.fetchCid() throws if provided with invalid cid", async () => {
         const gibberishCid = "12345";
 
-        await assert.isRejected(plebbit.fetchCid(gibberishCid), messages.ERR_INVALID_CID_STRING_SCHEMA);
-        await assert.isRejected(gatewayPlebbit.fetchCid(gibberishCid), messages.ERR_INVALID_CID_STRING_SCHEMA);
+        try {
+            await plebbit.fetchCid(gibberishCid);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_INVALID_CID_STRING_SCHEMA");
+        }
+
+        try {
+            await gatewayPlebbit.fetchCid(gibberishCid);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_INVALID_CID_STRING_SCHEMA");
+        }
     });
     it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
         const jsonFileTest = { 123: "123" };
@@ -224,7 +240,7 @@ describe("plebbit.fetchCid", async () => {
 
         try {
             await plebbit.fetchCid(cid);
-            assert.fail("should not succeed");
+            expect.fail("should not succeed");
         } catch (e) {
             expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
         }
@@ -236,7 +252,7 @@ describe("plebbit.fetchCid", async () => {
         const gatewayUrl = Object.keys(gatewayPlebbit.clients.ipfsGateways)[0];
         try {
             await gatewayPlebbit.fetchCid(twoMbCid);
-            assert.fail("should not succeed");
+            expect.fail("should not succeed");
         } catch (e) {
             expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
             expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");

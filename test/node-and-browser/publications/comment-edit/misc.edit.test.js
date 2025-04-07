@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     getRemotePlebbitConfigs,
@@ -5,13 +6,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import chai from "chai";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import chaiAsPromised from "chai-as-promised";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs().map((config) => {

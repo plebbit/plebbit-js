@@ -1,14 +1,11 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 import { describeSkipIfRpc, mockPlebbitNoDataPathWithOnlyKuboClient } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyVote, signVote } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
 import { timestamp } from "../../../dist/node/util.js";
-import validVoteFixture from "../../fixtures/valid_vote.json" assert { type: "json" };
+import validVoteFixture from "../../fixtures/valid_vote.json" with { type: "json" };
 
 describe("Sign Vote", async () => {
     let plebbit, subplebbit, voteProps, voteSignature;
@@ -38,12 +35,22 @@ describe("Sign Vote", async () => {
     it(`signVote throws with author.address not being an IPNS or domain`, async () => {
         const cloneVote = remeda.clone(voteProps);
         cloneVote.author.address = "gibbreish";
-        assert.isRejected(signVote(cloneVote, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
+        try {
+            await signVote({ ...cloneVote, signer: signers[7] }, plebbit);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER");
+        }
     });
     it(`signVote throws with author.address=undefined`, async () => {
         const cloneVote = remeda.clone(voteProps);
         cloneVote.author.address = undefined;
-        assert.isRejected(signVote(cloneVote, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
+        try {
+            await signVote({ ...cloneVote, signer: signers[7] }, plebbit);
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_UNDEFINED");
+        }
     });
 });
 

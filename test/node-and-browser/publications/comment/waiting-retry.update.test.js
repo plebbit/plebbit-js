@@ -1,15 +1,10 @@
+import { expect } from "chai";
 import {
     itSkipIfRpc,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     isPlebbitFetchingUsingGateways
 } from "../../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 getRemotePlebbitConfigs().map((config) => {
     describe(`comment.update() waiting-retry errors - ${config.name}`, () => {
         itSkipIfRpc(

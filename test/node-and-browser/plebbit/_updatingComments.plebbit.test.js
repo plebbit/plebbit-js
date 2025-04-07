@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     describeSkipIfRpc,
     getRemotePlebbitConfigs,
@@ -6,8 +7,6 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
-import { expect } from "chai";
-
 const subplebbitAddress = signers[0].address;
 
 // TODO write a better way to wait for events to propgate other than setTimeout

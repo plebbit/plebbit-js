@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     publishRandomPost,
     mockPlebbit,
@@ -11,16 +12,10 @@ import {
     mockPlebbitV2,
     iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../dist/node/test/test-util.js";
-import { messages } from "../../../dist/node/errors.js";
 import path from "path";
 import fs from "fs";
 import signers from "../../fixtures/signers";
 import { v4 as uuidV4 } from "uuid";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
@@ -204,7 +199,12 @@ describe(`Start lock`, async () => {
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
-        await assert.isRejected(subplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
+        try {
+            await subplebbit.start();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+        }
     });
 
     itSkipIfRpc(`subplebbit.start throws if sub is started by another Subplebbit instance`, async () => {
@@ -214,7 +214,13 @@ describe(`Start lock`, async () => {
         expect(subplebbit.state).to.equal("started");
         const sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
         expect(sameSubplebbit.state).to.equal("stopped");
-        await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
+
+        try {
+            await sameSubplebbit.start();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+        }
         await subplebbit.stop();
     });
 
@@ -225,7 +231,13 @@ describe(`Start lock`, async () => {
         const sameSub = await plebbit.createSubplebbit({ address: sub.address });
         sub.start();
         await resolveWhenConditionIsTrue(sub, () => fs.existsSync(lockPath));
-        await assert.isRejected(sameSub.start(), messages.ERR_SUB_ALREADY_STARTED);
+
+        try {
+            await sameSub.start();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+        }
         await sub.stop();
     });
 
@@ -244,7 +256,7 @@ describe(`Start lock`, async () => {
         await Promise.all([sub.stop(), lockFileRemovedPromise]);
         expect(fs.existsSync(lockPath)).to.be.false;
 
-        await assert.isFulfilled(sub.start());
+        await sub.start();
         await sub.delete();
     });
 
@@ -254,7 +266,12 @@ describe(`Start lock`, async () => {
             const sub = await plebbit.createSubplebbit();
             const sameSub = await plebbit.createSubplebbit({ address: sub.address });
 
-            await assert.isRejected(Promise.all([sub.start(), sameSub.start()]), messages.ERR_SUB_ALREADY_STARTED);
+            try {
+                await Promise.all([sub.start(), sameSub.start()]);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+            }
             if (sub.state === "started") await sub.stop();
             if (sameSub.state === "started") await sameSub.stop();
         }
@@ -267,9 +284,14 @@ describe(`Start lock`, async () => {
         const lockPath = path.join(dataPath, "subplebbits", `${sub.address}.start.lock`);
         await fs.promises.mkdir(lockPath); // Artifically create a start lock
 
-        await assert.isRejected(sub.start(), messages.ERR_SUB_ALREADY_STARTED);
+        try {
+            await sub.start();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+        }
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
-        await assert.isFulfilled(sub.start());
+        await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const post = await publishRandomPost(sub.address, plebbit);
         await waitTillPostInSubplebbitPages(post, plebbit);
@@ -283,7 +305,12 @@ describe(`Start lock`, async () => {
             throw Error("Failing ipfs for some reason");
         };
 
-        await assert.isRejected(sub.start());
+        try {
+            await sub.start();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+        }
 
         expect(sub.state).to.equal("stopped");
         expect(sub.started).to.be.false;

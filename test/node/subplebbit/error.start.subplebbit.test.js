@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     createSubWithNoChallenge,
@@ -6,11 +7,6 @@ import {
     waitTillPostInSubplebbitInstancePages,
     describeSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
-
 describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, async () => {
     let plebbit;
     before(async () => {

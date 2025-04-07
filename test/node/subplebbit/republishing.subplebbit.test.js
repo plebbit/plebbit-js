@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import {
     mockPlebbit,
     publishRandomPost,
@@ -13,11 +14,6 @@ import {
     waitTillPostInSubplebbitPages,
     iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../dist/node/test/test-util";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 // This test file will be focused on republishing of comments/subplebbit/commentupdate/pages to the network
 // if the ipfs repo is lost, the sub should re-publish everything again

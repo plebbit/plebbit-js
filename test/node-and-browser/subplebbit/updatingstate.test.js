@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import {
@@ -10,11 +11,6 @@ import {
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-
-import chai from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-const { expect, assert } = chai;
 
 describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
     it(`subplebbit.updatingState defaults to stopped`, async () => {

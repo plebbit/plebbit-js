@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
     publishRandomPost,
@@ -9,7 +10,6 @@ import {
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs
 } from "../../../../dist/node/test/test-util.js";
-import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../../dist/node/pages/util.js";
