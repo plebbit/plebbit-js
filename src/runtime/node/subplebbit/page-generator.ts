@@ -32,9 +32,12 @@ type SinglePreloadedPageRes = Record<PostSortName | ReplySortName, PageIpfs>;
 
 type PageCidUndefinedIfPreloadedPage = [undefined, ...string[]] | string[];
 
+type AddedPreloadedPageChunksToIpfs = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[] }>>;
+
 type AddedPageChunksToIpfsRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: PageCidUndefinedIfPreloadedPage }>>;
 
 type PageGenerationRes =
+    | AddedPreloadedPageChunksToIpfs
     | AddedPageChunksToIpfsRes // when there are multiple pages
     | SinglePreloadedPageRes; // when there is only one preloaded page
 
@@ -66,7 +69,7 @@ export class PageGenerator {
     private async addPreloadedCommentChunksToIpfs(
         chunks: PageIpfs["comments"][],
         sortName: PostSortName | ReplySortName
-    ): Promise<AddedPageChunksToIpfsRes> {
+    ): Promise<AddedPreloadedPageChunksToIpfs> {
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: PageCidUndefinedIfPreloadedPage = [undefined]; // pageCids will never have the cid of preloaded page
         for (let i = chunks.length - 1; i >= 1; i--) {
@@ -78,7 +81,7 @@ export class PageGenerator {
         const firstPage = <PageIpfs>{ comments: chunks[0], nextCid: cids[1] };
         if (!firstPage.nextCid) throw Error("First page should have nextCid");
         listOfPage[0] = firstPage;
-        return { [sortName]: { pages: listOfPage, cids } };
+        return { [sortName]: { pages: listOfPage } };
     }
 
     _chunkComments({
@@ -268,7 +271,10 @@ export class PageGenerator {
         const mergedObject: PageGenerationRes = Object.assign({}, ...filteredGeneratedPages);
         return {
             pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages!.pages[0] }))),
-            pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages!.cids[0] })))
+            pageCids: Object.assign(
+                {},
+                ...Object.entries(mergedObject).map(([sortName, pages]) => (pages.cids ? { [sortName]: pages!.cids[0] } : undefined))
+            )
         };
     }
 
