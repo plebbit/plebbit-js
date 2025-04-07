@@ -87,7 +87,7 @@ export class PublicationClientsManager extends ClientsManager {
             "resolving-address": "resolving-subplebbit-address"
         };
         const translatedState = mapper[newUpdatingState];
-        if (translatedState) this._publication._updatePublishingState(translatedState);
+        if (translatedState) this._publication._updatePublishingStateWithEmission(translatedState);
     }
 
     handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]) {
@@ -106,8 +106,9 @@ export class PublicationClientsManager extends ClientsManager {
 
         log.error("Publication received a non retriable error from its subplebbit instance. Will stop publishing", err);
 
-        this._publication._updatePublishingState("failed");
+        this._publication._updatePublishingStateNoEmission("failed");
         this._publication.emit("error", err);
+        this._publication.emit("publishingstatechange", "failed");
     }
 
     handleIpfsGatewaySubplebbitState(
