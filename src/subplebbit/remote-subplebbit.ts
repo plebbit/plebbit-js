@@ -305,7 +305,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 );
                 this.emit("update", this);
             },
-            error: async (error: PlebbitError) => {
+            error: (error: PlebbitError) => {
                 this.emit("error", error);
             },
             updatingstatechange: async (newUpdatingState) => {

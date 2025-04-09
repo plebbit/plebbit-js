@@ -6,7 +6,6 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { ChainTicker, PublicationEvents } from "../../types.js";
 import { Comment } from "./comment.js";
 import * as remeda from "remeda";
-import { commentPostUpdatesParentsPathConfig, postTimestampConfig } from "../../constants.js";
 
 import type { CommentIpfsType, CommentUpdateType } from "./types.js";
 import {
@@ -49,6 +48,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined;
     private _comment: Comment;
     private _flatFirstPagesAlreadyLoaded: Set<string> = new Set<string>();
+    private _errorsToEmit: (PlebbitError | Error)[] = [];
 
     constructor(comment: Comment) {
         super(comment);
@@ -123,59 +123,17 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
-        const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
-        const commentCid = this._comment.cid;
-        if (!commentCid) throw Error("Can't retrieve parent path without defined comment.cid");
-        const pathCache: string | undefined = await parentsPathCache.getItem(commentCid);
-        if (pathCache) return pathCache.split("/").reverse().join("/");
-
-        const postTimestampCache = await this._plebbit._createStorageLRU(postTimestampConfig);
-        if (this._comment.depth === 0) await postTimestampCache.setItem(commentCid, this._comment.timestamp);
-        let parentCid = this._comment.parentCid;
-        let reversedPath = `${this._comment.cid}`; // Path will be reversed here, `nestedReplyCid/replyCid/postCid`
-        while (parentCid) {
-            // should attempt to fetch cache here
-            // Also should we set updatingState everytime we fetch a parent Comment?
-            const parentPathCache: string = await parentsPathCache.getItem(parentCid);
-            if (parentPathCache) {
-                reversedPath += "/" + parentPathCache;
-                break;
-            } else {
-                const parentInPageIpfs =
-                    this._findCommentInSubplebbitPosts(subIpns, parentCid) || (await this._fetchParentCommentForCommentUpdate(parentCid));
-
-                if (parentInPageIpfs.comment.depth === 0)
-                    await postTimestampCache.setItem(parentInPageIpfs.commentUpdate.cid, parentInPageIpfs.comment.timestamp);
-
-                reversedPath += `/${parentCid}`;
-                parentCid = parentInPageIpfs.comment.parentCid;
-            }
-        }
-
-        await parentsPathCache.setItem(commentCid, reversedPath);
-
-        const finalParentsPath = reversedPath.split("/").reverse().join("/"); // will be postCid/replyCid/nestedReplyCid
-
-        return finalParentsPath;
+    _calculatePathForPostCommentUpdate(folderCid: string, postCid: string) {
+        return `${folderCid}/` + postCid + "/update";
     }
 
-    _calculatePathForCommentUpdate(folderCid: string, parentsPostUpdatePath: string) {
-        return `${folderCid}/` + parentsPostUpdatePath + "/update";
-    }
-
-    async _fetchNewCommentUpdateIpfsP2P(
-        subIpns: SubplebbitIpfsType,
-        timestampRanges: string[],
-        parentsPostUpdatePath: string,
-        log: Logger
-    ): Promise<NewCommentUpdate> {
+    async _fetchPostCommentUpdateIpfsP2P(subIpns: SubplebbitIpfsType, timestampRanges: string[], log: Logger): Promise<NewCommentUpdate> {
         // only get new CommentUpdates
         // not interested in CommentUpdate we already fetched before
         const attemptedPathsToLoadErrors: Record<string, Error> = {};
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
-            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            const path = this._calculatePathForPostCommentUpdate(folderCid, this._comment.postCid!);
             if (this._comment._commentUpdateIpfsPath) {
                 const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
                 if (folderCid === lastFolderCid) {
@@ -275,10 +233,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             });
     }
 
-    async _fetchCommentUpdateFromGateways(
+    async _fetchPostCommentUpdateFromGateways(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
-        parentsPostUpdatePath: string,
         log: Logger
     ): Promise<NewCommentUpdate> {
         const attemptedPathsToLoadErrors: Record<string, Error> = {};
@@ -298,7 +255,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
 
             const folderCid = subIpns.postUpdates![timestampRange];
-            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            const path = this._calculatePathForPostCommentUpdate(folderCid, this._comment.postCid!);
             if (this._comment._commentUpdateIpfsPath) {
                 const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
                 if (folderCid === lastFolderCid) {
@@ -382,12 +339,9 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
         if (!subIpfs.postUpdates) throw new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs, comment: this._comment });
 
-        const parentsPostUpdatePath = this._comment._commentUpdateIpfsPath
-            ? this._comment._commentUpdateIpfsPath.replace("/update", "").split("/").slice(1).join("/")
-            : await this._getParentsPath(subIpfs);
         const postCid = this._comment.postCid;
         if (!postCid) throw Error("comment.postCid needs to be defined to fetch comment update");
-        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(postCid);
+        const postTimestamp = this._comment.timestamp;
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
         const timestampRanges = getPostUpdateTimestampRange(subIpfs.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
@@ -395,9 +349,8 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         let newCommentUpdate: NewCommentUpdate;
         try {
-            if (this._defaultIpfsProviderUrl)
-                newCommentUpdate = await this._fetchNewCommentUpdateIpfsP2P(subIpfs, timestampRanges, parentsPostUpdatePath, log);
-            else newCommentUpdate = await this._fetchCommentUpdateFromGateways(subIpfs, timestampRanges, parentsPostUpdatePath, log);
+            if (this._defaultIpfsProviderUrl) newCommentUpdate = await this._fetchPostCommentUpdateIpfsP2P(subIpfs, timestampRanges, log);
+            else newCommentUpdate = await this._fetchPostCommentUpdateFromGateways(subIpfs, timestampRanges, log);
         } catch (e) {
             if (e instanceof Error) {
                 if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
@@ -668,7 +621,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);
     }
 
-    async handleErrorEventFromPost(error: PlebbitError | Error) {
+    handleErrorEventFromPost(error: PlebbitError | Error) {
         this._comment.emit("error", error);
     }
 

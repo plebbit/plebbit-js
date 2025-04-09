@@ -813,7 +813,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
                         pubsubProviders: this._pubsubProviders,
                         pubsubTopic: this._pubsubTopicWithfallback(),
-                        lastEror: e
+                        lastError: e
                         // TODO should include all errors
                     });
                     log.error("All attempts to publish", this.getType(), "has failed", allAttemptsFailedError);
