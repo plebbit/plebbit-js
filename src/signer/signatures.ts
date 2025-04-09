@@ -131,7 +131,11 @@ async function _validateAuthorAddressBeforeSigning(author: CommentOptionsToSign[
     } else {
         const derivedAddress = await getPlebbitAddressFromPrivateKey(signer.privateKey);
         if (derivedAddress !== author.address)
-            throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", { authorAddress: author.address, signerAddress: derivedAddress });
+            throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", {
+                authorAddress: author.address,
+                signerAddress: derivedAddress,
+                author
+            });
     }
 }
 
