@@ -48,7 +48,7 @@ getRemotePlebbitConfigs().map((config) => {
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 
-        it(`Stringified comment.replies still have all props`, async () => {
+        it(`Stringified subplebbit.posts still have all props`, async () => {
             const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot.comments;
 
             for (const post of stringifedPosts) {
@@ -70,7 +70,7 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(subplebbit.posts.pageCids[preloadedPageSortName]).to.be.undefined;
         });
 
-        it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
+        it(`Newly published post appears on all pages`, async () => {
             const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(newPost.cid, subplebbit.posts);
             expect(postInPage).to.exist;
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {

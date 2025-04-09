@@ -63,18 +63,18 @@ const activeScore = async (comment, plebbit) => {
     if (!comment.replies) return comment.timestamp;
     let maxTimestamp = comment.timestamp;
 
+    const commentInstance = await plebbit.createComment(comment);
     const updateMaxTimestamp = async (localComments) => {
         for (const localComment of localComments) {
             if (localComment.deleted || localComment.removed) continue; // shouldn't count
             if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
             if (localComment.replies) {
-                const childrenComments = await loadAllUniqueCommentsUnderCommentInstance(localComment);
+                const localCommentInstance = await plebbit.createComment(localComment);
+                const childrenComments = await loadAllUniqueCommentsUnderCommentInstance(localCommentInstance);
                 await updateMaxTimestamp(childrenComments);
             }
         }
     };
-
-    const commentInstance = await plebbit.createComment(comment);
 
     const childrenComments = await loadAllUniqueCommentsUnderCommentInstance(commentInstance);
     if (comment.replyCount > 0 && childrenComments.length === 0) expect.fail("Comment has replyCount but no replies");
