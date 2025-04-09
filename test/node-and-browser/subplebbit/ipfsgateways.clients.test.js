@@ -54,11 +54,12 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
         sub.clients.ipfsGateways[gatewayUrl].on("statechange", (newState) => actualStates.push(newState));
 
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.update();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await updatePromise;
         await sub.stop();
 
-        expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
+        expect(actualStates).to.deep.equal(expectedStates);
     });
 
     it(`Correct order of ipfs gateway state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
