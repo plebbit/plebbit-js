@@ -230,15 +230,15 @@ export function findCommentInParsedPages(pageJson: PageTypeJson, targetCommentCi
     for (const pageComment of pageJson.comments) if (pageComment.cid === targetCommentCid) return pageComment;
 }
 
-export function findCommentInPageIpfsRecursively(page: PageIpfs, targetCid: string): PageIpfs["comments"][0] | undefined {
+export function findCommentInHierarchicalPageIpfsRecursively(page: PageIpfs, targetCid: string): PageIpfs["comments"][0] | undefined {
     if (!page) throw Error("should define page ipfs");
     if (!targetCid) throw Error("should define target comment cid");
 
     for (const pageComment of page.comments) {
         if (pageComment.commentUpdate.cid === targetCid) return pageComment;
         if (pageComment.commentUpdate.replies?.pages) {
-            for (const page of Object.values(pageComment.commentUpdate.replies.pages)) {
-                const result = findCommentInPageIpfsRecursively(page, targetCid);
+            for (const preloadedPage of Object.values(pageComment.commentUpdate.replies.pages)) {
+                const result = findCommentInHierarchicalPageIpfsRecursively(preloadedPage, targetCid);
                 if (result) return result;
             }
         }
@@ -259,7 +259,7 @@ export function findCommentInPageInstanceRecursively(
         if (!preloadedPage) continue;
 
         const pageIpfs = <PageIpfs>{ comments: preloadedPage.comments.map((page) => page.pageComment), nextCid: preloadedPage.nextCid };
-        const foundComment = findCommentInPageIpfsRecursively(pageIpfs, targetCid);
+        const foundComment = findCommentInHierarchicalPageIpfsRecursively(pageIpfs, targetCid);
         if (foundComment) return foundComment;
     }
 
