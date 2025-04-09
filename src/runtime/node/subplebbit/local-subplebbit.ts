@@ -427,7 +427,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const stats = await this._dbHandler.querySubplebbitStats(undefined);
 
-        await this._rmUnneededMfsPaths();
         await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
         const newPostUpdates = await this._calculateNewPostUpdates();
 
@@ -495,7 +494,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
-        await this._unpinStaleCidsAndRemoveUnneededMfsPaths();
+        await this._unpinStaleCids();
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
 
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
@@ -653,7 +652,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             purgedMfsPaths.forEach((path) => this._mfsPathsToRemove.add(path));
 
-            await this._unpinStaleCidsAndRemoveUnneededMfsPaths();
+            await this._unpinStaleCids();
 
             await this._cleanUpIpfsRepoRarely(true);
 
@@ -1737,7 +1736,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
 
-    private async _unpinStaleCidsAndRemoveUnneededMfsPaths() {
+    private async _unpinStaleCids() {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
 
         if (this._cidsToUnPin.size > 0) {
@@ -1758,10 +1757,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }
-        await this._rmUnneededMfsPaths();
     }
 
-    private async _rmUnneededMfsPaths() {
+    private async _rmUnneededMfsPaths(): Promise<string[]> {
         const log = Logger("plebbit-js:local-subplebbit:sync:_rmUnneededMfsPaths");
 
         if (this._mfsPathsToRemove.size > 0) {
@@ -1769,15 +1767,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             try {
                 await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { recursive: true, flush: false });
                 log("Removed", toDeleteMfsPaths.length, "files from MFS directory", toDeleteMfsPaths);
-                toDeleteMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
+                return toDeleteMfsPaths;
             } catch (e) {
                 const error = <Error>e;
                 if (!error.message.includes("file does not exist")) {
                     log.error("Failed to remove files from MFS", toDeleteMfsPaths, e);
                     throw e;
-                } else toDeleteMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
+                } else return toDeleteMfsPaths;
             }
-        }
+        } else return [];
     }
     private pubsubTopicWithfallback() {
         return this.pubsubTopic || this.address;
@@ -1835,17 +1833,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             })
         );
 
+        const postCommentUpdateMfsPaths = commentUpdatesOfPosts.map((row) => row.localMfsPath!);
+
+        postCommentUpdateMfsPaths.forEach((path) => this._mfsPathsToRemove.add(path)); // need to make sure we don't cp to path without it not existing to begin with
+        const removedMfsPaths = await this._rmUnneededMfsPaths();
+
         // TODO need to do this in parallel
         for (const commentUpdateFile of newCommentUpdatesAddAll) {
             const commentUpdateFilePath = commentUpdatesOfPosts.find(
                 (row) => row.postCommentUpdateCid! === commentUpdateFile.cid.toV0().toString()
             )?.localMfsPath;
             if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
-            try {
-                await this._clientsManager.getDefaultIpfs()._client.files.rm(commentUpdateFilePath);
-            } catch (e) {
-                if (!(<Error>e).message.includes("file does not exist")) throw e;
-            }
             await this._clientsManager
                 .getDefaultIpfs()
                 ._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
@@ -1857,6 +1855,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         console.time("flushPostUpdatesDirectory");
         const postUpdatesDirectoryCid = await this._clientsManager.getDefaultIpfs()._client.files.flush(postUpdatesDirectory);
         console.timeEnd("flushPostUpdatesDirectory");
+        removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
         log(
             "Subplebbit",
             this.address,
@@ -2213,7 +2212,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
             try {
-                await this._unpinStaleCidsAndRemoveUnneededMfsPaths();
+                await this._unpinStaleCids();
             } catch (e) {
                 log.error("Failed to unpin stale cids and remove mfs paths before stopping", e);
             }
@@ -2224,11 +2223,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log.error("Failed to update db internal state with cids to unpin and mfs paths to remove before stopping", e);
             }
 
-            try {
-                await this._clientsManager.getDefaultIpfs()._client.files.flush("/" + this.address);
-            } catch (e) {
-                log.error("Failed to flush MFS before stopping", e);
-            }
             try {
                 await this._dbHandler.unlockSubStart();
             } catch (e) {
