@@ -91,7 +91,7 @@ export const testPageCommentsIfSortedCorrectly = async (sortedComments, sortName
     for (let j = 0; j < sortedComments.length - 1; j++) {
         // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
         testCommentFieldsInPageJson(sortedComments[j]);
-        if (currentTimeframe && !sortedComments[j].pinned) {
+        if (currentTimeframe && !sortedComments[j].pinned && currentTimeframe !== "ALL") {
             const syncIntervalSeconds = 5 * 60;
 
             const sortStart = subplebbit.updatedAt - TIMEFRAMES_TO_SECONDS[currentTimeframe] - syncIntervalSeconds; // Should probably add extra buffer here
