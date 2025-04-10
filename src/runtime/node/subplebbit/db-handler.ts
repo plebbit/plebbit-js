@@ -140,8 +140,8 @@ export class DbHandler {
 
     async destoryConnection() {
         const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
-        await this._knex!.destroy();
-        await this._keyv.disconnect();
+        if (this._knex) await this._knex.destroy();
+        if (this._keyv) await this._keyv.disconnect();
 
         //@ts-expect-error
         this._knex = this._keyv = undefined;
