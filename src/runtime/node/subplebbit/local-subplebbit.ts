@@ -456,7 +456,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const expectedSignatureSize = calculateExpectedSignatureSize(newIpns);
 
         // Calculate remaining space for posts
-        const availablePostsSize = MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize;
+        const availablePostsSize =
+            MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 500; // add a small buffer
 
         const generatedPosts = await this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages, availablePostsSize);
 
@@ -1547,7 +1548,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
 
         const repliesAvailableSize =
-            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning);
+            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 500; // a little bit of buffer
         const preloadedRepliesPages = "topAll";
 
         const generatedRepliesPages = await this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages, repliesAvailableSize);
