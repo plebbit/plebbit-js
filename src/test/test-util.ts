@@ -623,11 +623,11 @@ export async function waitTillPostInSubplebbitInstancePages(
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(sub.posts, post.cid);
             return Boolean(postInPage);
-        } else {
+        } else if (Object.keys(sub.posts.pageCids).length > 0) {
             const postsNewPageCid = sub.posts.pageCids.new;
             const postInPage = await iterateThroughPageCidToFindComment(post.cid, postsNewPageCid, sub.posts);
             return Boolean(postInPage);
-        }
+        } else return false;
     };
     await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
@@ -1313,7 +1313,7 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
 export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment) {
     // max comment size is 40kb = 40000
     const rawCommentUpdateRecord = comment._rawCommentUpdate;
-    if (!rawCommentUpdateRecord) throw Error("Subplebbit should be updating before forcing to generate all pages");
+    if (!rawCommentUpdateRecord) throw Error("Comment should be updating before forcing to generate all pages");
 
     if (Object.keys(comment.replies.pageCids).length > 0) return;
     const curRecordSize = Buffer.byteLength(JSON.stringify(rawCommentUpdateRecord));
@@ -1367,12 +1367,33 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
 }
 
+export async function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit) {
+    const postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.topAll?.nextCid);
+    if (postInPage) return postInPage;
+
+    const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
+    await post.update();
+    await resolveWhenConditionIsTrue(post, async () => typeof post.updatedAt === "number");
+    await forceSubplebbitToGenerateAllRepliesPages(post);
+    return post;
+}
+
+export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit) {
+    const post = await findOrGeneratePostWithMultiplePages(subplebbit);
+    const replyInPage = post.replies?.pages?.topAll?.comments[0];
+    if (replyInPage) return replyInPage;
+
+    //@ts-expect-error
+    const reply = await publishRandomReply(post, subplebbit._plebbit, {});
+    return reply;
+}
+
 export function mockReplyToUsePostFlatPagesForUpdates(reply: Comment) {
     const updatingComment = reply._plebbit._updatingComments[reply.cid!];
     if (!updatingComment) throw Error("Reply should be updating before starting to mock");
     if (updatingComment.depth === 0) throw Error("Should not call this function on a post");
 
-    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
+    mockCommentToNotUsePagesForUpdates(reply);
 
     const originalFunc = updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate.bind(
         updatingComment._clientsManager
@@ -1380,7 +1401,11 @@ export function mockReplyToUsePostFlatPagesForUpdates(reply: Comment) {
 
     updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate = (postInstance) => {
         // this should stop plebbit-js from assuming the post replies is a single preloaded page
-        postInstance.replies.pageCids.randomPage = "QmRCzp6x9QTYAjhFuj3CgGgruknMqvSJb8oJ77GHecTkKb";
+        const updatingSubInstance = reply._plebbit._updatingSubplebbits[postInstance.subplebbitAddress];
+        const updatingParentInstance = reply._plebbit._updatingComments[reply.parentCid!];
+        if (postInstance.replies.pages.topAll) postInstance.replies.pages.topAll.comments = [];
+        if (updatingSubInstance?.posts.pages.hot) updatingSubInstance.posts.pages.hot.comments = [];
+        if (updatingParentInstance?.replies?.pages?.topAll) updatingParentInstance.replies.pages.topAll.comments = [];
         return originalFunc(postInstance);
     };
 }
