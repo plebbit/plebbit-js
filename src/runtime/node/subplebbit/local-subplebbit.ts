@@ -279,18 +279,51 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    async _loadLocalSubDb() {
-        // This function will load the InternalSubplebbit props from the local db and update its props with it
-        await this.initDbHandlerIfNeeded();
-        await this._dbHandler.initDbIfNeeded();
-        await this._dbHandler.createOrMigrateTablesIfNeeded();
+    async _updateInstancePropsWithStartedSubOrDb() {
+        // if it's started in the same plebbit instance, we will load it from the started subplebbit instance
+        // if it's started in another process, we will throw an error
+        // if sub is not started, load the InternalSubplebbit props from the local db
 
-        await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
-        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
-        await this._updateStartedValue();
-        await this._setSubplebbitIpfsIfNeeded();
+        const log = Logger("plebbit-js:local-subplebbit:_loadLocalSubFromStartedSubOrDb");
+        if (this._plebbit._startedSubplebbits[this.address]) {
+            log("Loading local subplebbit", this.address, "from started subplebbit instance");
+            if (this._plebbit._startedSubplebbits[this.address].updateCid)
+                await this.initInternalSubplebbitAfterFirstUpdateNoMerge(
+                    this._plebbit._startedSubplebbits[this.address].toJSONInternalAfterFirstUpdate()
+                );
+            else
+                await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(
+                    this._plebbit._startedSubplebbits[this.address].toJSONInternalBeforeFirstUpdate()
+                );
+            this.started = true;
+        } else {
+            await this.initDbHandlerIfNeeded();
+            try {
+                await this._updateStartedValue();
+                if (this.started) {
+                    throw new PlebbitError("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
+                        address: this.address,
+                        dataPath: this._plebbit.dataPath
+                    });
+                }
 
-        await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+                await this._dbHandler.initDbIfNeeded();
+
+                await this._dbHandler.createOrMigrateTablesIfNeeded();
+
+                await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
+                if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
+
+                await this._updateStartedValue();
+                log("Loaded local subplebbit", this.address, "from db");
+            } catch (e) {
+                throw e;
+            } finally {
+                await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+            }
+        }
+
+        this._setSubplebbitIpfsIfNeeded();
 
         // need to validate schema of Subplebbit IPFS
         if (this._rawSubplebbitIpfs)
@@ -317,40 +350,57 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     async _updateDbInternalState(
         props: Partial<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType>
-    ) {
-        if (remeda.isEmpty(props)) return;
+    ): Promise<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType> {
+        const log = Logger("plebbit-js:local-subplebbit:_updateDbInternalState");
+        if (remeda.isEmpty(props)) throw Error("props to update DB internal state should not be empty");
         await this._dbHandler.initDbIfNeeded();
 
         props._internalStateUpdateId = uuidV4();
-        await this._dbHandler.lockSubState();
-        const internalStateBefore = await this._getDbInternalState(false);
-        await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
-            ...internalStateBefore,
-            ...props
-        });
-        await this._dbHandler.unlockSubState();
-        this._internalStateUpdateId = props._internalStateUpdateId;
+        let lockedIt = false;
+        try {
+            await this._dbHandler.lockSubState();
+            lockedIt = true;
+            const internalStateBefore = await this._getDbInternalState(false);
+            const mergedInternalState = { ...internalStateBefore, ...props };
+            await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], mergedInternalState);
+            this._internalStateUpdateId = props._internalStateUpdateId;
+            return mergedInternalState as InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType;
+        } catch (e) {
+            log.error("Failed to update sub", this.address, "internal state in db", e);
+            throw e;
+        } finally {
+            if (lockedIt) await this._dbHandler.unlockSubState();
+        }
     }
 
     private async _getDbInternalState(
         lock: boolean
     ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType | undefined> {
+        const log = Logger("plebbit-js:local-subplebbit:_getDbInternalState");
         if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))) return undefined;
-        if (lock) await this._dbHandler.lockSubState();
-        const internalState = <InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType>(
-            await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
-        );
-        if (lock) await this._dbHandler.unlockSubState();
-        return internalState;
+        let lockedIt = false;
+        try {
+            if (lock) {
+                await this._dbHandler.lockSubState();
+                lockedIt = true;
+            }
+            return <InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType>(
+                await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+            );
+        } catch (e) {
+            log.error("Failed to get sub", this.address, "internal state from db", e);
+            throw e;
+        } finally {
+            if (lockedIt) await this._dbHandler.unlockSubState();
+        }
     }
 
     private async _updateInstanceStateWithDbState() {
         const currentDbState = await this._getDbInternalState(false);
         if (!currentDbState) throw Error("current db state should be defined before updating instance state with it");
 
-        if ("updatedAt" in currentDbState)
-            await this.initInternalSubplebbitAfterFirstUpdateNoMerge({ ...currentDbState, address: this.address });
-        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({ ...currentDbState, address: this.address });
+        if ("updatedAt" in currentDbState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(currentDbState);
+        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(currentDbState);
     }
 
     async _setChallengesToDefaultIfNotDefined(log: Logger) {
@@ -432,8 +482,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
-
-        await this._updateInstanceStateWithDbState();
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
@@ -1643,33 +1691,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._dbHandler.updateMfsPathOfCommentUpdates(oldAddress, newAddress);
     }
 
-    private async _switchDbWhileRunningIfNeeded() {
-        const log = Logger("plebbit-js:local-subplebbit:_switchDbIfNeeded");
-
-        // Will check if address has been changed, and if so connect to the new db with the new address
-        const internalState = await this._getDbInternalState(false);
-        if (!internalState) throw Error("Can't change address or db when there's no internal state in db");
-        const listedSubs = await listSubplebbits(this._plebbit); // need to make sure this is the latest sub
-        const dbIsOnOldName = !listedSubs.includes(internalState.address) && listedSubs.includes(this.signer.address);
-
-        const currentDbAddress = dbIsOnOldName ? this.signer.address : this.address;
-        if (internalState.address !== currentDbAddress) {
-            // That means a call has been made to edit the sub's address while it's running
-            // We need to stop the sub from running, change its file name, then establish a connection to the new DB
-            log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
-            await this._dbHandler.unlockSubStart(currentDbAddress);
-            await this._dbHandler.rollbackAllTransactions();
-            await this._movePostUpdatesFolderToNewAddress(currentDbAddress, internalState.address);
-            await this._dbHandler.destoryConnection();
-            this.setAddress(internalState.address);
-            await this._dbHandler.changeDbFilename(currentDbAddress, internalState.address);
-            await this._dbHandler.initDbIfNeeded();
-            await this._dbHandler.lockSubStart(internalState.address); // Lock the new address start
-            this._subplebbitUpdateTrigger = true;
-            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
-        }
-    }
-
     private async _updateCommentsThatNeedToBeUpdated(): Promise<CommentUpdateToBeUpdated[]> {
         const log = Logger(`plebbit-js:local-subplebbit:_updateCommentsThatNeedToBeUpdated`);
 
@@ -1924,8 +1945,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         try {
             await this._dbHandler.initDbIfNeeded();
-            await this._switchDbWhileRunningIfNeeded();
-            await this._updateInstanceStateWithDbState();
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedState("publishing-ipns");
@@ -2036,8 +2055,117 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
     }
 
-    override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
-        const log = Logger("plebbit-js:local-subplebbit:edit");
+    async _validateNewAddressBeforeEditing(newAddress: string, log: Logger) {
+        if (doesDomainAddressHaveCapitalLetter(newAddress))
+            throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
+        if (this._plebbit.subplebbits.includes(newAddress))
+            throw new PlebbitError("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS", {
+                currentSubplebbitAddress: this.address,
+                newSubplebbitAddress: newAddress,
+                currentSubs: this._plebbit.subplebbits
+            });
+        this._assertDomainResolvesCorrectly(newAddress).catch((err: PlebbitError) => {
+            log.error(err);
+            this.emit("error", err);
+        });
+    }
+
+    async _editPropsOnStartedSubplebbit(parsedEditOptions: ParsedSubplebbitEditOptions): Promise<typeof this> {
+        // 'this' is the started subplebbit with state="started"
+        // this._plebbit._startedSubplebbits[this.address] === this
+        const log = Logger("plebbit-js:local-subplebbit:start:editPropsOnStartedSubplebbit");
+        const oldAddress = remeda.clone(this.address);
+        if (typeof parsedEditOptions.address === "string" && this.address !== parsedEditOptions.address) {
+            await this._validateNewAddressBeforeEditing(parsedEditOptions.address, log);
+
+            log(`Attempting to edit subplebbit.address from ${oldAddress} to ${parsedEditOptions.address}`);
+
+            await this._dbHandler.unlockSubStart(oldAddress);
+            await this._dbHandler.rollbackAllTransactions();
+            await this._movePostUpdatesFolderToNewAddress(oldAddress, parsedEditOptions.address);
+            await this._dbHandler.destoryConnection();
+            await this._dbHandler.changeDbFilename(oldAddress, parsedEditOptions.address);
+            await this._dbHandler.initDbIfNeeded();
+            await this._dbHandler.lockSubStart(parsedEditOptions.address);
+
+            this.setAddress(parsedEditOptions.address);
+        }
+        await this._updateDbInternalState(parsedEditOptions);
+
+        this._subplebbitUpdateTrigger = true;
+        if (this.updateCid)
+            await this.initInternalSubplebbitAfterFirstUpdateNoMerge({
+                ...this.toJSONInternalAfterFirstUpdate(),
+                ...parsedEditOptions
+            });
+        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({ ...this.toJSONInternalBeforeFirstUpdate(), ...parsedEditOptions });
+        log(
+            `Subplebbit (${this.address}) props (${remeda.keys.strict(parsedEditOptions)}) has been edited: `,
+            //@ts-expect-error
+            remeda.pick(this, remeda.keys.strict(parsedEditOptions))
+        );
+        this.emit("update", this);
+        if (this.address !== oldAddress) {
+            this._plebbit._startedSubplebbits[this.address] = this._plebbit._startedSubplebbits[oldAddress] = this;
+        }
+        return this;
+    }
+
+    async _editPropsOnNotStartedSubplebbit(parsedEditOptions: ParsedSubplebbitEditOptions): Promise<typeof this> {
+        // sceneario 3, the sub is not running anywhere, we need to edit the db and update this instance
+        const log = Logger("plebbit-js:local-subplebbit:start:editPropsOnNotStartedSubplebbit");
+        const oldAddress = remeda.clone(this.address);
+        await this.initDbHandlerIfNeeded();
+        await this._dbHandler.initDbIfNeeded();
+        if (typeof parsedEditOptions.address === "string" && this.address !== parsedEditOptions.address) {
+            await this._validateNewAddressBeforeEditing(parsedEditOptions.address, log);
+
+            log(`Attempting to edit subplebbit.address from ${oldAddress} to ${parsedEditOptions.address}`);
+
+            // in this sceneario we're editing a subplebbit that's not started anywhere
+            log("will rename the subplebbit", this.address, "db in edit() because the subplebbit is not being ran anywhere else");
+            await this._movePostUpdatesFolderToNewAddress(this.address, parsedEditOptions.address);
+            await this._dbHandler.destoryConnection();
+            await this._dbHandler.changeDbFilename(this.address, parsedEditOptions.address);
+            await this._dbHandler.initDbIfNeeded();
+            this.setAddress(parsedEditOptions.address);
+        }
+        const mergedInternalState = await this._updateDbInternalState(parsedEditOptions);
+
+        if ("updatedAt" in mergedInternalState && mergedInternalState.updatedAt)
+            await this.initInternalSubplebbitAfterFirstUpdateNoMerge(mergedInternalState);
+        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(mergedInternalState);
+        await this._dbHandler.destoryConnection();
+        this.emit("update", this);
+        return this;
+    }
+
+    override async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<typeof this> {
+        // scenearios
+        // 1 - calling edit() on a subplebbit instance that's not running, but the it's started in plebbit._startedSubplebbits (should edit the started subplebbit)
+        // 2 - calling edit() on a subplebbit that's started in another process (should throw)
+        // 3 - calling edit() on a subplebbit that's not started (should load db and edit it)
+        // 4 - calling edit() on the subplebbit that's started (should edit the started subplebbit)
+
+        if (this._plebbit._startedSubplebbits[this.address] && this.state !== "started") {
+            // sceneario 1
+            const editRes = await this._plebbit._startedSubplebbits[this.address].edit(newSubplebbitOptions);
+
+            this.setAddress(editRes.address); // need to force an update of the address for this instance
+            await this._updateInstancePropsWithStartedSubOrDb();
+            return this;
+        }
+
+        await this.initDbHandlerIfNeeded();
+        await this._updateStartedValue();
+        if (this.started && this.state !== "started") {
+            // sceneario 2
+            await this._dbHandler.destoryConnection();
+            throw new PlebbitError("ERR_CAN_NOT_EDIT_A_LOCAL_SUBPLEBBIT_THAT_IS_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
+                address: this.address,
+                dataPath: this._plebbit.dataPath
+            });
+        }
 
         const parsedEditOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(newSubplebbitOptions);
 
@@ -2057,55 +2185,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...newInternalProps
         };
 
-        if (newProps.address && newProps.address !== this.address) {
-            // we're modifying sub.address
-            if (doesDomainAddressHaveCapitalLetter(newProps.address))
-                throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newProps.address });
-            if (this._plebbit.subplebbits.includes(newProps.address))
-                throw new PlebbitError("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS", {
-                    currentSubplebbitAddress: this.address,
-                    editProps: newProps,
-                    currentSubs: this._plebbit.subplebbits
-                });
-            this._assertDomainResolvesCorrectly(newProps.address).catch((err: PlebbitError) => {
-                log.error(err);
-                this.emit("error", err);
-            });
-            log(`Attempting to edit subplebbit.address from ${this.address} to ${newProps.address}`);
-            await this._updateDbInternalState(newProps);
-            if (!(await this._dbHandler.isSubStartLocked())) {
-                log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
-                await this._movePostUpdatesFolderToNewAddress(this.address, newProps.address);
-                await this._dbHandler.destoryConnection();
-                await this._dbHandler.changeDbFilename(this.address, newProps.address);
-                await this._dbHandler.initDbIfNeeded();
-                this.setAddress(newProps.address);
-            }
-        } else {
-            await this._updateDbInternalState(newProps);
+        if (!this.started && !this._plebbit._startedSubplebbits[this.address]) {
+            // sceneario 3
+            return this._editPropsOnNotStartedSubplebbit(newProps);
         }
 
-        const latestState = await this._getDbInternalState(false);
-        if (!latestState) throw Error("Internal state in db should be defined prior to calling sub.edit()");
-
-        if ("updatedAt" in latestState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(latestState);
-        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(latestState);
-
-        log(
-            `Subplebbit (${this.address}) props (${remeda.keys.strict(newProps)}) has been edited: `,
-            remeda.pick(latestState, remeda.keys.strict(parsedEditOptions))
-        );
-        if (this.state === "stopped") await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
-        this.emit("update", this);
-
-        return this;
+        if (this._plebbit._startedSubplebbits[this.address] === this) {
+            // sceneario 4
+            return this._editPropsOnStartedSubplebbit(newProps);
+        }
+        throw new Error("Can't edit a subplebbit that's started in another process");
     }
 
-    private async _setSubplebbitIpfsIfNeeded() {
+    private _setSubplebbitIpfsIfNeeded() {
         // A hack for old subplebbit states that don't define _rawSubplebbitIpfs
         if (this.updatedAt && !this._rawSubplebbitIpfs) {
-            const internalState = await this._getDbInternalState(false);
-            if (!internalState) throw Error("Internal state should be defined if updatedAt is defined");
+            const internalState = this.toJSONInternalAfterFirstUpdate();
             if (!("signature" in internalState)) throw Error("signature should be defined");
             this._rawSubplebbitIpfs = <
                 SubplebbitIpfsType //@ts-expect-error
@@ -2119,12 +2214,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._stopHasBeenCalled = false;
         if (!this._clientsManager.getDefaultIpfs())
             throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
+        await this._updateStartedValue();
+        if (this.started || this._plebbit._startedSubplebbits[this.address]) throw Error("Can't start a local subplebbit ");
         try {
             await this._initBeforeStarting();
             // update started value twice because it could be started prior lockSubStart
             this._setState("started");
             await this._updateStartedValue();
             await this._dbHandler.lockSubStart(); // Will throw if sub is locked already
+            this._plebbit._startedSubplebbits[this.address] = this;
             await this._updateStartedValue();
             await this._dbHandler.initDbIfNeeded();
 
@@ -2157,13 +2255,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _updateOnce() {
         const log = Logger("plebbit-js:local-subplebbit:update");
-        await this._dbHandler.initDbIfNeeded();
-        const dbSubState = await this._getDbInternalState(false);
-        if (!dbSubState) throw Error("There is no internal sub state in db");
-        await this._updateStartedValue();
-        if (this._internalStateUpdateId !== dbSubState._internalStateUpdateId) {
-            if ("updatedAt" in dbSubState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(dbSubState);
-            else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(dbSubState);
+        const oldUpdateId = remeda.clone(this._internalStateUpdateId);
+        await this._updateInstancePropsWithStartedSubOrDb(); // will update this instance props
+        if (this._internalStateUpdateId !== oldUpdateId) {
             log(`Local Subplebbit (${this.address}) received a new update with updatedAt (${this.updatedAt}). Will emit an update event`);
 
             this._setUpdatingStateNoEmission("succeeded");
@@ -2231,13 +2325,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
             this._setStartedState("stopped");
+            delete this._plebbit._startedSubplebbits[this.address];
+            delete this._plebbit._startedSubplebbits[this.signer.address]; // in case we changed address
             await this._dbHandler.rollbackAllTransactions();
             await this._dbHandler.unlockSubState();
             await this._updateStartedValue();
             clearInterval(this._publishInterval);
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
-            await this._dbHandler.destoryConnection();
+            if (this._dbHandler) await this._dbHandler.destoryConnection();
             log(`Stopped the running of local subplebbit (${this.address})`);
             this._setState("stopped");
         } else if (this.state === "updating") {
@@ -2246,7 +2342,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 this._updateLoopPromise = undefined;
             }
             clearTimeout(this._updateLocalSubTimeout);
-            await this._dbHandler.destoryConnection();
+            if (this._dbHandler) await this._dbHandler.destoryConnection();
             this._setUpdatingStateWithEventEmissionIfNewState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");
