@@ -1402,7 +1402,7 @@ export class DbHandler {
     async isSubStartLocked(subAddress = this._subplebbit.address): Promise<boolean> {
         const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
-        const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
+        const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 10000 });
         return isLocked;
     }
 

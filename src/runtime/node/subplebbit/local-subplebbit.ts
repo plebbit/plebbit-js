@@ -398,8 +398,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const currentDbState = await this._getDbInternalState(false);
         if (!currentDbState) throw Error("current db state should be defined before updating instance state with it");
 
-        if ("updatedAt" in currentDbState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(currentDbState);
-        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(currentDbState);
+        if ("updatedAt" in currentDbState) {
+            await this.initInternalSubplebbitAfterFirstUpdateNoMerge(currentDbState);
+        } else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(currentDbState);
     }
 
     async _setChallengesToDefaultIfNotDefined(log: Logger) {
@@ -1648,7 +1649,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             update: newCommentUpdate,
             resolveAuthorAddresses: false,
             clientsManager: this._clientsManager,
-            subplebbit: this._rawSubplebbitIpfs!,
+            subplebbit: this,
             comment,
             overrideAuthorAddressIfInvalid: false,
             validatePages: this._plebbit.validatePages,
@@ -1941,7 +1942,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:sync");
 
         try {
-            await this._dbHandler.initDbIfNeeded();
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedState("publishing-ipns");
@@ -2192,8 +2192,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._stopHasBeenCalled = false;
         if (!this._clientsManager.getDefaultIpfs())
             throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
+        await this.initDbHandlerIfNeeded();
         await this._updateStartedValue();
-        if (this.started || this._plebbit._startedSubplebbits[this.address]) throw Error("Can't start a local subplebbit ");
+        if (this.started || this._plebbit._startedSubplebbits[this.address])
+            throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { address: this.address });
         try {
             await this._initBeforeStarting();
             // update started value twice because it could be started prior lockSubStart
@@ -2217,7 +2219,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings); // make sure subplebbit.challenges is using latest props from settings.challenges
         } catch (e) {
             await this.stop(); // Make sure to reset the sub state
-            throw e;
+            const plebbitError =
+                e instanceof PlebbitError
+                    ? e
+                    : new PlebbitError("ERR_SUB_START_FAILED_UNKNOWN_ERROR", { error: e, subAddress: this.address });
+            throw plebbitError;
         }
 
         this._publishLoopPromise = this.syncIpnsWithDb();
