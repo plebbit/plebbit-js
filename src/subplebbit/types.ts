@@ -141,7 +141,6 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
     protocolVersion: SubplebbitIpfsType["protocolVersion"];
     encryption: SubplebbitIpfsType["encryption"];
     _usingDefaultChallenge: boolean;
-    _subplebbitUpdateTrigger: boolean;
     _internalStateUpdateId: string; // uuid v4, everytime we update the internal state of db we will change this id
 }
 
@@ -154,16 +153,13 @@ export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSu
 // RPC server transmitting Internal Subplebbit records to clients
 
 export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType
-    extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_subplebbitUpdateTrigger" | "_internalStateUpdateId"> {
+    extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_internalStateUpdateId"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
     started: boolean;
 }
 
 export interface RpcInternalSubplebbitRecordAfterFirstUpdateType
-    extends Omit<
-        InternalSubplebbitRecordAfterFirstUpdateType,
-        "_subplebbitUpdateTrigger" | "signer" | "_internalStateUpdateId" | "_cidsToUnPin" | "_mfsPathsToRemove"
-    > {
+    extends Omit<InternalSubplebbitRecordAfterFirstUpdateType, "signer" | "_internalStateUpdateId" | "_cidsToUnPin" | "_mfsPathsToRemove"> {
     started: RpcInternalSubplebbitRecordBeforeFirstUpdateType["started"];
     signer: RpcInternalSubplebbitRecordBeforeFirstUpdateType["signer"];
 }
@@ -175,7 +171,4 @@ export type RpcLocalSubplebbitUpdateResultType =
 // This is the object that gets passed to _updateDbInternalState after calling .edit()
 export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
-        Pick<
-            InternalSubplebbitRecordBeforeFirstUpdateType,
-            "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"
-        > {}
+        Pick<InternalSubplebbitRecordBeforeFirstUpdateType, "_usingDefaultChallenge" | "challenges" | "roles"> {}

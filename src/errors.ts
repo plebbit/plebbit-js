@@ -255,7 +255,8 @@ export enum messages {
     ERR_FAILED_TO_IMPORT_CHALLENGE_FILE = "Failed to import challenge file",
     ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION = "invalid getChallenge response from subplebbit challenge",
     ERR_LOCAL_SUBPLEBBIT_RECORD_TOO_LARGE = "Local subplebbit has produced a record that is too large. This is a critical error and a bug in plebbit-js",
-
+    ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS = "Can't load a local subplebbit that's already started in another process. You need to use the same Plebbit instance to load the subplebbit",
+    ERR_CAN_NOT_EDIT_A_LOCAL_SUBPLEBBIT_THAT_IS_ALREADY_STARTED_IN_ANOTHER_PROCESS = "Can't edit a local subplebbit that's already started in another process. You need to use the same Plebbit instance to edit the subplebbit",
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
     ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",

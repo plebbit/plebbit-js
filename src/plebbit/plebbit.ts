@@ -102,7 +102,6 @@ import {
     parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails,
     parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
     parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails,
-    parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails,
     parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails,
     parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails,
     parseSubplebbitAddressWithPlebbitErrorIfItFails,
@@ -164,6 +163,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     _storage!: StorageInterface;
     _updatingSubplebbits: Record<SubplebbitIpfsType["address"], Awaited<ReturnType<Plebbit["createSubplebbit"]>>> = {}; // storing subplebbit instance that are getting updated rn
     _updatingComments: Record<string, Awaited<ReturnType<Plebbit["createComment"]>>> = {}; // storing comment instancse that are getting updated rn
+    _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit> = {}; // storing subplebbit instance that are started rn
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
@@ -616,7 +616,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         if (isLocalSub) {
             // If the sub is already created before, then load it with address only. We don't care about other props
             subplebbit.setAddress(options.address);
-            await subplebbit._loadLocalSubDb();
+            await subplebbit._updateInstancePropsWithStartedSubOrDb();
             log.trace(`Created instance of existing local subplebbit (${subplebbit.address}) with props:`);
             subplebbit.emit("update", subplebbit);
             return subplebbit;
@@ -967,15 +967,18 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     async destroy() {
         // Clean up connections
-        if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
-
-        await this._domainResolver.destroy();
 
         for (const comment of Object.values(this._updatingComments)) await comment.stop();
 
         for (const subplebbit of Object.values(this._updatingSubplebbits)) await subplebbit.stop();
 
-        this._updatingSubplebbits = this._updatingComments = {};
+        for (const subplebbit of Object.values(this._startedSubplebbits)) await subplebbit.stop();
+
+        this._updatingSubplebbits = this._updatingComments = this._startedSubplebbits = {};
+
+        if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
+
+        await this._domainResolver.destroy();
 
         await this._storage.destroy();
         await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));

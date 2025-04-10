@@ -251,7 +251,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         } else throw Error("User called rpcLocalSub.stop() without updating or starting");
     }
 
-    override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
+    override async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<typeof this> {
         const subPropsAfterEdit = await this._plebbit._plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);

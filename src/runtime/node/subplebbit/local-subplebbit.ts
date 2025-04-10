@@ -176,7 +176,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private _cidsToUnPin: Set<string> = new Set<string>();
     private _mfsPathsToRemove: Set<string> = new Set<string>();
-    private _subplebbitUpdateTrigger!: boolean;
+    private _subplebbitUpdateTrigger: boolean = false;
 
     private _pageGenerator!: PageGenerator;
     _dbHandler!: DbHandler;
@@ -192,7 +192,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         super(plebbit);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.started = false;
-        this._subplebbitUpdateTrigger = false;
         this._stopHasBeenCalled = false;
         //@ts-expect-error
         this._challengeAnswerPromises = //@ts-expect-error
@@ -208,7 +207,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return {
             ...remeda.omit(this.toJSONInternalRpcAfterFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
-            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
             _internalStateUpdateId: this._internalStateUpdateId,
             _cidsToUnPin: [...this._cidsToUnPin],
             _mfsPathsToRemove: [...this._mfsPathsToRemove]
@@ -219,7 +217,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return {
             ...remeda.omit(this.toJSONInternalRpcBeforeFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
-            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
             _internalStateUpdateId: this._internalStateUpdateId
         };
     }
@@ -258,7 +255,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     async initInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitRecordAfterFirstUpdateType) {
         await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
-        this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
         this._internalStateUpdateId = newProps._internalStateUpdateId;
         if (Array.isArray(newProps._cidsToUnPin)) newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
         if (Array.isArray(newProps._mfsPathsToRemove)) newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
@@ -267,7 +263,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
-        this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
         this._internalStateUpdateId = newProps._internalStateUpdateId;
     }
 
@@ -458,9 +453,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _calculateLatestUpdateTrigger() {
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
-        const dbInstance = await this._getDbInternalState(true);
-        if (!dbInstance) throw Error("Db instance should be defined prior to publishing a new IPNS");
-        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger || lastPublishTooOld;
+
+        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || lastPublishTooOld;
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToBeUpdated[]) {
@@ -551,7 +545,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         this._subplebbitUpdateTrigger = false;
 
-        await this._updateDbInternalState(remeda.omit(this.toJSONInternalAfterFirstUpdate(), ["address"]));
+        await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
         this._setStartedState("succeeded");
         this._clientsManager.updateIpfsState("stopped");
@@ -714,7 +708,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
 
             this._subplebbitUpdateTrigger = true; // force plebbit-js to produce a new subplebbit.posts and an IPNS with no purged comments
-            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
         }
     }
 
@@ -2101,7 +2094,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({ ...this.toJSONInternalBeforeFirstUpdate(), ...parsedEditOptions });
         log(
             `Subplebbit (${this.address}) props (${remeda.keys.strict(parsedEditOptions)}) has been edited: `,
-            //@ts-expect-error
             remeda.pick(this, remeda.keys.strict(parsedEditOptions))
         );
         this.emit("update", this);
@@ -2169,13 +2161,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const parsedEditOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(newSubplebbitOptions);
 
-        const newInternalProps = <
-            Pick<
-                InternalSubplebbitRecordAfterFirstUpdateType,
-                "_subplebbitUpdateTrigger" | "roles" | "challenges" | "_usingDefaultChallenge"
-            >
-        >{
-            _subplebbitUpdateTrigger: true,
+        const newInternalProps = <Pick<InternalSubplebbitRecordAfterFirstUpdateType, "roles" | "challenges" | "_usingDefaultChallenge">>{
             ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
             ...(parsedEditOptions?.settings?.challenges ? this._parseChallengesToEdit(parsedEditOptions.settings.challenges) : undefined)
         };
@@ -2231,7 +2217,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
 
             this._subplebbitUpdateTrigger = true;
-            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
             this._setStartedState("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
