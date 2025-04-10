@@ -2349,6 +2349,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             try {
                 await kuboClient._client.key.rm(this.signer.ipnsKeyName);
             } catch {}
+
+        try {
+            await kuboClient._client.files.rm("/" + this.address, { recursive: true, flush: true });
+        } catch (e) {
+            log.error("Failed to delete subplebbit mfs folder", "/" + this.address, e);
+        }
+
         log(`Deleted subplebbit (${this.address}) successfully`);
     }
 }
