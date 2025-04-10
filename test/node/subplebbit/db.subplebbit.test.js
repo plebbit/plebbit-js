@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 
 import path from "path";
 import fs from "fs";
@@ -12,9 +12,9 @@ import {
     waitUntilPlebbitSubplebbitsIncludeSubAddress,
     publishRandomPost,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 
-import plebbitVersion from "../../../dist/node/version";
+import plebbitVersion from "../../../dist/node/version.js";
 
 const getTemporaryPlebbitOptions = () => {
     return {
@@ -114,6 +114,8 @@ describeSkipIfRpc("DB Migration", () => {
 
             const subplebbit = await plebbit.createSubplebbit({ address: databaseInfo.address });
             expect(subplebbit.started).to.be.a("boolean"); // make sure it's creating a local sub instance
+            expect(subplebbit.updatedAt).to.be.a("number"); // it should load the internal state from db
+            expect(subplebbit.createdAt).to.be.a("number"); // it should load the internal state from db
 
             await subplebbit.start();
 
