@@ -1440,6 +1440,11 @@ export class DbHandler {
         }
     }
 
+    subDbExists() {
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", this._subplebbit.address);
+        return fs.existsSync(subDbPath);
+    }
+
     async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC").select("cid");
     }

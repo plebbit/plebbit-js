@@ -140,6 +140,7 @@ export class PublicationClientsManager extends ClientsManager {
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
         const sub =
             this._plebbit._updatingSubplebbits[this._publication.subplebbitAddress] ||
+            this._plebbit._startedSubplebbits[this._publication.subplebbitAddress] ||
             (await this._plebbit.createSubplebbit({ address: this._publication.subplebbitAddress }));
 
         this._subplebbitForUpdating = {

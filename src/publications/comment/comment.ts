@@ -852,7 +852,7 @@ export class Comment
     }
 
     override async stop() {
-        if (this.state === "publishing") return super.stop();
+        if (this.state === "publishing") await super.stop();
         this._setUpdatingStateWithEmissionIfNewState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();

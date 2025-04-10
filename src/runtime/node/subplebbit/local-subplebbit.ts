@@ -301,9 +301,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                         dataPath: this._plebbit.dataPath
                     });
                 }
+                const subDbExists = this._dbHandler.subDbExists();
+                if (!subDbExists)
+                    throw new PlebbitError("CAN_NOT_LOAD_LOCAL_SUBPLEBBIT_IF_DB_DOES_NOT_EXIST", {
+                        address: this.address,
+                        dataPath: this._plebbit.dataPath
+                    });
 
                 await this._dbHandler.initDbIfNeeded();
-
                 await this._dbHandler.createOrMigrateTablesIfNeeded();
 
                 await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
@@ -317,8 +322,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
             }
         }
-
-        this._setSubplebbitIpfsIfNeeded();
 
         // need to validate schema of Subplebbit IPFS
         if (this._rawSubplebbitIpfs)
@@ -359,6 +362,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const mergedInternalState = { ...internalStateBefore, ...props };
             await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], mergedInternalState);
             this._internalStateUpdateId = props._internalStateUpdateId;
+            log("Updated sub", this.address, "internal state in db");
             return mergedInternalState as InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType;
         } catch (e) {
             log.error("Failed to update sub", this.address, "internal state in db", e);
@@ -2083,7 +2087,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             this.setAddress(parsedEditOptions.address);
         }
-        await this._updateDbInternalState(parsedEditOptions);
 
         this._subplebbitUpdateTrigger = true;
         if (this.updateCid)
@@ -2181,17 +2184,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             return this._editPropsOnStartedSubplebbit(newProps);
         }
         throw new Error("Can't edit a subplebbit that's started in another process");
-    }
-
-    private _setSubplebbitIpfsIfNeeded() {
-        // A hack for old subplebbit states that don't define _rawSubplebbitIpfs
-        if (this.updatedAt && !this._rawSubplebbitIpfs) {
-            const internalState = this.toJSONInternalAfterFirstUpdate();
-            if (!("signature" in internalState)) throw Error("signature should be defined");
-            this._rawSubplebbitIpfs = <
-                SubplebbitIpfsType //@ts-expect-error
-            >remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature", "protocolVersion"]);
-        }
     }
 
     override async start() {
@@ -2298,9 +2290,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
             try {
-                await this._updateDbInternalState({ _cidsToUnPin: [...this._cidsToUnPin], _mfsPathsToRemove: [...this._mfsPathsToRemove] });
+                await this._updateDbInternalState(
+                    this.updatedAt ? this.toJSONInternalAfterFirstUpdate() : this.toJSONInternalBeforeFirstUpdate()
+                );
             } catch (e) {
-                log.error("Failed to update db internal state with cids to unpin and mfs paths to remove before stopping", e);
+                log.error("Failed to update db internal state before stopping", e);
             }
 
             try {

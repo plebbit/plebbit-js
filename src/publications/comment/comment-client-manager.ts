@@ -453,20 +453,23 @@ export class CommentClientsManager extends PublicationClientsManager {
     }): PageIpfs["comments"][0] | undefined {
         // TODO rewrite this to use updating comments and subplebbit
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
-        const sub: RemoteSubplebbit | undefined = this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress] || opts?.sub;
+        const sub: RemoteSubplebbit | undefined =
+            this._plebbit._startedSubplebbits[this._comment.subplebbitAddress] ||
+            this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress] ||
+            opts?.sub;
         const post: Comment | undefined = this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid!] : opts?.post;
         if (sub && (this._comment.depth === 0 || this._comment.postCid === this._comment.cid))
             return findCommentInPageInstance(sub.posts, this._comment.cid);
 
+        if (post) {
+            const commentInPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
+            if (commentInPost) return commentInPost;
+        }
         if (this._comment.parentCid) {
             const parentCommentReplyPages: Comment["replies"] | undefined =
                 this._plebbit._updatingComments[this._comment.parentCid]?.replies;
             const commentInParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
             if (commentInParent) return commentInParent;
-        }
-        if (post) {
-            const commentInPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
-            if (commentInPost) return commentInPost;
         }
 
         // need to look for comment recursively in this._subplebbitForUpdating
