@@ -3,6 +3,7 @@ import {
     mockPlebbit,
     publishRandomPost,
     publishRandomReply,
+    mockPlebbitV2,
     createSubWithNoChallenge,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
@@ -167,12 +168,32 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await sub.stop();
     });
 
+    it(`Can't create a subplebbit from another Plebbit instance`, async () => {
+        const firstPlebbit = await mockPlebbit();
+        const firstSub = await firstPlebbit.createSubplebbit();
+        await firstSub.start();
+        const differentPlebbit = await mockPlebbitV2({
+            plebbitOptions: { dataPath: firstPlebbit.dataPath },
+            stubStorage: false,
+            mockResolve: true
+        });
+        try {
+            await differentPlebbit.createSubplebbit({ address: firstSub.address });
+            expect.fail("should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS");
+        } finally {
+            await firstPlebbit.destroy();
+            await differentPlebbit.destroy();
+        }
+    });
+
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
         try {
             await plebbit.createSubplebbit({ address: "testEth.eth" });
             expect.fail("Should have thrown");
         } catch (e) {
-            expect(e.code).to.equal("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER");
+            expect(e.code).to.equal("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER");
         }
     });
 
@@ -181,7 +202,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
             await plebbit.createSubplebbit({ address: undefined });
             expect.fail("Should have thrown");
         } catch (e) {
-            expect(e.code).to.equal("ERR_AUTHOR_ADDRESS_UNDEFINED");
+            expect(e.code).to.equal("ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA");
         }
     });
 });

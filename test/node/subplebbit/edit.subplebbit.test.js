@@ -14,7 +14,6 @@ import {
     mockCacheOfTextRecord,
     mockPlebbitV2
 } from "../../../dist/node/test/test-util.js";
-import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import { timestamp } from "../../../dist/node/util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
@@ -57,12 +56,12 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
                 const [keyToEdit, newValue] = Object.entries(editArgs)[0];
                 await subplebbit.edit(editArgs);
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
-                const remoteSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
-                await remoteSubplebbit.update();
-                await resolveWhenConditionIsTrue(remoteSubplebbit, () => remoteSubplebbit[keyToEdit] === newValue);
-                await remoteSubplebbit.stop();
-                expect(remoteSubplebbit[keyToEdit]).to.equal(newValue);
-                expect(jsonifySubplebbitAndRemoveInternalProps(remoteSubplebbit)).to.deep.equal(
+                const updatingRemoteSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
+                await updatingRemoteSubplebbit.update();
+                await resolveWhenConditionIsTrue(updatingRemoteSubplebbit, () => updatingRemoteSubplebbit[keyToEdit] === newValue);
+                await updatingRemoteSubplebbit.stop();
+                expect(updatingRemoteSubplebbit[keyToEdit]).to.equal(newValue);
+                expect(jsonifySubplebbitAndRemoveInternalProps(updatingRemoteSubplebbit)).to.deep.equal(
                     jsonifySubplebbitAndRemoveInternalProps(subplebbit)
                 );
             })
@@ -138,16 +137,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         await resolveWhenConditionIsTrue(subplebbit, () =>
             subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid)
         );
-        expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
-        expect(Object.values(subplebbit.posts.pageCids)).to.deep.equal(
-            new Array(Object.keys(subplebbit.posts.pageCids).length).fill(Object.values(subplebbit.posts.pageCids)[0])
-        ); // All cids should be the same since it's just one post, so the sort result should be the same for all pages
-
-        for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-            const pageComments = await loadAllPages(pageCid, subplebbit.posts);
-            expect(pageComments.length).to.equal(1);
-            expect(pageComments[0].cid).to.equal(postToPublishAfterEdit.cid);
-        }
+        expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal([]); // empty array because it's a single preloaded page
     });
 });
 
@@ -172,8 +162,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         expect(subTwo.title).to.equal(newTitle);
         expect(jsonifyLocalSubWithNoInternalProps(subTwo)).to.deep.equal(jsonifyLocalSubWithNoInternalProps(subOne));
 
-        subOne.stop();
-        subTwo.stop();
+        await subTwo.stop();
     });
 
     [
@@ -268,7 +257,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
 
             await startedSubplebbit.stop();
 
-            expect(subplebbit.rules).to.equal(undefined);
+            expect(subplebbit.rules).to.equal(undefined); // subplebbit is not updating, started or editing so it has no way to get the rules
 
             const newlyCreatedSubplebbit = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
             expect(newlyCreatedSubplebbit.title).to.equal(subplebbitTitle);
