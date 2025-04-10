@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import Plebbit from "../../dist/node";
-import { itIfRpc, itSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util";
+import { createSubWithNoChallenge, itIfRpc, itSkipIfRpc, mockPlebbit, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util";
 
 // example of node only tests
 
@@ -77,5 +77,17 @@ describe(`Plebbit.challenges`, async () => {
             "evm-contract-call",
             "publication-match"
         ]);
+    });
+});
+
+describe(`plebbit.destroy()`, async () => {
+    it(`plebbit.destroy() should stop running local sub`, async () => {
+        const plebbit = await mockPlebbit();
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        expect(sub.state).to.equal("started");
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await plebbit.destroy();
+        expect(sub.state).to.equal("stopped");
     });
 });

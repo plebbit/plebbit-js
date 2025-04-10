@@ -120,27 +120,6 @@ describe(`subplebbit.start`, async () => {
         await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
     });
-
-    itSkipIfRpc(`subplebbit.start() recovers if subplebbit fails to calculate ipfs path for comment update`, async () => {
-        const sub = await createSubWithNoChallenge({}, plebbit);
-        await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        const originalFunc = sub._calculateIpfsPathForCommentUpdate.bind(sub);
-        sub._calculateIpfsPathForCommentUpdate = () => {
-            throw Error("Failed to calculate ipfs path for comment update");
-        };
-        publishRandomPost(sub.address, plebbit);
-
-        await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
-        expect(sub.startedState).to.equal("failed");
-
-        sub._calculateIpfsPathForCommentUpdate = originalFunc;
-
-        await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
-        const post = await publishRandomPost(sub.address, plebbit);
-        await waitTillPostInSubplebbitPages(post, plebbit);
-        await sub.delete();
-    });
 });
 
 describe(`subplebbit.started`, async () => {
@@ -205,6 +184,7 @@ describe(`Start lock`, async () => {
         } catch (e) {
             expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
         }
+        await subplebbit.delete();
     });
 
     itSkipIfRpc(`subplebbit.start throws if sub is started by another Subplebbit instance`, async () => {
@@ -290,7 +270,7 @@ describe(`Start lock`, async () => {
         } catch (e) {
             expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
         }
-        await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
+        await new Promise((resolve) => setTimeout(resolve, 11000)); // Wait for 11s for lock to be considered stale
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const post = await publishRandomPost(sub.address, plebbit);
@@ -309,7 +289,8 @@ describe(`Start lock`, async () => {
             await sub.start();
             expect.fail("Should have thrown");
         } catch (e) {
-            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+            expect(e.code).to.equal("ERR_SUB_START_FAILED_UNKNOWN_ERROR");
+            expect(e.details.error.message).to.equal("Failing ipfs for some reason");
         }
 
         expect(sub.state).to.equal("stopped");

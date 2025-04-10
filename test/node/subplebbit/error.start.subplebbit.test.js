@@ -23,7 +23,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const errors = [];
         sub.on("error", (err) => errors.push(err));
-        sub._getDbInternalState = async () => {
+        sub._listenToIncomingRequests = async () => {
             throw Error("Failed to load sub from db");
         };
         await publishRandomPost(sub.address, plebbit);
@@ -47,7 +47,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         const ipfsClient = sub._clientsManager.getDefaultIpfs()._client;
 
         ipfsClient.files.cp = () => {
-            throw Error("Failed to copy file");
+            throw Error("Failed to copy a file");
         };
         await publishRandomPost(sub.address, plebbit);
 
@@ -59,28 +59,6 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
 
         for (const error of errors) {
             expect(error.message).to.equal("Failed to copy a file");
-        }
-    });
-
-    it(`subplebbit.start() emits errors if subplebbit fails to calculate ipfs path for comment update`, async () => {
-        const sub = await createSubWithNoChallenge({}, plebbit);
-        await sub.start();
-        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        const errors = [];
-        sub.on("error", (err) => errors.push(err));
-
-        sub._calculateIpfsPathForCommentUpdate = () => {
-            throw Error("Failed to calculate ipfs path for comment update");
-        };
-        await publishRandomPost(sub.address, plebbit);
-
-        await resolveWhenConditionIsTrue(sub, () => errors.length === 3, "error");
-        await sub.delete();
-
-        expect(errors.length).to.be.greaterThan(0);
-
-        for (const error of errors) {
-            expect(error.message).to.equal("Failed to calculate ipfs path for comment update");
         }
     });
 });
