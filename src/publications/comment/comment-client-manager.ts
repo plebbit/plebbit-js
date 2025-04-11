@@ -83,8 +83,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!subIpns.posts?.pages?.hot) return undefined; // try to use preloaded pages if possible
         const findInCommentAndChildren = (pageComment: PageIpfs["comments"][0]): PageIpfs["comments"][number] | undefined => {
             if (pageComment.commentUpdate.cid === commentCidToLookFor) return pageComment;
-            if (!pageComment.commentUpdate.replies?.pages?.topAll) return undefined;
-            for (const childComment of pageComment.commentUpdate.replies.pages.topAll.comments) {
+            if (!pageComment.commentUpdate.replies?.pages?.best) return undefined;
+            for (const childComment of pageComment.commentUpdate.replies.pages.best.comments) {
                 const commentInChild = findInCommentAndChildren(childComment);
                 if (commentInChild) return commentInChild;
             }

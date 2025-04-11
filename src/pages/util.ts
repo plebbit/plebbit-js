@@ -190,8 +190,8 @@ export function processAllCommentsRecursively(comments: PageIpfs["comments"], pr
     comments.forEach((comment) => processor(comment));
 
     for (const comment of comments)
-        if (comment.commentUpdate.replies?.pages?.topAll?.comments)
-            processAllCommentsRecursively(comment.commentUpdate.replies.pages.topAll.comments, processor);
+        if (comment.commentUpdate.replies?.pages?.best?.comments)
+            processAllCommentsRecursively(comment.commentUpdate.replies.pages.best.comments, processor);
 }
 
 // To use for both subplebbit.posts and comment.replies

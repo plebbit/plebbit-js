@@ -85,7 +85,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
     it(`Comments' IPFS are repinned`, async () => {
         const subLoaded = await remotePlebbit.getSubplebbit(subAfterMigration.address);
         const postFromPage = subLoaded.posts.pages.hot.comments[0];
-        const commentIpfs = JSON.parse(await remotePlebbit.fetchCid(postFromPage.replies.pages.topAll.comments[0].cid));
+        const commentIpfs = JSON.parse(await remotePlebbit.fetchCid(postFromPage.replies.pages.best.comments[0].cid));
         expect(commentIpfs.subplebbitAddress).to.equal(subAfterMigration.address); // Make sure it was loaded correctly
     });
     it(`Comments' CommentUpdate are republished`, async () => {

@@ -3,14 +3,14 @@ import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     mockRemotePlebbit,
-    mockCommentToReturnSpecificCommentUpdate,
     publishWithExpectedResult,
     mockGatewayPlebbit,
     createCommentUpdateWithInvalidSignature,
     describeSkipIfRpc,
     mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    mockPostToReturnSpecificCommentUpdate
 } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
@@ -69,7 +69,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         const expectedStates = [
             "fetching-ipfs", // fetching comment ipfs of reply
             "stopped",
-            "fetching-ipfs", // fetching post ipfs of reply
+            "fetching-ipfs", // fetching comment-ipfs of post
             "stopped",
             "fetching-subplebbit-ipns",
             "fetching-subplebbit-ipfs",
@@ -83,7 +83,6 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         reply.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
 
         await reply.update();
-        mockCommentToNotUsePagesForUpdates(reply);
 
         await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
         await reply.stop();
@@ -217,12 +216,14 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
                 })
             );
         await createdComment.update();
-        mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+        mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
         await createErrorPromise();
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 3));
         await createdComment.stop();
+
+        expect(createdComment.updatedAt).to.be.undefined; // should not accept the comment update
 
         const expectedKuboClientStates = [
             "fetching-ipfs", // fetching comment-ipfs

@@ -62,6 +62,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
                 if (comment.depth === depth - 1) parent = comment;
             });
+            expect(parent).to.exist;
             const parentCommentInstance = await remotePlebbit.createComment({ cid: parent.cid });
             await parentCommentInstance.update();
             await resolveWhenConditionIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");

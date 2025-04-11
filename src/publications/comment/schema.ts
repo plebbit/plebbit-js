@@ -136,7 +136,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
 });
 
 export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
-    replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+    replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'best', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }).strict();
 
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));

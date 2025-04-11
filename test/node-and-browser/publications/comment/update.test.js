@@ -9,7 +9,7 @@ import {
     addStringToIpfs,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
-    mockCommentToReturnSpecificCommentUpdate,
+    mockPostToReturnSpecificCommentUpdate,
     describeSkipIfRpc,
     isPlebbitFetchingUsingGateways,
     itSkipIfRpc
@@ -266,7 +266,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await createdComment.update();
 
-            mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+            mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
             await Promise.all([
                 resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),
@@ -305,7 +305,7 @@ getRemotePlebbitConfigs().map((config) => {
             createdComment.on("error", (err) => errors.push(err));
 
             await createdComment.update();
-            await mockCommentToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
+            await mockPostToReturnSpecificCommentUpdate(createdComment, invalidCommentUpdateJson);
 
             await Promise.all([
                 resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),
@@ -343,7 +343,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await createdComment.update();
 
-            await mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(invalidCommentUpdateSchema));
+            await mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(invalidCommentUpdateSchema));
 
             await Promise.all([
                 resolveWhenConditionIsTrue(createdComment, () => errors.length === 2, "error"),

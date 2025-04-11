@@ -3,6 +3,7 @@ import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishRandomReply,
+    mockPlebbit,
     publishWithExpectedResult,
     publishRandomPost,
     mockRemotePlebbit,
@@ -13,7 +14,9 @@ import {
     iterateThroughPagesToFindCommentInParentPagesInstance,
     mockPlebbitV2,
     waitTillPostInSubplebbitInstancePages,
-    waitTillReplyInParentPagesInstance
+    waitTillReplyInParentPagesInstance,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { signComment } from "../../../../dist/node/signer/signatures.js";
@@ -326,6 +329,33 @@ getRemotePlebbitConfigs().map((config) => {
                 parents.push(reply);
             })
         );
+
+        it(`comment.stop() after publish stops loading of comment updates`, async () => {
+            const plebbit = await mockPlebbit();
+
+            const comment = await publishRandomPost(subplebbitAddress, plebbit);
+            await comment.update();
+            await resolveWhenConditionIsTrue(comment, () => comment.updatedAt);
+            // now _updatingSubplebbits and _updatingComments are set
+
+            expect(plebbit._updatingSubplebbits).to.not.deep.equal({});
+            expect(plebbit._updatingComments).to.not.deep.equal({});
+            await comment.stop();
+
+            let attemptedToLoadCommentUpdates = false;
+            comment.on("update", () => {
+                attemptedToLoadCommentUpdates = true;
+            });
+            comment.on("updatingstatechange", () => {
+                attemptedToLoadCommentUpdates = true;
+            });
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            expect(attemptedToLoadCommentUpdates).to.be.false;
+            expect(plebbit._updatingSubplebbits).to.deep.equal({});
+            expect(plebbit._updatingComments).to.deep.equal({});
+
+            await plebbit.destroy();
+        });
     });
 });
 

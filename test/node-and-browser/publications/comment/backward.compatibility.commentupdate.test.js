@@ -7,7 +7,7 @@ import {
     publishRandomPost,
     generateMockPost,
     publishChallengeVerificationMessageWithEncryption,
-    mockCommentToReturnSpecificCommentUpdate,
+    mockPostToReturnSpecificCommentUpdate,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
@@ -41,13 +41,13 @@ getRemotePlebbitConfigs().map((config) => {
 
             const postToUpdate = await plebbit.getComment(post.cid);
             let updateEmitted = false;
-            postToUpdate.once("update", () => (updateEmitted = true));
             const errorPromise = new Promise((resolve) => postToUpdate.once("error", resolve));
 
             // should emit an error because we did not include extraProp in signedPropertyNames
 
             await postToUpdate.update();
-            mockCommentToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(invalidCommentUpdate));
+            postToUpdate.once("update", () => (updateEmitted = true));
+            mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(invalidCommentUpdate));
 
             const error = await errorPromise;
 
@@ -86,11 +86,13 @@ getRemotePlebbitConfigs().map((config) => {
             const postToUpdate = await plebbit.getComment(post.cid);
 
             await postToUpdate.update();
-            mockCommentToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
+            mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
 
             await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
 
             await postToUpdate.stop();
+
+            expect(postToUpdate.updatedAt).to.be.be.a("number"); // should accept the comment update with extra props
 
             // should accept the comment update because the extra prop is part of signedPropertyNames
 
@@ -117,11 +119,13 @@ getRemotePlebbitConfigs().map((config) => {
             const postToUpdate = await plebbit.getComment(post.cid);
 
             await postToUpdate.update();
-            mockCommentToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
+            mockPostToReturnSpecificCommentUpdate(postToUpdate, JSON.stringify(commentUpdateWithExtraProps));
 
             await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
 
             await postToUpdate.stop();
+
+            expect(postToUpdate.updatedAt).to.be.be.a("number"); // should accept the comment update with extra props
 
             const shapes = [
                 postToUpdate,

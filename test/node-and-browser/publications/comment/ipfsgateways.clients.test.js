@@ -4,13 +4,13 @@ import {
     generateMockPost,
     publishWithExpectedResult,
     describeSkipIfRpc,
-    mockCommentToReturnSpecificCommentUpdate,
     mockGatewayPlebbit,
     mockCommentToNotUsePagesForUpdates,
     createCommentUpdateWithInvalidSignature,
     mockRemotePlebbit,
     resolveWhenConditionIsTrue,
-    mockPlebbitToReturnSpecificSubplebbit
+    mockPlebbitToReturnSpecificSubplebbit,
+    mockPostToReturnSpecificCommentUpdate
 } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
@@ -166,13 +166,14 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         const createErrorPromise = () => new Promise((resolve) => createdComment.once("error", resolve));
         await createdComment.update();
 
-        mockCommentToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
+        mockPostToReturnSpecificCommentUpdate(createdComment, JSON.stringify(commentUpdateWithInvalidSignatureJson));
 
         await createErrorPromise();
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 3));
         await createdComment.stop();
 
+        expect(createdComment.updatedAt).to.be.undefined; // should not accept the comment update
         const expectedIpfsGatewayStates = [
             "fetching-ipfs", // fetching comment-ipfs
             "stopped",

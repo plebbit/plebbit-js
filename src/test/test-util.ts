@@ -189,8 +189,8 @@ export async function loadAllUniqueCommentsUnderCommentInstance(comment: Comment
         throw Error("Comment replies instance has no comments under it");
     const allCommentsInPreloadedPages = Object.keys(comment.replies.pageCids).length === 0 && Object.keys(comment.replies.pages).length > 0;
     if (allCommentsInPreloadedPages) {
-        const allComments = comment.replies.pages.topAll?.comments;
-        if (!allComments) throw Error("No comments found under comment.replies.pages.topAll");
+        const allComments = comment.replies.pages.best?.comments;
+        if (!allComments) throw Error("No comments found under comment.replies.pages.best");
         return allComments;
     } else {
         // we have multiple pages, need to load all pages and merge them
@@ -1216,24 +1216,26 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
     }
 }
 
-export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
-    const updatingComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
-    if (!updatingComment) throw Error("Comment should be updating before starting to mock");
-    if (commentToBeMocked._plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
+export function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string) {
+    const updatingPostComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid!];
+    if (!updatingPostComment) throw Error("Post should be updating before starting to mock");
+    if (commentToBeMocked._plebbit._plebbitRpcClient)
+        throw Error("Can't mock Post to return specific CommentUpdate record when plebbit is using RPC");
 
-    delete updatingComment.updatedAt;
-    delete updatingComment._rawCommentUpdate;
+    delete updatingPostComment.updatedAt;
+    delete updatingPostComment._rawCommentUpdate;
     //@ts-expect-error
-    delete updatingComment._subplebbitForUpdating?.subplebbit?.updateCid;
+    delete updatingPostComment._subplebbitForUpdating?.subplebbit?.updateCid;
     //@ts-expect-error
-    if (updatingComment._subplebbitForUpdating?.subplebbit?._clientsManager?._updateCidsAlreadyLoaded)
+    if (updatingPostComment._subplebbitForUpdating?.subplebbit?._clientsManager?._updateCidsAlreadyLoaded)
         //@ts-expect-error
-        updatingComment._subplebbitForUpdating.subplebbit._clientsManager._updateCidsAlreadyLoaded = new Set();
-    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
-    if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
-        const originalFetch = updatingComment._clientsManager.fetchFromMultipleGateways.bind(updatingComment._clientsManager);
+        updatingPostComment._subplebbitForUpdating.subplebbit._clientsManager._updateCidsAlreadyLoaded = new Set();
 
-        updatingComment._clientsManager.fetchFromMultipleGateways = async (...args) => {
+    mockCommentToNotUsePagesForUpdates(commentToBeMocked);
+    if (isPlebbitFetchingUsingGateways(updatingPostComment._plebbit)) {
+        const originalFetch = updatingPostComment._clientsManager.fetchFromMultipleGateways.bind(updatingPostComment._clientsManager);
+
+        updatingPostComment._clientsManager.fetchFromMultipleGateways = async (...args) => {
             const commentUpdateCid = await addStringToIpfs(commentUpdateRecordString);
             if (args[0].recordPlebbitType === "comment-update")
                 return originalFetch({
@@ -1245,9 +1247,9 @@ export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked
         };
     } else {
         // we're using kubo/helia
-        const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
+        const originalFetch = updatingPostComment._clientsManager._fetchCidP2P.bind(updatingPostComment._clientsManager);
         //@ts-expect-error
-        updatingComment._clientsManager._fetchCidP2P = (...args) => {
+        updatingPostComment._clientsManager._fetchCidP2P = (...args) => {
             if (args[0].endsWith("/update")) {
                 return commentUpdateRecordString;
             } else return originalFetch(...args);
@@ -1368,7 +1370,7 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
 }
 
 export async function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit) {
-    const postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.topAll?.nextCid);
+    const postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
     if (postInPage) return postInPage;
 
     const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
@@ -1380,7 +1382,7 @@ export async function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubp
 
 export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit) {
     const post = await findOrGeneratePostWithMultiplePages(subplebbit);
-    const replyInPage = post.replies?.pages?.topAll?.comments[0];
+    const replyInPage = post.replies?.pages?.best?.comments[0];
     if (replyInPage) return replyInPage;
 
     //@ts-expect-error
@@ -1403,9 +1405,9 @@ export function mockReplyToUseParentPagesForUpdates(reply: Comment) {
         // this should stop plebbit-js from assuming the post replies is a single preloaded page
         const updatingSubInstance = reply._plebbit._updatingSubplebbits[postInstance.subplebbitAddress];
         const updatingParentInstance = reply._plebbit._updatingComments[reply.parentCid!];
-        if (postInstance.replies.pages.topAll) postInstance.replies.pages.topAll.comments = [];
+        if (postInstance.replies.pages.best) postInstance.replies.pages.best.comments = [];
         if (updatingSubInstance?.posts.pages.hot) updatingSubInstance.posts.pages.hot.comments = [];
-        if (updatingParentInstance?.replies?.pages?.topAll) updatingParentInstance.replies.pages.topAll.comments = [];
+        if (updatingParentInstance?.replies?.pages?.best) updatingParentInstance.replies.pages.best.comments = [];
         return originalFunc(postInstance);
     };
 }
@@ -1475,5 +1477,5 @@ export function processAllCommentsRecursively(
     comments.forEach((comment) => processor(comment));
 
     for (const comment of comments)
-        if (comment.replies?.pages?.topAll?.comments) processAllCommentsRecursively(comment.replies.pages.topAll.comments, processor);
+        if (comment.replies?.pages?.best?.comments) processAllCommentsRecursively(comment.replies.pages.best.comments, processor);
 }

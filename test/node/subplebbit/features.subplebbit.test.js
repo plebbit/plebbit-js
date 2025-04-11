@@ -25,17 +25,21 @@ describe(`subplebbit.features.requirePostLink`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
-        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLink: true } });
         expect(subplebbit.features.requirePostLink).to.be.true;
 
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.requirePostLink);
+
         expect(remoteSub.features.requirePostLink).to.be.true;
+        await remoteSub.stop();
     });
 
     it(`Can't publish a post with invalid link`, async () => {
@@ -71,12 +75,14 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 
     it(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
-        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLinkIsMedia: true } });
+
         expect(subplebbit.features.requirePostLinkIsMedia).to.be.true;
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.requirePostLinkIsMedia);
         expect(remoteSub.features.requirePostLinkIsMedia).to.be.true;
+        await remoteSub.stop();
     });
 
     it(`Can't publish a post with link that isn't of a media`, async () => {
@@ -110,16 +116,21 @@ describe(`subplebbit.features.noUpvotes`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Feature is updated correctly in subplebbit.features`, async () => {
         expect(subplebbit.features).to.be.undefined;
-        const oldUpdatedAt = subplebbit.updatedAt;
+
         await subplebbit.edit({ features: { ...subplebbit.features, noUpvotes: true } });
         expect(subplebbit.features.noUpvotes).to.be.true;
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.noUpvotes); // that means we published a new update
+
         expect(remoteSub.features.noUpvotes).to.be.true;
+        await remoteSub.stop();
     });
 
     it(`Not allowed to publish upvotes if subplebbit.features.noUpvotes=true`, async () => {
@@ -150,15 +161,19 @@ describe(`subplebbit.features.noDownvotes`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Feature is updated correctly in subplebbit.features`, async () => {
         expect(subplebbit.features).to.be.undefined;
-        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, noDownvotes: true } });
         expect(subplebbit.features.noDownvotes).to.be.true;
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        await remoteSub.update();
+        await resolveWhenConditionIsTrue(remoteSub, () => remoteSub.features?.noDownvotes); // that means we published a new update
+
+        await remoteSub.stop();
         expect(remoteSub.features.noDownvotes).to.be.true;
     });
 
@@ -319,6 +334,8 @@ describe(`subplebbit.features.noReplyUpvotes`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Not allowed to publish upvotes to replies if subplebbit.features.noReplyUpvotes=true`, async () => {

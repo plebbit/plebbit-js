@@ -82,6 +82,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         after(async () => {
             await post.stop();
+            await plebbit.destroy();
         });
 
         it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
