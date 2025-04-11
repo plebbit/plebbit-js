@@ -167,7 +167,7 @@ describeSkipIfRpc(`verify pages`, async () => {
             const invalidPage = remeda.clone(validPageIpfsFixture);
             const commentWithRepliesIndex = invalidPage.comments.findIndex((pageComment) => pageComment.commentUpdate.replyCount > 0);
             expect(commentWithRepliesIndex).to.be.greaterThanOrEqual(0);
-            invalidPage.comments[commentWithRepliesIndex].commentUpdate.replies.pages.topAll.comments[0].comment.parentCid += "123"; // Should invalidate page
+            invalidPage.comments[commentWithRepliesIndex].commentUpdate.replies.pages.best.comments[0].comment.parentCid += "123"; // Should invalidate page
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });

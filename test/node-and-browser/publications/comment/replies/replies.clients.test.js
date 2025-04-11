@@ -101,7 +101,7 @@ describe(`comment.replies.clients`, async () => {
             await comment.update();
             await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
             const mockedPageIpfs = await addStringToIpfs(
-                JSON.stringify({ comments: [comment.replies.pages.topAll.comments[0].pageComment] })
+                JSON.stringify({ comments: [comment.replies.pages.best.comments[0].pageComment] })
             );
             comment.replies.pageCids.new = mockedPageIpfs; // random cid
 

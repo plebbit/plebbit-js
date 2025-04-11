@@ -70,10 +70,10 @@ getRemotePlebbitConfigs().map((config) => {
             secondLevelReply = await publishRandomReply(firstLevelReply, plebbit);
             thirdLevelReply = await publishRandomReply(secondLevelReply, plebbit);
             await waitTillReplyInParentPagesInstance(firstLevelReply, post);
-            expect(post.replies.pages.topAll).to.exist;
-            expect(post.replies.pages.topAll.comments.length).to.equal(1);
-            expect(post.replies.pages.topAll.comments[0].cid).to.equal(firstLevelReply.cid);
-            expect(post.replies.pages.topAll.nextCid).to.be.undefined; // only a single preloaded page
+            expect(post.replies.pages.best).to.exist;
+            expect(post.replies.pages.best.comments.length).to.equal(1);
+            expect(post.replies.pages.best.comments[0].cid).to.equal(firstLevelReply.cid);
+            expect(post.replies.pages.best.nextCid).to.be.undefined; // only a single preloaded page
             expect(post.replies.pageCids).to.deep.equal({}); // no page cids cause it's a single preloaded page
         });
         it(`A preloaded page should not have a corresponding CID in post.replies.pageCids`, async () => {
@@ -84,7 +84,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A post should have pageCids after maxing out its replies`, async () => {
             await forceSubplebbitToGenerateAllRepliesPages(post);
             expect(post.replies.pageCids).to.not.deep.equal({}); // we have multiple pages now
-            expect(post.replies.pages.topAll.nextCid).to.exist;
+            expect(post.replies.pages.best.nextCid).to.exist;
         });
 
         it(`A preloaded page should not have a CID in post.replies.pageCids after maxing out its replies`, async () => {
@@ -167,10 +167,10 @@ getRemotePlebbitConfigs().map((config) => {
         it(`If all replies fit in a single preloaded page, there should not be any pageCids on CommentUpdate`, async () => {
             const replyUnderReply = await publishRandomReply(reply, plebbit);
             await waitTillReplyInParentPagesInstance(replyUnderReply, reply);
-            expect(reply.replies.pages.topAll).to.exist;
-            expect(reply.replies.pages.topAll.comments.length).to.equal(1);
-            expect(reply.replies.pages.topAll.comments[0].cid).to.equal(replyUnderReply.cid);
-            expect(reply.replies.pages.topAll.nextCid).to.be.undefined; // only a single preloaded page
+            expect(reply.replies.pages.best).to.exist;
+            expect(reply.replies.pages.best.comments.length).to.equal(1);
+            expect(reply.replies.pages.best.comments[0].cid).to.equal(replyUnderReply.cid);
+            expect(reply.replies.pages.best.nextCid).to.be.undefined; // only a single preloaded page
             expect(reply.replies.pageCids).to.deep.equal({}); // no page cids cause it's a single preloaded page
         });
 
@@ -182,7 +182,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A reply should have pageCids after maxing out its replies`, async () => {
             await forceSubplebbitToGenerateAllRepliesPages(reply);
             expect(reply.replies.pageCids).to.not.deep.equal({}); // we have multiple pages now
-            expect(reply.replies.pages.topAll.nextCid).to.exist;
+            expect(reply.replies.pages.best.nextCid).to.exist;
         });
 
         it(`A preloaded page should not have a CID in reply.replies.pageCids after maxing out its replies`, async () => {
@@ -287,9 +287,9 @@ getRemotePlebbitConfigs().map((config) => {
         it(`replies.validatePage will throw if any comment is invalid`, async () => {
             const plebbit = await config.plebbitInstancePromise({ validatePages: false });
 
-            const pageWithInvalidComment = postWithReplies.replies.pages.topAll.nextCid
+            const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
             pageWithInvalidComment.comments[0].pageComment.comment.content = "this is to invalidate signature";
 
             const post = await plebbit.getComment(postWithReplies.cid);
@@ -305,9 +305,9 @@ getRemotePlebbitConfigs().map((config) => {
         it(`replies.validatePage will throw if any comment is not of the same post`, async () => {
             const plebbit = await config.plebbitInstancePromise({ validatePages: false });
 
-            const pageWithInvalidComment = postWithReplies.replies.pages.topAll.nextCid
+            const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
             pageWithInvalidComment.comments[0].pageComment.comment.postCid += "1"; // will be a different post cid
 
             const post = await plebbit.getComment(postWithReplies.cid);
@@ -325,9 +325,9 @@ getRemotePlebbitConfigs().map((config) => {
         it(`replies.validatePage will throw if postCid not defined on the parent comment`, async () => {
             const plebbit = await config.plebbitInstancePromise({ validatePages: false });
 
-            const pageWithInvalidComment = postWithReplies.replies.pages.topAll.nextCid
+            const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             const post = await plebbit.getComment(postWithReplies.cid);
             delete post.postCid;
@@ -340,7 +340,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("validates flat pages correctly", async () => {
-            if (!postWithReplies.replies.pages.topAll.nextCid) return; // can only test flat pages when we have multiple pages
+            if (!postWithReplies.replies.pages.best.nextCid) return; // can only test flat pages when we have multiple pages
             // Get a flat page
             const flatSortName = Object.keys(REPLIES_SORT_TYPES).find((name) => REPLIES_SORT_TYPES[name].flat);
             const flatPage = await postWithReplies.replies.getPage(postWithReplies.replies.pageCids[flatSortName]);
@@ -367,9 +367,9 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("fails validation when a comment has invalid depth (not parent.depth + 1)", async () => {
-            const invalidPage = postWithReplies.replies.pages.topAll.nextCid
+            const invalidPage = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             invalidPage.comments[0].pageComment.comment.depth = 5;
             invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
@@ -385,9 +385,9 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("fails validation when a comment has different subplebbitAddress", async () => {
-            const invalidPage = postWithReplies.replies.pages.topAll.nextCid
+            const invalidPage = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             invalidPage.comments[0].pageComment.comment.subplebbitAddress = "different-address";
             invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
@@ -404,9 +404,9 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("fails validation when a reply has incorrect parentCid", async () => {
-            const invalidPage = postWithReplies.replies.pages.topAll.nextCid
+            const invalidPage = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             // Change the parentCid to an invalid value
             invalidPage.comments[0].pageComment.comment.parentCid = "QmInvalidParentCid";
@@ -421,9 +421,9 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("fails validation when calculated CID doesn't match commentUpdate.cid", async () => {
-            const invalidPage = postWithReplies.replies.pages.topAll.nextCid
+            const invalidPage = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             // Modify the comment but keep the same commentUpdate.cid
             invalidPage.comments[0].pageComment.comment.timestamp += 1000; // Change timestamp
@@ -440,9 +440,9 @@ getRemotePlebbitConfigs().map((config) => {
 
         it("validates empty pages (no comments)", async () => {
             // Create an empty page
-            const validPage = postWithReplies.replies.pages.topAll.nextCid
+            const validPage = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
-                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.topAll));
+                : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
             const emptyPage = {
                 ...validPage,
                 comments: []

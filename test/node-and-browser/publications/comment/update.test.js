@@ -69,7 +69,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(recreatedReply.updatedAt).to.be.a("number");
         });
 
-        it(`comment.stop() stops comment updates (before update)`, async () => {
+        it(`comment.stop() stops loading of comment updates (before update)`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
@@ -83,7 +83,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(updatedHasBeenCalled).to.be.false;
         });
 
-        it(`comment.stop() stops comment updates (after update)`, async () => {
+        it(`comment.stop() stops loading of comment updates (after update)`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
             const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });

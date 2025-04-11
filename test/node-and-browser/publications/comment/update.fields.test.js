@@ -63,10 +63,10 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
-            await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit);
+            await publishRandomReply(post.replies.pages.best.comments[0], plebbit);
             await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
             expect(post.replyCount).to.equal(2);
-            expect(post.lastChildCid).to.equal(post.replies.pages.topAll.comments[0].cid);
+            expect(post.lastChildCid).to.equal(post.replies.pages.best.comments[0].cid);
         });
     });
 

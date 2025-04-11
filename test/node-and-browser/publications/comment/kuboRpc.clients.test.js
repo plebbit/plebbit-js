@@ -63,7 +63,7 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
 
     it(`Correct order of kuboRpcClients state when updating a reply that was created with plebbit.createComment({cid}) and the post has a single preloaded page`, async () => {
         const sub = await plebbit.getSubplebbit(signers[0].address);
-        const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.topAll.comments[0].cid;
+        const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
         const reply = await plebbit.createComment({ cid: replyCid });
 
         const expectedStates = [

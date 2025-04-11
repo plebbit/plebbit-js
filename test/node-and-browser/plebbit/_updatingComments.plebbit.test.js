@@ -22,7 +22,7 @@ getRemotePlebbitConfigs().map((config) => {
                 { commentType: "post", cid: sub.posts.pages.hot.comments[0].cid },
                 {
                     commentType: "reply",
-                    cid: sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.topAll).replies.pages.topAll.comments[0].cid
+                    cid: sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.best).replies.pages.best.comments[0].cid
                 }
             ];
 
@@ -241,7 +241,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Calling reply.stop() when it's subscribed to a post and post is updating only for reply should remove both reply and post from _updatingComments`, async () => {
             const plebbit = await config.plebbitInstancePromise();
-            const replyCid = sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.topAll).replies.pages.topAll.comments[0]
+            const replyCid = sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.best).replies.pages.best.comments[0]
                 .cid;
             const reply = await plebbit.createComment({ cid: replyCid });
             await reply.update();

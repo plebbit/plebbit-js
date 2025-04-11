@@ -260,11 +260,11 @@ getRemotePlebbitConfigs().map((config) => {
 
                 const post = await plebbit.getComment(newPost.cid);
                 await post.update();
-                await resolveWhenConditionIsTrue(post, () => post.replies.pages.topAll);
+                await resolveWhenConditionIsTrue(post, () => post.replies.pages.best);
                 await post.stop();
 
                 // Get a replies page
-                const repliesPage = remeda.clone(post.replies.pages.topAll);
+                const repliesPage = remeda.clone(post.replies.pages.best);
 
                 // This should fail because we're using a replies page with posts.validatePage
                 try {

@@ -123,11 +123,11 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(post, () => post.replyCount >= 1);
             expect(post.content).to.be.a("string");
             expect(post.replyCount).to.equal(1);
-            expect(post.replies.pages.topAll.comments.length).to.equal(1);
+            expect(post.replies.pages.best.comments.length).to.equal(1);
 
             await post.stop();
 
-            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [post.replies.pages.topAll["comments"][0].pageComment] }));
+            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [post.replies.pages.best["comments"][0].pageComment] }));
             expect(pageCid).to.be.a("string");
 
             const postClone = await plebbit.createComment({

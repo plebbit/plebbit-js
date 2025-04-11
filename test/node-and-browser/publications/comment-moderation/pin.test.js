@@ -284,9 +284,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(post.replyCount).to.be.greaterThan(5); // Arbitary number
             replyToPin = await publishRandomReply(post, plebbit);
             await removeAllPins(
-                post.replies.pageCids.topAll
-                    ? await loadAllPages(post.replies.pageCids.topAll, post.replies)
-                    : post.replies.pages.topAll.comments,
+                post.replies.pageCids.best
+                    ? await loadAllPages(post.replies.pageCids.best, post.replies)
+                    : post.replies.pages.best.comments,
                 plebbit
             );
         });
