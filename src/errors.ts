@@ -163,6 +163,7 @@ export enum messages {
     ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID = "User attempted to get replies page without providing parent comment cid. Make sure parent comment is properly loaded",
     ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH = "User attempted to get replies page without providing parent comment depth. Make sure parent comment is properly loaded",
     ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID = "User attempted to get replies page without providing parent comment post cid. Make sure parent comment is properly loaded",
+    ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS = "Failed to find reply comment update within parent comment page cids",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",

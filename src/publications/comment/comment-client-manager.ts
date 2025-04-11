@@ -47,8 +47,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         >;
     } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined;
     private _comment: Comment;
-    private _flatFirstPagesAlreadyLoaded: Set<string> = new Set<string>();
-    private _errorsToEmit: (PlebbitError | Error)[] = [];
+    private _parentCommentCidsAlreadyLoaded: Set<string> = new Set<string>();
 
     constructor(comment: Comment) {
         super(comment);
@@ -510,17 +509,17 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    _chooseWhichFlatPagesBasedOnPostAndReplyTimestamp(postTimestamp: number): "oldFlat" | "newFlat" {
-        // Choose which page type to search first based on our comment's timestamp
+    _chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp: number): "old" | "new" {
+        // Choose which page type to search first based on our reply's timestamp
         const replyTimestamp = this._comment.timestamp;
         const currentTime = Math.floor(Date.now() / 1000);
 
         // Calculate if our reply is relatively newer or older within the reply timeline
-        // The reply timeline spans from post timestamp to current time
-        const replyTimelineSpan = currentTime - postTimestamp;
+        // The reply timeline spans from parentComment timestamp to current time
+        const replyTimelineSpan = currentTime - parentCommentTimestamp;
 
-        // Ensure our reply timestamp is at least the post timestamp
-        const adjustedReplyTimestamp = Math.max(replyTimestamp, postTimestamp);
+        // Ensure our reply timestamp is at least the parentComment timestamp
+        const adjustedReplyTimestamp = Math.max(replyTimestamp, parentCommentTimestamp);
 
         // Calculate how far along the timeline our reply is (0 = oldest possible, 1 = newest possible)
         const replyRelativeAge = (currentTime - adjustedReplyTimestamp) / replyTimelineSpan;
@@ -529,47 +528,71 @@ export class CommentClientsManager extends PublicationClientsManager {
         // If replyRelativeAge is closer to 1, the reply is older (more age)
         // So we start with 'new' pages if replyRelativeAge < 0.5
         const startWithNewPages = replyRelativeAge < 0.5;
-        return startWithNewPages ? "newFlat" : "oldFlat";
+        return startWithNewPages ? "new" : "old";
     }
 
-    async useFlatPagesOfPostToFetchCommentUpdateForReply(postCommentInstance: Comment) {
+    async usePageCidsOfParentToFetchCommentUpdateForReply(postCommentInstance: Comment) {
         const log = Logger("plebbit-js:comment:update:useFlatPagesOfPostToFetchCommentUpdateForReply");
         if (!this._comment.cid) throw Error("comment.cid needs to be defined to fetch comment update of reply");
+        if (!this._comment.parentCid) throw Error("comment.parentCid needs to be defined to fetch comment update of reply");
         const subplebbitWithSignature = <Required<Pick<RemoteSubplebbit, "signature">>>postCommentInstance.replies._subplebbit;
         if (!subplebbitWithSignature.signature)
             throw Error("comment.replies._subplebbit.signature needs to be defined to fetch comment update of reply");
-        await resolveWhenPredicateIsTrue(postCommentInstance, () => typeof postCommentInstance.timestamp === "number");
-        const pageSortName = this._chooseWhichFlatPagesBasedOnPostAndReplyTimestamp(postCommentInstance.timestamp!);
+        const parentCommentInstance =
+            postCommentInstance.cid === this._comment.parentCid
+                ? postCommentInstance
+                : await this._plebbit.createComment({ cid: this._comment.parentCid });
+        let startedUpdatingParentComment = false;
+        if (parentCommentInstance.state === "stopped") {
+            await parentCommentInstance.update();
+            startedUpdatingParentComment = true;
+        }
+        await resolveWhenPredicateIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
+        if (startedUpdatingParentComment) await parentCommentInstance.stop();
+        if (Object.keys(parentCommentInstance.replies.pageCids).length === 0) {
+            log(
+                "Parent comment",
+                this._comment.parentCid,
+                "of reply",
+                this._comment.cid,
+                "does not have any pageCids, will wait until another update event by post"
+            );
+            return;
+        }
+        const pageSortName = this._chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
 
-        let curPageCid: string | undefined = postCommentInstance.replies.pageCids[pageSortName];
+        let curPageCid: string | undefined = parentCommentInstance.replies.pageCids[pageSortName];
+        if (!curPageCid) throw Error("Parent comment does not have any new or old pages");
 
-        if (this._flatFirstPagesAlreadyLoaded.has(curPageCid)) {
-            // we already loaded this flat page before and have its comment update, no need to do anything
+        if (this._parentCommentCidsAlreadyLoaded.has(curPageCid)) {
+            // we already loaded this page before and have its comment update, no need to do anything
             return;
         }
 
         let foundCommentUpdate = false;
         let pageNum = 0;
         while (curPageCid) {
-            const flatPageLoaded = await postCommentInstance.replies.getPage(curPageCid);
-            if (pageNum === 0) this._flatFirstPagesAlreadyLoaded.add(curPageCid);
+            // TODO can optimize this by using _loadedUniqueCommentFromGetPage
+            // TODO need to use _findCommentInPagesOfUpdatingCommentsOrSubplebbit
+            const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid); // should update _loadedUniqueCommentFromGetPage
+            if (pageNum === 0) this._parentCommentCidsAlreadyLoaded.add(curPageCid);
             pageNum++;
-            const replyWithinFlatPage = findCommentInParsedPages(flatPageLoaded, this._comment.cid);
-            if (replyWithinFlatPage) {
+            const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid);
+            if (replyWithinParentPage) {
                 this._useLoadedCommentUpdateIfNewInfo(
-                    { commentUpdate: replyWithinFlatPage.pageComment.commentUpdate },
+                    { commentUpdate: replyWithinParentPage.pageComment.commentUpdate },
                     subplebbitWithSignature,
                     log
                 );
                 foundCommentUpdate = true;
                 break;
             }
-            curPageCid = flatPageLoaded.nextCid;
+            curPageCid = pageLoaded.nextCid;
         }
         if (!foundCommentUpdate)
-            throw new PlebbitError("ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_POST_FLAT_PAGES", {
+            throw new PlebbitError("ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS", {
                 reply: this._comment,
-                post: postCommentInstance,
+                parentComment: parentCommentInstance,
                 pageSortName,
                 pageLoadedCount: pageNum
             });
@@ -650,37 +673,48 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async handleUpdateEventFromPostToFetchReplyCommentUpdate(postInstance: Comment) {
-        // we need to fetch new CommentUpdate from post flat pages
-
+        if (!this._comment.cid) throw Error("comment.cid should be defined");
         const log = Logger("plebbit-js:comment:update:handleUpdateEventFromPost");
-        if (Object.keys(postInstance.replies.pageCids).length === 0) {
+        if (Object.keys(postInstance.replies.pageCids).length === 0 && Object.keys(postInstance.replies.pages).length === 0) {
             log(
                 "Post",
                 postInstance.cid,
-                "Has no replies, therefore reply",
+                "has no replies, therefore reply",
                 this._comment.cid,
                 "will wait until another update event by post"
             );
             return;
         }
-        const commentInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: postInstance });
+        const replyInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: postInstance });
 
         const repliesSubplebbit = <Pick<SubplebbitIpfsType, "signature" | "address">>postInstance.replies._subplebbit;
         if (!repliesSubplebbit.signature) throw Error("repliesSubplebbit.signature needs to be defined to fetch comment update of reply");
-        if (commentInPage) {
+        if (replyInPage) {
             const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
             const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
-                { commentUpdate: commentInPage.commentUpdate },
+                { commentUpdate: replyInPage.commentUpdate },
                 repliesSubplebbit,
                 log
             );
             if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
         }
+        if (Object.keys(postInstance.replies.pageCids).length === 0) {
+            log(
+                "Post",
+                postInstance.cid,
+                "has no pageCids and we couldn't find any reply commentUpdate in its preloaded pages, therefore reply",
+                this._comment.cid,
+                "will wait until another update event by post"
+            );
+            return;
+        }
+
         try {
-            await this.useFlatPagesOfPostToFetchCommentUpdateForReply(postInstance);
+            await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
         } catch (error) {
             log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
-            this._comment.emit("error", error as PlebbitError | Error);
+            // TODO need to work on states here
+            this._comment.emit("error", error as PlebbitError | Error); // this line could cause an uncaught error I think
         }
     }
 
@@ -804,7 +838,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         // only stop if it's mirroring the actual comment instance updating at plebbit._updatingComments
         if (this._postForUpdating.comment._updatingCommentInstance) await this._postForUpdating.comment.stop();
-        this._flatFirstPagesAlreadyLoaded.clear();
+        this._parentCommentCidsAlreadyLoaded.clear();
         this._postForUpdating = undefined;
     }
 }

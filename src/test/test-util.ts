@@ -1388,7 +1388,7 @@ export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: 
     return reply;
 }
 
-export function mockReplyToUsePostFlatPagesForUpdates(reply: Comment) {
+export function mockReplyToUseParentPagesForUpdates(reply: Comment) {
     const updatingComment = reply._plebbit._updatingComments[reply.cid!];
     if (!updatingComment) throw Error("Reply should be updating before starting to mock");
     if (updatingComment.depth === 0) throw Error("Should not call this function on a post");
