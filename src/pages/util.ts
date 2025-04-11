@@ -14,18 +14,17 @@ import assert from "assert";
 import { BasePages } from "./pages.js";
 
 import * as remeda from "remeda";
-import type { CommentIpfsType, CommentUpdateType, CommentWithinPageJson } from "../publications/comment/types.js";
+import type { CommentWithinPageJson } from "../publications/comment/types.js";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 
-//This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
-    HOUR: 60 * 60,
-    DAY: 60 * 60 * 24,
-    WEEK: 60 * 60 * 24 * 7,
-    MONTH: 60 * 60 * 24 * 7 * 4,
-    YEAR: 60 * 60 * 24 * 7 * 4 * 12,
+    HOUR: 3600, // 60 * 60
+    DAY: 86400, // 60 * 60 * 24
+    WEEK: 604800, // 60 * 60 * 24 * 7
+    MONTH: 2629746, // Average seconds in a month (60 * 60 * 24 * 30.436875)
+    YEAR: 31557600, // Seconds in a year including leap years (60 * 60 * 24 * 365.25)
     ALL: Infinity
 });
 
