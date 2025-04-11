@@ -782,8 +782,15 @@ export class Comment
 
         if (this._plebbit._updatingComments[this.cid]) {
             this._useUpdatingCommentFromPlebbit();
-        } else if (this._plebbit._plebbitRpcClient) return this._updateViaRpc();
-        else return this._setUpNewUpdatingCommentInstance();
+        } else if (this._plebbit._plebbitRpcClient) await this._updateViaRpc();
+        else await this._setUpNewUpdatingCommentInstance();
+
+        if (this._rawCommentIpfs) {
+            this.emit("update", this);
+        }
+        if (this._rawCommentUpdate) {
+            this.emit("update", this);
+        }
     }
 
     private async _stopUpdateLoop() {
