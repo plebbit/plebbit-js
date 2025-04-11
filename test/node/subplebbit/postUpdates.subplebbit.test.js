@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import {
     mockPlebbit,
+    mockReplyToUseParentPagesForUpdates,
+    processAllCommentsRecursively,
     publishRandomPost,
     createSubWithNoChallenge,
     publishRandomReply,
@@ -8,16 +10,22 @@ import {
     mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitNoDataPathWithOnlyKuboClient,
+    forceSubplebbitToGenerateAllRepliesPages
 } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit, remotePlebbit;
+    let replyCidByDepth = {};
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+    });
+
+    beforeEach(async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
@@ -48,23 +56,37 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await postRecreated.stop();
     });
 
-    it(`Can publish a reply to a post and fetch updates from its flat pages`, async () => {
-        const post = await remotePlebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
-        const reply = await publishRandomReply(post, remotePlebbit);
+    [1, 2].map((depth) => {
+        it(`Can publish a reply with depth = ${depth} to a post and fetch updates from its post's pages`, async () => {
+            let parent;
+            processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
+                if (comment.depth === depth - 1) parent = comment;
+            });
+            const parentCommentInstance = await remotePlebbit.createComment({ cid: parent.cid });
+            await parentCommentInstance.update();
+            await resolveWhenConditionIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
 
-        const replyRecreated = await remotePlebbit.createComment({ cid: reply.cid });
-        await replyRecreated.update();
-        mockCommentToNotUsePagesForUpdates(replyRecreated);
+            await forceSubplebbitToGenerateAllRepliesPages(parentCommentInstance);
+            const reply = await publishRandomReply(parentCommentInstance, remotePlebbit);
+            expect(reply.depth).to.equal(depth);
+            replyCidByDepth[depth] = reply.cid;
 
-        await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+            const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+            const replyRecreated = await differentPlebbit.createComment({ cid: reply.cid });
+            await replyRecreated.update();
+            mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-        expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
-        expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
-        expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
+            await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
 
-        expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
+            expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
+            expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
+            expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
 
-        await replyRecreated.stop();
+            expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
+
+            await replyRecreated.stop();
+            await parentCommentInstance.stop();
+        });
     });
 
     it(`subplebbit.postUpdates moves posts from bucket to more accurate bucket`, async () => {
@@ -78,51 +100,40 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["43200"]);
     });
 
-    it(`Can fetch updates from post with new bucket`, async () => {
+    it(`Can fetch post updates with new bucket`, async () => {
         const postCid = subplebbit.posts.pages.hot.comments[0].cid;
         const post = await remotePlebbit.createComment({ cid: postCid });
         await post.update();
         mockCommentToNotUsePagesForUpdates(post);
 
-        // Wait for CommentIpfs update
-        await new Promise((resolve) => post.once("update", resolve));
-        expect(post.content).to.be.a("string");
+        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+        expect(post.content).to.be.a("string"); // comment ipfs has been loaded
+        expect(post.updatedAt).to.be.a("number"); // comment update has been loaded
 
-        // Wait for CommentUpdate
-        await new Promise((resolve) => post.once("update", resolve));
-        expect(post.updatedAt).to.be.a("number");
-
+        expect(post._commentUpdateIpfsPath).to.be.a("string");
         expect(post._commentUpdateIpfsPath?.endsWith("/update")).to.be.true; // should fetch from post updates directory
 
         await post.stop();
     });
 
-    it(`Can fetch updates from reply with new bucket`, async () => {
-        // First get the post to access its replies
-        const postCid = subplebbit.posts.pages.hot.comments[0].cid;
-        const post = await remotePlebbit.createComment({ cid: postCid });
-        await post.update();
-        await resolveWhenConditionIsTrue(post, () => post.replies.pages?.topAll);
-        expect(post.replyCount).to.be.greaterThan(0);
+    [1, 2].map((depth) => {
+        it(`Can fetch updates from reply with depth = ${depth} with new bucket`, async () => {
+            const replyCid = replyCidByDepth[depth];
 
-        // Get the reply cid
-        const replyCid = post.replies.pages.topAll.comments[0].cid;
+            // Create and update the reply comment
+            expect(replyCid).to.be.a("string");
+            const reply = await remotePlebbit.createComment({ cid: replyCid });
+            await reply.update();
+            mockReplyToUseParentPagesForUpdates(reply);
 
-        // Create and update the reply comment
-        const reply = await remotePlebbit.createComment({ cid: replyCid });
-        await reply.update();
-        mockCommentToNotUsePagesForUpdates(reply);
+            // Wait for CommentIpfs update
+            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+            expect(reply.content).to.be.a("string"); // should load commentIpfs
+            expect(reply.updatedAt).to.be.a("number"); // should load commentUpdate
+            expect(reply._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
 
-        // Wait for CommentIpfs update
-        await new Promise((resolve) => reply.once("update", resolve));
-        expect(reply.content).to.be.a("string");
-
-        // Wait for CommentUpdate update
-        await new Promise((resolve) => reply.once("update", resolve));
-        expect(reply.updatedAt).to.be.a("number");
-
-        // Cleanup
-        await reply.stop();
-        await post.stop();
+            // Cleanup
+            await reply.stop();
+        });
     });
 });
