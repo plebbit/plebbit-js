@@ -2088,13 +2088,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this.setAddress(parsedEditOptions.address);
         }
 
-        this._subplebbitUpdateTrigger = true;
         if (this.updateCid)
             await this.initInternalSubplebbitAfterFirstUpdateNoMerge({
                 ...this.toJSONInternalAfterFirstUpdate(),
                 ...parsedEditOptions
             });
         else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({ ...this.toJSONInternalBeforeFirstUpdate(), ...parsedEditOptions });
+        this._subplebbitUpdateTrigger = true;
         log(
             `Subplebbit (${this.address}) props (${remeda.keys.strict(parsedEditOptions)}) has been edited: `,
             remeda.pick(this, remeda.keys.strict(parsedEditOptions))
