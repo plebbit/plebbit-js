@@ -13,28 +13,12 @@ export const PageIpfsSchema = <z.ZodType<PageIpfsManuallyDefined>>z.object({
 });
 
 export const PostSortNameSchema = z
-    .enum([
-        "hot",
-        "new",
-        "topHour",
-        "topDay",
-        "topWeek",
-        "topMonth",
-        "topYear",
-        "topAll",
-        "controversialHour",
-        "controversialDay",
-        "controversialWeek",
-        "controversialMonth",
-        "controversialYear",
-        "controversialAll",
-        "active"
-    ])
+    .enum(["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"])
     .or(z.string().min(1)); // this is added to allow flexibility
 
 // Comment pages here
 
-export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]).or(z.string().min(1)); // this is added to allow flexiblity;
+export const ReplySortNameSchema = z.enum(["best", "new", "old", "newFlat", "oldFlat"]).or(z.string().min(1)); // this is added to allow flexiblity;
 
 // TODO combine the two into one schema
 export const PostsPagesIpfsSchema = z.object({

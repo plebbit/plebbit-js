@@ -46,7 +46,8 @@ export const POSTS_SORT_TYPES: PostSort = {
 };
 
 export const REPLIES_SORT_TYPES: ReplySort = {
-    ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new"]),
+    ...remeda.pick(POSTS_SORT_TYPES, ["new"]),
+    best: { score: (...args) => bestScore(...args) },
     old: { score: (...args) => oldScore(...args) },
     newFlat: { ...POSTS_SORT_TYPES["new"], flat: true },
     oldFlat: { score: (...args) => oldScore(...args), flat: true }
@@ -67,6 +68,31 @@ export function hotScore(comment: CommentToSort) {
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
     return remeda.round(sign * order + seconds / 45000, 7);
+}
+
+export function bestScore(comment: CommentToSort) {
+    assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
+
+    const originalUpvoteCount = comment.commentUpdate.upvoteCount; // can be 0
+    const upvoteCount = comment.commentUpdate.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
+    const downvoteCount = comment.commentUpdate.downvoteCount;
+
+    // n is the total number of ratings
+    const n = originalUpvoteCount + downvoteCount;
+    if (n === 0) {
+        return 0;
+    }
+
+    // zα/2 is the (1-α/2) quantile of the standard normal distribution
+    const z = 1.281551565545;
+
+    // p is the observed fraction of positive ratings
+    const p = upvoteCount / n;
+
+    const left = p + (1 / (2 * n)) * z * z;
+    const right = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
+    const under = 1 + (1 / n) * z * z;
+    return (left - right) / under;
 }
 
 export function controversialScore(comment: CommentToSort) {

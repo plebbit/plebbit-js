@@ -1595,7 +1595,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const repliesAvailableSize =
             MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 500; // a little bit of buffer
-        const preloadedRepliesPages = "topAll";
+        const preloadedRepliesPages = "best";
 
         const generatedRepliesPages = await this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages, repliesAvailableSize);
 

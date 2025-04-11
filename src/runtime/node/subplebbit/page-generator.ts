@@ -312,7 +312,7 @@ export class PageGenerator {
 
     async generateRepliesPages(
         comment: Pick<CommentsTableRow, "cid" | "depth">,
-        preloadedReplyPageSortName: ReplySortName,
+        preloadedReplyPageSortName: keyof typeof REPLIES_SORT_TYPES,
         preloadedPageSizeBytes: number
     ): Promise<RepliesPagesTypeIpfs | { singlePreloadedPage: SinglePreloadedPageRes } | undefined> {
         const pageOptions = {
