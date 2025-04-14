@@ -822,7 +822,6 @@ export class Comment
             // this reply instance is subscribed to an updating post
             await this._clientsManager.cleanUpUpdatingPostInstance();
             this._postForUpdating = undefined;
-            if (!this._plebbit._updatingComments[this.cid]) throw Error("this._plebbit._updatingComments[this.cid!] should exist");
             delete this._plebbit._updatingComments[this.cid];
         }
 
