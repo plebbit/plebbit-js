@@ -478,7 +478,10 @@ export class CommentClientsManager extends PublicationClientsManager {
     // will handling sub states down here
     override async handleUpdateEventFromSub(sub: RemoteSubplebbit) {
         const log = Logger("plebbit-js:comment:update");
-        if (!this._comment.cid) throw Error("comment.cid needs to be defined to fetch comment update of reply");
+        if (!this._comment.cid) {
+            log("comment.cid is not defined because comment is publishing, waiting until cid is defined");
+            return;
+        }
         // a new update has been emitted by sub
         if (this._comment.state === "stopped") {
             // there are async cases where we fetch a SubplebbitUpdate in the background and stop() is called midway
