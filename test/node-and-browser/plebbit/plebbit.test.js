@@ -160,6 +160,32 @@ describe(`plebbit.destroy`, async () => {
         expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
         expect(comment.state).to.equal("stopped");
     });
+
+    it(`plebbit.destroy() should not fail if you stop reply and immedietly destroy plebbit after`, async () => {
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const subplebbit = await plebbit.getSubplebbit(fixtureSigner.address);
+        const replyCid = subplebbit.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
+
+        const reply = await plebbit.createComment({ cid: replyCid });
+        await reply.update();
+        await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+        expect(plebbit._updatingComments[replyCid]).to.exist;
+
+        await reply.stop();
+        await plebbit.destroy(); // should not fail
+        expect(plebbit._updatingComments[replyCid]).to.not.exist;
+    });
+
+    it(`after destroying plebbit, nobody can use any function of plebbit`, async () => {
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        await plebbit.destroy();
+        try {
+            await plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f");
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_PLEBBIT_IS_DESTROYED");
+        }
+    });
 });
 
 describe("plebbit.fetchCid", async () => {
