@@ -510,6 +510,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub._rawSubplebbitIpfs);
         } catch (e) {
             log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
+            this._comment._setUpdatingStateNoEmission("failed");
+            this._comment.emit("error", e as PlebbitError); // could cause uncaught error
+            this._comment.emit("updatingstatechange", "failed");
         }
     }
 
@@ -536,7 +539,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async usePageCidsOfParentToFetchCommentUpdateForReply(postCommentInstance: Comment) {
-        const log = Logger("plebbit-js:comment:update:useFlatPagesOfPostToFetchCommentUpdateForReply");
+        const log = Logger("plebbit-js:comment:update:usePageCidsOfParentToFetchCommentUpdateForReply");
         if (!this._comment.cid) throw Error("comment.cid needs to be defined to fetch comment update of reply");
         if (!this._comment.parentCid) throw Error("comment.parentCid needs to be defined to fetch comment update of reply");
         const subplebbitWithSignature = <Required<Pick<RemoteSubplebbit, "signature">>>postCommentInstance.replies._subplebbit;
@@ -656,7 +659,20 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     handleUpdatingStateChangeEventFromPost(newState: Comment["updatingState"]) {
-        this._comment._setUpdatingStateWithEmissionIfNewState(newState);
+        const postUpdatingStateToReplyUpdatingState: Record<Comment["updatingState"], Comment["updatingState"] | undefined> = {
+            failed: "failed",
+            "fetching-subplebbit-ipfs": "fetching-subplebbit-ipfs",
+            "fetching-subplebbit-ipns": "fetching-subplebbit-ipns",
+            "resolving-subplebbit-address": "resolving-subplebbit-address",
+            "waiting-retry": "waiting-retry",
+            stopped: undefined,
+            succeeded: undefined,
+            "fetching-ipfs": undefined,
+            "resolving-author-address": undefined,
+            "fetching-update-ipfs": undefined
+        };
+        const replyState = postUpdatingStateToReplyUpdatingState[newState];
+        if (replyState) this._comment._setUpdatingStateWithEmissionIfNewState(replyState);
     }
 
     _handleIpfsGatewayPostState(newState: Comment["clients"]["ipfsGateways"][string]["state"], gatewayUrl: string) {
@@ -687,6 +703,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this._comment.cid,
                 "will wait until another update event by post"
             );
+            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
         const replyInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: postInstance });
@@ -700,7 +717,12 @@ export class CommentClientsManager extends PublicationClientsManager {
                 repliesSubplebbit,
                 log
             );
-            if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
+            if (usedUpdateFromPage) {
+                this._comment._setUpdatingStateNoEmission("succeeded");
+                this._comment.emit("update", this._comment);
+                this._comment.emit("updatingstatechange", "succeeded");
+                return; // we found an update from pages, no need to do anything else
+            }
         }
         if (Object.keys(postInstance.replies.pageCids).length === 0) {
             log(
@@ -710,15 +732,21 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this._comment.cid,
                 "will wait until another update event by post"
             );
+            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
 
+        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         try {
             await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
+            this._comment._setUpdatingStateNoEmission("succeeded");
+            this._comment.emit("update", this._comment);
+            this._comment.emit("updatingstatechange", "succeeded");
         } catch (error) {
             log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
-            // TODO need to work on states here
-            this._comment.emit("error", error as PlebbitError | Error); // this line could cause an uncaught error I think
+            this._comment._setUpdatingStateNoEmission("failed");
+            this._comment.emit("error", error as PlebbitError | Error);
+            this._comment.emit("updatingstatechange", "failed");
         }
     }
 
@@ -798,7 +826,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async cleanUpUpdatingPostInstance() {
-        if (!this._postForUpdating) throw Error("Need to define _postForUpdating first");
+        if (!this._postForUpdating) return; // it has been cleared out somewhere else
 
         // Clean up IPFS Gateway listeners
         if (this._postForUpdating.ipfsGatewayListeners) {
