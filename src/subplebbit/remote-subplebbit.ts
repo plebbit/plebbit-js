@@ -308,7 +308,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             error: (error: PlebbitError) => {
                 this.emit("error", error);
             },
-            updatingstatechange: async (newUpdatingState) => {
+            updatingstatechange: (newUpdatingState) => {
                 this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
             },
             statechange: async (newState) => {
@@ -389,6 +389,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._setState("updating");
 
         await this.fetchLatestSubOrSubscribeToEvent();
+        if (this._rawSubplebbitIpfs) this.emit("update", this);
     }
 
     async stop() {
