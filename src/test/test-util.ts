@@ -1310,10 +1310,16 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     if (!sub) throw Error("Can't mock sub when it's not being updated");
     if (plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
 
-    delete sub._rawSubplebbitIpfs;
-    delete sub.updatedAt;
-    sub._clientsManager._updateCidsAlreadyLoaded.clear();
-    delete sub.updateCid;
+    const clearOut = () => {
+        delete sub._rawSubplebbitIpfs;
+        delete sub.updatedAt;
+        sub._clientsManager._updateCidsAlreadyLoaded.clear();
+        delete sub.updateCid;
+    };
+
+    clearOut();
+    sub.once("update", () => clearOut());
+
     const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
         const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
