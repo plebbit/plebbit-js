@@ -45,7 +45,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     private _subplebbit: RemoteSubplebbit;
     _ipnsLoadingOperation?: RetryOperation = undefined;
     _updateTimeout?: NodeJS.Timeout = undefined;
-    _updateCidsAlreadyLoaded: LimitedSet<string> = new LimitedSet<string>(50); // we will keep track of the last 50 subplebbit update cids that we loaded
+    _updateCidsAlreadyLoaded: LimitedSet<string> = new LimitedSet<string>(30); // we will keep track of the last 50 subplebbit update cids that we loaded
 
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
         super(subplebbit._plebbit);
@@ -165,7 +165,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
                         this._subplebbit._setUpdatingStateNoEmission("waiting-retry");
                         this._subplebbit.emit("error", error);
-                        this._subplebbit.emit("updatingstatechange", this._subplebbit.updatingState);
+                        this._subplebbit.emit("updatingstatechange", "waiting-retry");
 
                         this._ipnsLoadingOperation!.retry(<Error>e);
                     }
