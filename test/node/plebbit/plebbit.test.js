@@ -1,6 +1,6 @@
 import { expect } from "chai";
-import Plebbit from "../../dist/node";
-import { createSubWithNoChallenge, itIfRpc, itSkipIfRpc, mockPlebbit, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util";
+import Plebbit from "../../../dist/node";
+import { createSubWithNoChallenge, itIfRpc, itSkipIfRpc, mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util";
 
 // example of node only tests
 
