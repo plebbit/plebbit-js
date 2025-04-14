@@ -368,7 +368,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                     gatewayFetches[gatewayUrl].cid = calculatedSubCidFromBody;
 
                     // Log the TTL from max-age header after successfully setting the subplebbit record
-                    const cacheControl = gatewayRes.res.headers.get("cache-control");
+                    const cacheControl = gatewayRes?.res?.headers?.get("cache-control");
                     if (cacheControl) {
                         const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
                         if (maxAgeMatch && maxAgeMatch[1]) {
