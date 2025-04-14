@@ -335,13 +335,14 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async useSubplebbitPostUpdatesToFetchCommentUpdateForPost(subIpfs: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:comment:useSubplebbitPostUpdatesToFetchCommentUpdate");
-        if (!subIpfs) throw Error("Failed to fetch the subplebbit to start the comment update process from post updates");
-        if (!subIpfs.postUpdates) throw new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs, comment: this._comment });
+        if (!subIpfs.postUpdates) {
+            throw new PlebbitError("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES", { subIpfs, postCid: this._comment.cid });
+        }
 
         const postCid = this._comment.postCid;
         if (!postCid) throw Error("comment.postCid needs to be defined to fetch comment update");
         const postTimestamp = this._comment.timestamp;
-        if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
+        if (typeof postTimestamp !== "number") throw Error("Post timestamp is not defined by the time we're fetching from postUpdates");
         const timestampRanges = getPostUpdateTimestampRange(subIpfs.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
         this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
@@ -355,14 +356,14 @@ export class CommentClientsManager extends PublicationClientsManager {
                 if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
                     // this is a retriable error
                     // could be problems loading from the network or gateways
-                    log.trace(`Comment`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
+                    log.trace(`Post`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
                     this._comment._setUpdatingStateNoEmission("waiting-retry");
                     this._comment.emit("error", e);
                     this._comment.emit("updatingstatechange", "waiting-retry");
                 } else {
                     // non retriable error, problem with schema/signature
                     log.error(
-                        "Received a non retriable error when attempting to load commentUpdate. Will be emitting error",
+                        "Received a non retriable error when attempting to load post commentUpdate. Will be emitting error",
                         this._comment.cid!,
                         e
                     );
@@ -608,7 +609,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             // we're updating a comment
             const log = Logger("plebbit-js:comment:update");
             log.error(
-                "Comment",
+                this._comment.depth === 0 ? "Post" : "Reply",
                 this._comment.cid,
                 "received a non retriable error from its subplebbit instance. Will stop comment updating",
                 error
@@ -644,7 +645,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (translatedCommentUpdatingState) this._comment._setUpdatingStateWithEmissionIfNewState(translatedCommentUpdatingState);
     }
 
-    override async handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
+    override handleUpdatingStateChangeEventFromSub(newSubUpdatingState: RemoteSubplebbit["updatingState"]) {
         if (this._comment.state === "publishing") return super.handleUpdatingStateChangeEventFromSub(newSubUpdatingState);
 
         this._translateSubUpdatingStateToCommentUpdatingState(newSubUpdatingState);

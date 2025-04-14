@@ -4,7 +4,9 @@ import {
     publishRandomPost,
     publishRandomReply,
     mockPlebbitNoDataPathWithOnlyKuboClient,
+    mockPostToFailToLoadFromPostUpdates,
     createCommentUpdateWithInvalidSignature,
+    mockPostToHaveSubplebbitWithNoPostUpdates,
     mockGatewayPlebbit,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
@@ -365,6 +367,48 @@ getRemotePlebbitConfigs().map((config) => {
             }
 
             await createdComment.stop();
+        });
+
+        itSkipIfRpc(`postCommentInstance.update() emits error when post fails to load from postUpdates`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const postCid = sub.posts.pages.hot.comments[0].cid;
+
+            const post = await plebbit.getComment(postCid);
+            const errors = [];
+            post.on("error", (err) => errors.push(err));
+            await post.update();
+            await mockPostToFailToLoadFromPostUpdates(post);
+
+            await resolveWhenConditionIsTrue(post, () => errors.length === 1, "error");
+            expect(post.updatingState).to.equal("failed");
+
+            await post.stop();
+            expect(post.state).to.equal("stopped");
+            expect(post.updatingState).to.equal("stopped");
+
+            expect(errors.length).to.equal(1);
+            expect(errors[0].message).to.equal("Failed for whatever reason");
+        });
+
+        itSkipIfRpc(`postCommentInstance.update() emits error when subplebbit has no postUpdates`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const postCid = sub.posts.pages.hot.comments[0].cid;
+
+            const post = await plebbit.getComment(postCid);
+            const errors = [];
+            post.on("error", (err) => errors.push(err));
+            await post.update();
+            await mockPostToHaveSubplebbitWithNoPostUpdates(post);
+
+            await resolveWhenConditionIsTrue(post, () => errors.length === 1, "error");
+            expect(post.updatingState).to.equal("failed");
+
+            await post.stop();
+            expect(post.state).to.equal("stopped");
+            expect(post.updatingState).to.equal("stopped");
+
+            expect(errors.length).to.equal(1);
+            expect(errors[0].code).to.equal("ERR_SUBPLEBBIT_HAS_NO_POST_UPDATES");
         });
     });
 });

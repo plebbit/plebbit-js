@@ -1257,6 +1257,36 @@ export function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment
     }
 }
 
+export function mockPostToFailToLoadFromPostUpdates(postToBeMocked: Comment) {
+    const updatingPostComment = postToBeMocked._plebbit._updatingComments[postToBeMocked.cid!];
+    if (!updatingPostComment) throw Error("Post should be updating before starting to mock");
+    if (postToBeMocked._plebbit._plebbitRpcClient)
+        throw Error("Can't mock Post to to fail loading post from postUpdates when plebbit is using RPC");
+
+    mockCommentToNotUsePagesForUpdates(postToBeMocked);
+    updatingPostComment._clientsManager._fetchPostCommentUpdateIpfsP2P =
+        updatingPostComment._clientsManager._fetchPostCommentUpdateFromGateways = async () => {
+            throw Error("Failed for whatever reason");
+        };
+}
+
+export function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Comment) {
+    const updatingPostComment = postToBeMocked._plebbit._updatingComments[postToBeMocked.cid!];
+    if (!updatingPostComment) throw Error("Post should be updating before starting to mock");
+    if (postToBeMocked._plebbit._plebbitRpcClient)
+        throw Error("Can't mock Post to to fail loading post from postUpdates when plebbit is using RPC");
+
+    mockCommentToNotUsePagesForUpdates(postToBeMocked);
+    const originalSubplebbitUpdateHandle = updatingPostComment._clientsManager.handleUpdateEventFromSub.bind(
+        updatingPostComment._clientsManager
+    );
+    updatingPostComment._clientsManager.handleUpdateEventFromSub = (subplebbit: RemoteSubplebbit) => {
+        delete subplebbit.postUpdates;
+        delete subplebbit._rawSubplebbitIpfs!.postUpdates;
+        return originalSubplebbitUpdateHandle(subplebbit);
+    };
+}
+
 export async function createCommentUpdateWithInvalidSignature(commentCid: string) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
@@ -1292,8 +1322,7 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
             if (url.includes("ipns")) {
                 return {
                     ...args,
-                    resText: JSON.stringify(subplebbitRecord),
-                    res: { headers: { get: (headerName: string) => (headerName === "x-ipfs-roots" ? subplebbitRecordCid : undefined) } }
+                    resText: JSON.stringify(subplebbitRecord)
                 };
             } else return originalFetch(...args);
         };
