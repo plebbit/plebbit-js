@@ -101,12 +101,6 @@ const startIpfsNode = async (nodeArgs) => {
                 stdio: "inherit",
                 env: { IPFS_PATH: nodeArgs.dir }
             });
-    const ipfsDenyListPath = path.join(nodeArgs.dir, "denylists", "*.deny");
-    if (!fs.existsSync(ipfsDenyListPath)) {
-        if (!fs.existsSync(path.dirname(ipfsDenyListPath))) fs.mkdirSync(path.dirname(ipfsDenyListPath));
-
-        await fs.promises.writeFile(ipfsDenyListPath, "");
-    }
 
     const ipfsConfigPath = path.join(nodeArgs.dir, "config");
     const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
