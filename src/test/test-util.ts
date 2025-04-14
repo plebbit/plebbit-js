@@ -60,6 +60,7 @@ import { CommentModeration } from "../publications/comment-moderation/comment-mo
 import { createHeliaNode } from "../helia/helia-for-plebbit.js";
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import type { PageTypeJson } from "../pages/types.js";
+import { PlebbitError } from "../plebbit-error.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -1266,7 +1267,7 @@ export function mockPostToFailToLoadFromPostUpdates(postToBeMocked: Comment) {
     mockCommentToNotUsePagesForUpdates(postToBeMocked);
     updatingPostComment._clientsManager._fetchPostCommentUpdateIpfsP2P =
         updatingPostComment._clientsManager._fetchPostCommentUpdateFromGateways = async () => {
-            throw Error("Failed for whatever reason");
+            throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES");
         };
 }
 

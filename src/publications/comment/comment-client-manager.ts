@@ -178,14 +178,14 @@ export class CommentClientsManager extends PublicationClientsManager {
             } catch (e) {
                 // there's a problem with the record itself, could be signature or schema or bad json
                 this._comment._invalidCommentUpdateMfsPaths.add(path);
-                if (e instanceof PlebbitError) e.details = { ...e.details, commentUpdatePath: path, commentCid: this._comment.cid };
+                if (e instanceof PlebbitError) e.details = { ...e.details, commentUpdatePath: path, postCid: this._comment.cid };
                 throw e;
             }
         }
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
             attemptedPathsToLoadErrors,
-            commentCid: this._comment.cid
+            postCid: this._comment.cid
         });
     }
 

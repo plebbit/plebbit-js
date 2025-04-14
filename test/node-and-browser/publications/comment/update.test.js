@@ -380,14 +380,14 @@ getRemotePlebbitConfigs().map((config) => {
             await mockPostToFailToLoadFromPostUpdates(post);
 
             await resolveWhenConditionIsTrue(post, () => errors.length === 1, "error");
-            expect(post.updatingState).to.equal("failed");
+            expect(post.updatingState).to.equal("waiting-retry"); // failing to load ipfs path is not critical error
 
             await post.stop();
             expect(post.state).to.equal("stopped");
             expect(post.updatingState).to.equal("stopped");
 
             expect(errors.length).to.equal(1);
-            expect(errors[0].message).to.equal("Failed for whatever reason");
+            expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES");
         });
 
         itSkipIfRpc(`postCommentInstance.update() emits error when subplebbit has no postUpdates`, async () => {
