@@ -702,7 +702,7 @@ export async function createSubWithNoChallenge(
 
 export async function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit) {
     const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
-    mockPost.removeAllListeners();
+    mockPost.removeAllListeners("challenge");
     mockPost.once("challenge", (challengeMessage) => {
         mockPost.publishChallengeAnswers(["2"]);
     });
