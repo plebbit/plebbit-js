@@ -68,14 +68,12 @@ const PlebbitUserOptionBaseSchema = z.object({
     userAgent: UserAgentSchema
 });
 
-const defaultIpfsGatewayUrls = [
-    "https://ipfsgateway.xyz",
-    "https://ipfs.io",
-    "https://dweb.link",
-    "https://flk-ipfs.xyz",
-    "https://4everland.io",
-    "https://gateway.pinata.cloud"
+const defaultPubsubKuboRpcClientsOptions = [
+    { url: "https://pubsubprovider.xyz/api/v0" },
+    { url: "https://plebpubsub.xyz/api/v0" }
 ] as const;
+
+const defaultIpfsGatewayUrls = ["https://ipfsgateway.xyz", "https://gateway.plebpubsub.xyz", "https://gateway.forumindex.com"] as const;
 
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
@@ -83,7 +81,7 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
         .default([...defaultIpfsGatewayUrls])
         .transform((val) => (val === undefined ? [...defaultIpfsGatewayUrls] : val)),
     pubsubKuboRpcClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubKuboRpcClientsOptions.default([
-        { url: "https://pubsubprovider.xyz/api/v0" }
+        ...defaultPubsubKuboRpcClientsOptions
     ]),
     httpRoutersOptions: PlebbitUserOptionBaseSchema.shape.httpRoutersOptions.default([
         "https://peers.pleb.bot",
