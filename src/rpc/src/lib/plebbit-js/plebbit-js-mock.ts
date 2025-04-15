@@ -269,7 +269,7 @@ export class Subplebbit extends EventEmitter {
         this.posts.pages.hot = getCommentsPage(hotPageCid, this);
         this.posts.pageCids = {
             hot: hotPageCid,
-            topAll: this.address + " page cid topAll",
+            best: this.address + " page cid best",
             new: this.address + " page cid new",
             active: this.address + " page cid active"
         };
