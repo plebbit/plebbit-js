@@ -88,7 +88,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
         await sub.stop();
 
-        expect(updateCount).to.equal(2); // mockPlebbitToReturnSpecificSubplebbit will delete updateAt which will force a second update
+        expect(updateCount).to.equal(3); // mockPlebbitToReturnSpecificSubplebbit will delete updateAt which will force a second update
         expect(waitingRetryCount).to.equal(expectedWaitingRetryCount);
         // should be just ["fetching-ipns", "stopped"]
         // because it can't find a new record
@@ -98,7 +98,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         }
     });
 
-    it(`Correct order of ipfs gateway states when we update a subplebbit with invalid record`, async () => {
+    it(`Correct order of ipfs gateway states when we update a subplebbit with record whose signature is invalid`, async () => {
         const customPlebbit = await mockGatewayPlebbit();
 
         const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });

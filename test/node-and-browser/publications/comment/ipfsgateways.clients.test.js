@@ -137,7 +137,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
         await sub.stop();
         await mockPost.stop();
 
-        const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-update-ipfs", "stopped"]; // for comment ipfs and comment update
+        const expectedFirstStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"]; // for comment ipfs and comment update
         expect(recordedStates.slice(0, expectedFirstStates.length)).to.deep.equal(expectedFirstStates);
 
         const noNewUpdateStates = recordedStates.slice(expectedFirstStates.length, recordedStates.length); // should be just 'fetching-ipns' and 'succeeded

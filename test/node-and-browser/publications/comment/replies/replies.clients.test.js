@@ -19,7 +19,7 @@ describe(`comment.replies.clients`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
 
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
+        commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies).cid;
         expect(commentCid).to.be.a("string");
     });
     describeSkipIfRpc(`comment.replies.clients.kuboRpcClients`, async () => {
@@ -95,7 +95,11 @@ describe(`comment.replies.clients`, async () => {
                 "http://localhost:13417", // This gateway will take 10s to respond
                 "http://localhost:18080" // This one is immediate
             ];
-            const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: gateways, httpRoutersOptions: [], dataPath: undefined });
+            const multipleGatewayPlebbit = await mockGatewayPlebbit({
+                ipfsGatewayUrls: gateways,
+                httpRoutersOptions: [],
+                dataPath: undefined
+            });
 
             const comment = await multipleGatewayPlebbit.getComment(commentCid);
             await comment.update();

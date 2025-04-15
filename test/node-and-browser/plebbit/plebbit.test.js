@@ -212,7 +212,7 @@ describe("plebbit.fetchCid", async () => {
             await Promise.all([fileString1, fileString2].map((file) => ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(file)))
         ).map((res) => res.path);
 
-        const plebbitWithMaliciousGateway = await Plebbit({
+        const plebbitWithMaliciousGateway = await mockGatewayPlebbit({
             ipfsGatewayUrls: ["http://127.0.0.1:13415"],
             httpRoutersOptions: [],
             dataPath: undefined
