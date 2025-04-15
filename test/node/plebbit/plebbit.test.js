@@ -90,4 +90,23 @@ describe(`plebbit.destroy()`, async () => {
         await plebbit.destroy();
         expect(sub.state).to.equal("stopped");
     });
+
+    it(`plebbit.destroy() should stop running updating local subs`, async () => {
+        const plebbit = await mockPlebbit();
+        const sub = await createSubWithNoChallenge({}, plebbit);
+
+        await sub.update();
+        expect(plebbit._updatingSubplebbits[sub.address]).to.exist;
+        expect(plebbit._startedSubplebbits[sub.address]).to.not.exist;
+
+        let calledUpdate = false;
+        await plebbit.destroy();
+
+        sub._updateStartedValue = () => (calledUpdate = true);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        expect(plebbit._updatingSubplebbits[sub.address]).to.not.exist;
+        expect(plebbit._startedSubplebbits[sub.address]).to.not.exist;
+
+        expect(calledUpdate).to.be.false;
+    });
 });
