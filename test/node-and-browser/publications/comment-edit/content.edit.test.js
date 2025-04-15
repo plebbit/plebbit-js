@@ -167,7 +167,7 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(commentToEdit.content).to.equal(editedText);
                 expect(commentToEdit.original?.content).to.equal(originalContent);
                 expect(commentToEdit.edit.reason).to.equal(editReason);
-                commentToEdit.stop();
+                await commentToEdit.stop();
             })
         );
 
