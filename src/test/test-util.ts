@@ -1064,17 +1064,18 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
     return heliaPlebbit;
 }
 
-type RemotePlebbitConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc";
+type PlebbitTestConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc";
 
-type RemotePlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit> };
+type PlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit> };
 
-let remotePlebbitConfigs: RemotePlebbitConfigWithName[] = [];
+let plebbitConfigs: PlebbitConfigWithName[] = [];
 
-export function setRemotePlebbitConfigs(configs: RemotePlebbitConfig[]) {
-    const mapper: Record<RemotePlebbitConfig, RemotePlebbitConfigWithName> = {
-        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "IPFS P2P" },
+export function setPlebbitConfigs(configs: PlebbitTestConfig[]) {
+    const mapper: Record<PlebbitTestConfig, PlebbitConfigWithName> = {
+        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
         "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
-        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" }
+        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" },
+        "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" }
     };
     if (configs.length === 0) throw Error("No configs were provided");
 
@@ -1083,27 +1084,27 @@ export function setRemotePlebbitConfigs(configs: RemotePlebbitConfig[]) {
         if (!mapper[config])
             throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(mapper)}`);
 
-    remotePlebbitConfigs = configs.map((config) => mapper[config]);
+    plebbitConfigs = configs.map((config) => mapper[config]);
 }
 
 export function getRemotePlebbitConfigs() {
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {
-        const configs = plebbitConfigsFromEnv.split(",") as RemotePlebbitConfig[];
+        const configs = plebbitConfigsFromEnv.split(",") as PlebbitTestConfig[];
         // Set the configs if they're coming from the environment variable
-        setRemotePlebbitConfigs(configs);
+        setPlebbitConfigs(configs);
     }
     //@ts-expect-error
     const plebbitConfigsFromWindow = <string | undefined>globalThis["window"]?.["PLEBBIT_CONFIGS"];
     if (plebbitConfigsFromWindow) {
-        const configs = plebbitConfigsFromWindow.split(",") as RemotePlebbitConfig[];
+        const configs = plebbitConfigsFromWindow.split(",") as PlebbitTestConfig[];
         // Set the configs if they're coming from the environment variable
-        setRemotePlebbitConfigs(configs);
+        setPlebbitConfigs(configs);
     }
-    if (remotePlebbitConfigs.length === 0)
+    if (plebbitConfigs.length === 0)
         throw Error("No remote plebbit configs set, " + plebbitConfigsFromEnv + " " + plebbitConfigsFromWindow);
-    return remotePlebbitConfigs;
+    return plebbitConfigs;
 }
 
 export async function createNewIpns() {
