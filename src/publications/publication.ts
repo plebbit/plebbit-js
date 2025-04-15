@@ -522,7 +522,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     _getSubplebbitCache() {
         return (
             this._plebbit._memCaches.subplebbitForPublishing.get(this.subplebbitAddress, { allowStale: true }) ||
-            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs
+            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs ||
+            this._plebbit._startedSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs
         );
     }
 
