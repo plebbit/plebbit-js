@@ -11,7 +11,9 @@ import type {
     SubplebbitIpfsType,
     RpcInternalSubplebbitRecordBeforeFirstUpdateType,
     RpcInternalSubplebbitRecordAfterFirstUpdateType,
-    SubplebbitRole
+    SubplebbitRole,
+    SubplebbitUpdatingState,
+    SubplebbitState
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
@@ -55,6 +57,7 @@ import type {
     CommentUpdatesRow,
     CommentsTableRow,
     IpfsHttpClientPubsubMessage,
+    SubplebbitEvents,
     VotesTableRow
 } from "../../../types.js";
 import {
@@ -149,6 +152,7 @@ import type { SubplebbitEditPubsubMessagePublication } from "../../../publicatio
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
+import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 
 type CommentUpdateToBeUpdated = CommentUpdatesRow &
     Pick<CommentsTableRow, "depth"> & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined };
@@ -185,7 +189,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _updateLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
-
+    private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
+        SubplebbitEvents,
+        "error" | "updatingstatechange" | "update" | "statechange"
+    > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _updateLocalSubTimeout?: NodeJS.Timeout = undefined;
 
     constructor(plebbit: Plebbit) {
@@ -279,7 +286,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // if it's started in another process, we will throw an error
         // if sub is not started, load the InternalSubplebbit props from the local db
 
-        const log = Logger("plebbit-js:local-subplebbit:_loadLocalSubFromStartedSubOrDb");
+        const log = Logger("plebbit-js:local-subplebbit:_updateInstancePropsWithStartedSubOrDb");
         if (this._plebbit._startedSubplebbits[this.address]) {
             log("Loading local subplebbit", this.address, "from started subplebbit instance");
             if (this._plebbit._startedSubplebbits[this.address].updateCid)
@@ -2236,16 +2243,126 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             .finally(() => this._publishLoop(this._plebbit.publishInterval));
     }
 
-    private async _updateOnce() {
-        const log = Logger("plebbit-js:local-subplebbit:update");
-        const oldUpdateId = remeda.clone(this._internalStateUpdateId);
-        await this._updateInstancePropsWithStartedSubOrDb(); // will update this instance props
-        if (this._internalStateUpdateId !== oldUpdateId) {
-            log(`Local Subplebbit (${this.address}) received a new update with updatedAt (${this.updatedAt}). Will emit an update event`);
+    private async _initMirroringStartedOrUpdatingSubplebbit(startedSubplebbit: LocalSubplebbit) {
+        const updatingStateChangeListener = (newState: SubplebbitUpdatingState) => {
+            this._setUpdatingStateWithEventEmissionIfNewState(newState);
+        };
 
-            this._setUpdatingStateNoEmission("succeeded");
+        const updateListener = async (updatedSubplebbit: RemoteSubplebbit) => {
+            const startedSubplebbit = updatedSubplebbit as LocalSubplebbit;
+            if (startedSubplebbit.updateCid)
+                await this.initInternalSubplebbitAfterFirstUpdateNoMerge(startedSubplebbit.toJSONInternalAfterFirstUpdate());
+            else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(startedSubplebbit.toJSONInternalBeforeFirstUpdate());
+            this.started = startedSubplebbit.started;
             this.emit("update", this);
-            this.emit("updatingstatechange", "succeeded");
+        };
+        const stateChangeListener = async (newState: SubplebbitState) => {
+            // plebbit._startedSubplebbits[address].stop() has been called, we need to stop mirroring
+            // or plebbit._updatingSubplebbits[address].stop(), we need to stop mirroring
+            if (newState === "stopped") await this._cleanUpMirroredStartedOrUpdatingSubplebbit();
+        };
+        this._mirroredStartedOrUpdatingSubplebbit = {
+            subplebbit: startedSubplebbit,
+            updatingstatechange: updatingStateChangeListener,
+            update: updateListener,
+            statechange: stateChangeListener,
+            error: (err: PlebbitError | Error) => this.emit("error", err)
+        };
+
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("update", this._mirroredStartedOrUpdatingSubplebbit.update);
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on(
+            "updatingstatechange",
+            this._mirroredStartedOrUpdatingSubplebbit.updatingstatechange
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("statechange", this._mirroredStartedOrUpdatingSubplebbit.statechange);
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("error", this._mirroredStartedOrUpdatingSubplebbit.error);
+
+        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
+        for (const clientType of clientKeys)
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    if (clientType !== "chainProviders")
+                        this.clients[clientType][clientUrl].mirror(
+                            this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl]
+                        );
+                    else
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
+                            this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
+                                this._mirroredStartedOrUpdatingSubplebbit.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
+                            );
+                }
+        if (startedSubplebbit.updateCid)
+            await this.initInternalSubplebbitAfterFirstUpdateNoMerge(startedSubplebbit.toJSONInternalAfterFirstUpdate());
+        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(startedSubplebbit.toJSONInternalBeforeFirstUpdate());
+        this.emit("update", this);
+    }
+
+    private async _cleanUpMirroredStartedOrUpdatingSubplebbit() {
+        if (!this._mirroredStartedOrUpdatingSubplebbit) return;
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener("update", this._mirroredStartedOrUpdatingSubplebbit.update);
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "updatingstatechange",
+            this._mirroredStartedOrUpdatingSubplebbit.updatingstatechange
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "statechange",
+            this._mirroredStartedOrUpdatingSubplebbit.statechange
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener("error", this._mirroredStartedOrUpdatingSubplebbit.error);
+
+        const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"] as const;
+
+        for (const clientType of clientKeys)
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
+                    else {
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                            this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+                        }
+                    }
+                }
+
+        this._mirroredStartedOrUpdatingSubplebbit = undefined;
+    }
+
+    private async _updateOnce() {
+        const log = Logger("plebbit-js:local-subplebbit:_updateOnce");
+        await this.initDbHandlerIfNeeded();
+        await this._updateStartedValue();
+        if (this._mirroredStartedOrUpdatingSubplebbit)
+            return; // we're already mirroring a started or updating subplebbit
+        else if (this._plebbit._startedSubplebbits[this.address]) {
+            // let's mirror the started subplebbit in this process
+            await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address]);
+            return;
+        } else if (
+            this._plebbit._updatingSubplebbits[this.address] instanceof LocalSubplebbit &&
+            this._plebbit._updatingSubplebbits[this.address] !== this
+        ) {
+            // different instance is updating, let's mirror it
+            await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address] as LocalSubplebbit);
+            return;
+        } else if (this.started) {
+            // this sub is started in another process, we need to emit an error to user
+            throw new PlebbitError("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS", {
+                address: this.address,
+                dataPath: this._plebbit.dataPath
+            });
+        } else {
+            // this sub is not started or updated anywhere, but maybe another process will call edit() on it
+            this._plebbit._updatingSubplebbits[this.address] = this;
+            const oldUpdateId = remeda.clone(this._internalStateUpdateId);
+            await this._updateInstancePropsWithStartedSubOrDb(); // will update this instance props with DB
+            if (this._internalStateUpdateId !== oldUpdateId) {
+                log(
+                    `Local Subplebbit (${this.address}) received a new update from db with updatedAt (${this.updatedAt}). Will emit an update event`
+                );
+
+                this._setUpdatingStateNoEmission("succeeded");
+                this.emit("update", this);
+                this.emit("updatingstatechange", "succeeded");
+            }
         }
     }
 
@@ -2256,7 +2373,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.state === "updating" && !this._stopHasBeenCalled) {
                 this._updateLoopPromise = this._updateOnce();
                 this._updateLoopPromise
-                    .catch((e) => log.error(`Failed to update subplebbit`, e))
+                    .catch((e) => this.emit("error", e))
                     .finally(() => setTimeout(updateLoop, this._plebbit.updateInterval));
             }
         }).bind(this);
@@ -2264,8 +2381,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._setState("updating");
 
         this._updateLoopPromise = this._updateOnce();
-        this._updateLoopPromise
-            .catch((e) => log.error(`Failed to update subplebbit`, e))
+        await this._updateLoopPromise
+            .catch((e) => this.emit("error", e))
             .finally(() => (this._updateLocalSubTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
 
@@ -2328,6 +2445,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
             clearTimeout(this._updateLocalSubTimeout);
             if (this._dbHandler) await this._dbHandler.destoryConnection();
+            if (this._mirroredStartedOrUpdatingSubplebbit) await this._cleanUpMirroredStartedOrUpdatingSubplebbit();
+            if (this._plebbit._updatingSubplebbits[this.address] === this) delete this._plebbit._updatingSubplebbits[this.address];
             this._setUpdatingStateWithEventEmissionIfNewState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");
