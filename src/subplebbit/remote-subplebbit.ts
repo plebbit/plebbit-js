@@ -360,15 +360,13 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         for (const clientType of clientKeys)
             if (this.clients[clientType])
                 for (const clientUrl of Object.keys(this.clients[clientType])) {
-                    if ("state" in this.clients[clientType][clientUrl])
-                        //@ts-expect-error
+                    if (clientType !== "chainProviders")
                         this.clients[clientType][clientUrl].mirror(
                             this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl]
                         );
                     else {
                         for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
                             this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
-                                //@ts-expect-error
                                 this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
                             );
                         }
@@ -416,13 +414,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             for (const clientType of clientKeys)
                 if (this.clients[clientType])
                     for (const clientUrl of Object.keys(this.clients[clientType])) {
-                        if ("state" in this.clients[clientType][clientUrl])
-                            //@ts-expect-error
-                            this.clients[clientType][clientUrl].unmirror();
+                        if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
                         else {
-                            for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                            for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                                 this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
-                            }
                         }
                     }
 
