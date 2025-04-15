@@ -6,9 +6,7 @@ import {
     startSubplebbits,
     mockRpcServerPlebbit,
     mockGatewayPlebbit,
-    setRemotePlebbitConfigs,
-    mockRpcWsToSkipSignatureValidation,
-    isRpcFlagOn
+    mockRpcWsToSkipSignatureValidation
 } from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
