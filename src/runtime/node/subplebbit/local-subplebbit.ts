@@ -2216,6 +2216,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._plebbit._startedSubplebbits[this.address] = this;
             await this._updateStartedValue();
             await this._dbHandler.initDbIfNeeded();
+            await this._dbHandler.createOrMigrateTablesIfNeeded();
 
             await this._setChallengesToDefaultIfNotDefined(log);
             // Import subplebbit keys onto ipfs node
@@ -2230,11 +2231,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings); // make sure subplebbit.challenges is using latest props from settings.challenges
         } catch (e) {
             await this.stop(); // Make sure to reset the sub state
-            const plebbitError =
-                e instanceof PlebbitError
-                    ? e
-                    : new PlebbitError("ERR_SUB_START_FAILED_UNKNOWN_ERROR", { error: e, subAddress: this.address });
-            throw plebbitError;
+            //@ts-expect-error
+            e.details = { ...e.details, subAddress: this.address };
+            throw e;
         }
 
         this._publishLoopPromise = this.syncIpnsWithDb();
@@ -2422,7 +2421,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             try {
                 await this._updateDbInternalState(
-                    this.updatedAt ? this.toJSONInternalAfterFirstUpdate() : this.toJSONInternalBeforeFirstUpdate()
+                    this.updateCid ? this.toJSONInternalAfterFirstUpdate() : this.toJSONInternalBeforeFirstUpdate()
                 );
             } catch (e) {
                 log.error("Failed to update db internal state before stopping", e);
