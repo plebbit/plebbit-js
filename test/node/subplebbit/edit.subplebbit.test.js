@@ -21,6 +21,7 @@ import path from "path";
 import * as remeda from "remeda";
 
 import { v4 as uuidV4 } from "uuid";
+
 describeSkipIfRpc(`subplebbit.edit`, async () => {
     let plebbit, remotePlebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
@@ -30,7 +31,12 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         ethAddress = `test-edit-${uuidV4()}.eth`;
 
-        await mockCacheOfTextRecord({ plebbit, domain: ethAddress, textRecord: "subplebbit-address", value: subplebbit.signer.address });
+        await mockCacheOfTextRecord({
+            plebbit,
+            domain: ethAddress,
+            textRecord: "subplebbit-address",
+            value: subplebbit.signer.address
+        });
         await mockCacheOfTextRecord({
             plebbit: remotePlebbit,
             domain: ethAddress,
@@ -139,6 +145,18 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         );
         expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal([]); // empty array because it's a single preloaded page
     });
+
+    it(`calling subplebbit.edit() should not add subplebbit to plebbit._updatingSubplebbits or plebbit._startedSubplebbits`, async () => {
+        const plebbit = await mockPlebbit();
+        const sub = await plebbit.createSubplebbit();
+        expect(plebbit._updatingSubplebbits[sub.address]).to.be.undefined;
+        expect(plebbit._startedSubplebbits[sub.address]).to.be.undefined;
+        await sub.edit({ address: "123" + ethAddress });
+        expect(plebbit._updatingSubplebbits[sub.address]).to.be.undefined;
+        expect(plebbit._startedSubplebbits[sub.address]).to.be.undefined;
+
+        await plebbit.destroy();
+    });
 });
 
 describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
@@ -163,6 +181,44 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         expect(jsonifyLocalSubWithNoInternalProps(subTwo)).to.deep.equal(jsonifyLocalSubWithNoInternalProps(subOne));
 
         await subTwo.stop();
+    });
+
+    it(`Calling startedSubplebbit.stop() after edit while updating another subplebbit should not reset the edit`, async () => {
+        const startedSub = await plebbit.createSubplebbit();
+
+        const editArgs = {
+            address: `address-eth-${uuidV4()}-2.eth`,
+            rules: ["rule 1", "rule 2"]
+        };
+
+        const hasLatestEditProps = (sub) => {
+            return remeda.isDeepEqual(remeda.pick(sub, Object.keys(editArgs)), editArgs);
+        };
+
+        const expectSubToHaveLatestEditProps = (sub) => {
+            expect(remeda.pick(sub, Object.keys(editArgs))).to.deep.equal(editArgs);
+        };
+
+        const updatingSubplebbit = await plebbit.createSubplebbit({ address: startedSub.address });
+        await updatingSubplebbit.update();
+
+        await startedSub.start();
+
+        const subToEdit = await plebbit.createSubplebbit({ address: startedSub.address });
+        await subToEdit.edit(editArgs);
+        expectSubToHaveLatestEditProps(subToEdit);
+        expectSubToHaveLatestEditProps(startedSub);
+
+        if (!hasLatestEditProps(updatingSubplebbit)) await new Promise((resolve) => updatingSubplebbit.once("update", resolve));
+        expectSubToHaveLatestEditProps(updatingSubplebbit);
+
+        await startedSub.stop();
+        expectSubToHaveLatestEditProps(startedSub);
+        expectSubToHaveLatestEditProps(updatingSubplebbit);
+
+        await updatingSubplebbit.stop();
+        expectSubToHaveLatestEditProps(startedSub);
+        expectSubToHaveLatestEditProps(updatingSubplebbit);
     });
 
     [
@@ -222,11 +278,11 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
             // edit subplebbit
             console.log("editSubplebbit");
             const editedSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
-            await editedSubplebbit.edit(editArgs);
+            await editedSubplebbit.edit(editArgs); // it should be sent to the started subplebbit
+            expect(remeda.pick(editedSubplebbit, Object.keys(editArgs))).to.deep.equal(editArgs);
+            expect(remeda.pick(startedSubplebbit, Object.keys(editArgs))).to.deep.equal(editArgs);
 
             editIsFinished = true;
-            const updatedSubplebbit = await updateEventPromise;
-            updatingSubplebbit.removeAllListeners("update");
             expect(editedSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs))
                 expect(deterministicStringify(editedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
@@ -234,14 +290,11 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
             // wait for subplebbit update
             // both started and updating subplebbit should now have the subplebbit edit
             console.log("wait for subplebbit update");
+            await updateEventPromise;
 
             expect(updatingSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs))
                 expect(deterministicStringify(updatingSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
-
-            expect(updatedSubplebbit.title).to.equal(subplebbitTitle);
-            for (const [editKey, editValue] of Object.entries(editArgs))
-                expect(deterministicStringify(updatedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
 
             await updatingSubplebbit.stop();
 
@@ -255,7 +308,9 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
                 expect(deterministicStringify(startedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
             }
 
+            expect(remeda.pick(startedSubplebbit, Object.keys(editArgs))).to.deep.equal(editArgs);
             await startedSubplebbit.stop();
+            expect(remeda.pick(startedSubplebbit, Object.keys(editArgs))).to.deep.equal(editArgs);
 
             expect(subplebbit.rules).to.equal(undefined); // subplebbit is not updating, started or editing so it has no way to get the rules
 
