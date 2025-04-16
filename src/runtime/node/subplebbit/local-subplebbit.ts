@@ -1746,12 +1746,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const unpinnedCommentsFromDb = await this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
-            const baseProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
+            const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
+            const baseSignatureProps = remeda.pick(
+                unpinnedCommentRow,
+                //@ts-expect-error
+                remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
+            );
             const commentIpfsJson = <CommentIpfsType>{
-                ...baseProps,
-                ...unpinnedCommentRow.extraProps,
-                postCid: unpinnedCommentRow.depth === 0 ? undefined : unpinnedCommentRow.postCid // need to remove post cid because it's not part of ipfs file if depth is 0
+                ...baseSignatureProps,
+                ...baseIpfsProps,
+                ...unpinnedCommentRow.extraProps
             };
+            if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
             const contentHash: string = await calculateIpfsHash(commentIpfsContent);
             if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
