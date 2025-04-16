@@ -146,7 +146,7 @@ export class DbHandler {
         //@ts-expect-error
         this._knex = this._keyv = undefined;
 
-        log.trace("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
+        log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
 
     // Check if SQLite3 CLI is available
