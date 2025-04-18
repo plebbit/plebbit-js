@@ -5,6 +5,7 @@ import {
     itIfRpc,
     itSkipIfRpc,
     mockPlebbit,
+    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
@@ -110,5 +111,19 @@ describe(`plebbit.destroy()`, async () => {
         expect(plebbit._startedSubplebbits[sub.address]).to.not.exist;
 
         expect(calledUpdate).to.be.false;
+    });
+
+    itIfRpc(`plebbit.destroy() should not stop running local subplebbits (RPC client)`, async () => {
+        const plebbit = await mockPlebbit();
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        expect(sub.state).to.equal("started");
+        await plebbit.destroy();
+        expect(sub.state).to.equal("started");
+
+        const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const post = await publishRandomPost(sub.address, remotePlebbit); // if we can publish a post, the sub is running
+
+        await remotePlebbit.destroy();
     });
 });
