@@ -861,7 +861,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                         // TODO should include errors
                     });
                     this._updatePublishingStateNoEmission("failed");
-                    this.emit("error", error);
+                    this.emit("error", error); // I think this line could cause an uncaught error
                     this.emit("publishingstatechange", "failed");
                 } else {
                     log(

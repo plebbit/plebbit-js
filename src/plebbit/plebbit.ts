@@ -546,6 +546,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     }
 
     _canCreateNewLocalSub(): boolean {
+        // TODO check if we have a connection to kubo rpc node for IPFS and pubsub
         const isNode = typeof process?.versions?.node !== "undefined";
         return isNode && Boolean(this.dataPath);
     }
@@ -974,7 +975,6 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         for (const subplebbit of Object.values(this._startedSubplebbits)) await subplebbit.stop();
 
-        this._updatingSubplebbits = this._updatingComments = this._startedSubplebbits = {};
 
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
 
