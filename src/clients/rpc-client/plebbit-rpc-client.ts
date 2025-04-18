@@ -132,25 +132,10 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
                 } catch (e) {
                     const typedError = <PlebbitError | { code: number; message: string } | Error | ZodError>e;
                     //e is an error json representation of PlebbitError
-                    if ("code" in typedError && typeof typedError.code === "string") {
-                        const actualPlebError = typedError as PlebbitError;
-                        throw new PlebbitError(actualPlebError.code, {
-                            ...actualPlebError.details,
-                            rpcArgs: args,
-                            rpcServerUrl: this._websocketServerUrl
-                        });
-                    } else if ("name" in typedError && typedError["name"] === "ZodError")
-                        throw new PlebbitError("ERR_GENERIC_RPC_INVALID_SCHEMA", {
-                            zodError: typedError,
-                            rpcArgs: args,
-                            rpcServerUrl: this._websocketServerUrl
-                        });
-                    else
-                        throw new PlebbitError("ERR_GENERIC_RPC_CLIENT_CALL_ERROR", {
-                            error: typedError,
-                            rpcArgs: args,
-                            rpcServerUrl: this._websocketServerUrl
-                        });
+                    //@ts-expect-error
+                    typedError.details = { ...typedError.details, rpcArgs: args, rpcServerUrl: this._websocketServerUrl };
+
+                    throw typedError;
                 }
             };
         }
