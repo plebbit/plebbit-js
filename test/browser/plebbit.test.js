@@ -7,16 +7,11 @@ describe("plebbit", () => {
         // RPC exception
         const plebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
-            [
-                "https://ipfsgateway.xyz",
-                "https://ipfs.io",
-                "https://dweb.link",
-                "https://flk-ipfs.xyz",
-                "https://4everland.io",
-                "https://gateway.pinata.cloud"
-            ].sort()
+            ["https://ipfsgateway.xyz", "https://gateway.plebpubsub.xyz", "https://gateway.forumindex.com"].sort()
         );
-        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients).sort()).to.deep.equal(
+            ["https://pubsubprovider.xyz/api/v0", "https://plebpubsub.xyz/api/v0"].sort()
+        );
 
         // no dataPath in brower
         expect(plebbit.dataPath).to.equal(undefined);
