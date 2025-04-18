@@ -226,7 +226,13 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
     }
 
     private async _cleanUpRpcConnection(log: Logger) {
-        if (this._startRpcSubscriptionId) await this._plebbit._plebbitRpcClient!.unsubscribe(this._startRpcSubscriptionId);
+        if (this._startRpcSubscriptionId) {
+            try {
+                await this._plebbit._plebbitRpcClient!.unsubscribe(this._startRpcSubscriptionId);
+            } catch (e) {
+                log.error("Failed to unsubscribe from subplebbitStart", e);
+            }
+        }
         this._setStartedState("stopped");
         this._setRpcClientState("stopped");
         this.started = false;

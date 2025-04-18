@@ -166,12 +166,19 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
+        const log = Logger("plebbit-js:publication:_handleRpcChallengeVerification");
         this._receivedChallengeVerification = true;
         if (verification.comment)
             await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(<DecryptedChallengeVerification>verification);
         this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
-        if (this._rpcPublishSubscriptionId) await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
-        this._rpcPublishSubscriptionId = undefined;
+        if (this._rpcPublishSubscriptionId) {
+            try {
+                await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
+            } catch (e) {
+                log.error("Failed to unsubscribe from publication publish", e);
+            }
+            this._rpcPublishSubscriptionId = undefined;
+        }
     }
 
     private async _handleIncomingChallengePubsubMessage(msg: ChallengeMessageType) {
@@ -623,9 +630,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private async _postSucessOrFailurePublishing() {
+        const log = Logger("plebbit-js:publication:_postSucessOrFailurePublishing");
         this._updateState("stopped");
         if (this._rpcPublishSubscriptionId) {
-            await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
+            try {
+                await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
+            } catch (e) {
+                log.error("Failed to unsubscribe from publication publish", e);
+            }
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         } else if (this._subplebbit) {
