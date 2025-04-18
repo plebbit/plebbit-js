@@ -23,8 +23,9 @@ describe("Plebbit options", async () => {
     it("Plebbit() uses correct default plebbit options", async () => {
         const defaultPlebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
-        expect(Object.keys(defaultPlebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
-        expect(defaultPlebbit.pubsubKuboRpcClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
+        expect(Object.keys(defaultPlebbit.clients.pubsubKuboRpcClients).sort()).to.deep.equal(
+            ["https://pubsubprovider.xyz/api/v0", "https://plebpubsub.xyz/api/v0"].sort()
+        );
         expect(defaultPlebbit.pubsubKuboRpcClientsOptions.headers?.authorization).to.be.undefined;
 
         // no dataPath in browser
