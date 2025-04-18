@@ -10,6 +10,7 @@ export enum messages {
     ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS = "Subplebbit owner attempted to edit subplebbit.address to a new address that already exists",
 
     // Plebbit errors
+    ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
     ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
     ERR_PLEBBIT_OPTION_NOT_ACCEPTED = "Option is not accepted on Plebbit constructor",

@@ -340,7 +340,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
             const cleanUpUpdatingSubInstance = async () => {
                 updatingSub.removeListener("removeListener", updatingSubRemoveListenerListener);
-                await updatingSub.stop();
+                if (updatingSub.state !== "stopped") await updatingSub.stop();
             };
 
             updatingSub.on("removeListener", updatingSubRemoveListenerListener);
@@ -356,22 +356,19 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._updatingSubInstanceWithListeners.subplebbit.on("error", this._updatingSubInstanceWithListeners.error);
         this._updatingSubInstanceWithListeners.subplebbit.on("statechange", this._updatingSubInstanceWithListeners.statechange);
 
-        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
+        const clientKeys = remeda.keys.strict(this.clients);
         for (const clientType of clientKeys)
             if (this.clients[clientType])
-                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                for (const clientUrl of Object.keys(this.clients[clientType]))
                     if (clientType !== "chainProviders")
                         this.clients[clientType][clientUrl].mirror(
                             this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl]
                         );
-                    else {
-                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                    else
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                             this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
                                 this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
                             );
-                        }
-                    }
-                }
 
         if (this._updatingSubInstanceWithListeners.subplebbit.state === "stopped") {
             this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
@@ -391,7 +388,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     async stop() {
-        if (this.state === "stopped") return;
+        if (this.state !== "updating") throw new PlebbitError("ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE", { address: this.address });
 
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
@@ -409,17 +406,15 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             );
             this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
 
-            const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"] as const;
+            const clientKeys = remeda.keys.strict(this.clients);
 
             for (const clientType of clientKeys)
                 if (this.clients[clientType])
-                    for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    for (const clientUrl of Object.keys(this.clients[clientType]))
                         if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
-                        else {
+                        else
                             for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                                 this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
-                        }
-                    }
 
             this._updatingSubInstanceWithListeners = undefined;
         } else {

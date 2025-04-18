@@ -657,6 +657,7 @@ export class Comment
             this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.commentUpdateSubscribe(this.cid);
         } catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
+            await this._stopUpdateLoop();
             this._updateState("stopped");
             this._setUpdatingStateWithEmissionIfNewState("failed");
             throw e;
@@ -722,22 +723,17 @@ export class Comment
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
         updatingCommentInstance.on("statechange", this._updatingCommentInstance.statechange);
 
-        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
+        const clientKeys = remeda.keys.strict(this.clients);
         for (const clientType of clientKeys)
             if (this.clients[clientType])
-                for (const clientUrl of Object.keys(this.clients[clientType])) {
-                    if ("state" in this.clients[clientType][clientUrl])
-                        //@ts-expect-error
+                for (const clientUrl of Object.keys(this.clients[clientType]))
+                    if (clientType !== "chainProviders")
                         this.clients[clientType][clientUrl].mirror(updatingCommentInstance.clients[clientType][clientUrl]);
-                    else {
-                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                    else
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                             this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
-                                //@ts-expect-error
                                 updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]
                             );
-                        }
-                    }
-                }
     }
 
     async _setUpNewUpdatingCommentInstance() {
@@ -770,7 +766,13 @@ export class Comment
         this._useUpdatingCommentFromPlebbit();
         updatingCommentInstance._updateState("updating");
 
-        updatingCommentInstance.loadCommentIpfsAndStartCommentUpdateSubscription().catch((e) => log.error("Failed to update comment", e));
+        if (this._plebbit._plebbitRpcClient) {
+            await this._updateViaRpc();
+        } else {
+            updatingCommentInstance
+                .loadCommentIpfsAndStartCommentUpdateSubscription()
+                .catch((e) => log.error("Failed to update comment", e));
+        }
     }
 
     async update() {
@@ -782,19 +784,24 @@ export class Comment
 
         if (this._plebbit._updatingComments[this.cid]) {
             this._useUpdatingCommentFromPlebbit();
-        } else if (this._plebbit._plebbitRpcClient) await this._updateViaRpc();
-        else await this._setUpNewUpdatingCommentInstance();
+        } else await this._setUpNewUpdatingCommentInstance();
 
         if (this._rawCommentIpfs || this._rawCommentUpdate) this.emit("update", this);
     }
 
     private async _stopUpdateLoop() {
+        const log = Logger("plebbit-js:comment:update:_stopUpdateLoop");
         if (!this.cid) return;
         this._commentIpfsloadingOperation?.stop();
         if (this._updateRpcSubscriptionId) {
-            await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
+            try {
+                await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
+            } catch (e) {
+                log.error("Failed to unsubscribe from commentUpdate", e);
+            }
             this._updateRpcSubscriptionId = undefined;
             this._setRpcClientState("stopped");
+            delete this._plebbit._updatingComments[this.cid];
         }
 
         // what if it didn't have enough time to set up _subplebbitForUpdating and _postForUpdating? These are defined after loading CommentIpfs
@@ -833,17 +840,15 @@ export class Comment
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
             this._updatingCommentInstance.comment.removeListener("error", this._updatingCommentInstance.error);
 
-            const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
+            const clientKeys = remeda.keys.strict(this.clients);
 
             for (const clientType of clientKeys)
                 if (this.clients[clientType])
-                    for (const clientUrl of Object.keys(this.clients[clientType])) {
+                    for (const clientUrl of Object.keys(this.clients[clientType]))
                         if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
-                        else {
+                        else
                             for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                                 this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
-                        }
-                    }
 
             this._updatingCommentInstance = undefined;
         }

@@ -2292,7 +2292,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("statechange", this._mirroredStartedOrUpdatingSubplebbit.statechange);
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("error", this._mirroredStartedOrUpdatingSubplebbit.error);
 
-        const clientKeys = ["chainProviders", "kuboRpcClients", "pubsubKuboRpcClients", "ipfsGateways"] as const;
+        const clientKeys = remeda.keys.strict(this.clients);
         for (const clientType of clientKeys)
             if (this.clients[clientType])
                 for (const clientUrl of Object.keys(this.clients[clientType])) {
@@ -2330,18 +2330,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener("error", this._mirroredStartedOrUpdatingSubplebbit.error);
 
-        const clientKeys = ["chainProviders", "pubsubKuboRpcClients", "kuboRpcClients", "ipfsGateways"] as const;
+        const clientKeys = remeda.keys.strict(this.clients);
 
         for (const clientType of clientKeys)
             if (this.clients[clientType])
-                for (const clientUrl of Object.keys(this.clients[clientType])) {
+                for (const clientUrl of Object.keys(this.clients[clientType]))
                     if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
-                    else {
-                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl])) {
+                    else
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                             this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
-                        }
-                    }
-                }
 
         this._mirroredStartedOrUpdatingSubplebbit = undefined;
     }

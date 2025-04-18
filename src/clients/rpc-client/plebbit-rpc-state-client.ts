@@ -5,6 +5,7 @@ import { Comment } from "../../publications/comment/comment.js";
 import { BasePages } from "../../pages/pages.js";
 import { RpcRemoteSubplebbit } from "../../subplebbit/rpc-remote-subplebbit.js";
 import { hideClassPrivateProps } from "../../util.js";
+import { PlebbitTypedEmitter } from "../plebbit-typed-emitter.js";
 
 // Types
 type PublicationRpcState =
@@ -28,8 +29,8 @@ type PagesRpcState = BasePages["clients"]["kuboRpcClients"][""][""]["state"] | B
 type GenericRpcState = PublicationRpcState | CommentRpcState | SubplebbitRpcState | PagesRpcState;
 
 // Client classes
-class BasePlebbitRpcStateClient<T extends GenericRpcState> extends TypedEmitter<GenericClientEvents<T>> {
-    state: T;
+class BasePlebbitRpcStateClient<T extends GenericRpcState> extends PlebbitTypedEmitter<GenericClientEvents<T>> {
+    override state: T;
 
     constructor(state: T) {
         super();
