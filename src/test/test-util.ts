@@ -462,7 +462,9 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
         for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
 
-    plebbit.on("error", (e) => {});
+    plebbit.on("error", (e) => {
+        console.error("Plebbit error", e);
+    });
     return plebbit;
 }
 
@@ -505,9 +507,17 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
 }
 
 export async function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
+    if (!isRpcFlagOn()) throw Error("This function should only be used when the rpc flag is on");
     // This instance will connect to an rpc server that has no local subs
     const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
     return plebbit;
+}
+
+export async function mockRPCLocalPlebbit(plebbitOptions?: InputPlebbitOptions) {
+    if (!isRpcFlagOn()) throw Error("This function should only be used when the rpc flag is on");
+    // This instance will connect to an rpc server that local subs
+
+    return mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
 }
 
 export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
@@ -1085,6 +1095,15 @@ export function setPlebbitConfigs(configs: PlebbitTestConfig[]) {
             throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(mapper)}`);
 
     plebbitConfigs = configs.map((config) => mapper[config]);
+
+    if (process) {
+        process.on("uncaughtException", (err) => {
+            console.error("uncaughtException", err);
+        });
+        process.on("unhandledRejection", (reason, p) => {
+            console.error("unhandledRejection", reason, p);
+        });
+    }
 }
 
 export function getRemotePlebbitConfigs() {
