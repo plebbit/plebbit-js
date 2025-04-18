@@ -59,8 +59,8 @@ export class PlebbitWithRpcClient extends Plebbit {
     }
 
     override async destroy() {
-        await super.destroy();
         await this._plebbitRpcClient.destroy();
+        await super.destroy();
     }
 
     override async getComment(commentCid: string) {
