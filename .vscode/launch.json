@@ -26,7 +26,7 @@
             "console": "integratedTerminal",
             "env": {
                 "DEBUG": "plebbit-js:*, -plebbit*trace",
-                "USE_RPC": "1"
+                "REMOTE_PLEBBIT_CONFIGS": "remote-kubo-rpc"
             }
         },
         {
@@ -50,12 +50,12 @@
         {
             "args": ["--no-timeouts", "--bail", "--config", "${workspaceFolder}/config/.mocharc.json", "${file}"],
             "internalConsoleOptions": "openOnSessionStart",
-            "name": "Debug current file",
+            "name": "Debug current file (remote)",
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
             "request": "launch",
             "outFiles": [],
-            "resolveSourceMapLocations": null,
+            "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
             "runtimeArgs": ["--max-old-space-size=18192"],
             "skipFiles": [
                 "<node_internals>/**",
@@ -65,8 +65,30 @@
             ],
             "type": "node",
             "env": {
-                "DEBUG": "plebbit-js:*",
-                "PLEBBIT_CONFIGS": "remote-kubo-rpc"
+                "DEBUG": "plebbit-js:*, -plebbit*trace",
+                "PLEBBIT_CONFIGS": "remote-ipfs-gateway,remote-kubo-rpc"
+            }
+        },
+        {
+            "args": ["--no-timeouts", "--bail", "--config", "${workspaceFolder}/config/.mocharc.json", "${file}"],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "Debug current file (local)",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "request": "launch",
+            "outFiles": [],
+            "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
+            "runtimeArgs": ["--max-old-space-size=18192"],
+            "skipFiles": [
+                "<node_internals>/**",
+                "**/node_modules/**",
+                "${workspaceFolder}/dist/browser/**",
+                "${workspaceFolder}/test-karma-webpack/**"
+            ],
+            "type": "node",
+            "env": {
+                "DEBUG": "plebbit-js:*, -plebbit*trace",
+                "PLEBBIT_CONFIGS": "local-kubo-rpc"
             }
         },
         {
@@ -87,14 +109,16 @@
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*",
-                "PLEBBIT_CONFIGS": "remote-plebbit-rpc"
+                "PLEBBIT_CONFIGS": "remote-plebbit-rpc",
+                "USE_RPC": "1"
             }
         },
-
         {
             "args": [
                 "--no-timeouts",
-                "--bail",
+                "--parallel",
+                "--jobs",
+                "3",
                 "--recursive",
                 "--config",
                 "${workspaceFolder}/config/.mocharc.json",
@@ -105,11 +129,19 @@
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
             "request": "launch",
-            "skipFiles": ["<node_internals>/**"],
-            "runtimeArgs": ["--max-old-space-size=8192"],
+            "outFiles": [],
+            "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
+            "runtimeArgs": ["--max-old-space-size=18192", "--trace-warnings", "--unhandled-rejections=strict"],
+            "skipFiles": [
+                "<node_internals>/**",
+                "**/node_modules/**",
+                "${workspaceFolder}/dist/browser/**",
+                "${workspaceFolder}/test-karma-webpack/**"
+            ],
             "type": "node",
             "env": {
-                "DEBUG": "plebbit-js:*, -plebbit-js*trace"
+                "DEBUG": "plebbit-js:*, -plebbit-js*trace",
+                "PLEBBIT_CONFIGS": "remote-ipfs-gateway"
             }
         }
     ]
