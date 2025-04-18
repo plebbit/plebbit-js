@@ -1426,9 +1426,17 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
 }
 
 export async function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit) {
-    const postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
-    if (postInPage) return postInPage;
-
+    let postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
+    if (!postInPage) {
+        let pageCid: string | undefined = subplebbit.posts?.pageCids.new;
+        while (pageCid && !postInPage) {
+            const loadedPage = await subplebbit.posts.getPage(pageCid);
+            postInPage = loadedPage.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
+            pageCid = loadedPage.nextCid;
+        }
+        if (postInPage) return postInPage;
+    }
+    // didn't find any post with multiple pages, so we'll publish a new one
     const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
     await post.update();
     await resolveWhenConditionIsTrue(post, async () => typeof post.updatedAt === "number");

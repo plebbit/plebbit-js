@@ -65,6 +65,7 @@ describeSkipIfRpc(`post.updatingState - Kubo RPC client`, async () => {
     });
 
     afterEach(async () => {
+        if (plebbit) await plebbit.destroy();
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
@@ -135,7 +136,9 @@ describeSkipIfRpc(`post.updatingState - Kubo RPC client`, async () => {
             );
         await sub.update(); // need to update it so that we can mock it below
         await mockPlebbitToReturnSpecificSubplebbit(createdPost._plebbit, subplebbitAddress, subInvalidRecord);
+        expect(createdPost.updatedAt).to.be.undefined;
         await createdPost.update();
+        expect(createdPost.updatedAt).to.be.undefined;
 
         await createErrorPromise();
 
@@ -325,10 +328,9 @@ describeSkipIfRpc(`post.updatingState - IPFS Gateway client`, async () => {
     });
 
     it(`updating states is in correct order upon updating a post with gateway using postUpdates`, async () => {
-        const gatewayPlebbit = await mockGatewayPlebbit();
-        const subplebbit = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const postCid = subplebbit.posts.pages.hot.comments[0].cid;
-        const mockPost = await gatewayPlebbit.createComment({ cid: postCid });
+        const mockPost = await plebbit.createComment({ cid: postCid });
         const expectedStates = ["fetching-ipfs", "succeeded", "fetching-subplebbit-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
@@ -344,7 +346,6 @@ describeSkipIfRpc(`post.updatingState - IPFS Gateway client`, async () => {
         const filteredExpectedStates = cleanupStateArray(expectedStates);
         const filteredRecordedStates = cleanupStateArray(recordedStates);
         expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
-        await gatewayPlebbit.destroy();
     });
 });
 
@@ -480,6 +481,7 @@ describe(`reply.updatingState - IPFS Gateway client`, async () => {
     });
 
     afterEach(async () => {
+        if (plebbit) await plebbit.destroy();
         plebbit = await mockGatewayPlebbit();
     });
 
@@ -530,8 +532,7 @@ describe(`reply.updatingState - IPFS Gateway client`, async () => {
             "waiting-retry", // waiting for a new subplebbit update
             "fetching-subplebbit-ipns", // fetching subplebbit ipns
             "fetching-update-ipfs", // fetching comment update of reply by using page cids of parent
-            "succeeded", // succeeded loading comment update of reply using page cids of parent
-            "stopped" // stopped
+            "succeeded" // succeeded loading comment update of reply using page cids of parent
         ];
         const recordedStates = [];
         reply.on("updatingstatechange", (newState) => {
@@ -546,12 +547,18 @@ describe(`reply.updatingState - IPFS Gateway client`, async () => {
         const nestedReply = await publishRandomReply(reply, plebbit);
         await waitTillReplyInParentPagesInstance(nestedReply, reply);
         await reply.stop();
+        await nestedReply.stop();
+        expect(reply.content).to.exist;
+        expect(reply.updatedAt).to.be.a("number"); // should load a new comment update
 
         // Remove consecutive ["waiting-retry", "fetching-subplebbit-ipns"] entries
         const filteredExpectedStates = cleanupStateArray(expectedStates);
         const filteredRecordedStates = cleanupStateArray(recordedStates);
 
-        expect(filteredRecordedStates.slice(0, filteredExpectedStates.length)).to.deep.equal(filteredExpectedStates);
+        const trimmedRecordedStates = filteredRecordedStates.slice(0, filteredExpectedStates.length);
+        expect(trimmedRecordedStates).to.deep.equal(filteredExpectedStates);
+
+        expect(filteredRecordedStates[filteredRecordedStates.length - 1]).to.equal("stopped");
     });
     it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
