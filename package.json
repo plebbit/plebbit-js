@@ -104,7 +104,7 @@
     },
     "devDependencies": {
         "@babel/core": "7.23.7",
-        "@babel/plugin-syntax-import-assertions": "7.23.3",
+        "@babel/plugin-syntax-import-attributes": "7.26.0",
         "@babel/preset-env": " 7.23.9",
         "@types/better-sqlite3": "7.6.12",
         "@types/debounce": "1.2.1",

@@ -67,7 +67,7 @@ export default {
                         presets: ["@babel/preset-env"],
 
                         // To be able to import json in tests
-                        plugins: ["@babel/plugin-syntax-import-assertions"]
+                        plugins: ["@babel/plugin-syntax-import-attributes"] // <-- Change to this plugin
                     }
                 }
             }
