@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import {
-    describeSkipIfRpc,
     getRemotePlebbitConfigs,
+    itSkipIfRpc,
     publishRandomPost,
     publishRandomReply,
     resolveWhenConditionIsTrue
@@ -11,9 +11,16 @@ const subplebbitAddress = signers[0].address;
 
 // TODO write a better way to wait for events to propgate other than setTimeout
 getRemotePlebbitConfigs().map((config) => {
-    describeSkipIfRpc(`plebbit._updatingComments - ${config.name}`, async () => {
+    describe(`plebbit._updatingComments - ${config.name}`, async () => {
+        let plebbit;
         let sub;
 
+        beforeEach(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+        afterEach(async () => {
+            await plebbit.destroy();
+        });
         before(async () => {
             const plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit(subplebbitAddress);
@@ -37,9 +44,18 @@ getRemotePlebbitConfigs().map((config) => {
 
         // Function to define test cases for a specific comment type
         function runTestsForCommentType(replyPostConfig) {
+            let plebbit;
+
+            beforeEach(async () => {
+                plebbit = await config.plebbitInstancePromise();
+            });
+            afterEach(async () => {
+                try {
+                    await plebbit.destroy();
+                } catch {}
+            });
             describe(`Tests for ${replyPostConfig.commentType}`, () => {
                 it(`Calling plebbit.createComment({${replyPostConfig.commentType}cid}) when ${replyPostConfig.commentType} is already updating in plebbit._updatingComments should get us CommentIpfs and CommentUpdate`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
                     await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
@@ -64,7 +80,6 @@ getRemotePlebbitConfigs().map((config) => {
                 });
 
                 it(`A single ${replyPostConfig.commentType} instance fetched with plebbit.getComment should not keep plebbit._updatingComments[address]`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     const comment = await plebbit.getComment(replyPostConfig.cid);
                     expect(comment.content).to.be.a("string");
                     expect(plebbit._updatingComments[comment.cid]).to.be.undefined;
@@ -72,7 +87,6 @@ getRemotePlebbitConfigs().map((config) => {
                 });
 
                 it(`A single ${replyPostConfig.commentType} instance calling stop() immediately after update() should clear out _updatingComments`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     expect(plebbit._updatingComments).to.deep.equal({});
 
                     const comment = await plebbit.createComment({ cid: replyPostConfig.cid });
@@ -88,7 +102,6 @@ getRemotePlebbitConfigs().map((config) => {
                 });
 
                 it(`A single ${replyPostConfig.commentType} Comment instance updating will set up plebbit._updatingComments. Calling stop should clean up all subscriptions and remove plebbit._updatingComments`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     expect(plebbit._updatingComments[replyPostConfig.cid]).to.be.undefined;
 
                     const comment = await plebbit.createComment({ cid: replyPostConfig.cid });
@@ -105,7 +118,6 @@ getRemotePlebbitConfigs().map((config) => {
                 });
 
                 it(`Multiple ${replyPostConfig.commentType} Comment instances (same address) updating. Calling stop on all of them should clean all subscriptions and remove plebbit._updatingComments`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     const comment2 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     const comment3 = await plebbit.createComment({ cid: replyPostConfig.cid });
@@ -143,8 +155,6 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(plebbit._updatingComments).to.deep.equal({});
                 });
                 it(`calling plebbit._updatingComments[${replyPostConfig.commentType}cid].stop() should stop all ${replyPostConfig.commentType} instances listening to that instance`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
-
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
                     expect(comment1.state).to.equal("updating");
@@ -170,7 +180,6 @@ getRemotePlebbitConfigs().map((config) => {
                 });
 
                 it(`Calling plebbit.getComment(${replyPostConfig.commentType}Cid) should load both CommentIpfs and CommentUpdate if updating comment instance already has them`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
                     await resolveWhenConditionIsTrue(comment1, () => typeof comment1.updatedAt === "number");
@@ -187,7 +196,6 @@ getRemotePlebbitConfigs().map((config) => {
                 });
 
                 it(`Calling ${replyPostConfig.commentType}FromGetComment.stop() should not stop other updating comments`, async () => {
-                    const plebbit = await config.plebbitInstancePromise();
                     const comment1 = await plebbit.createComment({ cid: replyPostConfig.cid });
                     await comment1.update();
 
@@ -206,8 +214,6 @@ getRemotePlebbitConfigs().map((config) => {
 
         // The rest of your standalone tests go here
         it(`Calling comment.stop() and update() should behave as normal with plebbit._updatingComments`, async () => {
-            const plebbit = await config.plebbitInstancePromise();
-
             const comment = await publishRandomPost(subplebbitAddress, plebbit);
             const postCommentCid = comment.cid;
 
@@ -224,6 +230,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await postComment1.stop();
 
+            expect(plebbit._updatingComments[postCommentCid]).to.exist;
             expect(plebbit._updatingComments[postCommentCid].listenerCount("update")).to.equal(1);
 
             expect(postComment2.replyCount).to.equal(0);
@@ -236,63 +243,69 @@ getRemotePlebbitConfigs().map((config) => {
 
             await postComment2.stop();
 
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
             expect(plebbit._updatingComments[postCommentCid]).to.be.undefined;
         });
 
-        it(`Calling reply.stop() when it's subscribed to a post and post is updating only for reply should remove both reply and post from _updatingComments`, async () => {
-            const plebbit = await config.plebbitInstancePromise();
-            const replyCid = sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.best).replies.pages.best.comments[0]
-                .cid;
-            const reply = await plebbit.createComment({ cid: replyCid });
-            await reply.update();
-            // Get the post CID from the reply's parent
+        // with rpc clients we don't create a post instance, the rpc server does it for us
+        itSkipIfRpc(
+            `Calling reply.stop() when it's subscribed to a post and post is updating only for reply should remove both reply and post from _updatingComments`,
+            async () => {
+                const replyCid = sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.best).replies.pages.best.comments[0]
+                    .cid;
+                const reply = await plebbit.createComment({ cid: replyCid });
+                await reply.update();
+                // Get the post CID from the reply's parent
 
-            await reply.update();
+                await reply.update();
 
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
-            const postCid = reply.postCid;
-            // Verify that both the reply and its parent post are in _updatingComments
-            expect(Object.keys(plebbit._updatingComments).length).to.equal(2);
-            expect(plebbit._updatingComments[replyCid]).to.exist;
-            expect(plebbit._updatingComments[postCid]).to.exist;
+                await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
+                const postCid = reply.postCid;
+                // Verify that both the reply and its parent post are in _updatingComments
+                expect(plebbit._updatingComments[replyCid]).to.exist;
+                expect(plebbit._updatingComments[postCid]).to.exist;
 
-            // Verify the reply's CID matches replyCid
-            expect(plebbit._updatingComments[replyCid].cid).to.equal(replyCid);
+                // Verify the reply's CID matches replyCid
+                expect(plebbit._updatingComments[replyCid].cid).to.equal(replyCid);
 
-            // Verify the post's CID matches the expected postCid
-            expect(plebbit._updatingComments[postCid].cid).to.equal(postCid);
+                // Verify the post's CID matches the expected postCid
+                expect(plebbit._updatingComments[postCid].cid).to.equal(postCid);
 
-            // Now stop the reply and verify both are removed from _updatingComments
-            await reply.stop();
-            await new Promise((resolve) => setTimeout(resolve, 500)); // need to wait some time to propgate events
-            expect(plebbit._updatingComments[replyCid]).to.be.undefined;
-            expect(plebbit._updatingComments[postCid]).to.be.undefined;
-            expect(Object.keys(plebbit._updatingComments).length).to.equal(0);
-        });
+                // Now stop the reply and verify both are removed from _updatingComments
+                await reply.stop();
+                await new Promise((resolve) => setTimeout(resolve, 500)); // need to wait some time to propgate events
+                expect(plebbit._updatingComments[replyCid]).to.be.undefined;
+                expect(plebbit._updatingComments[postCid]).to.be.undefined;
+                expect(Object.keys(plebbit._updatingComments).length).to.equal(0);
+            }
+        );
 
-        it(`Updating a post should create a new entry in _updatingSubplebbits if we haven't been updating the sub already`, async () => {
-            const plebbit = await config.plebbitInstancePromise();
-            const subplebbit = await plebbit.getSubplebbit(signers[0].address);
-            const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
+        // with rpc clients we don't create a subplebbit instance, the rpc server does it for us
+        itSkipIfRpc(
+            `Updating a post should create a new entry in _updatingSubplebbits if we haven't been updating the sub already`,
+            async () => {
+                const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+                const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
 
-            const comment = await plebbit.createComment({ cid: commentCid });
+                const comment = await plebbit.createComment({ cid: commentCid });
 
-            expect(plebbit._updatingComments[commentCid]).to.not.exist;
-            expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
+                expect(plebbit._updatingComments[commentCid]).to.not.exist;
+                expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
 
-            await comment.update();
-            await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
-            expect(plebbit._updatingComments[commentCid]).to.exist;
-            expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.exist;
+                await comment.update();
+                await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+                expect(plebbit._updatingComments[commentCid]).to.exist;
+                expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.exist;
 
-            await comment.stop();
-            await new Promise((resolve) => setTimeout(resolve, 500)); // need to wait some time to propgate events
-            expect(plebbit._updatingComments[commentCid]).to.not.exist;
-            expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
-        });
+                await comment.stop();
+                await new Promise((resolve) => setTimeout(resolve, 500)); // need to wait some time to propgate events
+                expect(plebbit._updatingComments[commentCid]).to.not.exist;
+                expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.not.exist;
+            }
+        );
 
-        it(`Updating a post should use entry in _updatingSubplebbits if it's already updating`, async () => {
-            const plebbit = await config.plebbitInstancePromise();
+        itSkipIfRpc(`Updating a post should use entry in _updatingSubplebbits if it's already updating`, async () => {
             const subplebbit = await plebbit.getSubplebbit(signers[0].address);
             await subplebbit.update();
             const commentCid = subplebbit.posts.pages.hot.comments[0].cid;
