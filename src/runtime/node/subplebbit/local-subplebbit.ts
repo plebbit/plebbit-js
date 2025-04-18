@@ -368,7 +368,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const mergedInternalState = { ...internalStateBefore, ...props };
             await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], mergedInternalState);
             this._internalStateUpdateId = props._internalStateUpdateId;
-            log("Updated sub", this.address, "internal state in db with new props", Object.keys(props));
+            log.trace("Updated sub", this.address, "internal state in db with new props", Object.keys(props));
             return mergedInternalState as InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType;
         } catch (e) {
             log.error("Failed to update sub", this.address, "internal state in db with new props", Object.keys(props), e);
