@@ -694,8 +694,7 @@ export class Comment
         }
     }
 
-    _useUpdatingCommentFromPlebbit() {
-        const updatingCommentInstance = this._plebbit._updatingComments[this.cid!]!;
+    _useUpdatingCommentFromPlebbit(updatingCommentInstance: Comment) {
         this._updatingCommentInstance = {
             comment: updatingCommentInstance,
             statechange: async (newState) => {
@@ -763,11 +762,11 @@ export class Comment
 
         this._plebbit._updatingComments[this.cid!] = updatingCommentInstance;
 
-        this._useUpdatingCommentFromPlebbit();
+        this._useUpdatingCommentFromPlebbit(updatingCommentInstance);
         updatingCommentInstance._updateState("updating");
 
         if (this._plebbit._plebbitRpcClient) {
-            await this._updateViaRpc();
+            await updatingCommentInstance._updateViaRpc();
         } else {
             updatingCommentInstance
                 .loadCommentIpfsAndStartCommentUpdateSubscription()
@@ -783,7 +782,7 @@ export class Comment
         this._updateState("updating");
 
         if (this._plebbit._updatingComments[this.cid]) {
-            this._useUpdatingCommentFromPlebbit();
+            this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]);
         } else await this._setUpNewUpdatingCommentInstance();
 
         if (this._rawCommentIpfs || this._rawCommentUpdate) this.emit("update", this);
