@@ -1,0 +1,11 @@
+{
+    "prettier.configPath": "./prettier.config.js",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "typescript.tsdk": "node_modules/typescript/lib",
+
+    "files.exclude": {
+        "dist/": true
+    },
+    "git.ignoredRepositories": ["dist"]
+}
