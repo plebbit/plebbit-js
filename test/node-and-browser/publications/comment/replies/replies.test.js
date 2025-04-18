@@ -12,7 +12,7 @@ import {
     waitTillReplyInParentPagesInstance,
     resolveWhenConditionIsTrue,
     itSkipIfRpc
-} from "../../../../../dist/node/test/test-util.js  ";
+} from "../../../../../dist/node/test/test-util.js";
 import { REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";
 import signers from "../../../../fixtures/signers.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
