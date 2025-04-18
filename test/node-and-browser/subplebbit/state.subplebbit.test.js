@@ -40,5 +40,23 @@ getRemotePlebbitConfigs().map((config) => {
             await sub.stop();
             expect(sub.state).to.equal("stopped");
         });
+
+        it(`subplebbit.state is updating if we're mirroring an updating subplebbit`, async () => {
+            const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await sub.update();
+            expect(sub.state).to.equal("updating");
+
+            const sub2 = await plebbit.createSubplebbit({ address: subplebbitAddress });
+            await sub2.update();
+            expect(sub2.state).to.equal("updating");
+
+            await sub2.stop();
+            expect(sub2.state).to.equal("stopped");
+            expect(sub.state).to.equal("updating");
+
+            await sub.stop();
+            expect(sub.state).to.equal("stopped");
+            expect(sub2.state).to.equal("stopped");
+        });
     });
 });
