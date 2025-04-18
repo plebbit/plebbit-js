@@ -191,7 +191,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
     private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
         SubplebbitEvents,
-        "error" | "updatingstatechange" | "update" | "statechange"
+        "error" | "updatingstatechange" | "update" | "statechange" | "startedstatechange"
     > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _updateLocalSubTimeout?: NodeJS.Timeout = undefined;
 
@@ -1964,6 +1964,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
         } catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, subplebbitAddress: this.address };
             const errorTyped = <Error>e;
             this._setStartedState("failed");
             this._clientsManager.updateIpfsState("stopped");
@@ -2199,7 +2201,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     override async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
-
+        if (this.state === "updating") await this.stop();
         this._stopHasBeenCalled = false;
         if (!this._clientsManager.getDefaultIpfs())
             throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
@@ -2251,6 +2253,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setUpdatingStateWithEventEmissionIfNewState(newState);
         };
 
+        const startedStateChangeListener = (newState: LocalSubplebbit["startedState"]) => {
+            this._setStartedState(newState);
+            updatingStateChangeListener(newState);
+        };
+
         const updateListener = async (updatedSubplebbit: RemoteSubplebbit) => {
             const startedSubplebbit = updatedSubplebbit as LocalSubplebbit;
             if (startedSubplebbit.updateCid)
@@ -2269,10 +2276,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             updatingstatechange: updatingStateChangeListener,
             update: updateListener,
             statechange: stateChangeListener,
+            startedstatechange: startedStateChangeListener,
             error: (err: PlebbitError | Error) => this.emit("error", err)
         };
 
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("update", this._mirroredStartedOrUpdatingSubplebbit.update);
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on(
+            "startedstatechange",
+            this._mirroredStartedOrUpdatingSubplebbit.startedstatechange
+        );
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on(
             "updatingstatechange",
             this._mirroredStartedOrUpdatingSubplebbit.updatingstatechange
@@ -2306,6 +2318,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
             "updatingstatechange",
             this._mirroredStartedOrUpdatingSubplebbit.updatingstatechange
+        );
+
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "startedstatechange",
+            this._mirroredStartedOrUpdatingSubplebbit.startedstatechange
         );
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
             "statechange",
@@ -2372,9 +2389,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     override async update() {
-        this._stopHasBeenCalled = false;
         const log = Logger("plebbit-js:local-subplebbit:update");
         if (this.state === "updating" || this.state === "started") return; // No need to do anything if subplebbit is already updating
+        this._stopHasBeenCalled = false;
         const updateLoop = (async () => {
             if (this.state === "updating" && !this._stopHasBeenCalled) {
                 this._updateLoopPromise = this._updateOnce();
