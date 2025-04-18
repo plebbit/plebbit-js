@@ -1,6 +1,13 @@
 {
     "timeout": 200000,
     "require": "test/root-hook-mocha.js",
-    "node-option": ["experimental-specifier-resolution=node"],
-    "colors": true
+    "node-option": ["experimental-specifier-resolution=node", "trace-warnings", "unhandled-rejections=strict", "trace-deprecation"],
+    "full-trace": true,
+    "trace": true,
+    "debug": true,
+    "async-stack-traces": true,
+    "bail": true,
+    "reporter": "spec",
+    "log-timer-events": true,
+    "v": true
 }
