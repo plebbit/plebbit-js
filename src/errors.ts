@@ -165,6 +165,9 @@ export enum messages {
     ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH = "User attempted to get replies page without providing parent comment depth. Make sure parent comment is properly loaded",
     ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID = "User attempted to get replies page without providing parent comment post cid. Make sure parent comment is properly loaded",
     ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS = "Failed to find reply comment update within parent comment page cids",
+    ERR_INVALID_COMMENT_IPFS = "The part of CommentIpfs in Comment or PageComment is invalid",
+    ERR_COMMENT_MISSING_POST_CID = "Comment instance or PageComment has no postCid. postCid should always be defined if you have CommentIpfs",
+    ERR_INVALID_COMMENT_UPDATE = "The part of CommentUpdate in Comment or PageComment is invalid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",

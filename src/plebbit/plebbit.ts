@@ -40,6 +40,8 @@ import {
     signSubplebbitEdit,
     signVote,
     verifyCommentEdit,
+    verifyCommentIpfs,
+    verifyCommentUpdate,
     verifySubplebbitEdit
 } from "../signer/signatures.js";
 import Stats from "../stats.js";
@@ -126,6 +128,7 @@ import type {
 import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
+import type { PageTypeJson } from "../pages/types.js";
 
 export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -957,6 +960,48 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         return resolved;
     }
 
+    async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validatePages?: boolean }) {
+        const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment.comment;
+        const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment.commentUpdate.cid;
+        if (commentIpfs && commentCid) {
+            const commentIpfsVerificationOpts = {
+                comment: commentIpfs,
+                resolveAuthorAddresses: this.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                overrideAuthorAddressIfInvalid: false,
+                calculatedCommentCid: commentCid
+            };
+            const commentIpfsValidity = await verifyCommentIpfs(commentIpfsVerificationOpts);
+            if (!commentIpfsValidity.valid)
+                throw new PlebbitError("ERR_INVALID_COMMENT_IPFS", {
+                    commentIpfsVerificationOpts,
+                    commentIpfsValidity
+                });
+        }
+        const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment.commentUpdate;
+        const postCid: string | undefined = comment instanceof Comment ? comment.postCid : comment.postCid;
+        if (!postCid) throw new PlebbitError("ERR_COMMENT_MISSING_POST_CID", { comment, postCid }); // postCid should always be defined if you have CommentIpfs
+        if (commentUpdate && commentIpfs && commentCid) {
+            const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
+            const commentUpdateVerificationOpts = {
+                update: commentUpdate,
+                resolveAuthorAddresses: this.resolveAuthorAddresses,
+                clientsManager: this._clientsManager,
+                subplebbit,
+                overrideAuthorAddressIfInvalid: false,
+                validatePages: opts?.validatePages || this.validatePages,
+                comment: { ...commentIpfs, cid: commentCid, postCid },
+                validateUpdateSignature: true
+            };
+            const commentUpdateValidity = await verifyCommentUpdate(commentUpdateVerificationOpts);
+            if (!commentUpdateValidity.valid)
+                throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE", {
+                    commentUpdateVerificationOpts,
+                    commentUpdateValidity
+                });
+        }
+    }
+
     async _createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">) {
         // should add the storage LRU to an array, so we can destroy all of them on plebbit.destroy
         if (!this._storageLRUs[opts.cacheName]) {
@@ -974,7 +1019,6 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         for (const subplebbit of Object.values(this._updatingSubplebbits)) await subplebbit.stop();
 
         for (const subplebbit of Object.values(this._startedSubplebbits)) await subplebbit.stop();
-
 
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
 
