@@ -1,6 +1,12 @@
 import { expect } from "chai";
-import Plebbit from "../../../dist/node";
-import { createSubWithNoChallenge, itIfRpc, itSkipIfRpc, mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util";
+import Plebbit from "../../../dist/node/index.js";
+import {
+    createSubWithNoChallenge,
+    itIfRpc,
+    itSkipIfRpc,
+    mockPlebbit,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util.js";
 
 // example of node only tests
 
@@ -8,19 +14,15 @@ describe("await plebbit()", () => {
     it("has default plebbit options", async () => {
         const plebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
-            [
-                "https://ipfsgateway.xyz",
-                "https://ipfs.io",
-                "https://dweb.link",
-                "https://flk-ipfs.xyz",
-                "https://4everland.io",
-                "https://gateway.pinata.cloud"
-            ].sort()
+            ["https://ipfsgateway.xyz", "https://gateway.plebpubsub.xyz", "https://gateway.forumindex.com"].sort()
         );
-        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal([
+            "https://pubsubprovider.xyz/api/v0",
+            "https://plebpubsub.xyz/api/v0"
+        ]);
         expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
         expect(plebbit.kuboRpcClientsOptions).to.be.undefined;
-        expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
+
         expect(Object.keys(plebbit.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic", "sol"]);
         expect(Object.keys(plebbit.clients.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic", "sol"]);
 

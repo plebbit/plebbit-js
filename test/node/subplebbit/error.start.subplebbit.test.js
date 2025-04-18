@@ -46,6 +46,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
 
         const ipfsClient = sub._clientsManager.getDefaultIpfs()._client;
 
+        const originalCp = ipfsClient.files.cp.bind(ipfsClient.files);
         ipfsClient.files.cp = () => {
             throw Error("Failed to copy a file");
         };
@@ -54,7 +55,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await resolveWhenConditionIsTrue(sub, () => errors.length === 3, "error");
 
         await sub.delete();
-
+        ipfsClient.files.cp = originalCp;
         expect(errors.length).to.be.greaterThan(0);
 
         for (const error of errors) {

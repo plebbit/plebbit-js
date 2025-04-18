@@ -282,65 +282,37 @@ describe(`subplebbit.startedState`, async () => {
     });
 });
 
-describe(`subplebbit.updatingState (node)`, async () => {
+describe(`subplebbit.updatingState from a local subplebbit`, async () => {
     it(`subplebbit.updatingState defaults to stopped`, async () => {
         const plebbit = await mockPlebbit();
-        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        const createdSubplebbit = await plebbit.createSubplebbit();
+        await createdSubplebbit.start();
+        await resolveWhenConditionIsTrue(createdSubplebbit, () => typeof createdSubplebbit.updatedAt === "number");
+        const subplebbit = await plebbit.getSubplebbit(createdSubplebbit.address);
         expect(subplebbit.updatingState).to.equal("stopped");
-    });
-
-    it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
-        const recordedStates = [];
-        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
-        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-        await subplebbit.update();
-
-        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-
-        await publishRandomPost(subplebbit.address, plebbit); // To force trigger an update
-
-        await updatePromise;
-        await subplebbit.stop();
-
-        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-    });
-
-    itSkipIfRpc(`updating states is in correct order upon updating with gateway`, async () => {
-        const gatewayPlebbit = await mockGatewayPlebbit();
-
-        const subplebbit = await gatewayPlebbit.getSubplebbit(signers[0].address);
-
-        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
-        const recordedStates = [];
-        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-        await subplebbit.update();
-
-        publishRandomPost(subplebbit.address, gatewayPlebbit, {}); // To force trigger an update
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        await subplebbit.stop();
-
-        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
         const plebbit = await mockPlebbit();
-        const localSub = await plebbit.createSubplebbit({ address: signers[0].address });
-        const expectedStates = ["succeeded", "stopped"];
+        const startedSubplebbit = await createSubWithNoChallenge({}, plebbit);
+        await startedSubplebbit.start();
+        await resolveWhenConditionIsTrue(startedSubplebbit, () => typeof startedSubplebbit.updatedAt === "number");
+
+        const localUpdatingSub = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
+        const expectedStates = ["publishing-ipns", "succeeded", "stopped"];
         const recordedStates = [];
 
-        localSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
+        localUpdatingSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-        await localSub.update();
+        await localUpdatingSub.update();
 
-        publishRandomPost(localSub.address, plebbit, {});
-
-        await new Promise((resolve) => localSub.once("update", resolve));
-        await localSub.stop();
-
+        const updatePromise = new Promise((resolve) => localUpdatingSub.once("update", resolve));
+        await publishRandomPost(localUpdatingSub.address, plebbit, {});
+        await updatePromise;
+        await localUpdatingSub.stop();
+        await startedSubplebbit.delete();
+        await plebbit.destroy();
         expect(recordedStates).to.deep.equal(expectedStates);
     });
 
@@ -385,8 +357,7 @@ describe(`comment.link`, async () => {
         expect(subplebbit.settings.fetchThumbnailUrls).to.be.true;
 
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {

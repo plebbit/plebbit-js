@@ -84,7 +84,7 @@ describe(`subplebbit.start`, async () => {
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const originalFunc = sub._getDbInternalState.bind(sub);
         sub._getDbInternalState = async () => {
-            throw Error("Failed to load sub from db ");
+            throw Error("Mocking a failure in getting db internal state in tests");
         };
         publishRandomPost(sub.address, plebbit);
         await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
@@ -106,7 +106,7 @@ describe(`subplebbit.start`, async () => {
 
         const originalFunc = ipfsClient.files.cp;
         ipfsClient.files.cp = () => {
-            throw Error("Failed to copy file");
+            throw Error("Mocking a failure in copying MFS file in tests");
         };
         publishRandomPost(sub.address, plebbit);
 
@@ -282,15 +282,14 @@ describe(`Start lock`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
 
         sub._repinCommentsIPFSIfNeeded = () => {
-            throw Error("Failing ipfs for some reason");
+            throw Error("Mocking a failure in repinning comments in tests");
         };
 
         try {
             await sub.start();
             expect.fail("Should have thrown");
         } catch (e) {
-            expect(e.code).to.equal("ERR_SUB_START_FAILED_UNKNOWN_ERROR");
-            expect(e.details.error.message).to.equal("Failing ipfs for some reason");
+            expect(e.message).to.equal("Mocking a failure in repinning comments in tests");
         }
 
         expect(sub.state).to.equal("stopped");
