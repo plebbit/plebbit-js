@@ -73,14 +73,22 @@ export class BasePages {
         return pageIpfs;
     }
 
+    _updateLoadedUniqueCommentFromGetPage(pageIpfs: PageIpfs) {
+        pageIpfs.comments.forEach((comment) => {
+            this._loadedUniqueCommentFromGetPage[comment.commentUpdate.cid] = comment;
+            if (comment.commentUpdate.replies)
+                for (const preloadedPage of Object.values(comment.commentUpdate.replies.pages)) {
+                    return this._updateLoadedUniqueCommentFromGetPage(preloadedPage);
+                }
+        });
+    }
+
     async getPage(pageCid: string): Promise<PageTypeJson> {
         if (!this._subplebbit?.address) throw Error("Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
 
         const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
-        pageIpfs.comments.forEach((comment) => {
-            this._loadedUniqueCommentFromGetPage[comment.commentUpdate.cid] = comment;
-        });
+        this._updateLoadedUniqueCommentFromGetPage(pageIpfs);
         return parsePageIpfs(pageIpfs);
     }
 
@@ -143,8 +151,6 @@ export class RepliesPages extends BasePages {
             });
 
         // we need to make all updating comment instances do the getPage call to cache _loadedUniqueCommentFromGetPage in a centralized instance
-        if (this._parentComment._updatingCommentInstance?.comment?.replies)
-            return this._parentComment._updatingCommentInstance.comment.replies.getPage(pageCid);
 
         return super.getPage(pageCid);
     }
@@ -222,8 +228,6 @@ export class PostsPages extends BasePages {
 
     override getPage(pageCid: string): Promise<PageTypeJson> {
         // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
-        if (this._subplebbit._updatingSubInstanceWithListeners?.subplebbit?.posts)
-            return this._subplebbit._updatingSubInstanceWithListeners.subplebbit.posts.getPage(pageCid);
 
         return super.getPage(pageCid);
     }
