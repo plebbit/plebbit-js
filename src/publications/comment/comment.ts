@@ -642,11 +642,13 @@ export class Comment
         log("Received 'error' event from RPC", err);
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
-            this._setUpdatingStateWithEmissionIfNewState("failed");
-            this._updateState("stopped");
+            this._setUpdatingStateNoEmission("failed");
+            this._setStateNoEmission("stopped");
+            this.emit("error", err);
+            this.emit("updatingstatechange", "failed");
+            this.emit("statechange", "stopped");
             await this._stopUpdateLoop();
-        }
-        this.emit("error", err);
+        } else this.emit("error", err);
     }
 
     private async _updateViaRpc() {
@@ -700,7 +702,7 @@ export class Comment
         this._updatingCommentInstance = {
             comment: updatingCommentInstance,
             statechange: async (newState) => {
-                if (newState === "stopped")
+                if (newState === "stopped" && this.state === "updating")
                     // plebbit._updatingComments[this.cid].stop() has been called
                     await this.stop();
             },
