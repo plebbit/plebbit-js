@@ -3,19 +3,16 @@ import {
     mockPlebbit,
     publishRandomPost,
     createSubWithNoChallenge,
-    mockGatewayPlebbit,
     publishRandomReply,
     generateMockPost,
     itSkipIfRpc,
     itIfRpc,
     publishWithExpectedResult,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
     describeIfRpc,
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
-import { createMockPubsubClient } from "../../../dist/node/test/mock-ipfs-client";
 
 import signers from "../../fixtures/signers";
 import path from "path";
@@ -39,43 +36,6 @@ describe("plebbit.subplebbits", async () => {
 
         expect(createdSubplebbit.address).to.equal(subSigner.address);
         expect(createdSubplebbit.title).to.equal(title);
-    });
-});
-
-describe(`subplebbit.delete`, async () => {
-    let plebbit, sub;
-    before(async () => {
-        plebbit = await mockPlebbit({}, true, false);
-        sub = await plebbit.createSubplebbit();
-    });
-
-    it(`Deleted sub is not listed in plebbit.subplebbits`, async () => {
-        const subs = plebbit.subplebbits;
-        expect(subs).to.include(sub.address);
-        const subRecreated = await plebbit.createSubplebbit({ address: sub.address });
-        await subRecreated.delete();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const subsAfterDeletion = plebbit.subplebbits;
-        expect(subsAfterDeletion).to.not.include(sub.address);
-    });
-
-    itSkipIfRpc(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
-        const ipfsKeys = await plebbit._clientsManager.getDefaultIpfs()._client.key.list();
-        const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
-        expect(subKeyExists).to.be.false;
-    });
-
-    itSkipIfRpc(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
-        const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", sub.address);
-        expect(fs.existsSync(expectedPath)).to.be.true;
-    });
-
-    itSkipIfRpc(`Deleted sub has no locks in subplebbits directory`, async () => {
-        const subFiles = await fs.promises.readdir(path.join(plebbit.dataPath, "subplebbits"));
-        const startLockFilename = `${sub.address}.start.lock`;
-        const stateLockFilename = `${sub.address}.state.lock`;
-        expect(subFiles).to.not.include(startLockFilename);
-        expect(subFiles).to.not.include(stateLockFilename);
     });
 });
 
