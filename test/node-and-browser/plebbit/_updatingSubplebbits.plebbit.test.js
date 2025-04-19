@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { getRemotePlebbitConfigs, itSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import { getRemotePlebbitConfigs, itSkipIfRpc, resolveWhenConditionIsTrue, itIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
 getRemotePlebbitConfigs().map((config) => {
@@ -228,6 +228,15 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(sub1.state).to.equal("updating");
             expect(plebbit._updatingSubplebbits[subplebbitAddress].state).to.equal("updating");
+        });
+
+        itIfRpc(`can update a local subplebbit instance over RPC connection`, async () => {
+            const sub = await plebbit.createSubplebbit(); // new sub
+            const updatingSub = await plebbit.createSubplebbit({ address: sub.address });
+            await updatingSub.update();
+            expect(plebbit._updatingSubplebbits[sub.address]).to.exist;
+            await updatingSub.stop();
+            expect(sub.state).to.equal("stopped");
         });
     });
 });

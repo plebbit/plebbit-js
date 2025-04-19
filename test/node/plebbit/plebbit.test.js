@@ -3,6 +3,7 @@ import Plebbit from "../../../dist/node/index.js";
 import {
     createSubWithNoChallenge,
     itIfRpc,
+    publishRandomPost,
     itSkipIfRpc,
     mockPlebbit,
     mockPlebbitNoDataPathWithOnlyKuboClient,
@@ -84,7 +85,7 @@ describe(`Plebbit.challenges`, async () => {
 });
 
 describe(`plebbit.destroy()`, async () => {
-    it(`plebbit.destroy() should stop running local sub`, async () => {
+    itSkipIfRpc(`plebbit.destroy() should stop running local sub`, async () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
@@ -94,7 +95,7 @@ describe(`plebbit.destroy()`, async () => {
         expect(sub.state).to.equal("stopped");
     });
 
-    it(`plebbit.destroy() should stop running updating local subs`, async () => {
+    it(`plebbit.destroy() should stop updating local subs`, async () => {
         const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
 
@@ -105,7 +106,7 @@ describe(`plebbit.destroy()`, async () => {
         let calledUpdate = false;
         await plebbit.destroy();
 
-        sub._updateStartedValue = () => (calledUpdate = true);
+        sub._setUpdatingStateNoEmission = sub._setUpdatingStateWithEventEmissionIfNewState = () => (calledUpdate = true);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         expect(plebbit._updatingSubplebbits[sub.address]).to.not.exist;
         expect(plebbit._startedSubplebbits[sub.address]).to.not.exist;
