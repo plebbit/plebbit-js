@@ -2281,7 +2281,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             update: updateListener,
             statechange: stateChangeListener,
             startedstatechange: startedStateChangeListener,
-            error: (err: PlebbitError | Error) => this.emit("error", err)
+            error: (err: PlebbitError | Error) => this.emit("error", err),
+            challengerequest: (challengeRequest) => this.emit("challengerequest", challengeRequest),
+            challengeverification: (challengeVerification) => this.emit("challengeverification", challengeVerification),
+            challengeanswer: (challengeAnswer) => this.emit("challengeanswer", challengeAnswer),
+            challenge: (challenge) => this.emit("challenge", challenge)
         };
 
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("update", this._mirroredStartedOrUpdatingSubplebbit.update);
