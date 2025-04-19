@@ -8,7 +8,8 @@ export enum messages {
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
     ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS = "Subplebbit owner attempted to edit subplebbit.address to a new address that already exists",
-
+    ERR_COMMENT_MISSING_IPFS_AND_UPDATE = "Comment is missing CommentIpfs and CommentUpdate",
+    ERR_COMMENT_MISSING_CID = "Comment is missing cid",
     // Plebbit errors
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",

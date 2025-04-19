@@ -963,7 +963,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validatePages?: boolean }) {
         const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment.comment;
         const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment.commentUpdate.cid;
-        if (commentIpfs && commentCid) {
+        if (!commentCid) throw new PlebbitError("ERR_COMMENT_MISSING_CID", { comment, commentCid });
+        if (commentIpfs) {
             const commentIpfsVerificationOpts = {
                 comment: commentIpfs,
                 resolveAuthorAddresses: this.resolveAuthorAddresses,
@@ -981,7 +982,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment.commentUpdate;
         const postCid: string | undefined = comment instanceof Comment ? comment.postCid : comment.postCid;
         if (!postCid) throw new PlebbitError("ERR_COMMENT_MISSING_POST_CID", { comment, postCid }); // postCid should always be defined if you have CommentIpfs
-        if (commentUpdate && commentIpfs && commentCid) {
+        if (commentUpdate && commentIpfs) {
             const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
             const commentUpdateVerificationOpts = {
                 update: commentUpdate,
@@ -1000,6 +1001,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                     commentUpdateValidity
                 });
         }
+        if (!commentIpfs && !commentUpdate)
+            throw new PlebbitError("ERR_COMMENT_MISSING_IPFS_AND_UPDATE", { commentIpfs, commentUpdate, comment });
     }
 
     async _createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">) {
