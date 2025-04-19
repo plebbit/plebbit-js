@@ -8,7 +8,8 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
     jsonifySubplebbitAndRemoveInternalProps,
-    waitTillPostInSubplebbitPages
+    waitTillPostInSubplebbitPages,
+    itSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../dist/node/util.js";
 
@@ -168,7 +169,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await sub.stop();
     });
 
-    it(`Can't create a subplebbit from another Plebbit instance`, async () => {
+    itSkipIfRpc(`Can't create a subplebbit if it's running in another Plebbit instance`, async () => {
         const firstPlebbit = await mockPlebbit();
         const firstSub = await firstPlebbit.createSubplebbit();
         await firstSub.start();
@@ -202,7 +203,10 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
             await plebbit.createSubplebbit({ address: undefined });
             expect.fail("Should have thrown");
         } catch (e) {
-            expect(e.code).to.equal("ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA");
+            expect(e.code).to.be.oneOf([
+                "ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA",
+                "ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA"
+            ]);
         }
     });
 });

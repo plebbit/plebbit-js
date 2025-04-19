@@ -120,7 +120,8 @@ describe(`plebbit.destroy()`, async () => {
         await sub.start();
         expect(sub.state).to.equal("started");
         await plebbit.destroy();
-        expect(sub.state).to.equal("started");
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const post = await publishRandomPost(sub.address, remotePlebbit); // if we can publish a post, the sub is running

@@ -266,9 +266,9 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
         localUpdatingSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await localUpdatingSub.update();
-
         const updatePromise = new Promise((resolve) => localUpdatingSub.once("update", resolve));
-        await publishRandomPost(localUpdatingSub.address, plebbit, {});
+
+        await publishRandomPost(localUpdatingSub.address, plebbit);
         await updatePromise;
         await localUpdatingSub.stop();
         await startedSubplebbit.delete();
@@ -278,31 +278,33 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
 
     itIfRpc(`localSubplebbit.updatingState is copied from startedState if we're updating a local sub via rpc`, async () => {
         const plebbit = await mockPlebbit();
-        const localSub = await createSubWithNoChallenge({}, plebbit);
+        const startedSub = await createSubWithNoChallenge({}, plebbit);
 
-        const recreateLocalSub = await plebbit.createSubplebbit({ address: localSub.address });
+        const updatingSub = await plebbit.createSubplebbit({ address: startedSub.address });
 
         const startedInstanceStartedStates = [];
-        localSub.on("startedstatechange", () => startedInstanceStartedStates.push(localSub.startedState));
+        startedSub.on("startedstatechange", () => startedInstanceStartedStates.push(startedSub.startedState));
 
-        const recreateLocalSubUpdatingStates = [];
-        recreateLocalSub.on("updatingstatechange", () => recreateLocalSubUpdatingStates.push(recreateLocalSub.updatingState));
+        const updatingSubUpdatingStates = [];
+        updatingSub.on("updatingstatechange", () => updatingSubUpdatingStates.push(updatingSub.updatingState));
 
-        await localSub.start();
+        const updates = [];
+        updatingSub.on("update", () => updates.push(updates.length));
+        await startedSub.start();
 
-        await new Promise((resolve) => localSub.once("update", resolve));
+        await resolveWhenConditionIsTrue(startedSub, () => startedSub.updatedAt);
 
-        await recreateLocalSub.update();
+        await updatingSub.update();
 
-        publishRandomPost(localSub.address, plebbit, {}); // to trigger an update
+        await publishRandomPost(startedSub.address, plebbit); // to trigger an update
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await publishRandomPost(startedSub.address, plebbit);
 
-        setTimeout(() => publishRandomPost(localSub.address, plebbit, {}, false), 1000);
-        await resolveWhenConditionIsTrue(recreateLocalSub, () => recreateLocalSubUpdatingStates.length >= 2);
-        await localSub.delete();
-        await recreateLocalSub.stop();
+        await resolveWhenConditionIsTrue(updatingSub, () => updates.length >= 2);
+        await startedSub.delete();
 
-        expect(recreateLocalSubUpdatingStates).to.deep.equal(
-            startedInstanceStartedStates.splice(startedInstanceStartedStates.length - recreateLocalSubUpdatingStates.length)
+        expect(updatingSubUpdatingStates).to.deep.equal(
+            startedInstanceStartedStates.splice(startedInstanceStartedStates.length - updatingSubUpdatingStates.length)
         );
     });
 });

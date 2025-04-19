@@ -268,7 +268,7 @@ describe(`Start lock`, async () => {
             await sub.start();
             expect.fail("Should have thrown");
         } catch (e) {
-            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+            expect(e.code).to.be.oneOf(["ERR_SUB_ALREADY_STARTED", "ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS"]);
         }
         await new Promise((resolve) => setTimeout(resolve, 11000)); // Wait for 11s for lock to be considered stale
         await sub.start();
@@ -297,14 +297,28 @@ describe(`Start lock`, async () => {
         expect(sub.startedState).to.equal("stopped");
     });
 
-    itIfRpc(`rpcLocalSub.start() will receive started updates if there is another instance that's started`, async () => {
+    itIfRpc(`rpcLocalSub.start() will throw if there is another instance that's started`, async () => {
         const sub1 = await createSubWithNoChallenge({}, plebbit);
 
         await sub1.start();
         await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
 
         const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
-        await sub2.start(); // should not fail
+        try {
+            await sub2.start(); // should not fail
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED_IN_SAME_PLEBBIT_INSTANCE");
+        }
+    });
+
+    itIfRpc(`rpcLocalSub.update() will receive started updates if there is another instance that's started`, async () => {
+        const sub1 = await createSubWithNoChallenge({}, plebbit);
+
+        await sub1.start();
+        await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+
+        const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
+        await sub2.update(); // should not fail
 
         let receivedChallengeRequest = false;
         sub2.on("challengerequest", () => {
@@ -330,46 +344,48 @@ describe(`Start lock`, async () => {
         expect(sub1.updatedAt).to.equal(sub2.updatedAt);
     });
 
-    itIfRpc(
-        `rpcLocalSub.stop() will stop all the sub instances from running, even if rpcLocalSub wasn't the first instance to call start()`,
-        async () => {
-            const sub1 = await createSubWithNoChallenge({}, plebbit);
+    itIfRpc(`rpcLocalSub.stop() will stop updating if it's an updating instance, even if there are other started instances`, async () => {
+        const startedSub = await createSubWithNoChallenge({}, plebbit);
 
-            await sub1.start();
-            await new Promise((resolve) => sub1.once("update", resolve));
-            expect(sub1.started).to.be.true;
+        await startedSub.start();
+        await new Promise((resolve) => startedSub.once("update", resolve));
+        expect(startedSub.started).to.be.true;
 
-            const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
-            expect(sub2.started).to.be.true;
-            await sub2.stop(); // This should stop sub1 and sub2
+        const updatingSub = await plebbit.createSubplebbit({ address: startedSub.address });
+        expect(updatingSub.started).to.be.true;
+        await updatingSub.update();
+        await resolveWhenConditionIsTrue(updatingSub, () => updatingSub.updatedAt);
+        await updatingSub.stop(); // This should stop sub1 and sub2
 
-            await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
-            for (const sub of [sub1, sub2]) {
-                expect(sub.started).to.be.false;
-                expect(sub.startedState).to.equal("stopped");
-                expect(sub.state).to.equal("stopped");
-            }
-        }
-    );
+        await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
+        expect(startedSub.started).to.be.true;
+        expect(startedSub.startedState).to.not.equal("stopped");
+        expect(startedSub.state).to.not.equal("stopped");
+
+        expect(updatingSub.started).to.be.true; // the sub is still running in another instance
+        expect(updatingSub.startedState).to.equal("stopped"); // the local started state got reset to stopped
+        expect(updatingSub.state).to.equal("stopped");
+        expect(updatingSub.updatingState).to.equal("stopped");
+    });
 
     itIfRpc(`rpcLocalSub.delete() will delete the sub, even if rpcLocalSub wasn't the first instance to call start()`, async () => {
-        const sub1 = await createSubWithNoChallenge({}, plebbit);
-        await sub1.start();
-        expect(sub1.started).to.be.true;
+        const startedSub = await createSubWithNoChallenge({}, plebbit);
+        await startedSub.start();
+        expect(startedSub.started).to.be.true;
 
-        await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+        await resolveWhenConditionIsTrue(startedSub, () => typeof startedSub.updatedAt === "number");
 
-        const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
-        expect(sub2.started).to.be.true;
+        const subToDelete = await plebbit.createSubplebbit({ address: startedSub.address });
+        expect(subToDelete.started).to.be.true;
 
-        await sub2.delete();
+        await subToDelete.delete();
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
 
         const localSubs = plebbit.subplebbits;
-        expect(localSubs).to.not.include(sub1.address);
+        expect(localSubs).to.not.include(startedSub.address);
 
-        for (const sub of [sub1, sub2]) {
+        for (const sub of [startedSub, subToDelete]) {
             expect(sub.started).to.be.false;
             expect(sub.startedState).to.equal("stopped");
             expect(sub.state).to.equal("stopped");

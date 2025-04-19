@@ -65,15 +65,14 @@ describe(`subplebbit.update - Local subs`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         expect(sub.started).to.be.a("boolean"); // make sure it's creating a local sub, not remote
 
-        await sub.update();
-
         let emittedUpdates = 0;
         sub.on("update", () => emittedUpdates++);
 
+        await sub.update();
+
         await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 3));
 
-        if (isRpcFlagOn()) expect(emittedUpdates).to.equal(1);
-        else expect(emittedUpdates).to.equal(0);
+        expect(emittedUpdates).to.equal(0);
 
         await sub.delete();
     });
