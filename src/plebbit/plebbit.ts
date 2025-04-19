@@ -960,7 +960,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         return resolved;
     }
 
-    async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validatePages?: boolean }) {
+    async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validateReplies?: boolean }) {
         const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment.comment;
         const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment.commentUpdate.cid;
         if (!commentCid) throw new PlebbitError("ERR_COMMENT_MISSING_CID", { comment, commentCid });
@@ -990,7 +990,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 clientsManager: this._clientsManager,
                 subplebbit,
                 overrideAuthorAddressIfInvalid: false,
-                validatePages: opts?.validatePages || this.validatePages,
+                validatePages: opts?.validateReplies || this.validatePages,
                 comment: { ...commentIpfs, cid: commentCid, postCid },
                 validateUpdateSignature: true
             };
