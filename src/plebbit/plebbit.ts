@@ -166,7 +166,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     _storage!: StorageInterface;
     _updatingSubplebbits: Record<SubplebbitIpfsType["address"], Awaited<ReturnType<Plebbit["createSubplebbit"]>>> = {}; // storing subplebbit instance that are getting updated rn
     _updatingComments: Record<string, Awaited<ReturnType<Plebbit["createComment"]>>> = {}; // storing comment instancse that are getting updated rn
-    _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit> = {}; // storing subplebbit instance that are started rn
+    _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit | RpcLocalSubplebbit> = {}; // storing subplebbit instance that are started rn
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;

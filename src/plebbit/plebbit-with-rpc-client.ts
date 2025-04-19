@@ -9,7 +9,7 @@ import { AuthorAddressSchema } from "../schema/schema.js";
 import { CreateRpcSubplebbitFunctionArgumentSchema } from "../subplebbit/schema.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
-import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types";
+import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types";
 import { z } from "zod";
 import { PlebbitError } from "../plebbit-error.js";
 
@@ -18,6 +18,8 @@ import { PlebbitError } from "../plebbit-error.js";
 export class PlebbitWithRpcClient extends Plebbit {
     override _plebbitRpcClient!: NonNullable<Plebbit["_plebbitRpcClient"]>;
     override plebbitRpcClientsOptions!: NonNullable<Plebbit["plebbitRpcClientsOptions"]>;
+    override _startedSubplebbits: Record<SubplebbitIpfsType["address"], RpcLocalSubplebbit> = {}; // storing subplebbit instance that are started rn
+    override _updatingSubplebbits: Record<string, RpcLocalSubplebbit | RpcRemoteSubplebbit> = {};
 
     constructor(options: InputPlebbitOptions) {
         super(options);
@@ -59,8 +61,12 @@ export class PlebbitWithRpcClient extends Plebbit {
     }
 
     override async destroy() {
-        await this._plebbitRpcClient.destroy();
+        for (const startedSubplebbit of Object.values(this._startedSubplebbits)) {
+            await startedSubplebbit.stopWithoutRpcCall();
+        }
+        this._startedSubplebbits = {};
         await super.destroy();
+        await this._plebbitRpcClient.destroy();
     }
 
     override async getComment(commentCid: string) {
@@ -95,7 +101,6 @@ export class PlebbitWithRpcClient extends Plebbit {
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
                 let error: PlebbitError | Error | undefined;
                 const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
-                
                 await sub._createAndSubscribeToNewUpdatingSubplebbit(sub);
                 await sub.update();
                 await Promise.race([updatePromise, errorPromise]);

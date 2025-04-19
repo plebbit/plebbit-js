@@ -288,15 +288,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const log = Logger("plebbit-js:local-subplebbit:_updateInstancePropsWithStartedSubOrDb");
         if (this._plebbit._startedSubplebbits[this.address]) {
+            const startedSubplebbit = this._plebbit._startedSubplebbits[this.address] as LocalSubplebbit;
             log("Loading local subplebbit", this.address, "from started subplebbit instance");
-            if (this._plebbit._startedSubplebbits[this.address].updatedAt)
-                await this.initInternalSubplebbitAfterFirstUpdateNoMerge(
-                    this._plebbit._startedSubplebbits[this.address].toJSONInternalAfterFirstUpdate()
-                );
-            else
-                await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(
-                    this._plebbit._startedSubplebbits[this.address].toJSONInternalBeforeFirstUpdate()
-                );
+            if (startedSubplebbit.updatedAt)
+                await this.initInternalSubplebbitAfterFirstUpdateNoMerge(startedSubplebbit.toJSONInternalAfterFirstUpdate());
+            else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(startedSubplebbit.toJSONInternalBeforeFirstUpdate());
             this.started = true;
         } else {
             await this.initDbHandlerIfNeeded();
@@ -2351,7 +2347,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             return; // we're already mirroring a started or updating subplebbit
         else if (this._plebbit._startedSubplebbits[this.address]) {
             // let's mirror the started subplebbit in this process
-            await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address]);
+            await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address] as LocalSubplebbit);
             delete this._plebbit._updatingSubplebbits[this.address];
             delete this._plebbit._updatingSubplebbits[this.signer.address];
             return;

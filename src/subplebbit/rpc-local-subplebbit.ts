@@ -201,6 +201,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         if (typeof this._startRpcSubscriptionId === "number")
             throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: this.address });
 
+        if (this._plebbit._startedSubplebbits[this.address])
+            throw new PlebbitError("ERR_SUB_ALREADY_STARTED_IN_SAME_PLEBBIT_INSTANCE", { subplebbitAddress: this.address });
         try {
             this._startRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.startSubplebbit(this.address);
             this._setState("started");
@@ -210,6 +212,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             this._setStartedState("failed");
             throw e;
         }
+        this._plebbit._startedSubplebbits[this.address] = this;
         this.started = true;
         this._plebbit
             ._plebbitRpcClient!.getSubscription(this._startRpcSubscriptionId)
@@ -241,6 +244,17 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         this._setState("stopped");
     }
 
+    async stopWithoutRpcCall() {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
+        await this._cleanUpRpcConnection(log);
+        this.posts._stop();
+        this._setState("stopped");
+        this._setStartedState("stopped");
+        this._setRpcClientState("stopped");
+        this.started = false;
+        delete this._plebbit._startedSubplebbits[this.address];
+    }
+
     override async stop() {
         this.posts._stop();
         if (this.state === "updating") {
@@ -251,9 +265,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             try {
                 await this._plebbit._plebbitRpcClient!.stopSubplebbit(this.address);
             } catch (e) {
-                if (e instanceof Error && e.message !== messages.ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING) throw e;
+                log.error("RPC client received an error when asking rpc server to stop subplebbit", e);
             }
             await this._cleanUpRpcConnection(log);
+            delete this._plebbit._startedSubplebbits[this.address];
         } else throw Error("User called rpcLocalSub.stop() without updating or starting");
     }
 
