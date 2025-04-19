@@ -318,6 +318,7 @@ export async function resolveWhenPredicateIsTrue(
 }
 
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {
+    const wasUpdating = subplebbit.state === "updating";
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
     let updateError: PlebbitError | Error | undefined;
     const errorListener = (err: PlebbitError | Error) => (updateError = err);
@@ -336,7 +337,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: 
         throw e;
     } finally {
         subplebbit.removeListener("error", errorListener);
-        await subplebbit.stop();
+        if (!wasUpdating) await subplebbit.stop();
     }
 }
 
