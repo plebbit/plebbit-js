@@ -38,8 +38,20 @@ getRemotePlebbitConfigs().map((config) =>
         it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const spread = { ...loadedSubplebbit };
-            const createdSubplebbit = await plebbit.createSubplebbit(spread);
-            expect(JSON.parse(JSON.stringify(loadedSubplebbit))).to.deep.equal(JSON.parse(JSON.stringify(createdSubplebbit)));
+            const createdFromSpreadSubplebbit = await plebbit.createSubplebbit(spread);
+            for (const key of Object.keys(loadedSubplebbit)) {
+                expect(deterministicStringify(loadedSubplebbit[key])).to.equal(
+                    deterministicStringify(createdFromSpreadSubplebbit[key]),
+                    `Mismatch for key: ${key}`
+                );
+            }
+
+            for (const key of Object.keys(createdFromSpreadSubplebbit)) {
+                expect(deterministicStringify(loadedSubplebbit[key])).to.equal(
+                    deterministicStringify(createdFromSpreadSubplebbit[key]),
+                    `Mismatch for key: ${key}`
+                );
+            }
         });
 
         it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {

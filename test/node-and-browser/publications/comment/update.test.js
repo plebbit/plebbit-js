@@ -193,12 +193,14 @@ getRemotePlebbitConfigs().map((config) => {
             // A critical error, so it shouldn't keep on updating
 
             const createdComment = await plebbit.createComment({ cid: invalidCommentIpfsCid });
+            expect(createdComment.content).to.be.undefined; // Make sure it didn't use the props sub pages
 
             const updatingStates = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
+            expect(createdComment.content).to.be.undefined; // Make sure it didn't use the props sub pages
 
             const err = await new Promise((resolve) => createdComment.once("error", resolve));
             expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");

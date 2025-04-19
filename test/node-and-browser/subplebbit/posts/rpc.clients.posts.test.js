@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { describeIfRpc, mockRpcRemotePlebbit } from "../../../../dist/node/test/test-util.js";
+import { describeIfRpc, mockRpcRemotePlebbit, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
 describeIfRpc(`subplebbit.posts.clients.plebbitRpcClients`, async () => {

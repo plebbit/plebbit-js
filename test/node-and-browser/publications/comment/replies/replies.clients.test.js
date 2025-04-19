@@ -160,7 +160,10 @@ describe(`comment.replies.clients`, async () => {
                 actualStates.push(newState);
             });
 
-            await comment.replies.getPage(comment.replies.pageCids.new);
+            comment.replies.pageCids.new = await addStringToIpfs("12345");
+            try {
+                await comment.replies.getPage(comment.replies.pageCids.new); // it will fail because it's not a real page
+            } catch {}
             await comment.stop();
             expect(actualStates).to.deep.equal(expectedStates);
         });

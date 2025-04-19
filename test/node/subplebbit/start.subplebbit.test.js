@@ -178,6 +178,7 @@ describe(`Start lock`, async () => {
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
+        expect(subplebbit.state).to.equal("started");
         try {
             await subplebbit.start();
             expect.fail("Should have thrown");
