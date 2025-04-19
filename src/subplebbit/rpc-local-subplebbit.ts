@@ -137,13 +137,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
         } else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
-        if (updateRecord.started === false) {
-            // This is the rpc server telling us that this sub has been stopped by another instance
-            // we should stop this instance as well
-            log("Received an update record with started=false", "will stop the current instance");
-            await this._cleanUpRpcConnection(log);
-        }
-
         this.emit("update", this);
     }
 
