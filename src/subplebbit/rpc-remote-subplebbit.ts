@@ -133,9 +133,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
-    async _createAndSubscribeToNewUpdatingSubplebbit() {
+    async _createAndSubscribeToNewUpdatingSubplebbit(updatingSubplebbit?: RpcRemoteSubplebbit) {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_createNewUpdatingSubplebbit");
-        const updatingSub = (await this._plebbit.createSubplebbit({ address: this.address })) as RpcRemoteSubplebbit;
+        const updatingSub =
+            updatingSubplebbit || ((await this._plebbit.createSubplebbit({ address: this.address })) as RpcRemoteSubplebbit);
         this._plebbit._updatingSubplebbits[this.address] = updatingSub;
         log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
 
@@ -156,7 +157,9 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         updatingSub.on("removeListener", updatingSubRemoveListenerListener);
 
         await updatingSub._initRpcUpdateSubscription();
-        await this._initMirroringUpdatingSubplebbit(updatingSub);
+        if (updatingSub !== this)
+            // in plebbit.createSubplebbit() this function is called with the subplebbit instance itself
+            await this._initMirroringUpdatingSubplebbit(updatingSub);
     }
 
     override async update() {

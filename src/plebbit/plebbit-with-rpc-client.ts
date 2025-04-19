@@ -95,6 +95,8 @@ export class PlebbitWithRpcClient extends Plebbit {
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
                 let error: PlebbitError | Error | undefined;
                 const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
+                
+                await sub._createAndSubscribeToNewUpdatingSubplebbit(sub);
                 await sub.update();
                 await Promise.race([updatePromise, errorPromise]);
                 await sub.stop();
