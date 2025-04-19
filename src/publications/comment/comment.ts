@@ -103,6 +103,8 @@ export class Comment
 
     private _postForUpdating?: CommentClientsManager["_postForUpdating"];
 
+    _numOfListenersForUpdatingInstance = 0;
+
     _updatingCommentInstance?: { comment: Comment } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update" | "statechange"> =
         undefined; // the comment instance we're mirroing
     constructor(plebbit: Plebbit) {
@@ -733,6 +735,7 @@ export class Comment
                             this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
                                 updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]
                             );
+        updatingCommentInstance._numOfListenersForUpdatingInstance++;
     }
 
     async _setUpNewUpdatingCommentInstance() {
@@ -740,25 +743,6 @@ export class Comment
         const log = Logger("plebbit-js:comment:update:_setUpNewUpdatingCommentInstance");
 
         const updatingCommentInstance = await this._plebbit.createComment(this);
-
-        // updatingCommentInstance should stop if there's nobody listening
-        const updatingCommentRemoveListenerListener = async (eventName: string, listener: Function) => {
-            const count = updatingCommentInstance.listenerCount("update");
-
-            if (count === 0) {
-                log.trace(`cleaning up plebbit._updatingComments`, this.cid, "There are no comments using it for updates");
-                await cleanUpUpdatingCommentInstance();
-            }
-        };
-
-        const cleanUpUpdatingCommentInstance = async () => {
-            updatingCommentInstance.removeListener("removeListener", updatingCommentRemoveListenerListener);
-            if (updatingCommentInstance.state !== "stopped")
-                // it could be stopped already if plebbit._updatingComments[this.cid] was called
-                await updatingCommentInstance.stop();
-        };
-
-        updatingCommentInstance.on("removeListener", updatingCommentRemoveListenerListener);
 
         this._plebbit._updatingComments[this.cid!] = updatingCommentInstance;
 
@@ -849,6 +833,14 @@ export class Comment
                             for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                                 this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
 
+            this._updatingCommentInstance.comment._numOfListenersForUpdatingInstance--;
+            if (
+                this._updatingCommentInstance.comment._numOfListenersForUpdatingInstance === 0 &&
+                this._updatingCommentInstance.comment.state !== "stopped"
+            ) {
+                log("Cleaning up plebbit._updatingComments", this.cid, "There are no comments using it for updates");
+                await this._updatingCommentInstance.comment.stop();
+            }
             this._updatingCommentInstance = undefined;
         }
     }
