@@ -4,7 +4,7 @@ import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
-import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, replaceXWithY, resolveWhenPredicateIsTrue, throwWithErrorCode } from "../../util.js";
 import type {
     CreateNewLocalSubplebbitUserOptions,
     RpcInternalSubplebbitRecordBeforeFirstUpdateType,
@@ -142,9 +142,12 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         // @ts-expect-error
         if (this._webSocketClient.ready) return;
         if (!this._openConnectionPromise)
-            this._openConnectionPromise = pTimeout(new Promise(async (resolve) => this._webSocketClient.once("open", resolve)), {
-                milliseconds: this._timeoutSeconds * 1000
-            });
+            this._openConnectionPromise = pTimeout(
+                resolveWhenPredicateIsTrue(this, () => this.state === "connected", "statechange"),
+                {
+                    milliseconds: this._timeoutSeconds * 1000
+                }
+            );
 
         try {
             await this._openConnectionPromise;
