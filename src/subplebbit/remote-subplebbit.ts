@@ -350,12 +350,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                             this.clients[clientType][clientUrl][clientUrlDeeper].mirror(
                                 this._updatingSubInstanceWithListeners.subplebbit.clients[clientType][clientUrl][clientUrlDeeper]
                             );
-
+        this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
         if (this._updatingSubInstanceWithListeners.subplebbit.state === "stopped") {
             this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
             await this._updatingSubInstanceWithListeners.subplebbit._clientsManager.startUpdatingLoop();
         }
-        this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
     }
 
     async update() {
@@ -369,50 +368,54 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (this._rawSubplebbitIpfs) this.emit("update", this);
     }
 
+    private async _cleanUpUpdatingSubInstanceWithListeners() {
+        if (!this._updatingSubInstanceWithListeners) throw Error("should be defined at this stage");
+
+        const log = Logger("plebbit-js:remote-subplebbit:stop:cleanUpUpdatingSubInstanceWithListeners");
+        // this instance is subscribed to plebbit._updatingSubplebbit[address]
+        // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
+        this._updatingSubInstanceWithListeners.subplebbit.removeListener("statechange", this._updatingSubInstanceWithListeners.statechange);
+        this._updatingSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingSubInstanceWithListeners.update);
+        this._updatingSubInstanceWithListeners.subplebbit.removeListener(
+            "updatingstatechange",
+            this._updatingSubInstanceWithListeners.updatingstatechange
+        );
+        this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
+
+        const clientKeys = remeda.keys.strict(this.clients);
+
+        for (const clientType of clientKeys)
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType]))
+                    if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
+                    else
+                        for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
+                            this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
+
+        this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance--;
+        if (
+            this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance === 0 &&
+            this._updatingSubInstanceWithListeners.subplebbit.state !== "stopped"
+        ) {
+            log("Cleaning up plebbit._updatingSubplebbits", this.address, "There are no subplebbits using it for updates");
+            await this._updatingSubInstanceWithListeners.subplebbit.stop();
+        }
+        this._updatingSubInstanceWithListeners = undefined;
+    }
+
     async stop() {
         if (this.state !== "updating") throw new PlebbitError("ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE", { address: this.address });
 
         const log = Logger("plebbit-js:remote-subplebbit:stop");
-        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
-        this._setState("stopped");
-        if (this._updatingSubInstanceWithListeners) {
-            // this instance is subscribed to plebbit._updatingSubplebbit[address]
-            // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
-            this._updatingSubInstanceWithListeners.subplebbit.removeListener(
-                "statechange",
-                this._updatingSubInstanceWithListeners.statechange
-            );
-            this._updatingSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingSubInstanceWithListeners.update);
-            this._updatingSubInstanceWithListeners.subplebbit.removeListener(
-                "updatingstatechange",
-                this._updatingSubInstanceWithListeners.updatingstatechange
-            );
-            this._updatingSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingSubInstanceWithListeners.error);
 
-            const clientKeys = remeda.keys.strict(this.clients);
-
-            for (const clientType of clientKeys)
-                if (this.clients[clientType])
-                    for (const clientUrl of Object.keys(this.clients[clientType]))
-                        if (clientType !== "chainProviders") this.clients[clientType][clientUrl].unmirror();
-                        else
-                            for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
-                                this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
-
-            this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance--;
-            if (
-                this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance === 0 &&
-                this._updatingSubInstanceWithListeners.subplebbit.state !== "stopped"
-            ) {
-                log("Cleaning up plebbit._updatingSubplebbits", this.address, "There are no subplebbits using it for updates");
-                await this._updatingSubInstanceWithListeners.subplebbit.stop();
-            }
-            this._updatingSubInstanceWithListeners = undefined;
-        } else {
+        if (this._updatingSubInstanceWithListeners) await this._cleanUpUpdatingSubInstanceWithListeners();
+        else {
             // this instance is plebbit._updatingSubplebbit[address] itself
             await this._clientsManager.stopUpdatingLoop();
             delete this._plebbit._updatingSubplebbits[this.address];
         }
+        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
+        this._setState("stopped");
         this.posts._stop();
     }
 
