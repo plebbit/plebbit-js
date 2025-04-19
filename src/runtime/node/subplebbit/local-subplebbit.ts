@@ -191,7 +191,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
     private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
         SubplebbitEvents,
-        "error" | "updatingstatechange" | "update" | "statechange" | "startedstatechange"
+        | "error"
+        | "updatingstatechange"
+        | "update"
+        | "statechange"
+        | "startedstatechange"
+        | "challengerequest"
+        | "challengeverification"
+        | "challenge"
+        | "challengeanswer"
     > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _updateLocalSubTimeout?: NodeJS.Timeout = undefined;
 
@@ -2287,6 +2295,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("statechange", this._mirroredStartedOrUpdatingSubplebbit.statechange);
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("error", this._mirroredStartedOrUpdatingSubplebbit.error);
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on(
+            "challengerequest",
+            this._mirroredStartedOrUpdatingSubplebbit.challengerequest
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on(
+            "challengeverification",
+            this._mirroredStartedOrUpdatingSubplebbit.challengeverification
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on(
+            "challengeanswer",
+            this._mirroredStartedOrUpdatingSubplebbit.challengeanswer
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.on("challenge", this._mirroredStartedOrUpdatingSubplebbit.challenge);
 
         const clientKeys = remeda.keys.strict(this.clients);
         for (const clientType of clientKeys)
@@ -2325,6 +2346,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._mirroredStartedOrUpdatingSubplebbit.statechange
         );
         this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener("error", this._mirroredStartedOrUpdatingSubplebbit.error);
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "challengerequest",
+            this._mirroredStartedOrUpdatingSubplebbit.challengerequest
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "challengeverification",
+            this._mirroredStartedOrUpdatingSubplebbit.challengeverification
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "challengeanswer",
+            this._mirroredStartedOrUpdatingSubplebbit.challengeanswer
+        );
+        this._mirroredStartedOrUpdatingSubplebbit.subplebbit.removeListener(
+            "challenge",
+            this._mirroredStartedOrUpdatingSubplebbit.challenge
+        );
 
         const clientKeys = remeda.keys.strict(this.clients);
 
