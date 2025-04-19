@@ -61,7 +61,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     postUpdates?: SubplebbitIpfsType["postUpdates"];
 
     // to be overridden by local subplebbit classes
-    startedState?: "stopped" | SubplebbitStartedState;
+    startedState?: "stopped" | SubplebbitStartedState = "stopped";
     started?: boolean;
     signer?: SignerWithPublicKeyAddress | RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
     settings?: SubplebbitSettings;
