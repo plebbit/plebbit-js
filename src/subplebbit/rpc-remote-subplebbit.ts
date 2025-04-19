@@ -179,10 +179,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._plebbit._updatingSubplebbits[this.address] = updatingSub;
         log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
 
-        await updatingSub._initRpcUpdateSubscription();
         if (updatingSub !== this)
             // in plebbit.createSubplebbit() this function is called with the subplebbit instance itself
             await this._initMirroringUpdatingSubplebbit(updatingSub);
+        await updatingSub._initRpcUpdateSubscription();
     }
 
     override async update() {
@@ -193,10 +193,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         try {
             if (this._plebbit._updatingSubplebbits[this.address]) {
                 await this._initMirroringUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address] as RpcRemoteSubplebbit);
-                return;
             } else if (this._plebbit._startedSubplebbits[this.address]) {
                 await this._initMirroringUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address] as RpcLocalSubplebbit);
-                return;
             } else {
                 // creating a new entry in plebbit._updatingSubplebbits
                 // poll updates from RPC
