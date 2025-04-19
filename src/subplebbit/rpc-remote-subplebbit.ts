@@ -5,12 +5,21 @@ import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
 import { parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { SubplebbitEvents } from "../types.js";
+import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number = undefined;
-    private _updatingRpcSubInstanceWithListeners?: { subplebbit: RpcRemoteSubplebbit } & Pick<
+    private _updatingRpcSubInstanceWithListeners?: { subplebbit: RpcRemoteSubplebbit | RpcLocalSubplebbit } & Pick<
         SubplebbitEvents,
-        "error" | "updatingstatechange" | "update" | "statechange"
+        | "error"
+        | "updatingstatechange"
+        | "startedstatechange"
+        | "update"
+        | "statechange"
+        | "challengerequest"
+        | "challengeverification"
+        | "challengeanswer"
+        | "challenge"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
 
     protected _setRpcClientState(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
@@ -19,6 +28,12 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (newState === currentState) return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
+    }
+
+    protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {
+        if (newState === this.startedState) return;
+        this.startedState = newState;
+        this.emit("startedstatechange", this.startedState);
     }
 
     protected _updateRpcClientStateFromUpdatingState(updatingState: RpcRemoteSubplebbit["updatingState"]) {
@@ -78,10 +93,16 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
                 }
             },
             statechange: async (newState) => {
-                if (newState === "stopped")
+                if (newState === "stopped" && this.state !== "stopped")
                     // plebbit._updatingSubplebbits[address].stop() has been called, we need to clean up the subscription
+                    // or plebbit._startedSubplebbits[address].stop has been called
                     await this.stop();
-            }
+            },
+            challengerequest: (challengeRequest) => this.emit("challengerequest", challengeRequest),
+            challengeverification: (challengeVerification) => this.emit("challengeverification", challengeVerification),
+            challengeanswer: (challengeAnswer) => this.emit("challengeanswer", challengeAnswer),
+            challenge: (challenge) => this.emit("challenge", challenge),
+            startedstatechange: (startedState) => this._setStartedState.bind(this)(startedState)
         };
 
         this._updatingRpcSubInstanceWithListeners.subplebbit.on("update", this._updatingRpcSubInstanceWithListeners.update);
@@ -91,6 +112,23 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         );
         this._updatingRpcSubInstanceWithListeners.subplebbit.on("error", this._updatingRpcSubInstanceWithListeners.error);
         this._updatingRpcSubInstanceWithListeners.subplebbit.on("statechange", this._updatingRpcSubInstanceWithListeners.statechange);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on(
+            "challengerequest",
+            this._updatingRpcSubInstanceWithListeners.challengerequest
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on(
+            "challengeverification",
+            this._updatingRpcSubInstanceWithListeners.challengeverification
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on(
+            "challengeanswer",
+            this._updatingRpcSubInstanceWithListeners.challengeanswer
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("challenge", this._updatingRpcSubInstanceWithListeners.challenge);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on(
+            "startedstatechange",
+            this._updatingRpcSubInstanceWithListeners.startedstatechange
+        );
 
         const clientKeys = remeda.keys.strict(this.clients);
 
@@ -171,6 +209,9 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             if (this._plebbit._updatingSubplebbits[this.address]) {
                 await this._initMirroringUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address] as RpcRemoteSubplebbit);
                 return;
+            } else if (this._plebbit._startedSubplebbits[this.address]) {
+                await this._initMirroringUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address] as RpcLocalSubplebbit);
+                return;
             } else {
                 // creating a new entry in plebbit._updatingSubplebbits
                 // poll updates from RPC
@@ -195,7 +236,26 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             "statechange",
             this._updatingRpcSubInstanceWithListeners.statechange
         );
-
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener(
+            "challengerequest",
+            this._updatingRpcSubInstanceWithListeners.challengerequest
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener(
+            "challengeverification",
+            this._updatingRpcSubInstanceWithListeners.challengeverification
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener(
+            "challengeanswer",
+            this._updatingRpcSubInstanceWithListeners.challengeanswer
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener(
+            "challenge",
+            this._updatingRpcSubInstanceWithListeners.challenge
+        );
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener(
+            "startedstatechange",
+            this._updatingRpcSubInstanceWithListeners.startedstatechange
+        );
         const clientKeys = remeda.keys.strict(this.clients);
 
         for (const clientType of clientKeys)
@@ -228,6 +288,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._setRpcClientState("stopped");
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
+        this._setStartedState("stopped");
         this.posts._stop();
     }
 }

@@ -101,12 +101,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         this.updateCid = newProps.updateCid;
     }
 
-    protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {
-        if (newState === this.startedState) return;
-        this.startedState = newState;
-        this.emit("startedstatechange", this.startedState);
-    }
-
     protected _updateRpcClientStateFromStartedState(startedState: RpcLocalSubplebbit["startedState"]) {
         const mapper: Record<RpcLocalSubplebbit["startedState"], RpcLocalSubplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
             failed: ["stopped"],
@@ -287,12 +281,17 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
 
     override async delete() {
         // Make sure to stop updating or starting first
-        if (this.state === "started" || this.state === "updating") await this.stop();
+        if (this._plebbit._startedSubplebbits[this.address] && this._plebbit._startedSubplebbits[this.address] !== this) {
+            await this._plebbit._startedSubplebbits[this.address].delete();
+        } else {
+            if (this.state === "started" || this.state === "updating") await this.stop();
 
-        await this._plebbit._plebbitRpcClient!.deleteSubplebbit(this.address);
+            await this._plebbit._plebbitRpcClient!.deleteSubplebbit(this.address);
+        }
 
         this.started = false;
         this._setRpcClientState("stopped");
         this._setState("stopped");
+        this._setStartedState("stopped");
     }
 }
