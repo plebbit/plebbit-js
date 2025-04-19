@@ -964,25 +964,26 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment.comment;
         const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment.commentUpdate.cid;
         if (!commentCid) throw new PlebbitError("ERR_COMMENT_MISSING_CID", { comment, commentCid });
-        if (commentIpfs) {
-            const commentIpfsVerificationOpts = {
-                comment: commentIpfs,
-                resolveAuthorAddresses: this.resolveAuthorAddresses,
-                clientsManager: this._clientsManager,
-                overrideAuthorAddressIfInvalid: false,
-                calculatedCommentCid: commentCid
-            };
-            const commentIpfsValidity = await verifyCommentIpfs(commentIpfsVerificationOpts);
-            if (!commentIpfsValidity.valid)
-                throw new PlebbitError("ERR_INVALID_COMMENT_IPFS", {
-                    commentIpfsVerificationOpts,
-                    commentIpfsValidity
-                });
-        }
+        if (!commentIpfs) throw new PlebbitError("ERR_COMMENT_MISSING_IPFS", { comment, commentIpfs });
+
+        const commentIpfsVerificationOpts = {
+            comment: commentIpfs,
+            resolveAuthorAddresses: this.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            overrideAuthorAddressIfInvalid: false,
+            calculatedCommentCid: commentCid
+        };
+        const commentIpfsValidity = await verifyCommentIpfs(commentIpfsVerificationOpts);
+        if (!commentIpfsValidity.valid)
+            throw new PlebbitError("ERR_INVALID_COMMENT_IPFS", {
+                commentIpfsVerificationOpts,
+                commentIpfsValidity
+            });
+
         const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment.commentUpdate;
         const postCid: string | undefined = comment instanceof Comment ? comment.postCid : comment.postCid;
         if (!postCid) throw new PlebbitError("ERR_COMMENT_MISSING_POST_CID", { comment, postCid }); // postCid should always be defined if you have CommentIpfs
-        if (commentUpdate && commentIpfs) {
+        if (commentUpdate) {
             const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
             const commentUpdateVerificationOpts = {
                 update: commentUpdate,

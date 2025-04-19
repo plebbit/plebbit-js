@@ -10,6 +10,7 @@ export enum messages {
     ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS = "Subplebbit owner attempted to edit subplebbit.address to a new address that already exists",
     ERR_COMMENT_MISSING_IPFS_AND_UPDATE = "Comment is missing CommentIpfs and CommentUpdate",
     ERR_COMMENT_MISSING_CID = "Comment is missing cid",
+    ERR_COMMENT_MISSING_IPFS = "Comment is missing CommentIpfs props",
     // Plebbit errors
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
@@ -266,6 +267,7 @@ export enum messages {
     ERR_CAN_NOT_EDIT_A_LOCAL_SUBPLEBBIT_THAT_IS_ALREADY_STARTED_IN_ANOTHER_PROCESS = "Can't edit a local subplebbit that's already started in another process. You need to use the same Plebbit instance to edit the subplebbit",
     CAN_NOT_LOAD_LOCAL_SUBPLEBBIT_IF_DB_DOES_NOT_EXIST = "Can't load the local sub because its DB does not exist in dataPath",
     ERR_SUB_START_FAILED_UNKNOWN_ERROR = "Subplebbit start failed with unknown error",
+    ERR_SUB_ALREADY_STARTED_IN_SAME_PLEBBIT_INSTANCE = "Subplebbit already started in the same Plebbit instance. You can check plebbit._startedSubplebbits to see all started subplebbits",
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
     ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",
