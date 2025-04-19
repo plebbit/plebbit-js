@@ -84,6 +84,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         SubplebbitEvents,
         "error" | "updatingstatechange" | "update" | "statechange"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
+    _numOfListenersForUpdatingInstance = 0;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -324,26 +325,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             const updatingSub = await this._plebbit.createSubplebbit({ address: this.address });
             this._plebbit._updatingSubplebbits[this.address] = updatingSub;
             log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
-
-            // make sure to it keeps retrying to resolve here
-            // should only stop when there's no subplebbit instance listening to its events
-            // if it encounters a critical error, it should stop and delete this._plebbit._updatingSubplebbits[this.address]
-
-            const updatingSubRemoveListenerListener = async (eventName: string, listener: Function) => {
-                const count = updatingSub.listenerCount("update");
-
-                if (count === 0) {
-                    log.trace(`cleaning up plebbit._updatingSubplebbits`, this.address, "There are no subplebbits using it for updates");
-                    await cleanUpUpdatingSubInstance();
-                }
-            };
-
-            const cleanUpUpdatingSubInstance = async () => {
-                updatingSub.removeListener("removeListener", updatingSubRemoveListenerListener);
-                if (updatingSub.state !== "stopped") await updatingSub.stop();
-            };
-
-            updatingSub.on("removeListener", updatingSubRemoveListenerListener);
         }
 
         this._updatingSubInstanceWithListeners = await this._initSubInstanceWithListeners();
@@ -374,6 +355,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
             await this._updatingSubInstanceWithListeners.subplebbit._clientsManager.startUpdatingLoop();
         }
+        this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
     }
 
     async update() {
@@ -390,6 +372,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     async stop() {
         if (this.state !== "updating") throw new PlebbitError("ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE", { address: this.address });
 
+        const log = Logger("plebbit-js:remote-subplebbit:stop");
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
         if (this._updatingSubInstanceWithListeners) {
@@ -416,6 +399,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                             for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                                 this.clients[clientType][clientUrl][clientUrlDeeper].unmirror();
 
+            this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance--;
+            if (
+                this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance === 0 &&
+                this._updatingSubInstanceWithListeners.subplebbit.state !== "stopped"
+            ) {
+                log("Cleaning up plebbit._updatingSubplebbits", this.address, "There are no subplebbits using it for updates");
+                await this._updatingSubInstanceWithListeners.subplebbit.stop();
+            }
             this._updatingSubInstanceWithListeners = undefined;
         } else {
             // this instance is plebbit._updatingSubplebbit[address] itself

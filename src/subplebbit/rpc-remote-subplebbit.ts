@@ -144,6 +144,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
                             );
                     }
 
+        this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
         if (updatingSubplebbit._rawSubplebbitIpfs) {
             await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit._rawSubplebbitIpfs);
             this.updateCid = updatingSubplebbit.updateCid;
@@ -177,22 +178,6 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             updatingSubplebbit || ((await this._plebbit.createSubplebbit({ address: this.address })) as RpcRemoteSubplebbit);
         this._plebbit._updatingSubplebbits[this.address] = updatingSub;
         log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
-
-        const updatingSubRemoveListenerListener = async (eventName: string, listener: Function) => {
-            const count = updatingSub.listenerCount("update");
-
-            if (count === 0) {
-                log.trace(`cleaning up plebbit._updatingSubplebbits`, this.address, "There are no subplebbits using it for updates");
-                await cleanUpUpdatingSubInstance();
-            }
-        };
-
-        const cleanUpUpdatingSubInstance = async () => {
-            updatingSub.removeListener("removeListener", updatingSubRemoveListenerListener);
-            if (updatingSub.state === "updating") await updatingSub.stop();
-        };
-
-        updatingSub.on("removeListener", updatingSubRemoveListenerListener);
 
         await updatingSub._initRpcUpdateSubscription();
         if (updatingSub !== this)
@@ -265,7 +250,16 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
                     else
                         for (const clientDeeperUrl of remeda.keys.strict(this.clients[clientType]))
                             this.clients[clientType][clientUrl][clientDeeperUrl].unmirror();
+        this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance--;
 
+        if (
+            this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance === 0 &&
+            this._updatingRpcSubInstanceWithListeners.subplebbit.state === "updating"
+        ) {
+            const log = Logger("plebbit-js:rpc-remote-subplebbit:_cleanupMirroringUpdatingSubplebbit");
+            log("Cleaning up plebbit._updatingSubplebbits", this.address, "There are no subplebbits using it for updates");
+            await this._updatingRpcSubInstanceWithListeners.subplebbit.stop();
+        }
         this._updatingRpcSubInstanceWithListeners = undefined;
     }
 
