@@ -961,9 +961,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     }
 
     async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validateReplies?: boolean }) {
-        const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment.comment;
-        const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment.commentUpdate;
-        const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment.commentUpdate.cid;
+        const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment?.comment;
+        const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment?.commentUpdate;
+        const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment?.commentUpdate?.cid;
         const postCid: string | undefined = comment.postCid;
         if (!commentCid) throw new PlebbitError("ERR_COMMENT_MISSING_CID", { comment, commentCid });
         if (!commentIpfs) throw new PlebbitError("ERR_COMMENT_MISSING_IPFS", { comment, commentIpfs });
