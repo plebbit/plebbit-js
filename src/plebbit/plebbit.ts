@@ -991,7 +991,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             clientsManager: this._clientsManager,
             subplebbit,
             overrideAuthorAddressIfInvalid: false,
-            validatePages: opts?.validateReplies || this.validatePages,
+            validatePages: typeof opts?.validateReplies === "boolean" ? opts.validateReplies : this.validatePages,
             comment: { ...commentIpfs, cid: commentCid, postCid },
             validateUpdateSignature: true
         };
