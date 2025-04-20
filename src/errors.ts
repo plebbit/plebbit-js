@@ -11,6 +11,8 @@ export enum messages {
     ERR_COMMENT_MISSING_IPFS_AND_UPDATE = "Comment is missing CommentIpfs and CommentUpdate",
     ERR_COMMENT_MISSING_CID = "Comment is missing cid",
     ERR_COMMENT_MISSING_IPFS = "Comment is missing CommentIpfs props",
+    ERR_COMMENT_MISSING_UPDATE = "Comment is missing CommentUpdate props",
+    ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING = "You need to stop updating the subplebbit before starting it",
     // Plebbit errors
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
@@ -19,7 +21,7 @@ export enum messages {
     ERR_FAILED_TO_GET_CONFIG_ON_KUBO_NODE = "Failed to get config on kubo node",
     ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE = "Failed to set config on kubo node",
     ERR_FAILED_TO_SHUTDOWN_KUBO_NODE = "Failed to shutdown kubo node",
-    ERR_CAN_NOT_CREATE_A_SUB = "Can't create a new sub with the provided arguments",
+    ERR_CAN_NOT_CREATE_A_LOCAL_SUB = "Can't create a new local sub with the provided arguments",
     ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED = "User provided options.address in createSubplebbit that is either undefined or null",
     ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_PUBLICATION_FROM_JSONIFIED_COMMENT = "User provided a jsonfied (cloned) Comment and we're unable to derive request.comment from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_EDIT_PUBLICATION_FROM_JSONIFIED_COMMENT_EDIT = "User provided a jsonfied (cloned) CommentEdit and we're unable to derive request.commentEdit from it. This is an implementation error",

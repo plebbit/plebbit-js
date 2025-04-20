@@ -962,9 +962,13 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validateReplies?: boolean }) {
         const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment.comment;
+        const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment.commentUpdate;
         const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment.commentUpdate.cid;
+        const postCid: string | undefined = comment.postCid;
         if (!commentCid) throw new PlebbitError("ERR_COMMENT_MISSING_CID", { comment, commentCid });
         if (!commentIpfs) throw new PlebbitError("ERR_COMMENT_MISSING_IPFS", { comment, commentIpfs });
+        if (!commentUpdate) throw new PlebbitError("ERR_COMMENT_MISSING_UPDATE", { comment, commentUpdate });
+        if (!postCid) throw new PlebbitError("ERR_COMMENT_MISSING_POST_CID", { comment, postCid }); // postCid should always be defined if you have CommentIpfs
 
         const commentIpfsVerificationOpts = {
             comment: commentIpfs,
@@ -980,30 +984,23 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 commentIpfsValidity
             });
 
-        const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment.commentUpdate;
-        const postCid: string | undefined = comment instanceof Comment ? comment.postCid : comment.postCid;
-        if (!postCid) throw new PlebbitError("ERR_COMMENT_MISSING_POST_CID", { comment, postCid }); // postCid should always be defined if you have CommentIpfs
-        if (commentUpdate) {
-            const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
-            const commentUpdateVerificationOpts = {
-                update: commentUpdate,
-                resolveAuthorAddresses: this.resolveAuthorAddresses,
-                clientsManager: this._clientsManager,
-                subplebbit,
-                overrideAuthorAddressIfInvalid: false,
-                validatePages: opts?.validateReplies || this.validatePages,
-                comment: { ...commentIpfs, cid: commentCid, postCid },
-                validateUpdateSignature: true
-            };
-            const commentUpdateValidity = await verifyCommentUpdate(commentUpdateVerificationOpts);
-            if (!commentUpdateValidity.valid)
-                throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE", {
-                    commentUpdateVerificationOpts,
-                    commentUpdateValidity
-                });
-        }
-        if (!commentIpfs && !commentUpdate)
-            throw new PlebbitError("ERR_COMMENT_MISSING_IPFS_AND_UPDATE", { commentIpfs, commentUpdate, comment });
+        const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
+        const commentUpdateVerificationOpts = {
+            update: commentUpdate,
+            resolveAuthorAddresses: this.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            subplebbit,
+            overrideAuthorAddressIfInvalid: false,
+            validatePages: opts?.validateReplies || this.validatePages,
+            comment: { ...commentIpfs, cid: commentCid, postCid },
+            validateUpdateSignature: true
+        };
+        const commentUpdateValidity = await verifyCommentUpdate(commentUpdateVerificationOpts);
+        if (!commentUpdateValidity.valid)
+            throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE", {
+                commentUpdateVerificationOpts,
+                commentUpdateValidity
+            });
     }
 
     async _createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">) {
