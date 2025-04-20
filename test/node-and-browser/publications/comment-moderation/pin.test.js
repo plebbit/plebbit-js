@@ -5,6 +5,7 @@ import {
     publishWithExpectedResult,
     loadAllPages,
     iterateThroughPagesToFindCommentInParentPagesInstance,
+    loadAllPagesBySortName,
     publishRandomReply,
     waitTillPostInSubplebbitInstancePages,
     resolveWhenConditionIsTrue,
@@ -12,7 +13,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../../dist/node/pages/util.js";
+import { POSTS_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [
@@ -316,15 +317,21 @@ getRemotePlebbitConfigs().map((config) => {
 
             await postToRecreate.stop();
 
-            expect(Object.keys(postToRecreate.replies.pageCids).every((key) => Object.keys(REPLIES_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
-            for (const [sortName, pageCid] of Object.entries(postToRecreate.replies.pageCids)) {
-                const pageComments = (await postToRecreate.replies.getPage(pageCid)).comments;
-                const replyInPage = pageComments.find((comment) => comment.cid === replyToPin.cid);
+            const postsPagesNames = remeda.unique([
+                ...Object.keys(postToRecreate.replies.pageCids),
+                ...Object.keys(postToRecreate.replies.pages)
+            ]);
+            expect(postsPagesNames.length).to.be.greaterThan(0);
+
+            for (const pageSortName of postsPagesNames) {
+                const allCommentsUnderPageSortName = await loadAllPagesBySortName(pageSortName, postToRecreate.replies);
+                const replyInPage = allCommentsUnderPageSortName.find((comment) => comment.cid === replyToPin.cid);
                 expect(replyInPage).to.exist;
                 expect(replyInPage.pinned).to.be.true;
                 expect(replyInPage.reason).to.equal("To pin the reply");
-                for (let i = 0; i < pageComments.length - 1; i++)
-                    if (!pageComments[i].pinned && pageComments[i + 1].pinned) expect.fail("Pinned replies should always be on top");
+                for (let i = 0; i < allCommentsUnderPageSortName.length - 1; i++)
+                    if (!allCommentsUnderPageSortName[i].pinned && allCommentsUnderPageSortName[i + 1].pinned)
+                        expect.fail("Pinned replies should always be on top");
             }
         });
 
