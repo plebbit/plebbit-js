@@ -9,10 +9,11 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     publishSubplebbitRecordWithExtraProp,
     mockPlebbitToReturnSpecificSubplebbit,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    describeSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 
-describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
+describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
     it(`subplebbit.updatingState defaults to stopped`, async () => {
         const plebbit = await mockRemotePlebbit();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
@@ -59,6 +60,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await subplebbit.update();
+        expect(subplebbit.state).to.equal("updating");
 
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         await publishRandomPost(subplebbit.address, kuboPlebbit); // To force trigger an update

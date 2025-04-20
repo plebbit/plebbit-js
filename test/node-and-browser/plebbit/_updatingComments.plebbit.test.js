@@ -324,8 +324,6 @@ getRemotePlebbitConfigs().map((config) => {
             await new Promise((resolve) => setTimeout(resolve, 500)); // need to wait some time to propgate events
             expect(plebbit._updatingComments[commentCid]).to.not.exist;
             expect(plebbit._updatingSubplebbits[comment.subplebbitAddress]).to.exist;
-
-            await plebbit.destroy();
         });
     });
 });

@@ -7,11 +7,11 @@ import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
     let plebbit;
 
-    before(async () => {
+    beforeEach(async () => {
         plebbit = await mockRpcRemotePlebbit();
     });
 
-    after(async () => {
+    afterEach(async () => {
         await plebbit.destroy();
     });
 
