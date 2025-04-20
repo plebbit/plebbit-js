@@ -379,7 +379,7 @@ export class PageGenerator {
 
         sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
 
-        for (const hierarchalSortName of remeda.keys.strict(nonPreloadedSorts))
+        for (const hierarchalSortName of nonPreloadedSorts)
             sortResults.push(await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, pageOptions));
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
