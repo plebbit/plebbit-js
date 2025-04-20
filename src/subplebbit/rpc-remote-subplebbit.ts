@@ -188,6 +188,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     override async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
 
+        if (this.state === "started") throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { address: this.address });
         if (this.state !== "stopped") return; // No need to do anything if subplebbit is already updating
         this._setState("updating");
         try {
@@ -263,7 +264,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
 
     override async stop() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:stop");
-        if (this.state !== "updating") throw new PlebbitError("ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE", { address: this.address });
+        if (this.state === "stopped") return;
 
         if (this._updatingRpcSubInstanceWithListeners) {
             await this._cleanupMirroringUpdatingSubplebbit();

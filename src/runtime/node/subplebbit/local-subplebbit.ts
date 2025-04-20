@@ -2205,7 +2205,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     override async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
-        if (this.state === "updating") await this.stop();
+        if (this.state === "updating") throw new PlebbitError("ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING", { address: this.address });
         this._stopHasBeenCalled = false;
         if (!this._clientsManager.getDefaultIpfs())
             throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
@@ -2424,7 +2424,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     override async update() {
         const log = Logger("plebbit-js:local-subplebbit:update");
-        if (this.state === "updating" || this.state === "started") return; // No need to do anything if subplebbit is already updating
+        if (this.state === "started") throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { address: this.address });
+        if (this.state === "updating") return;
         this._stopHasBeenCalled = false;
         const updateLoop = (async () => {
             if (this.state === "updating" && !this._stopHasBeenCalled) {
