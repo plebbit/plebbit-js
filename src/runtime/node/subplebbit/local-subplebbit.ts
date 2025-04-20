@@ -2521,23 +2521,51 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     override async delete() {
         const log = Logger("plebbit-js:local-subplebbit:delete");
         log.trace(`Attempting to stop the subplebbit (${this.address}) before deleting, if needed`);
-        if (this.state === "updating" || this.state === "started") await this.stop();
+
+        if (this._plebbit._startedSubplebbits[this.address] && this._plebbit._startedSubplebbits[this.address] !== this) {
+            await this._plebbit._startedSubplebbits[this.address].delete();
+            await this.stop();
+            return;
+        }
 
         const kuboClient = this._clientsManager.getDefaultIpfs();
         if (!kuboClient) throw Error("Ipfs client is not defined");
 
-        await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {
                 await kuboClient._client.key.rm(this.signer.ipnsKeyName);
-            } catch {}
+            } catch(e) {
+                log.error("Failed to delete ipns key", this.signer.ipnsKeyName, e);
+            }
 
         try {
             await kuboClient._client.files.rm("/" + this.address, { recursive: true, flush: true });
         } catch (e) {
             log.error("Failed to delete subplebbit mfs folder", "/" + this.address, e);
         }
+        // sceneario 1: we call delete() on a subplebbit that is not started or updating
+        // scenario 2: we call delete() on a subplebbit that is updating
+        // scenario 3: we call delete() on a subplebbit that is started
+        // scenario 4: we call delete() on a subplebbit that is not started, but the same sub is started in plebbit._startedSubplebbits[address]
+
+        await this.initDbHandlerIfNeeded();
+        await this._dbHandler.initDbIfNeeded();
+        const allCids = await this._dbHandler.queryAllCidsUnderThisSubplebbit();
+        allCids.forEach((cid) => this._cidsToUnPin.add(cid));
+        if (this.updateCid) this._cidsToUnPin.add(this.updateCid);
+        if (this.statsCid) this._cidsToUnPin.add(this.statsCid);
+        if (this.posts.pageCids) Object.values(this.posts.pageCids).forEach((pageCid) => this._cidsToUnPin.add(pageCid));
+
+        try {
+            await this._unpinStaleCids();
+        } catch (e) {
+            log.error("Failed to unpin stale cids before deleting", e);
+        }
+
+        if (this.state === "updating" || this.state === "started") await this.stop(); // stop()
+
+        await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);
 
         log(`Deleted subplebbit (${this.address}) successfully`);
     }

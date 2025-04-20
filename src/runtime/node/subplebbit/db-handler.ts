@@ -1481,4 +1481,24 @@ export class DbHandler {
                 .update({ publishedToPostUpdatesMFS: false });
         }
     }
+
+    async queryAllCidsUnderThisSubplebbit(trx?: Transaction): Promise<Set<string>> {
+        const allCids = new Set<string>();
+        const commentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
+        commentCids.forEach((comment) => allCids.add(comment.cid));
+
+        const commentUpdateCids = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+            .select("postCommentUpdateCid")
+            .whereNotNull("postCommentUpdateCid");
+        commentUpdateCids.forEach((cid) => cid.postCommentUpdateCid && allCids.add(cid.postCommentUpdateCid));
+
+        const replies = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).select("replies").whereNotNull("replies");
+        replies.forEach((reply) => {
+            if (reply?.replies?.pageCids) {
+                Object.values(reply.replies.pageCids).forEach((cid) => allCids.add(cid));
+            }
+        });
+
+        return allCids;
+    }
 }
