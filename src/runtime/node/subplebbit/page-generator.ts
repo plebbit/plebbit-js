@@ -14,7 +14,7 @@ import * as remeda from "remeda";
 import type { CommentUpdateType } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
 import type { CommentsTableRow } from "../../../types.js";
 
 export type PageOptions = {
@@ -202,7 +202,7 @@ export class PageGenerator {
     ): Promise<PageIpfs["comments"][]> {
         if (unsortedComments.length === 0) throw Error("Should not provide empty array of comments to sort");
         const sortProps: SortProps = options.parentCid
-            ? REPLIES_SORT_TYPES[<ReplySortName>sortName]
+            ? POST_REPLIES_SORT_TYPES[<ReplySortName>sortName]
             : POSTS_SORT_TYPES[<PostSortName>sortName];
         if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] score function is not defined`);
 
@@ -310,9 +310,49 @@ export class PageGenerator {
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    async generateRepliesPages(
+    async generatePostPages(
+        comment: Pick<CommentsTableRow, "cid">,
+        preloadedReplyPageSortName: keyof typeof POST_REPLIES_SORT_TYPES,
+        preloadedPageSizeBytes: number
+    ) {
+        const pageOptions = {
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: false,
+            excludeRemovedComments: false,
+            parentCid: comment.cid,
+            preloadedPage: preloadedReplyPageSortName,
+            baseTimestamp: timestamp(),
+            preloadedPageSizeBytes
+        };
+
+        const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        if (hierarchalReplies.length === 0) return undefined;
+
+        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, pageOptions);
+        if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
+
+        const sortResults: (PageGenerationRes | undefined)[] = [];
+
+        sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
+
+        const nonPreloadedSorts = remeda.keys.strict(POST_REPLIES_SORT_TYPES).filter((sortName) => sortName !== preloadedReplyPageSortName);
+
+        const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({
+            ...pageOptions,
+            commentUpdateFieldsToExclude: ["replies"]
+        });
+
+        for (const sortName of nonPreloadedSorts) {
+            const replies = POST_REPLIES_SORT_TYPES[sortName].flat ? flattenedReplies : hierarchalReplies;
+            sortResults.push(await this.sortChunkAddIpfsNonPreloaded(replies, sortName, pageOptions));
+        }
+
+        return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
+    }
+
+    async generateReplyPages(
         comment: Pick<CommentsTableRow, "cid" | "depth">,
-        preloadedReplyPageSortName: keyof typeof REPLIES_SORT_TYPES,
+        preloadedReplyPageSortName: keyof typeof REPLY_REPLIES_SORT_TYPES,
         preloadedPageSizeBytes: number
     ): Promise<RepliesPagesTypeIpfs | { singlePreloadedPage: SinglePreloadedPageRes } | undefined> {
         const pageOptions = {
@@ -325,36 +365,22 @@ export class PageGenerator {
             preloadedPageSizeBytes
         };
 
-        const sortResults: (PageGenerationRes | undefined)[] = [];
-
         const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, pageOptions);
         if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
+        const nonPreloadedSorts = remeda.keys
+            .strict(REPLY_REPLIES_SORT_TYPES)
+            .filter((sortName) => sortName !== preloadedReplyPageSortName);
+
+        const sortResults: (PageGenerationRes | undefined)[] = [];
+
         sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
-        const hierarchalSorts = remeda.keys
-            .strict(REPLIES_SORT_TYPES)
-            .filter((replySortName) => !REPLIES_SORT_TYPES[replySortName].flat && replySortName !== preloadedReplyPageSortName);
-        if (hierarchalSorts.length > 0) {
-            for (const hierarchalSortName of hierarchalSorts)
-                sortResults.push(await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, pageOptions));
-        }
 
-        const flatSorts = remeda.keys
-            .strict(REPLIES_SORT_TYPES)
-            .filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat && replySortName !== preloadedReplyPageSortName);
-
-        if (flatSorts.length > 0 && comment.depth === 0) {
-            const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({
-                ...pageOptions,
-                commentUpdateFieldsToExclude: ["replies"]
-            });
-
-            for (const flatSortName of flatSorts)
-                sortResults.push(await this.sortChunkAddIpfsNonPreloaded(flattenedReplies, flatSortName, pageOptions));
-        }
+        for (const hierarchalSortName of remeda.keys.strict(nonPreloadedSorts))
+            sortResults.push(await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, pageOptions));
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }

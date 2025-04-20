@@ -13,7 +13,7 @@ import {
     resolveWhenConditionIsTrue,
     itSkipIfRpc
 } from "../../../../../dist/node/test/test-util.js";
-import { REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";
+import { POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../../../../../dist/node/pages/util.js";
 import signers from "../../../../fixtures/signers.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { messages } from "../../../../../dist/node/errors.js";
@@ -101,18 +101,18 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`A post has the right pageCids under it after maxing out its replies`, async () => {
-            const pageCidsWithoutPreloadedPage = Object.keys(REPLIES_SORT_TYPES).filter(
+            const pageCidsWithoutPreloadedPage = Object.keys(POST_REPLIES_SORT_TYPES).filter(
                 (pageSortName) => !Object.keys(post.replies.pages).includes(pageSortName)
             );
             expect(Object.keys(post.replies.pageCids).sort()).to.deep.equal(pageCidsWithoutPreloadedPage.sort());
         });
 
-        Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
+        Object.keys(POST_REPLIES_SORT_TYPES).map((sortName) =>
             it(`${sortName} pages under a post are sorted correctly`, async () => await testPostRepliesSort(post, sortName, subplebbit))
         );
 
-        Object.keys(REPLIES_SORT_TYPES)
-            .filter((replySortName) => REPLIES_SORT_TYPES[replySortName].flat)
+        Object.keys(POST_REPLIES_SORT_TYPES)
+            .filter((replySortName) => POST_REPLIES_SORT_TYPES[replySortName].flat)
             .map((flatSortName) =>
                 it(`flat sort (${flatSortName}) includes all nested fields, and has no replies field within its comments`, async () => {
                     await post.update();
@@ -132,7 +132,7 @@ getRemotePlebbitConfigs().map((config) => {
             );
 
         it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-            for (const postReplySortName of Object.keys(REPLIES_SORT_TYPES)) {
+            for (const postReplySortName of Object.keys(POST_REPLIES_SORT_TYPES)) {
                 const commentsFromEachPage = await loadAllPagesBySortName(postReplySortName, post.replies);
                 const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.pageComment);
 
@@ -199,21 +199,18 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`A reply has the right pageCids under it after maxing out its replies`, async () => {
-            const pageCidsWithoutPreloadedPageOrFlat = Object.keys(REPLIES_SORT_TYPES).filter(
+            const pageCidsWithoutPreloadedPageOrFlat = Object.keys(REPLY_REPLIES_SORT_TYPES).filter(
                 (pageSortName) => !Object.keys(reply.replies.pages).includes(pageSortName) && !pageSortName.includes("Flat")
             );
             expect(Object.keys(reply.replies.pageCids).sort()).to.deep.equal(pageCidsWithoutPreloadedPageOrFlat.sort());
         });
 
-        Object.keys(REPLIES_SORT_TYPES)
-            .filter((sortName) => !sortName.includes("Flat")) // flat sorting is only for posts
-            .map((sortName) =>
-                it(`${sortName} pages under a reply are sorted correctly`, async () =>
-                    await testReplyRepliesSort(reply, sortName, subplebbit))
-            );
+        Object.keys(REPLY_REPLIES_SORT_TYPES).map((sortName) =>
+            it(`${sortName} pages under a reply are sorted correctly`, async () => await testReplyRepliesSort(reply, sortName, subplebbit))
+        );
 
         it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
-            const replySortTypesWithoutFlat = Object.keys(REPLIES_SORT_TYPES).filter((sortName) => !sortName.includes("Flat"));
+            const replySortTypesWithoutFlat = Object.keys(REPLY_REPLIES_SORT_TYPES);
             for (const replySortName of replySortTypesWithoutFlat) {
                 const commentsFromEachPage = await loadAllPagesBySortName(replySortName, reply.replies);
                 const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.pageComment);

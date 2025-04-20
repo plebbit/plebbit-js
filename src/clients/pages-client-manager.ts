@@ -7,7 +7,7 @@ import * as remeda from "remeda";
 import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import { BasePages, PostsPages, RepliesPages } from "../pages/pages.js";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
+import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
@@ -250,7 +250,7 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
     };
 
     protected override getSortTypes() {
-        return remeda.keys.strict(REPLIES_SORT_TYPES);
+        return remeda.keys.strict(POST_REPLIES_SORT_TYPES);
     }
 }
 

@@ -1609,7 +1609,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 2000; // a little bit of buffer
         const preloadedRepliesPages = "best";
 
-        const generatedRepliesPages = await this._pageGenerator.generateRepliesPages(comment, preloadedRepliesPages, repliesAvailableSize);
+        const generatedRepliesPages =
+            comment.depth === 0
+                ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, repliesAvailableSize)
+                : await this._pageGenerator.generateReplyPages(comment, preloadedRepliesPages, repliesAvailableSize);
 
         // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
         if (generatedRepliesPages) {

@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { loadAllUniqueCommentsUnderCommentInstance } from "../../../dist/node/test/test-util.js";
-import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
+import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 import signers from "../../fixtures/signers.js";
 
 const subplebbitAddress = signers[0].address;
@@ -103,7 +103,7 @@ export const testPageCommentsIfSortedCorrectly = async (sortedComments, sortName
         }
         if (sortedComments[j].pinned || sortedComments[j + 1].pinned) continue; // Ignore pinned posts as they don't follow regular sorting
 
-        const sort = { ...POSTS_SORT_TYPES, ...REPLIES_SORT_TYPES }[sortName];
+        const sort = { ...POSTS_SORT_TYPES, ...POST_REPLIES_SORT_TYPES }[sortName];
         let scoreA, scoreB;
         if (sortName === "active") {
             scoreA = await activeScore(sortedComments[j], subplebbit._plebbit);

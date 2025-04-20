@@ -44,12 +44,18 @@ export const POSTS_SORT_TYPES: PostSort = {
     topAll: { timeframe: "ALL", score: (...args) => topScore(...args) }
 };
 
-export const REPLIES_SORT_TYPES: ReplySort = {
+export const POST_REPLIES_SORT_TYPES: ReplySort = {
     ...remeda.pick(POSTS_SORT_TYPES, ["new"]),
     best: { score: (...args) => bestScore(...args) },
     old: { score: (...args) => oldScore(...args) },
     newFlat: { ...POSTS_SORT_TYPES["new"], flat: true },
     oldFlat: { score: (...args) => oldScore(...args), flat: true }
+};
+
+export const REPLY_REPLIES_SORT_TYPES: ReplySort = {
+    ...remeda.pick(POSTS_SORT_TYPES, ["new"]),
+    best: { score: (...args) => bestScore(...args) },
+    old: { score: (...args) => oldScore(...args) }
 };
 
 type CommentToSort = PageIpfs["comments"][0];
