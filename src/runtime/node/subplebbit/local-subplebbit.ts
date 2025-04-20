@@ -2460,6 +2460,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log.error("Failed to unsubscribe from challenge exchange pubsub when stopping subplebbit", e);
             }
             if (this._publishLoopPromise) {
+                clearInterval(this._publishInterval);
                 try {
                     await this._publishLoopPromise;
                 } catch (e) {
@@ -2494,7 +2495,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._dbHandler.rollbackAllTransactions();
             await this._dbHandler.unlockSubState();
             await this._updateStartedValue();
-            clearInterval(this._publishInterval);
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
             if (this._dbHandler) await this._dbHandler.destoryConnection();
@@ -2515,7 +2515,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setUpdatingStateWithEventEmissionIfNewState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");
-        } else throw Error("User called localSubplebbit.stop() without updating or starting first on subplebbit" + this.address);
+        }
     }
 
     override async delete() {
