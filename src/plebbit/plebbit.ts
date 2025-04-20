@@ -612,7 +612,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         log.trace("Received subplebbit options to create a local subplebbit instance:", options);
 
         const canCreateLocalSub = this._canCreateNewLocalSub();
-        if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+        if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_LOCAL_SUB", { plebbitOptions: this._userPlebbitOptions });
 
         const localSubs = await nodeListSubplebbits(this);
         const isLocalSub = localSubs.includes(options.address); // Sub exists already, only pass address so we don't override other props
@@ -640,7 +640,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         // jsonfied = JSON.parse(JSON.stringify(subplebbitInstance))
         // should probably exclude internal and instance-exclusive props like states
 
-        if ("startedState" in jsonfied) return this._createLocalSub(jsonfied);
+        if (this.subplebbits.includes(jsonfied.address)) return this._createLocalSub(jsonfied);
         else return this._createRemoteSubplebbitInstance(jsonfied);
     }
 
@@ -662,7 +662,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         const canCreateLocalSub = this._canCreateNewLocalSub(); // this is true if we're on NodeJS and have a dataPath
 
         if ("signer" in parsedOptions && !canCreateLocalSub)
-            throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", {
+            throw new PlebbitError("ERR_CAN_NOT_CREATE_A_LOCAL_SUB", {
                 plebbitOptions: this._userPlebbitOptions,
                 isEnvNode: Boolean(process),
                 hasDataPath: Boolean(this.dataPath)
@@ -699,7 +699,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             };
             return this._createLocalSub(localOptions);
         } else if ("address" in parsedOptions && "signer" in parsedOptions) return this._createLocalSub(parsedOptions);
-        else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { parsedOptions });
+        else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_LOCAL_SUB", { parsedOptions });
     }
 
     async _createVoteInstanceFromJsonfiedVote(jsonfied: VoteJson) {
