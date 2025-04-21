@@ -198,23 +198,17 @@ getRemotePlebbitConfigs().map((config) => {
 
             const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
 
-            const errorPromise = new Promise((resolve) => {
-                tempSubplebbit.once("error", (err) => {
-                    if (isPlebbitFetchingUsingGateways(plebbit)) {
-                        // we're using gateways to fetch
-                        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-                        for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways)) {
-                            expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
-                        }
-                    } else {
-                        expect(err.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
-                    }
-                    resolve();
-                });
-            });
+            const errorPromise = new Promise((resolve) => tempSubplebbit.once("error", resolve));
             await tempSubplebbit.update();
-            await errorPromise;
+            const err = await errorPromise;
             await tempSubplebbit.stop();
+
+            if (isPlebbitFetchingUsingGateways(plebbit)) {
+                // we're using gateways to fetch
+                expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways))
+                    expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+            } else expect(err.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
         });
     });
 });

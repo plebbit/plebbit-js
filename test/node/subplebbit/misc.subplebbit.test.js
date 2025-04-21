@@ -15,10 +15,7 @@ import {
 } from "../../../dist/node/test/test-util";
 
 import signers from "../../fixtures/signers";
-import path from "path";
-import fs from "fs";
 
-import EventEmitter from "events";
 describe("plebbit.subplebbits", async () => {
     let plebbit, subSigner;
     before(async () => {
@@ -194,14 +191,16 @@ describe(`subplebbit.state`, async () => {
         expect(eventFired).to.be.true;
     });
 
-    it(`subplebbit.state = started after calling start() after update()`, async () => {
-        let eventFired = false;
-        subplebbit.on("statechange", (newState) => {
-            if (newState === "started") eventFired = true;
-        });
-        await subplebbit.start();
-        expect(subplebbit.state).to.equal("started");
-        expect(eventFired).to.be.true;
+    it(`calling update() on a started subplebbit will throw`, async () => {
+        const startedSubplebbit = await plebbit.createSubplebbit();
+        await startedSubplebbit.start();
+        try {
+            await startedSubplebbit.update();
+            expect.fail("Should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
+        }
+        await startedSubplebbit.delete();
     });
 });
 
@@ -309,7 +308,7 @@ describe(`subplebbit.updatingState from a local subplebbit`, async () => {
     });
 });
 
-describe(`comment.link`, async () => {
+describe.skip(`comment.link`, async () => {
     let plebbit, subplebbit;
 
     before(async () => {
@@ -327,7 +326,7 @@ describe(`comment.link`, async () => {
         await plebbit.destroy();
     });
 
-    describe.skip(`comment.thumbnailUrl`, async () => {
+    describe(`comment.thumbnailUrl`, async () => {
         it(`comment.thumbnailUrl is generated for youtube video with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
             const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });

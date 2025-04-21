@@ -71,8 +71,8 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Newly published post appears on all pages`, async () => {
-            const postInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(newPost.cid, subplebbit.posts);
-            expect(postInPage).to.exist;
+            const postInPreloadedPage = await iterateThroughPagesToFindCommentInParentPagesInstance(newPost.cid, subplebbit.posts);
+            expect(postInPreloadedPage).to.exist;
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
                 const postInPage = await iterateThroughPageCidToFindComment(newPost.cid, pageCid, subplebbit.posts);
                 expect(postInPage).to.exist;
@@ -134,7 +134,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         itSkipIfRpc("posts.getPage will throw a timeout error when request times out", async () => {
             // Create a plebbit instance with a very short timeout for page-ipfs
-            const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: false });
+            const plebbit = await config.plebbitInstancePromise();
 
             plebbit._timeouts["page-ipfs"] = 100;
 
@@ -158,6 +158,36 @@ getRemotePlebbitConfigs().map((config) => {
                 } else {
                     expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                 }
+            }
+        });
+
+        it(`.getPage will throw if the first page is over 1mb`, async () => {
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            const page = remeda.clone(subplebbit._rawSubplebbitIpfs.posts.pages.hot);
+
+            // Make sure the page is over 1MB
+            // Keep adding comments until the page exceeds 1MB
+            while (Buffer.byteLength(JSON.stringify(page)) <= 1024 * 1024) {
+                page.comments.push(...page.comments);
+            }
+
+            // Verify the page is actually over 1MB
+            const pageSizeInMB = Buffer.byteLength(JSON.stringify(page)) / (1024 * 1024);
+            console.log(`Page size: ${pageSizeInMB.toFixed(2)}MB`);
+            expect(pageSizeInMB).to.be.greaterThan(1, "Page should be larger than 1MB for this test");
+            const pageCid = await addStringToIpfs(JSON.stringify(page));
+
+            subplebbit.posts.pageCids.hot = pageCid;
+
+            try {
+                await subplebbit.posts.getPage(subplebbit.posts.pageCids.hot);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                if (isPlebbitFetchingUsingGateways(plebbit)) {
+                    expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
+                    for (const gatewayUrl of Object.keys(plebbit.clients.ipfsGateways))
+                        expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                } else expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
             }
         });
 

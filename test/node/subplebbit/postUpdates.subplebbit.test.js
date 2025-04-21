@@ -28,11 +28,13 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     beforeEach(async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+    afterEach(async () => {
+        await remotePlebbit.destroy();
+    });
 
     after(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
-        await remotePlebbit.destroy();
     });
 
     it(`subplebbit.postUpdates is undefined if there are no comments`, async () => {

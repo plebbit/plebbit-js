@@ -1,19 +1,17 @@
 import { expect } from "chai";
-import Plebbit from "../../dist/node";
-import { createSubWithNoChallenge } from "../../dist/node/test/test-util";
+import Plebbit from "../../dist/node/index.js";
+import { createSubWithNoChallenge, describeSkipIfRpc } from "../../dist/node/test/test-util.js";
 
 import tcpPortUsed from "tcp-port-used";
 
 // TODO calling plebbit.destroy() should stop the address rewriter proxy
-describe(`Testing HTTP router settings and address rewriter`, async () => {
+describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
     const nodeForHttpRouter = "http://localhost:15006/api/v0";
     // default list of http routers to use
     const httpRouterUrls = ["https://routing.lol", "https://peers.pleb.bot"];
 
-    let plebbit;
-
     it(`Plebbit({kuboRpcClientsOptions}) sets correct default http routers`, async () => {
-        const plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], dataPath: undefined });
+        const plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter] });
         expect(plebbit.httpRoutersOptions).to.deep.equal([
             "https://peers.pleb.bot",
             "https://routing.lol",
@@ -25,7 +23,10 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     });
 
     it(`Plebbit({kuboRpcClientsOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls, dataPath: undefined });
+        const plebbit = await Plebbit({
+            kuboRpcClientsOptions: [nodeForHttpRouter],
+            httpRoutersOptions: httpRouterUrls
+        });
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
 
         expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
@@ -48,6 +49,10 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     });
 
     it(`Routing.Routers should be set to proxy`, async () => {
+        const plebbit = await Plebbit({
+            kuboRpcClientsOptions: [nodeForHttpRouter],
+            httpRoutersOptions: httpRouterUrls
+        });
         const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
         const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
         expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
@@ -63,6 +68,10 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     });
 
     it(`The proxy proxies requests to http router properly`, async () => {
+        const plebbit = await Plebbit({
+            kuboRpcClientsOptions: [nodeForHttpRouter],
+            httpRoutersOptions: httpRouterUrls
+        });
         const sub = await createSubWithNoChallenge({}, plebbit); // an online sub
 
         await sub.start();

@@ -31,7 +31,7 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
         // Find or generate a post with multiple pages to ensure flat pages exist
         const postWithAllPages = await findOrGeneratePostWithMultiplePages(subplebbit);
         // Get a flat page for replies of that post
-        const flatPage = await postWithAllPages.replies.getPage(postWithAllPages.replies.pageCids.newFlat);
+        const flatPage = await (await plebbit.createComment(postWithAllPages)).replies.getPage(postWithAllPages.replies.pageCids.newFlat);
         expect(flatPage.comments.length).to.be.greaterThan(0, "Flat page must contain comments");
         replyFromFlatPage = flatPage.comments[0]; // Get a reply from the flat page
         expect(replyFromFlatPage, "Failed to get a reply from the flat page").to.exist;
