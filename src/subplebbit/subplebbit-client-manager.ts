@@ -292,10 +292,22 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipfs");
 
-        const rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
-            maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
-            timeoutMs: this._plebbit._timeouts["subplebbit-ipfs"]
-        });
+        let rawSubJsonString: Awaited<ReturnType<typeof this._fetchCidP2P>>;
+        try {
+            rawSubJsonString = await this._fetchCidP2P(latestSubplebbitCid, {
+                maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
+                timeoutMs: this._plebbit._timeouts["subplebbit-ipfs"]
+            });
+        } catch (e) {
+            //@ts-expect-error
+            e.details = {
+                //@ts-expect-error
+                ...e.details,
+                subplebbitIpnsName: ipnsName,
+                subplebbitCid: latestSubplebbitCid
+            };
+            throw e;
+        }
 
         this._updateCidsAlreadyLoaded.add(latestSubplebbitCid);
         try {

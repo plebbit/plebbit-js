@@ -673,7 +673,7 @@ export class DbHandler {
     }
 
     private _basePageQuery(
-        options: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "preloadedPageSizeBytes">,
+        options: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">,
         trx?: Transaction
     ) {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -707,7 +707,7 @@ export class DbHandler {
         const updateMaxTimestamp = async (localComments: (typeof comment)[]) => {
             for (const commentChild of localComments) {
                 if (commentChild.timestamp > maxTimestamp) maxTimestamp = commentChild.timestamp;
-                const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "preloadedPageSizeBytes"> = {
+                const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes"> = {
                     excludeCommentsWithDifferentSubAddress: true,
                     excludeDeletedComments: true,
                     excludeRemovedComments: true,
@@ -721,7 +721,7 @@ export class DbHandler {
             }
         };
 
-        const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "preloadedPageSizeBytes"> = {
+        const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes"> = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
@@ -737,7 +737,7 @@ export class DbHandler {
         return maxTimestamp;
     }
 
-    async queryPageComments(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
+    async queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">, trx?: Transaction): Promise<PageIpfs["comments"]> {
         // protocolVersion, signature
 
         const commentUpdateColumns = <(keyof CommentUpdateType)[]>(
@@ -785,7 +785,10 @@ export class DbHandler {
         return Boolean(result);
     }
 
-    async queryFlattenedPageReplies(options: PageOptions & { parentCid: string }, trx?: Transaction): Promise<PageIpfs["comments"]> {
+    async queryFlattenedPageReplies(
+        options: Omit<PageOptions, "firstPageSizeBytes"> & { parentCid: string },
+        trx?: Transaction
+    ): Promise<PageIpfs["comments"]> {
         const firstLevelReplies = await this.queryPageComments(options, trx);
 
         const nestedReplies = await Promise.all(
