@@ -16,6 +16,8 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
 import type { CommentsTableRow } from "../../../types.js";
+import { PlebbitError } from "../../../plebbit-error.js";
+import Logger from "@plebbit/plebbit-logger";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -25,7 +27,7 @@ export type PageOptions = {
     parentCid: string | null;
     preloadedPage: PostSortName | ReplySortName; // a list of sort types that will be preloaded on the subplebbit/comment instance
     baseTimestamp: number;
-    preloadedPageSizeBytes: number;
+    firstPageSizeBytes: number;
 };
 
 type SinglePreloadedPageRes = Record<PostSortName | ReplySortName, PageIpfs>;
@@ -57,11 +59,22 @@ export class PageGenerator {
 
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: string[] = new Array(chunks.length);
+        let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
         for (let i = chunks.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
-            cids[i] = (await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+            const addRes = await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs));
+            if (addRes.size > expectedSize)
+                throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
+                    addRes,
+                    pageIpfs,
+                    expectedSize,
+                    sortName,
+                    pageNum: i
+                });
+            cids[i] = addRes.path;
             listOfPage[i] = pageIpfs;
+            expectedSize = expectedSize / 2; // we're going backward now
         }
         return { [sortName]: { pages: listOfPage, cids } };
     }
@@ -86,14 +99,13 @@ export class PageGenerator {
 
     _chunkComments({
         comments,
-        isPreloadedSort,
-        preloadedPageSizeBytes
+        firstPageSizeBytes
     }: {
         comments: PageIpfs["comments"];
-        isPreloadedSort: boolean;
-        preloadedPageSizeBytes: number;
+        firstPageSizeBytes: number;
     }): PageIpfs["comments"][] {
-        const FIRST_PAGE_SIZE = isPreloadedSort ? preloadedPageSizeBytes : 1024 * 1024; // dynamic page size for preloaded sorts, 1MB for others
+        const FIRST_PAGE_SIZE = firstPageSizeBytes; // dynamic page size for preloaded sorts, 1MB for others
+        const SAFETY_MARGIN = 1024; // Use 1KiB margin
 
         // Calculate overhead with and without nextCid
         const OBJECT_WRAPPER_WITH_CID =
@@ -123,7 +135,7 @@ export class PageGenerator {
 
         let currentChunk: PageIpfs["comments"] = [];
         let chunkIndex = 0;
-        let accumulatedSize = OBJECT_WRAPPER_WITH_CID; // Start with the overhead size (including nextCid)
+        let accumulatedSize = OBJECT_WRAPPER_WITH_CID;
 
         // Pre-calculate sizes to avoid repeated stringification
         const commentSizes = new Map<number, number>();
@@ -155,23 +167,24 @@ export class PageGenerator {
             // Add comma if needed
             const commaSize = currentChunk.length > 0 ? 1 : 0;
 
-            // Check if adding this comment would exceed the limit
-            if (accumulatedSize + commaSize + commentSize > maxSize) {
+            // Check if adding this comment would exceed the limit MINUS the safety margin
+            if (accumulatedSize + commaSize + commentSize > maxSize - SAFETY_MARGIN) {
                 if (currentChunk.length > 0) {
-                    // Push current chunk and start a new one
                     chunks.push(currentChunk);
                     currentChunk = [];
+                    chunkIndex++;
 
-                    // Reset size calculation for the next chunk
-                    // If this will be the last chunk (we're processing the last item and it will be alone),
-                    // then use size without nextCid
                     if (isLastItem) {
                         accumulatedSize = OBJECT_WRAPPER_WITHOUT_CID;
                     } else {
                         accumulatedSize = OBJECT_WRAPPER_WITH_CID;
                     }
-
-                    chunkIndex++;
+                } else if (commentSize > maxSize - SAFETY_MARGIN) {
+                    const log = Logger("plebbit-js:page-generator:_chunkComments");
+                    log.trace(
+                        `Single comment at index ${i} (size ${commentSize}) is large relative to page size limit (${maxSize}) for page ${chunkIndex}`
+                    );
+                    accumulatedSize = isLastItem ? OBJECT_WRAPPER_WITHOUT_CID : OBJECT_WRAPPER_WITH_CID;
                 }
             }
 
@@ -180,16 +193,7 @@ export class PageGenerator {
         }
 
         if (currentChunk.length > 0) {
-            // Before pushing the last chunk, adjust its expected size if it's the last page
-            // by removing the nextCid overhead
-            if (chunks.length > 0) {
-                // If we have multiple chunks
-                chunks.push(currentChunk);
-            } else {
-                // If we only have one chunk, it shouldn't have nextCid
-                // But this case should be caught by our initial check
-                chunks.push(currentChunk);
-            }
+            chunks.push(currentChunk);
         }
 
         return chunks;
@@ -239,12 +243,9 @@ export class PageGenerator {
 
         if (commentsSorted.length === 0) return [];
 
-        const isPreloadedSort = options.preloadedPage === sortName;
-
         const commentsChunks = this._chunkComments({
             comments: commentsSorted,
-            isPreloadedSort,
-            preloadedPageSizeBytes: options.preloadedPageSizeBytes
+            firstPageSizeBytes: options.firstPageSizeBytes
         });
 
         return commentsChunks;
@@ -289,7 +290,7 @@ export class PageGenerator {
             parentCid: null,
             preloadedPage: preloadedPageSortName,
             baseTimestamp: timestamp(),
-            preloadedPageSizeBytes
+            firstPageSizeBytes: preloadedPageSizeBytes
         };
         // Sorting posts on a subplebbit level
         const rawPosts = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
@@ -321,14 +322,16 @@ export class PageGenerator {
             excludeRemovedComments: false,
             parentCid: comment.cid,
             preloadedPage: preloadedReplyPageSortName,
-            baseTimestamp: timestamp(),
-            preloadedPageSizeBytes
+            baseTimestamp: timestamp()
         };
 
         const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
-        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, pageOptions);
+        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, {
+            ...pageOptions,
+            firstPageSizeBytes: preloadedPageSizeBytes
+        });
         if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
@@ -344,7 +347,9 @@ export class PageGenerator {
 
         for (const sortName of nonPreloadedSorts) {
             const replies = POST_REPLIES_SORT_TYPES[sortName].flat ? flattenedReplies : hierarchalReplies;
-            sortResults.push(await this.sortChunkAddIpfsNonPreloaded(replies, sortName, pageOptions));
+            sortResults.push(
+                await this.sortChunkAddIpfsNonPreloaded(replies, sortName, { ...pageOptions, firstPageSizeBytes: 1024 * 1024 })
+            );
         }
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
@@ -361,14 +366,16 @@ export class PageGenerator {
             excludeRemovedComments: false,
             parentCid: comment.cid,
             preloadedPage: preloadedReplyPageSortName,
-            baseTimestamp: timestamp(),
-            preloadedPageSizeBytes
+            baseTimestamp: timestamp()
         };
 
         const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
-        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, pageOptions);
+        const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, {
+            ...pageOptions,
+            firstPageSizeBytes: preloadedPageSizeBytes
+        });
         if (preloadedChunk.length === 1) return { singlePreloadedPage: { [preloadedReplyPageSortName]: { comments: preloadedChunk[0] } } }; // all comments fit in one page
 
         const nonPreloadedSorts = remeda.keys
@@ -380,7 +387,12 @@ export class PageGenerator {
         sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
 
         for (const hierarchalSortName of nonPreloadedSorts)
-            sortResults.push(await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, pageOptions));
+            sortResults.push(
+                await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, {
+                    ...pageOptions,
+                    firstPageSizeBytes: 1024 * 1024
+                })
+            );
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }

@@ -516,7 +516,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // Calculate remaining space for posts
         const availablePostsSize =
-            MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 2000; // add a small buffer
+            MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 500;
 
         const generatedPosts = await this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages, availablePostsSize);
 
@@ -1606,7 +1606,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
 
         const repliesAvailableSize =
-            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 2000; // a little bit of buffer
+            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 500;
         const preloadedRepliesPages = "best";
 
         const generatedRepliesPages =
@@ -2535,7 +2535,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // Key may not exist on ipfs node
             try {
                 await kuboClient._client.key.rm(this.signer.ipnsKeyName);
-            } catch(e) {
+            } catch (e) {
                 log.error("Failed to delete ipns key", this.signer.ipnsKeyName, e);
             }
 
