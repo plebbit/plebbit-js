@@ -389,6 +389,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         try {
             commentRawString = await this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentTimeoutMs });
         } catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, commentCid: cid, commentTimeoutMs };
             throw e;
         } finally {
             this.updateIpfsState("stopped");

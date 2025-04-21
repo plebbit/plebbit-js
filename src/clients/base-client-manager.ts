@@ -518,9 +518,8 @@ export class BaseClientsManager {
                     throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", {
                         cid: cidV0,
                         loadOpts,
-                        fileContentLength: data.byteLength,
-                        calculatedCid,
-                        ipfsClient
+                        endedDownloadAtFileContentLength: data.byteLength,
+                        ipfsClient: ipfsClient._clientOptions
                     });
             }
             return fileContent;

@@ -191,6 +191,8 @@ export class BasePagesClientsManager extends BaseClientsManager {
                 )
             );
         } catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, pageCid, sortTypes, pageMaxSize };
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
         } finally {
@@ -222,17 +224,26 @@ export class BasePagesClientsManager extends BaseClientsManager {
         if (sortTypesFromPageCids.length > 0) {
             this.updatePageCidsToSortTypes(this._pages.pageCids);
         }
-        const sortTypes: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
+        const sortTypesFromMemcache: string[] | undefined = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
 
         const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
-        const pageMaxSize = isFirstPage
-            ? 1024 * 1024
-            : this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid));
+        const pageMaxSize = this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
+            ? this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
+            : isFirstPage
+              ? 1024 * 1024
+              : undefined;
         if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page: PageIpfs;
-        if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
-        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes, pageMaxSize);
-        else page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
+        try {
+            if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
+            else if (this._defaultIpfsProviderUrl)
+                page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypesFromMemcache, pageMaxSize);
+            else page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
+        } catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, pageCid, pageMaxSize, isFirstPage, sortTypesFromPageCids, sortTypesFromMemcache };
+            throw e;
+        }
 
         if (page.nextCid) {
             this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
