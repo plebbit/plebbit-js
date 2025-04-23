@@ -92,6 +92,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     state!: PublicationState | Comment["state"];
     publishingState!: PublicationPublishingState;
 
+    raw: { pubsubMessageToPublish?: PublicationFromDecryptedChallengeRequest } = {};
+
     // private
     private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
     private _challengeAnswer?: DecryptedChallengeAnswerMessageType = undefined;

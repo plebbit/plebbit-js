@@ -11,7 +11,7 @@ class SubplebbitEdit extends Publication implements SubplebbitEditPubsubMessageP
     subplebbitEdit!: SubplebbitEditPubsubMessagePublication["subplebbitEdit"];
     override signature!: SubplebbitEditPubsubMessagePublication["signature"];
 
-    _pubsubMsgToPublish?: SubplebbitEditPubsubMessagePublication = undefined;
+    override raw: { pubsubMessageToPublish?: SubplebbitEditPubsubMessagePublication } = {};
     override challengeRequest?: CreateSubplebbitEditPublicationOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
@@ -36,12 +36,12 @@ class SubplebbitEdit extends Publication implements SubplebbitEditPubsubMessageP
     _initRemoteProps(props: SubplebbitEditPubsubMessagePublication): void {
         super._initBaseRemoteProps(props);
         this.subplebbitEdit = props.subplebbitEdit;
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
     }
 
     override toJSONPubsubMessagePublication(): SubplebbitEditPubsubMessagePublication {
-        if (!this._pubsubMsgToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
-        return this._pubsubMsgToPublish;
+        if (!this.raw.pubsubMessageToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
+        return this.raw.pubsubMessageToPublish;
     }
 
     override getType(): PublicationTypeName {

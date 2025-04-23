@@ -772,7 +772,7 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
         comment._plebbit
     );
 
-    comment._pubsubMsgToPublish = pubsubPublication;
+    comment.raw.pubsubMessageToPublish = pubsubPublication;
 
     disableValidationOfSignatureBeforePublishing(comment);
 }
@@ -802,7 +802,7 @@ export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps:
             log
         );
 
-    comment._pubsubMsgToPublish = publicationWithExtraProp;
+    comment.raw.pubsubMessageToPublish = publicationWithExtraProp;
 
     disableValidationOfSignatureBeforePublishing(comment);
 
@@ -820,7 +820,7 @@ export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, 
             vote.signer!,
             log
         );
-    vote._pubsubMsgToPublish = publicationWithExtraProp;
+    vote.raw.pubsubMessageToPublish = publicationWithExtraProp;
 
     disableValidationOfSignatureBeforePublishing(vote);
 
@@ -842,7 +842,7 @@ export async function setExtraPropOnCommentEditAndSign(
             commentEdit.signer!,
             log
         );
-    commentEdit._pubsubMsgToPublish = publicationWithExtraProp;
+    commentEdit.raw.pubsubMessageToPublish = publicationWithExtraProp;
 
     disableValidationOfSignatureBeforePublishing(commentEdit);
 
@@ -866,7 +866,7 @@ export async function setExtraPropOnCommentModerationAndSign(
             commentModeration.signer!,
             log
         );
-    commentModeration._pubsubMsgToPublish = newPubsubPublicationWithExtraProp;
+    commentModeration.raw.pubsubMessageToPublish = newPubsubPublicationWithExtraProp;
 
     disableValidationOfSignatureBeforePublishing(commentModeration);
 

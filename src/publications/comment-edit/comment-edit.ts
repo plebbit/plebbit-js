@@ -17,7 +17,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
 
     override signature!: CommentEditPubsubMessagePublication["signature"];
 
-    _pubsubMsgToPublish?: CommentEditPubsubMessagePublication = undefined;
+    override raw: { pubsubMessageToPublish?: CommentEditPubsubMessagePublication } = {};
     override challengeRequest?: CreateCommentEditOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
@@ -40,7 +40,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     }
 
     _initPubsubPublicationProps(props: CommentEditPubsubMessagePublication): void {
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.content = props.content;
@@ -52,8 +52,8 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication {
-        if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
-        return this._pubsubMsgToPublish;
+        if (!this.raw.pubsubMessageToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
+        return this.raw.pubsubMessageToPublish;
     }
 
     override getType(): PublicationTypeName {

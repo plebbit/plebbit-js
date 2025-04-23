@@ -13,7 +13,7 @@ class Vote extends Publication implements VotePubsubMessagePublication {
     vote!: VotePubsubMessagePublication["vote"]; // (upvote = 1, cancel vote = 0, downvote = -1)
     override signature!: VotePubsubMessagePublication["signature"];
 
-    _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
+    override raw: { pubsubMessageToPublish?: VotePubsubMessagePublication } = {};
     override challengeRequest?: CreateVoteOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
@@ -39,12 +39,12 @@ class Vote extends Publication implements VotePubsubMessagePublication {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
     }
 
     override toJSONPubsubMessagePublication(): VotePubsubMessagePublication {
-        if (!this._pubsubMsgToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
-        return this._pubsubMsgToPublish;
+        if (!this.raw.pubsubMessageToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
+        return this.raw.pubsubMessageToPublish;
     }
 
     override getType(): PublicationTypeName {

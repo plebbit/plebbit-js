@@ -11,7 +11,7 @@ export class CommentModeration extends Publication implements CommentModerationP
     commentModeration!: CommentModerationPubsubMessagePublication["commentModeration"];
     override signature!: CommentModerationPubsubMessagePublication["signature"];
 
-    _pubsubMsgToPublish?: CommentModerationPubsubMessagePublication = undefined;
+    override raw: { pubsubMessageToPublish?: CommentModerationPubsubMessagePublication } = {};
     override challengeRequest?: CreateCommentModerationOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
@@ -37,12 +37,12 @@ export class CommentModeration extends Publication implements CommentModerationP
         super._initBaseRemoteProps(pubsubMsgPub);
         this.commentCid = pubsubMsgPub.commentCid;
         this.commentModeration = pubsubMsgPub.commentModeration;
-        this._pubsubMsgToPublish = pubsubMsgPub;
+        this.raw.pubsubMessageToPublish = pubsubMsgPub;
     }
 
     override toJSONPubsubMessagePublication(): CommentModerationPubsubMessagePublication {
-        if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentModerationPubsubMessage first");
-        return this._pubsubMsgToPublish;
+        if (!this.raw.pubsubMessageToPublish) throw Error("Need to define local CommentModerationPubsubMessage first");
+        return this.raw.pubsubMessageToPublish;
     }
 
     override getType(): PublicationTypeName {

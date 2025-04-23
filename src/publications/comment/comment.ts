@@ -89,13 +89,16 @@ export class Comment
     updatingState!: CommentUpdatingState;
 
     // private
-    raw: { comment?: CommentIpfsType; commentUpdate?: CommentUpdateType } = {};
+    override raw: {
+        comment?: CommentIpfsType;
+        commentUpdate?: CommentUpdateType;
+        pubsubMessageToPublish?: CommentPubsubMessagePublication;
+    } = {};
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
     _invalidCommentUpdateMfsPaths: Set<string> = new Set<string>();
     private _commentIpfsloadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
-    _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
     override challengeRequest?: CreateCommentOptions["challengeRequest"];
 
     private _subplebbitForUpdating?: CommentClientsManager["_subplebbitForUpdating"];
@@ -134,7 +137,7 @@ export class Comment
         // Need to make sure we have the props first
         if (!this.original)
             this.original = OriginalCommentFieldsBeforeCommentUpdateSchema.parse(
-                removeUndefinedValuesRecursively(this.raw.comment || this._pubsubMsgToPublish)
+                removeUndefinedValuesRecursively(this.raw.comment || this.raw.pubsubMessageToPublish)
             );
     }
 
@@ -149,7 +152,7 @@ export class Comment
     }
 
     _initPubsubMessageProps(props: CommentPubsubMessagePublication) {
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
         this._initProps(props);
     }
 
@@ -291,14 +294,14 @@ export class Comment
     ): Promise<PlebbitError | undefined> {
         const log = Logger("plebbit-js:comment:publish:_verifyChallengeVerificationCommentProps");
 
-        if (!this._pubsubMsgToPublish) throw Error("comment._pubsubMsgToPublish should be defined at this point");
+        if (!this.raw.pubsubMessageToPublish) throw Error("comment._pubsubMsgToPublish should be defined at this point");
         // verify that the sub did not change any props that we published
-        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, remeda.keys.strict(this._pubsubMsgToPublish));
+        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, remeda.keys.strict(this.raw.pubsubMessageToPublish));
 
-        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, this._pubsubMsgToPublish)) {
+        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, this.raw.pubsubMessageToPublish)) {
             const error = new PlebbitError("ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS", {
                 pubsubMsgFromSub: pubsubMsgFromCommentIpfs,
-                originalPubsubMsg: this._pubsubMsgToPublish
+                originalPubsubMsg: this.raw.pubsubMessageToPublish
             });
             log.error(error);
             this.emit("error", error);
@@ -413,8 +416,8 @@ export class Comment
     }
 
     override toJSONPubsubMessagePublication(): CommentPubsubMessagePublication {
-        if (!this._pubsubMsgToPublish) throw Error("comment._pubsubMsgToPublish should be defined before calling ");
-        return this._pubsubMsgToPublish;
+        if (!this.raw.pubsubMessageToPublish) throw Error("comment.raw.pubsubMessageToPublish should be defined before calling ");
+        return this.raw.pubsubMessageToPublish;
     }
 
     setCid(newCid: string) {
