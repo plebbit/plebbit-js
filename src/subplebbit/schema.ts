@@ -318,6 +318,7 @@ export const SubplebbitIpfsReservedFields = remeda.difference(
         "updateCid",
         "shortUpdateCid",
         "shortAddress",
+        "raw",
         "shortSubplebbitAddress",
         "deleted",
         "signer",

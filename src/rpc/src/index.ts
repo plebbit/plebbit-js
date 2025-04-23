@@ -541,13 +541,13 @@ class PlebbitWsServer extends EventEmitter {
         let sentCommentIpfsUpdateEvent = false;
         const comment = await this.plebbit.createComment({ cid });
         const sendUpdate = () => {
-            if (!sentCommentIpfsUpdateEvent && comment._rawCommentIpfs) {
+            if (!sentCommentIpfsUpdateEvent && comment.raw.comment) {
                 const commentIpfsRecord = comment.toJSONIpfs();
                 sendEvent("update", commentIpfsRecord);
                 sentCommentIpfsUpdateEvent = true;
             }
-            if (comment._rawCommentUpdate) {
-                sendEvent("update", comment._rawCommentUpdate);
+            if (comment.raw.commentUpdate) {
+                sendEvent("update", comment.raw.commentUpdate);
             }
         };
         const updateListener = () => sendUpdate();
@@ -644,7 +644,7 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             // need to send an update with first subplebbitUpdate if it's a local sub
-            if ("signer" in subplebbit || subplebbit._rawSubplebbitIpfs) sendSubJson();
+            if ("signer" in subplebbit || subplebbit.raw.subplebbitIpfs) sendSubJson();
 
             // No need to call .update() if it's already running locally because we're listening to update event
             if (!isSubStarted) await subplebbit.update();

@@ -89,8 +89,7 @@ export class Comment
     updatingState!: CommentUpdatingState;
 
     // private
-    _rawCommentUpdate?: CommentUpdateType = undefined;
-    _rawCommentIpfs?: CommentIpfsType = undefined;
+    raw: { comment?: CommentIpfsType; commentUpdate?: CommentUpdateType } = {};
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
     _invalidCommentUpdateMfsPaths: Set<string> = new Set<string>();
     private _commentIpfsloadingOperation?: RetryOperation = undefined;
@@ -135,7 +134,7 @@ export class Comment
         // Need to make sure we have the props first
         if (!this.original)
             this.original = OriginalCommentFieldsBeforeCommentUpdateSchema.parse(
-                removeUndefinedValuesRecursively(this._rawCommentIpfs || this._pubsubMsgToPublish)
+                removeUndefinedValuesRecursively(this.raw.comment || this._pubsubMsgToPublish)
             );
     }
 
@@ -157,7 +156,7 @@ export class Comment
     _initIpfsProps(props: CommentIpfsType) {
         const log = Logger("plebbit-js:comment:_initIpfsProps");
         // we're loading remote CommentIpfs
-        this._rawCommentIpfs = props;
+        this.raw.comment = props;
         this._initProps(props);
 
         const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentIpfsSchema.shape));
@@ -201,7 +200,7 @@ export class Comment
         else {
             // CommentUpdate
             this._setOriginalFieldBeforeModifying();
-            this._rawCommentUpdate = props;
+            this.raw.commentUpdate = props;
 
             const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentUpdateSchema.shape));
             if (unknownProps.length > 0) {
@@ -351,9 +350,9 @@ export class Comment
         // Will add and pin our own comment to IPFS
         // only if we're connected to kubo
 
-        if (!this._rawCommentIpfs) throw Error("_rawCommentIpfs should be defined after challenge verification");
+        if (!this.raw.comment) throw Error("comment.raw.commentIpfs should be defined after challenge verification");
         const ipfsClient = this._clientsManager.getDefaultIpfs();
-        const addRes = await ipfsClient._client.add(JSON.stringify(this._rawCommentIpfs), { pin: true });
+        const addRes = await ipfsClient._client.add(JSON.stringify(this.raw.comment), { pin: true });
         if (addRes.path !== decryptedVerification.commentUpdate.cid)
             throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
     }
@@ -409,8 +408,8 @@ export class Comment
     }
 
     toJSONIpfs(): CommentIpfsType {
-        if (!this._rawCommentIpfs) throw Error("comment._rawCommentIpfs has to be defined before calling toJSONIpfs()");
-        return this._rawCommentIpfs;
+        if (!this.raw.comment) throw Error("comment.raw.commentIpfs has to be defined before calling toJSONIpfs()");
+        return this.raw.comment;
     }
 
     override toJSONPubsubMessagePublication(): CommentPubsubMessagePublication {
@@ -483,7 +482,7 @@ export class Comment
     }
 
     async _attemptToFetchCommentIpfsIfNeeded(log: Logger) {
-        if (this.cid && !this._rawCommentIpfs) {
+        if (this.cid && !this.raw.comment) {
             // User may have attempted to call plebbit.createComment({cid}).update
             const newCommentIpfsOrNonRetriableError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
 
@@ -529,14 +528,14 @@ export class Comment
             if (this._subplebbitForUpdating.subplebbit.state === "stopped") {
                 await this._subplebbitForUpdating!.subplebbit.update();
             }
-            if (this._subplebbitForUpdating.subplebbit._rawSubplebbitIpfs)
+            if (this._subplebbitForUpdating.subplebbit.raw.subplebbitIpfs)
                 await this._clientsManager.handleUpdateEventFromSub(this._subplebbitForUpdating.subplebbit);
         } else {
             if (!this._postForUpdating) this._postForUpdating = await this._clientsManager._createPostInstanceWithStateTranslation();
             if (this._postForUpdating!.comment.state === "stopped") {
                 await this._postForUpdating!.comment.update();
             }
-            if (this._postForUpdating!.comment._rawCommentUpdate)
+            if (this._postForUpdating!.comment.raw.commentUpdate)
                 await this._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate(this._postForUpdating!.comment);
         }
     }
@@ -544,7 +543,7 @@ export class Comment
     async loadCommentIpfsAndStartCommentUpdateSubscription() {
         const log = Logger("plebbit-js:update:loadCommentIpfsAndStartCommentUpdateSubscription");
         await this._attemptInfintelyToLoadCommentIpfs();
-        if (!this._rawCommentIpfs) throw Error("Failed to load comment ipfs, user needs to check error event");
+        if (!this.raw.comment) throw Error("Failed to load comment ipfs, user needs to check error event");
         try {
             await this.startCommentUpdateSubplebbitSubscription(); // can only proceed if commentIpfs has been loaded successfully
         } catch (e) {
@@ -599,7 +598,7 @@ export class Comment
         // Critical Errors for now are:
         // Invalid signature of CommentIpfs
         // CommentUpdate will always be retried when a new sub update is loaded
-        if (this._rawCommentIpfs)
+        if (this.raw.comment)
             return true; // if we already loaded CommentIpfs, we should always retry loading CommentUpdate
         else return this._isCommentIpfsErrorRetriable(err);
     }
@@ -683,14 +682,14 @@ export class Comment
         const updatingCommentInstance = this._plebbit._updatingComments[this.cid] || this._updatingCommentInstance?.comment;
         if (updatingCommentInstance) {
             // TODO maybe we should just copy props with Object.assign? not sure
-            if (!this._rawCommentIpfs && updatingCommentInstance._rawCommentIpfs) {
-                this._initIpfsProps(updatingCommentInstance._rawCommentIpfs);
+            if (!this.raw.comment && updatingCommentInstance.raw.comment) {
+                this._initIpfsProps(updatingCommentInstance.raw.comment);
                 this.emit("update", this);
             }
-            if (updatingCommentInstance._rawCommentUpdate && (this.updatedAt || 0) < updatingCommentInstance._rawCommentUpdate.updatedAt) {
+            if (updatingCommentInstance.raw.commentUpdate && (this.updatedAt || 0) < updatingCommentInstance.raw.commentUpdate.updatedAt) {
                 this._initCommentUpdate(
-                    updatingCommentInstance._rawCommentUpdate,
-                    updatingCommentInstance._subplebbitForUpdating?.subplebbit?._rawSubplebbitIpfs
+                    updatingCommentInstance.raw.commentUpdate,
+                    updatingCommentInstance._subplebbitForUpdating?.subplebbit?.raw.subplebbitIpfs
                 );
                 this._commentUpdateIpfsPath = updatingCommentInstance._commentUpdateIpfsPath;
                 this.emit("update", this);
@@ -771,7 +770,7 @@ export class Comment
             this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]);
         } else await this._setUpNewUpdatingCommentInstance();
 
-        if (this._rawCommentIpfs || this._rawCommentUpdate) this.emit("update", this);
+        if (this.raw.comment || this.raw.commentUpdate) this.emit("update", this);
     }
 
     private async _stopUpdateLoop() {

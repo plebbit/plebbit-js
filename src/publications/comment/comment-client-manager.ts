@@ -211,7 +211,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType, subplebbitIpfs: SubplebbitIpfsType) {
-        if (!this._comment._rawCommentIpfs) throw Error("Can't validate comment update when CommentIpfs hasn't been loaded");
+        if (!this._comment.raw.comment) throw Error("Can't validate comment update when CommentIpfs hasn't been loaded");
         if (!this._comment.cid) throw Error("can't validate comment update when cid is not defined");
         if (!this._comment.postCid) throw Error("can't validate comment update when postCid is not defined");
         const verifyOptions = {
@@ -219,7 +219,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
             clientsManager: this,
             subplebbit: subplebbitIpfs,
-            comment: { ...this._comment._rawCommentIpfs, cid: this._comment.cid, postCid: this._comment.postCid },
+            comment: { ...this._comment.raw.comment, cid: this._comment.cid, postCid: this._comment.postCid },
             overrideAuthorAddressIfInvalid: true,
             validatePages: this._plebbit.validatePages,
             validateUpdateSignature: true
@@ -321,7 +321,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         subplebbit: Pick<SubplebbitIpfsType, "signature">,
         log: Logger
     ) {
-        if ((this._comment._rawCommentUpdate?.updatedAt || 0) < loadedCommentUpdate.commentUpdate.updatedAt) {
+        if ((this._comment.raw.commentUpdate?.updatedAt || 0) < loadedCommentUpdate.commentUpdate.updatedAt) {
             log(`${this._comment.depth === 0 ? "Post" : "Reply"} (${this._comment.cid}) received a new CommentUpdate`);
             this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
@@ -492,9 +492,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
 
-        if (!sub._rawSubplebbitIpfs) throw Error("Subplebbit IPFS should be defined when an update is emitted");
+        if (!sub.raw.subplebbitIpfs) throw Error("Subplebbit IPFS should be defined when an update is emitted");
         // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
-        // this._subplebbitForUpdating!.subplebbit._rawSubplebbitIpfs?.posts.
+        // this._subplebbitForUpdating!.subplebbit.raw.subplebbitIpfs?.posts.
 
         const commentInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ sub });
 
@@ -502,14 +502,14 @@ export class CommentClientsManager extends PublicationClientsManager {
             const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
             const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
                 { commentUpdate: commentInPage.commentUpdate },
-                sub._rawSubplebbitIpfs,
+                sub.raw.subplebbitIpfs,
                 log
             );
             if (usedUpdateFromPage) return; // we found an update from pages, no need to do anything else
         }
         try {
             // this is only for posts with depth === 0
-            await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub._rawSubplebbitIpfs);
+            await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub.raw.subplebbitIpfs);
         } catch (e) {
             log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
             this._comment._setUpdatingStateNoEmission("failed");
@@ -589,7 +589,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid);
             if (replyWithinParentPage) {
                 this._useLoadedCommentUpdateIfNewInfo(
-                    { commentUpdate: replyWithinParentPage.pageComment.commentUpdate },
+                    { commentUpdate: replyWithinParentPage.raw.commentUpdate },
                     subplebbitWithSignature,
                     log
                 );

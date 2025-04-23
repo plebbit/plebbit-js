@@ -466,13 +466,15 @@ export class Comment extends Publication {
             this.author.shortAddress = `short ${createCommentOptions.author.address}`;
         }
         //@ts-expect-error
-        this._rawCommentIpfs = {
-            ipnsName: this.ipnsName,
-            content: this.content,
-            author: this.author,
-            timestamp: this.timestamp,
-            parentCid: this.parentCid,
-            subplebbitAddress: this.subplebbitAddress
+        this.raw = {
+            comment: {
+                ipnsName: this.ipnsName,
+                content: this.content,
+                author: this.author,
+                timestamp: this.timestamp,
+                parentCid: this.parentCid,
+                subplebbitAddress: this.subplebbitAddress
+            }
         };
     }
 

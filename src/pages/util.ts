@@ -173,7 +173,10 @@ export function mapPageIpfsCommentToPageJsonComment(pageComment: PageIpfs["comme
         nsfw,
         flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
         postCid,
-        pageComment
+        raw: {
+            comment: pageComment.comment,
+            commentUpdate: pageComment.commentUpdate
+        }
     };
 }
 
@@ -242,7 +245,7 @@ export function findCommentInPageInstance(
     if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
 
     for (const page of Object.values(pageInstance.pages))
-        if (page) for (const pageComment of page.comments) if (pageComment.cid === targetCommentCid) return pageComment.pageComment;
+        if (page) for (const pageComment of page.comments) if (pageComment.cid === targetCommentCid) return pageComment.raw;
 
     return undefined;
 }
@@ -282,7 +285,7 @@ export function findCommentInPageInstanceRecursively(
     for (const preloadedPage of Object.values(pageInstance.pages)) {
         if (!preloadedPage) continue;
 
-        const pageIpfs = <PageIpfs>{ comments: preloadedPage.comments.map((page) => page.pageComment), nextCid: preloadedPage.nextCid };
+        const pageIpfs = <PageIpfs>{ comments: preloadedPage.comments.map((page) => page.raw), nextCid: preloadedPage.nextCid };
         const foundComment = findCommentInHierarchicalPageIpfsRecursively(pageIpfs, targetCid);
         if (foundComment) return foundComment;
     }

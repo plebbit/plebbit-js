@@ -334,9 +334,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
 
         // need to validate schema of Subplebbit IPFS
-        if (this._rawSubplebbitIpfs)
+        if (this.raw.subplebbitIpfs)
             try {
-                parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(this._rawSubplebbitIpfs);
+                parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(this.raw.subplebbitIpfs);
             } catch (e) {
                 if (e instanceof Error) {
                     e.message = "Local subplebbit" + this.address + " has an invalid schema: " + e.message;

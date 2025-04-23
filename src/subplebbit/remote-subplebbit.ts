@@ -79,7 +79,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     // should be used internally
     _plebbit: Plebbit;
     _clientsManager: SubplebbitClientsManager;
-    _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
+    raw: { subplebbitIpfs?: SubplebbitIpfsType } = {};
     _updatingSubInstanceWithListeners?: { subplebbit: RemoteSubplebbit } & Pick<
         SubplebbitEvents,
         "error" | "updatingstatechange" | "update" | "statechange"
@@ -153,12 +153,12 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
     async initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:remote-subplebbit:initSubplebbitIpfsPropsNoMerge");
-        this._rawSubplebbitIpfs = newProps;
+        this.raw.subplebbitIpfs = newProps;
         await this.initRemoteSubplebbitPropsNoMerge(newProps);
-        const unknownProps = remeda.difference(remeda.keys.strict(this._rawSubplebbitIpfs), remeda.keys.strict(SubplebbitIpfsSchema.shape));
+        const unknownProps = remeda.difference(remeda.keys.strict(this.raw.subplebbitIpfs), remeda.keys.strict(SubplebbitIpfsSchema.shape));
         if (unknownProps.length > 0) {
-            log(`Found unknown props on subplebbit (${this._rawSubplebbitIpfs.address}) ipfs record`, unknownProps);
-            Object.assign(this, remeda.pick(this._rawSubplebbitIpfs, unknownProps));
+            log(`Found unknown props on subplebbit (${this.raw.subplebbitIpfs.address}) ipfs record`, unknownProps);
+            Object.assign(this, remeda.pick(this.raw.subplebbitIpfs, unknownProps));
         }
     }
 
@@ -216,8 +216,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     toJSONIpfs(): SubplebbitIpfsType {
-        if (!this._rawSubplebbitIpfs) throw Error("should not be calling toJSONIpfs() before defining _rawSubplebbitIpfs");
-        return this._rawSubplebbitIpfs;
+        if (!this.raw.subplebbitIpfs) throw Error("should not be calling toJSONIpfs() before defining _rawSubplebbitIpfs");
+        return this.raw.subplebbitIpfs;
     }
 
     toJSONRpcRemote(): RpcRemoteSubplebbitType {
@@ -270,8 +270,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     async _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
         const log = Logger("plebbit-js:comment:_setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible");
         const updatingSub = this._plebbit._updatingSubplebbits[this.address];
-        if (updatingSub?._rawSubplebbitIpfs && (this.updatedAt || 0) < updatingSub._rawSubplebbitIpfs.updatedAt) {
-            await this.initSubplebbitIpfsPropsNoMerge(updatingSub._rawSubplebbitIpfs);
+        if (updatingSub?.raw?.subplebbitIpfs && (this.updatedAt || 0) < updatingSub.raw.subplebbitIpfs.updatedAt) {
+            await this.initSubplebbitIpfsPropsNoMerge(updatingSub.raw.subplebbitIpfs);
             this.updateCid = updatingSub.updateCid;
             log.trace(
                 `New Remote Subplebbit instance`,
@@ -293,7 +293,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         return <NonNullable<this["_updatingSubInstanceWithListeners"]>>{
             subplebbit: subInstance,
             update: async () => {
-                await this.initSubplebbitIpfsPropsNoMerge(subInstance._rawSubplebbitIpfs!);
+                await this.initSubplebbitIpfsPropsNoMerge(subInstance.toJSONIpfs());
                 this.updateCid = subInstance.updateCid;
                 log(
                     `Remote Subplebbit instance`,
@@ -365,7 +365,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._setState("updating");
 
         await this.fetchLatestSubOrSubscribeToEvent();
-        if (this._rawSubplebbitIpfs) this.emit("update", this);
+        if (this.raw.subplebbitIpfs) this.emit("update", this);
     }
 
     private async _cleanUpUpdatingSubInstanceWithListeners() {

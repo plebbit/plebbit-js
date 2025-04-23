@@ -1183,7 +1183,7 @@ export async function publishSubplebbitRecordWithExtraProp(opts: { includeExtraP
 export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalSubplebbitUserOptions) {
     const ipnsObj = await createNewIpns();
     const subplebbitRecord = <SubplebbitIpfsType>{
-        ...(await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z"))._rawSubplebbitIpfs,
+        ...(await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z")).toJSONIpfs(),
         posts: undefined,
         address: ipnsObj.signer.address,
         pubsubTopic: ipnsObj.signer.address,
@@ -1251,7 +1251,7 @@ export function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment
         throw Error("Can't mock Post to return specific CommentUpdate record when plebbit is using RPC");
 
     delete updatingPostComment.updatedAt;
-    delete updatingPostComment._rawCommentUpdate;
+    delete updatingPostComment.raw.commentUpdate;
     //@ts-expect-error
     delete updatingPostComment._subplebbitForUpdating?.subplebbit?.updateCid;
     //@ts-expect-error
@@ -1310,7 +1310,7 @@ export function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Commen
     );
     updatingPostComment._clientsManager.handleUpdateEventFromSub = (subplebbit: RemoteSubplebbit) => {
         delete subplebbit.postUpdates;
-        delete subplebbit._rawSubplebbitIpfs!.postUpdates;
+        delete subplebbit.raw.subplebbitIpfs!.postUpdates;
         return originalSubplebbitUpdateHandle(subplebbit);
     };
 }
@@ -1324,7 +1324,7 @@ export async function createCommentUpdateWithInvalidSignature(commentCid: string
 
     await resolveWhenConditionIsTrue(comment, async () => typeof comment.updatedAt === "number");
 
-    const invalidCommentUpdateJson = comment._rawCommentUpdate!;
+    const invalidCommentUpdateJson = comment.raw.commentUpdate!;
     await comment.stop();
 
     invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
@@ -1338,7 +1338,7 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     if (plebbit._plebbitRpcClient) throw Error("Can't mock sub to return specific record when plebbit is using RPC");
 
     const clearOut = () => {
-        delete sub._rawSubplebbitIpfs;
+        delete sub.raw.subplebbitIpfs;
         delete sub.updatedAt;
         sub._clientsManager._updateCidsAlreadyLoaded.clear();
         delete sub.updateCid;
@@ -1377,7 +1377,7 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
 
 export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment) {
     // max comment size is 40kb = 40000
-    const rawCommentUpdateRecord = comment._rawCommentUpdate;
+    const rawCommentUpdateRecord = comment.raw.commentUpdate;
     if (!rawCommentUpdateRecord) throw Error("Comment should be updating before forcing to generate all pages");
 
     if (Object.keys(comment.replies.pageCids).length > 0) return;
@@ -1408,7 +1408,7 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
     // max comment size is 40kb = 40000
-    const rawSubplebbitRecord = subplebbit._rawSubplebbitIpfs;
+    const rawSubplebbitRecord = subplebbit.toJSONIpfs();
     if (!rawSubplebbitRecord) throw Error("Subplebbit should be updating before forcing to generate all pages");
 
     if (Object.keys(subplebbit.posts.pageCids).length > 0) return;

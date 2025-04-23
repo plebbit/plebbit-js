@@ -86,8 +86,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             error: (err) => this.emit("error", err),
             updatingstatechange: (updatingState) => this._setUpdatingStateWithEventEmissionIfNewState.bind(this)(updatingState),
             update: async (updatingSubplebbit) => {
-                if (updatingSubplebbit._rawSubplebbitIpfs) {
-                    await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit._rawSubplebbitIpfs);
+                if (updatingSubplebbit.raw.subplebbitIpfs) {
+                    await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit.raw.subplebbitIpfs);
                     this.updateCid = updatingSubplebbit.updateCid;
                     this.emit("update", this);
                 }
@@ -145,8 +145,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
                     }
 
         this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
-        if (updatingSubplebbit._rawSubplebbitIpfs) {
-            await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit._rawSubplebbitIpfs);
+        if (updatingSubplebbit.raw.subplebbitIpfs) {
+            await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit.raw.subplebbitIpfs);
             this.updateCid = updatingSubplebbit.updateCid;
             this.emit("update", this);
         }

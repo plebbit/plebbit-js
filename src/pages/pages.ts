@@ -96,7 +96,7 @@ export class BasePages {
     async validatePage(page: PageIpfs | PageTypeJson) {
         if (this._clientsManager._plebbit.validatePages)
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
-        const pageIpfs = <PageIpfs>{ comments: page.comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
+        const pageIpfs = <PageIpfs>{ comments: page.comments.map((comment) => ("comment" in comment ? comment : comment.raw)) };
 
         await this._validatePage(pageIpfs);
     }

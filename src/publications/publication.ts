@@ -529,8 +529,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     _getSubplebbitCache() {
         return (
             this._plebbit._memCaches.subplebbitForPublishing.get(this.subplebbitAddress, { allowStale: true }) ||
-            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs ||
-            this._plebbit._startedSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs
+            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?.raw.subplebbitIpfs ||
+            this._plebbit._startedSubplebbits[this.subplebbitAddress]?.raw.subplebbitIpfs
         );
     }
 
@@ -553,7 +553,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
             const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation();
             let subIpfs: SubplebbitIpfsType;
-            if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
+            if (!updatingSubInstance.subplebbit.raw.subplebbitIpfs) {
                 const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
                 try {
                     await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);

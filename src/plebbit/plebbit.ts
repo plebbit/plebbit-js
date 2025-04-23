@@ -426,18 +426,18 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         );
 
         if (options._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(options._pubsubMsgToPublish);
-        if (options._rawCommentIpfs) commentInstance._initIpfsProps(options._rawCommentIpfs);
-        if (options._rawCommentUpdate) commentInstance._initCommentUpdate(options._rawCommentUpdate);
+        if (options.raw.comment) commentInstance._initIpfsProps(options.raw.comment);
+        if (options.raw.commentUpdate) commentInstance._initCommentUpdate(options.raw.commentUpdate);
         return commentInstance;
     }
 
     private async _createCommentInstanceFromJsonfiedPageComment(options: CommentWithinPageJson) {
         const commentInstance = new Comment(this);
 
-        Object.assign(commentInstance, remeda.omit(options, ["replies"])); // These two fields are instances so we shouldn't copy them
+        // Object.assign(commentInstance, remeda.omit(options, ["replies"])); // These two fields are instances so we shouldn't copy them
 
-        if (options.pageComment.comment) commentInstance._initIpfsProps(options.pageComment.comment);
-        if (options.pageComment.commentUpdate) commentInstance._initCommentUpdate(options.pageComment.commentUpdate);
+        if (options.raw.comment) commentInstance._initIpfsProps(options.raw.comment);
+        if (options.raw.commentUpdate) commentInstance._initCommentUpdate(options.raw.commentUpdate);
 
         return commentInstance;
     }
@@ -512,7 +512,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             // Options is CommentIpfs | CommentIpfsWithCidDefined | MinimumCommentFieldsToFetchPages
             if ("cid" in options) commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
             //@ts-expect-error
-            const commentIpfs: CommentIpfsType = remeda.omit(options, ["cid"]); // remove cid to make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment._rawCommentIpfs
+            const commentIpfs: CommentIpfsType = remeda.omit(options, ["cid"]); // remove cid to make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment.raw.comment
 
             // if it has signature it means it's a full CommentIpfs
             if (!("signature" in options)) Object.assign(commentInstance, options);
@@ -569,7 +569,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 if ("updateCid" in options && options.updateCid) subplebbit.updateCid = options.updateCid;
             }
         }
-        if (!subplebbit._rawSubplebbitIpfs) {
+        if (!subplebbit.raw.subplebbitIpfs) {
             // we didn't receive options that we can parse into SubplebbitIpfs
             // let's try using _updatingSubplebbits
             await subplebbit._setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible();
@@ -961,9 +961,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     }
 
     async validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: { validateReplies?: boolean }) {
-        const commentIpfs = comment instanceof Comment ? comment._rawCommentIpfs : comment.pageComment?.comment;
-        const commentUpdate = comment instanceof Comment ? comment._rawCommentUpdate : comment.pageComment?.commentUpdate;
-        const commentCid = comment instanceof Comment ? comment.cid : comment.pageComment?.commentUpdate?.cid;
+        const commentIpfs = comment.raw.comment;
+        const commentUpdate = comment.raw.commentUpdate;
+        const commentCid = comment.cid;
         const postCid: string | undefined = comment.postCid;
         if (!commentCid) throw new PlebbitError("ERR_COMMENT_MISSING_CID", { comment, commentCid });
         if (!commentIpfs) throw new PlebbitError("ERR_COMMENT_MISSING_IPFS", { comment, commentIpfs });

@@ -65,7 +65,7 @@ export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined,
     author: AuthorWithShortSubplebbitAddress;
     deleted?: boolean;
     replies?: Omit<RepliesPagesTypeJson, "clients">;
-    pageComment: PageIpfs["comments"][number];
+    raw: { comment: CommentIpfsType; commentUpdate: CommentUpdateType };
 }
 
 // Comment states
