@@ -110,7 +110,7 @@ describe("Comments with Authors as domains", async () => {
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
 
         const authorAddress = "testgibbreish.eth";
-        const tempPlebbit = await mockPlebbitV2({ stubStorage: false });
+        const tempPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true });
 
         await mockCacheOfTextRecord({
             plebbit: tempPlebbit,
@@ -160,7 +160,7 @@ describe(`Vote with authors as domains`, async () => {
     });
 
     itSkipIfRpc(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const tempPlebbit = await mockPlebbitV2({ stubStorage: false });
+        const tempPlebbit = await mockPlebbitV2({ stubStorage: false, remotePlebbit: true });
         const authorAddress = "testgibbreish.eth";
         await mockCacheOfTextRecord({
             plebbit: tempPlebbit,
@@ -189,7 +189,7 @@ describeSkipIfRpc(`Resolving resiliency`, async () => {
         const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
         const plebbit = await mockPlebbitV2({
             plebbitOptions: { chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } },
-            remotePlebbit: false,
+            remotePlebbit: true,
             mockResolve: false
         });
 

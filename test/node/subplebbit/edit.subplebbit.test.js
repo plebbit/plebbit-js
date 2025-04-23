@@ -335,7 +335,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         expect(await sub._dbHandler.isSubStartLocked(domain)).to.be.false;
 
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
         expect(sub.address).to.equal(domain);
         // Check for locks
