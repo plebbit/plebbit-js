@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { mockPlebbit, itSkipIfRpc, mockPlebbitV2 } from "../../../dist/node/test/test-util";
+import { mockPlebbit, itSkipIfRpc, mockPlebbitV2 } from "../../../dist/node/test/test-util.js";
 
 import path from "path";
 import fs from "fs";

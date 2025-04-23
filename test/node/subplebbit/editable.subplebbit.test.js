@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { mockPlebbit } from "../../../dist/node/test/test-util";
+import { mockPlebbit } from "../../../dist/node/test/test-util.js";
 describe(`subplebbit.editable`, async () => {
     let plebbit;
 

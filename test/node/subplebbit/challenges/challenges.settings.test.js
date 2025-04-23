@@ -8,7 +8,7 @@ import {
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
     waitTillPostInSubplebbitPages
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 
 describe(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;

@@ -12,9 +12,9 @@ import {
     describeSkipIfRpc,
     describeIfRpc,
     waitTillPostInSubplebbitPages
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 
 describe("plebbit.subplebbits", async () => {
     let plebbit, subSigner;

@@ -8,9 +8,9 @@ import {
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
     waitTillReplyInParentPages
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 
 const activeUserCountKeys = [
     "allActiveUserCount",

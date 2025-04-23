@@ -13,7 +13,7 @@ import {
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
     iterateThroughPagesToFindCommentInParentPagesInstance
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 
 // This test file will be focused on republishing of comments/subplebbit/commentupdate/pages to the network
 // if the ipfs repo is lost, the sub should re-publish everything again

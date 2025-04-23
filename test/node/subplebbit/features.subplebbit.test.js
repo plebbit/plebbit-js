@@ -10,8 +10,8 @@ import {
     publishRandomPost,
     generateMockVote,
     publishRandomReply
-} from "../../../dist/node/test/test-util";
-import { messages } from "../../../dist/node/errors";
+} from "../../../dist/node/test/test-util.js";
+import { messages } from "../../../dist/node/errors.js";
 
 describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;
