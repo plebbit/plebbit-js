@@ -11,7 +11,7 @@ import {
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
 
-import PlebbitWsServer from "../../rpc";
+import PlebbitWsServer from "../../dist/node/rpc/src/index.js";
 import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
@@ -352,7 +352,7 @@ const setupMockDelegatedRouter = async () => {
 
     await setupMockDelegatedRouter();
 
-    await import("./pubsub-mock-server");
+    await import("./pubsub-mock-server.js");
 
     if (process.env["START_RPC_SERVER"] === "1") {
         // run RPC server here
