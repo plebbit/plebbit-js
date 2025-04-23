@@ -86,7 +86,7 @@ getRemotePlebbitConfigs().map((config) =>
             expect(actualSub.createdAt).to.be.a("number");
 
             expect(actualSub.posts.pages.hot).to.be.a("object");
-            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [actualSub.posts.pages.hot.comments[0].pageComment] })); // get it somehow
+            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [actualSub.posts.pages.hot.comments[0].raw] })); // get it somehow
             expect(pageCid).to.be.a("string");
             const newSubplebbit = await plebbit.createSubplebbit({ address: actualSub.address });
             expect(newSubplebbit.createdAt).to.be.undefined;

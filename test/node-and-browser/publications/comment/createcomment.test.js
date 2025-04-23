@@ -127,7 +127,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await post.stop();
 
-            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [post.replies.pages.best["comments"][0].pageComment] }));
+            const pageCid = await addStringToIpfs(JSON.stringify({ comments: [post.replies.pages.best["comments"][0].raw] }));
             expect(pageCid).to.be.a("string");
 
             const postClone = await plebbit.createComment({

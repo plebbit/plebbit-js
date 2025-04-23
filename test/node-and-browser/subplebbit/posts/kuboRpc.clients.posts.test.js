@@ -37,7 +37,7 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
     it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
         const firstPageMocked = {
-            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment)
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw)
         };
 
         const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
@@ -60,11 +60,11 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
         const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
 
-        const secondPageMocked = { comments: mockSub.posts.pages.hot.comments.slice(1, 5).map((comment) => comment.pageComment) }; // create a slightly different page
+        const secondPageMocked = { comments: mockSub.posts.pages.hot.comments.slice(1, 5).map((comment) => comment.raw) }; // create a slightly different page
         const secondPageCid = await addStringToIpfs(JSON.stringify(secondPageMocked));
 
         const firstPageMocked = {
-            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment),
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw),
             nextCid: secondPageCid
         };
 
@@ -90,7 +90,7 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
         const mockSub = await remotePlebbit.getSubplebbit(subplebbitAddress);
 
         const firstPageMocked = {
-            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment)
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw)
         };
 
         const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));

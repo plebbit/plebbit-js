@@ -134,7 +134,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
             for (const postReplySortName of Object.keys(POST_REPLIES_SORT_TYPES)) {
                 const commentsFromEachPage = await loadAllPagesBySortName(postReplySortName, post.replies);
-                const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.pageComment);
+                const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
 
                 for (const commentInPageIpfs of commentsPageIpfs) {
                     const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
@@ -213,7 +213,7 @@ getRemotePlebbitConfigs().map((config) => {
             const replySortTypesWithoutFlat = Object.keys(REPLY_REPLIES_SORT_TYPES);
             for (const replySortName of replySortTypesWithoutFlat) {
                 const commentsFromEachPage = await loadAllPagesBySortName(replySortName, reply.replies);
-                const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.pageComment);
+                const commentsPageIpfs = commentsFromEachPage.map((comment) => comment.raw);
 
                 for (const commentInPageIpfs of commentsPageIpfs) {
                     const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
@@ -287,7 +287,7 @@ getRemotePlebbitConfigs().map((config) => {
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
-            pageWithInvalidComment.comments[0].pageComment.comment.content = "this is to invalidate signature";
+            pageWithInvalidComment.comments[0].raw.comment.content = "this is to invalidate signature";
 
             const post = await plebbit.getComment(postWithReplies.cid);
             try {
@@ -305,7 +305,7 @@ getRemotePlebbitConfigs().map((config) => {
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
-            pageWithInvalidComment.comments[0].pageComment.comment.postCid += "1"; // will be a different post cid
+            pageWithInvalidComment.comments[0].raw.comment.postCid += "1"; // will be a different post cid
 
             const post = await plebbit.getComment(postWithReplies.cid);
             try {
@@ -342,9 +342,9 @@ getRemotePlebbitConfigs().map((config) => {
             const flatSortName = Object.keys(REPLIES_SORT_TYPES).find((name) => REPLIES_SORT_TYPES[name].flat);
             const flatPage = await postWithReplies.replies.getPage(postWithReplies.replies.pageCids[flatSortName]);
             // Verify that flat pages contain comments with different depths
-            expect(flatPage.comments.some((comment) => comment.pageComment.comment.depth > 1)).to.be.true;
-            expect(flatPage.comments.map((comment) => comment.pageComment.comment.depth)).to.not.deep.equal(
-                Array(flatPage.comments.length).fill(flatPage.comments[0].pageComment.comment.depth)
+            expect(flatPage.comments.some((comment) => comment.raw.comment.depth > 1)).to.be.true;
+            expect(flatPage.comments.map((comment) => comment.raw.comment.depth)).to.not.deep.equal(
+                Array(flatPage.comments.length).fill(flatPage.comments[0].raw.comment.depth)
             );
 
             // This should pass validation
@@ -352,7 +352,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             // Modify the page to make it invalid and test that validation fails
             const invalidFlatPage = JSON.parse(JSON.stringify(flatPage));
-            invalidFlatPage.comments[0].pageComment.comment.content = "modified content to invalidate signature";
+            invalidFlatPage.comments[0].raw.comment.content = "modified content to invalidate signature";
 
             try {
                 await postWithReplies.replies.validatePage(invalidFlatPage);
@@ -368,10 +368,8 @@ getRemotePlebbitConfigs().map((config) => {
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
-            invalidPage.comments[0].pageComment.comment.depth = 5;
-            invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
-                JSON.stringify(invalidPage.comments[0].pageComment.comment)
-            );
+            invalidPage.comments[0].raw.comment.depth = 5;
+            invalidPage.comments[0].raw.commentUpdate.cid = await calculateIpfsHash(JSON.stringify(invalidPage.comments[0].raw.comment));
             try {
                 await postWithReplies.replies.validatePage(invalidPage);
                 expect.fail("Should have thrown");
@@ -386,10 +384,8 @@ getRemotePlebbitConfigs().map((config) => {
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
-            invalidPage.comments[0].pageComment.comment.subplebbitAddress = "different-address";
-            invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
-                JSON.stringify(invalidPage.comments[0].pageComment.comment)
-            );
+            invalidPage.comments[0].raw.comment.subplebbitAddress = "different-address";
+            invalidPage.comments[0].raw.commentUpdate.cid = await calculateIpfsHash(JSON.stringify(invalidPage.comments[0].raw.comment));
 
             try {
                 await postWithReplies.replies.validatePage(invalidPage);
@@ -406,7 +402,7 @@ getRemotePlebbitConfigs().map((config) => {
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             // Change the parentCid to an invalid value
-            invalidPage.comments[0].pageComment.comment.parentCid = "QmInvalidParentCid";
+            invalidPage.comments[0].raw.comment.parentCid = "QmInvalidParentCid";
 
             try {
                 await postWithReplies.replies.validatePage(invalidPage);
@@ -423,7 +419,7 @@ getRemotePlebbitConfigs().map((config) => {
                 : JSON.parse(JSON.stringify(postWithReplies.replies.pages.best));
 
             // Modify the comment but keep the same commentUpdate.cid
-            invalidPage.comments[0].pageComment.comment.timestamp += 1000; // Change timestamp
+            invalidPage.comments[0].raw.comment.timestamp += 1000; // Change timestamp
             // The commentUpdate.cid will now be incorrect because it was calculated from the original comment
 
             try {

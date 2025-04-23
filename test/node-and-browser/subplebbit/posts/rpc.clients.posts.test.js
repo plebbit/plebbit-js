@@ -19,7 +19,7 @@ describeIfRpc(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
     it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
         const firstPageMocked = {
-            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.pageComment)
+            comments: mockSub.posts.pages.hot.comments.slice(0, 10).map((comment) => comment.raw)
         };
         const firstPageMockedCid = await addStringToIpfs(JSON.stringify(firstPageMocked));
         mockSub.posts.pageCids.new = firstPageMockedCid;

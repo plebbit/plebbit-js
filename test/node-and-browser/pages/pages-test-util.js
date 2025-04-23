@@ -109,8 +109,8 @@ export const testPageCommentsIfSortedCorrectly = async (sortedComments, sortName
             scoreA = await activeScore(sortedComments[j], subplebbit._plebbit);
             scoreB = await activeScore(sortedComments[j + 1], subplebbit._plebbit);
         } else {
-            scoreA = sort.score(sortedComments[j].pageComment);
-            scoreB = sort.score(sortedComments[j + 1].pageComment);
+            scoreA = sort.score(sortedComments[j].raw);
+            scoreB = sort.score(sortedComments[j + 1].raw);
         }
         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
     }

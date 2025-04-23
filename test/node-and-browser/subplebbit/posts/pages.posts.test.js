@@ -209,7 +209,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             it("fails validation when a comment has invalid signature", async () => {
                 const invalidPage = JSON.parse(JSON.stringify(validPageJson));
-                invalidPage.comments[0].pageComment.comment.content = "modified content to invalidate signature";
+                invalidPage.comments[0].raw.comment.content = "modified content to invalidate signature";
 
                 try {
                     await subplebbit.posts.validatePage(invalidPage);
@@ -222,7 +222,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             it("fails validation when a comment belongs to a different subplebbit", async () => {
                 const invalidPage = JSON.parse(JSON.stringify(validPageJson));
-                invalidPage.comments[0].pageComment.comment.subplebbitAddress = "different-address";
+                invalidPage.comments[0].raw.comment.subplebbitAddress = "different-address";
 
                 try {
                     await subplebbit.posts.validatePage(invalidPage);
@@ -236,7 +236,7 @@ getRemotePlebbitConfigs().map((config) => {
             it("fails validation when calculated CID doesn't match commentUpdate.cid", async () => {
                 const invalidPage = JSON.parse(JSON.stringify(validPageJson));
                 // Modify the comment but keep the same commentUpdate.cid
-                invalidPage.comments[0].pageComment.comment.timestamp += 1000;
+                invalidPage.comments[0].raw.comment.timestamp += 1000;
 
                 try {
                     await subplebbit.posts.validatePage(invalidPage);
@@ -249,11 +249,11 @@ getRemotePlebbitConfigs().map((config) => {
 
             it("fails validation when a comment has incorrect depth (not 0)", async () => {
                 const invalidPage = JSON.parse(JSON.stringify(validPageJson));
-                invalidPage.comments[0].pageComment.comment.depth = 1; // Should be 0 for posts
+                invalidPage.comments[0].raw.comment.depth = 1; // Should be 0 for posts
 
                 // Update the commentUpdate.cid to match the modified comment
-                invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
-                    JSON.stringify(invalidPage.comments[0].pageComment.comment)
+                invalidPage.comments[0].raw.commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(invalidPage.comments[0].raw.comment)
                 );
 
                 try {
@@ -269,11 +269,11 @@ getRemotePlebbitConfigs().map((config) => {
 
             it("fails validation when a post has parentCid defined", async () => {
                 const invalidPage = JSON.parse(JSON.stringify(validPageJson));
-                invalidPage.comments[0].pageComment.comment.parentCid = "QmInvalidParentCid"; // Should be undefined for posts
+                invalidPage.comments[0].raw.comment.parentCid = "QmInvalidParentCid"; // Should be undefined for posts
 
                 // Update the commentUpdate.cid to match the modified comment
-                invalidPage.comments[0].pageComment.commentUpdate.cid = await calculateIpfsHash(
-                    JSON.stringify(invalidPage.comments[0].pageComment.comment)
+                invalidPage.comments[0].raw.commentUpdate.cid = await calculateIpfsHash(
+                    JSON.stringify(invalidPage.comments[0].raw.comment)
                 );
 
                 try {
@@ -342,7 +342,7 @@ describe(`getPage`, async () => {
 
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const pageIpfs = { comments: sub.posts.pages.hot.comments.map((comment) => comment.pageComment) };
+        const pageIpfs = { comments: sub.posts.pages.hot.comments.map((comment) => comment.raw) };
         expect(pageIpfs).to.exist;
 
         const invalidPageIpfs = JSON.parse(JSON.stringify(pageIpfs));
