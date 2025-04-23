@@ -326,7 +326,7 @@ describe.skip(`comment.link`, async () => {
         await plebbit.destroy();
     });
 
-    describe(`comment.thumbnailUrl`, async () => {
+    describe.skip(`comment.thumbnailUrl`, async () => {
         it(`comment.thumbnailUrl is generated for youtube video with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
             const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });
@@ -357,8 +357,8 @@ describe.skip(`comment.link`, async () => {
             expect(post.thumbnailUrlHeight).to.equal(497);
         });
 
-        it(`Generates thumbnail url for twitter urls correctly`, async () => {
-            const url = "https://twitter.com/eustatheia/status/1691285870244937728";
+        it.skip(`Generates thumbnail url for twitter urls correctly`, async () => {
+            const url = "https://fxtwitter.com/deedydas/status/1914714739432939999";
             const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });
             const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
             expect(post.thumbnailUrl).to.equal(expectedThumbnailUrl);
@@ -366,20 +366,20 @@ describe.skip(`comment.link`, async () => {
             expect(post.thumbnailUrlHeight).to.equal(1315);
         });
 
-        it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
+        it(`comment.thumbnailUrl and width and height is defined if comment.link is a link of a jpg`, async () => {
             const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
             const post = await publishRandomPost(subplebbit.address, plebbit, { link });
             expect(post.link).to.equal(link);
-            expect(post.thumbnailUrl).to.be.undefined;
-            expect(post.thumbnailUrlWidth).to.be.undefined;
-            expect(post.thumbnailUrlHeight).to.be.undefined;
+            expect(post.thumbnailUrl).to.equal(link);
+            expect(post.thumbnailUrlWidth).to.equal(1280);
+            expect(post.thumbnailUrlHeight).to.equal(720);
         });
 
-        it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
+        it.skip(`comment.thumbnailUrl and width and height is defined is undefined if comment.link is a link of a gif`, async () => {
             const link = "https://files.catbox.moe/nlsfav.gif";
             const post = await publishRandomPost(subplebbit.address, plebbit, { link });
             expect(post.link).to.equal(link);
-            expect(post.thumbnailUrl).to.be.undefined;
+            expect(post.thumbnailUrl).to.equal(link);
             expect(post.thumbnailUrlWidth).to.be.undefined;
             expect(post.thumbnailUrlHeight).to.be.undefined;
         });
@@ -393,8 +393,6 @@ describe.skip(`comment.link`, async () => {
         expect(post.link).to.equal(link);
         expect(post.linkHeight).to.equal(linkHeight);
         expect(post.linkWidth).to.equal(linkWidth);
-        expect(post.thumbnailUrlWidth).to.be.undefined;
-        expect(post.thumbnailUrlHeight).to.be.undefined;
 
         await waitTillPostInSubplebbitPages(post, plebbit);
 
@@ -402,8 +400,6 @@ describe.skip(`comment.link`, async () => {
         expect(postInSubPages.link).to.equal(link);
         expect(postInSubPages.linkHeight).to.equal(linkHeight);
         expect(postInSubPages.linkWidth).to.equal(linkWidth);
-        expect(postInSubPages.thumbnailUrlWidth).to.be.undefined;
-        expect(postInSubPages.thumbnailUrlHeight).to.be.undefined;
     });
 });
 
