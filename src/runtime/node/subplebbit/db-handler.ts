@@ -201,19 +201,6 @@ export class DbHandler {
         }
     }
 
-    async _attemptToRepairDb() {
-        // we're gonna call this if we're getting "database disk image is malformed" error
-        const log = Logger("plebbit-js:local-subplebbit:db-handler:_attemptToRepairDb");
-        await this.destoryConnection();
-        await this.initDbConfigIfNeeded();
-        //@ts-expect-error
-        const dbPath = <string>this._dbConfig.connection!.filename;
-        const recoveredDbPath = await this.recoverUsingCliIfAvailable(dbPath);
-        await fs.promises.rename(recoveredDbPath, dbPath);
-        log("Recovered db from", recoveredDbPath, "to", dbPath);
-
-        await this.initDbIfNeeded();
-    }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
         const trx = await this._knex.transaction();

@@ -1988,10 +1988,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 Object.keys(errorTyped)
             );
 
-            if ("code" in errorTyped && errorTyped.code === "SQLITE_CORRUPT") {
-                log("Subplebbit", this.address, "DB came across a sqlite error, attempting to repair it and continue the publish loop");
-                await this._dbHandler._attemptToRepairDb();
-            }
             throw e;
         }
     }
