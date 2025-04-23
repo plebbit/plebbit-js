@@ -1712,7 +1712,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return [];
 
-        console.time("updateCommentsThatNeedToBeUpdated" + commentsToUpdate.length);
         this._subplebbitUpdateTrigger = true;
 
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
@@ -1731,7 +1730,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             allCommentUpdateRows.push(...commentUpdateResults.map((row) => ({ ...row, depth: Number(depthKey) })));
         }
         // Return the flat array of all comment update rows
-        console.timeEnd("updateCommentsThatNeedToBeUpdated" + commentsToUpdate.length);
 
         return allCommentUpdateRows;
     }
