@@ -1891,9 +1891,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 });
         }
 
-        console.time("flushPostUpdatesDirectory");
         const postUpdatesDirectoryCid = await this._clientsManager.getDefaultIpfs()._client.files.flush(postUpdatesDirectory);
-        console.timeEnd("flushPostUpdatesDirectory");
         removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
         log(
             "Subplebbit",
