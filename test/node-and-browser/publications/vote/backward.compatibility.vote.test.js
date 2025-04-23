@@ -61,7 +61,7 @@ getRemotePlebbitConfigs().map((config) => {
         describe(`Publishing vote with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
-                await setExtraPropOnVoteAndSign(vote, { author: { ...vote._pubsubMsgToPublish.author, subplebbit: "random" } }, true);
+                await setExtraPropOnVoteAndSign(vote, { author: { ...vote..raw.pubsubMsgToPublish.author, subplebbit: "random" } }, true);
 
                 const challengeRequestPromise = new Promise((resolve) => vote.once("challengerequest", resolve));
 
@@ -72,7 +72,7 @@ getRemotePlebbitConfigs().map((config) => {
             it(`Publishing with extra prop for author should succeed`, async () => {
                 const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
                 const extraProps = { extraProp: "1234" };
-                await setExtraPropOnVoteAndSign(vote, { author: { ...vote._pubsubMsgToPublish.author, ...extraProps } }, true);
+                await setExtraPropOnVoteAndSign(vote, { author: { ...vote..raw.pubsubMsgToPublish.author, ...extraProps } }, true);
 
                 await plebbit.createVote(JSON.parse(JSON.stringify(vote))); // attempt to create just to see if createVote will throw due to extra prop
                 const challengeRequestPromise = new Promise((resolve) => vote.once("challengerequest", resolve));

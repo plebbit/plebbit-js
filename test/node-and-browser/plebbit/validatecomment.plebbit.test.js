@@ -41,7 +41,7 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
             await publishRandomReply(postWithRepliesInstance, plebbit);
             await postWithRepliesInstance.update(); // Update again to fetch the new reply
             await resolveWhenConditionIsTrue(
-                postWithRepliesInstance.replies.pages.best,
+                postWithRepliesInstance,
                 () => postWithRepliesInstance.replies.pages.best?.comments?.length > 0
             );
             console.log(`Reply created for post ${postWithRepliesInstance.cid}.`);

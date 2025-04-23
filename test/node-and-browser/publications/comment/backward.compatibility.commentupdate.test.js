@@ -224,7 +224,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await publishChallengeVerificationMessageWithEncryption(post, subWithNoResponseSigner, {
                 commentUpdate,
-                comment: { ...post._pubsubMsgToPublish, depth: 0 }
+                comment: { ...post..raw.pubsubMsgToPublish, depth: 0 }
             });
 
             const error = await errorPromise;
@@ -236,7 +236,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`Extra props in decryptedVerification.commentUpdate should be accepted if they're part of commentUpdate.signature.signedPropertyNames`, async () => {
             const post = await generateMockPost(subWithNoResponseSigner.address, plebbit);
 
-            const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
+            const mockCommentIpfs = { ...post..raw.pubsubMsgToPublish, depth: 0 };
 
             const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
             commentUpdate.cid = await calculateIpfsHash(JSON.stringify(mockCommentIpfs));
@@ -270,7 +270,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`Extra props in decryptedVerification.commentUpdate.author should be accepted`, async () => {
             const post = await generateMockPost(subWithNoResponseSigner.address, plebbit);
 
-            const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
+            const mockCommentIpfs = { ...post..raw.pubsubMsgToPublish, depth: 0 };
 
             const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
             commentUpdate.cid = await calculateIpfsHash(JSON.stringify(mockCommentIpfs));

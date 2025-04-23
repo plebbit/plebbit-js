@@ -236,7 +236,7 @@ describeSkipIfRpc(`Publishing  and receiving pubsub messages with extra props`, 
                 }
             });
 
-            const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
+            const mockCommentIpfs = { ...post..raw.pubsubMsgToPublish, depth: 0 };
 
             const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
             commentUpdate.cid = await calculateIpfsHash(JSON.stringify(mockCommentIpfs));
