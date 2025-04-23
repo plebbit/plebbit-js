@@ -1215,7 +1215,7 @@ export function jsonifyCommentAndRemoveInstanceProps(comment: Comment) {
     const jsonfied = cleanUpBeforePublishing(JSON.parse(JSON.stringify(comment)));
     if ("replies" in jsonfied) delete jsonfied["replies"]["clients"];
     if ("replies" in jsonfied && remeda.isEmpty(jsonfied.replies)) delete jsonfied["replies"];
-    return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
+    return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState", "raw"]);
 }
 
 export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string) {

@@ -18,6 +18,7 @@ import type {
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessagePublication,
     CommentState,
+    CommentUpdateForChallengeVerification,
     CommentUpdateType,
     CommentUpdatingState,
     CommentWithinPageJson,
@@ -93,6 +94,7 @@ export class Comment
         comment?: CommentIpfsType;
         commentUpdate?: CommentUpdateType;
         pubsubMessageToPublish?: CommentPubsubMessagePublication;
+        commentUpdateFromChallengeVerification?: CommentUpdateForChallengeVerification;
     } = {};
     _commentUpdateIpfsPath?: string = undefined; // its IPFS path derived from subplebbit.postUpdates.
     _invalidCommentUpdateMfsPaths: Set<string> = new Set<string>();
@@ -360,15 +362,20 @@ export class Comment
             throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
     }
 
+    _initCommentUpdateFromChallengeVerificationProps(commentUpdate: CommentUpdateForChallengeVerification) {
+        this._setOriginalFieldBeforeModifying();
+        this.raw.commentUpdateFromChallengeVerification = commentUpdate;
+        if (commentUpdate.author) Object.assign(this.author, commentUpdate.author);
+        this.protocolVersion = commentUpdate.protocolVersion;
+    }
+
     private _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification: DecryptedChallengeVerification) {
         const log = Logger("plebbit-js:comment:publish:_updateCommentPropsFromDecryptedChallengeVerification");
 
         this._setOriginalFieldBeforeModifying();
         this.setCid(decryptedVerification.commentUpdate.cid);
         this._initIpfsProps(decryptedVerification.comment);
-
-        if (decryptedVerification.commentUpdate.author) Object.assign(this.author, decryptedVerification.commentUpdate.author);
-        this.protocolVersion = decryptedVerification.commentUpdate.protocolVersion;
+        this._initCommentUpdateFromChallengeVerificationProps(decryptedVerification.commentUpdate);
 
         // handle extra props here
         const unknownProps = remeda.difference(

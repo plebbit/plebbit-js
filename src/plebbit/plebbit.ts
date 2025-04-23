@@ -421,10 +421,17 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         const commentInstance = new Comment(this);
 
         if (options.cid) commentInstance.setCid(options.cid);
-        if ("pubsubMessageToPublish" in options.raw && options.raw.pubsubMessageToPublish)
-            commentInstance._initPubsubMessageProps(options.raw.pubsubMessageToPublish);
+        if ("pubsubMessageToPublish" in options.raw && options.raw.pubsubMessageToPublish && "signer" in options && options.signer)
+            commentInstance._initLocalProps({
+                comment: options.raw.pubsubMessageToPublish,
+                signer: options.signer,
+                challengeRequest: options.challengeRequest
+            });
         if (options.raw.comment) commentInstance._initIpfsProps(options.raw.comment);
+        // can only get one CommentUpdate
         if (options.raw.commentUpdate) commentInstance._initCommentUpdate(options.raw.commentUpdate);
+        else if ("commentUpdateFromChallengeVerification" in options.raw && options.raw.commentUpdateFromChallengeVerification)
+            commentInstance._initCommentUpdateFromChallengeVerificationProps(options.raw.commentUpdateFromChallengeVerification);
         return commentInstance;
     }
 
@@ -500,20 +507,26 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         options: CreateRemoteSubplebbitOptions | SubplebbitIpfsType | RemoteSubplebbitJson | RpcRemoteSubplebbitJson
     ) {
         await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
-        if (options.signature) {
-            const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(
-                remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
-            );
-            if (resParseSubplebbitIpfs.success) {
-                const cleanedRecord = removeUndefinedValuesRecursively(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
-                await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord); // we're setting SubplebbitIpfs
-                if ("updateCid" in options && options.updateCid) subplebbit.updateCid = options.updateCid;
-            }
-        }
+        if ("raw" in options && options.raw.subplebbitIpfs) await subplebbit.initSubplebbitIpfsPropsNoMerge(options.raw.subplebbitIpfs); // we're setting SubplebbitIpfs
+
+        if ("updateCid" in options && options.updateCid) subplebbit.updateCid = options.updateCid;
         if (!subplebbit.raw.subplebbitIpfs) {
             // we didn't receive options that we can parse into SubplebbitIpfs
             // let's try using _updatingSubplebbits
             await subplebbit._setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible();
+        }
+
+        // last resort to set subplebbit ipfs props
+        if (!subplebbit.raw.subplebbitIpfs) {
+            if (options.signature) {
+                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(
+                    remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
+                );
+                if (resParseSubplebbitIpfs.success) {
+                    const cleanedRecord = removeUndefinedValuesRecursively(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
+                    await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord);
+                }
+            }
         }
     }
 
