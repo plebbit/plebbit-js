@@ -133,7 +133,7 @@ getRemotePlebbitConfigs().map((config) => {
         describe(`Publishing comment with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);
-                await setExtraPropOnCommentAndSign(post, { author: { ...post..raw.pubsubMsgToPublish.author, subplebbit: "random" } }, true);
+                await setExtraPropOnCommentAndSign(post, { author: { ...post.raw.pubsubMessageToPublish.author, subplebbit: "random" } }, true);
 
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 
@@ -144,7 +144,7 @@ getRemotePlebbitConfigs().map((config) => {
             it(`Publishing with extra prop for author should succeed`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);
                 const extraProps = { extraProp: "1234" };
-                await setExtraPropOnCommentAndSign(post, { author: { ...post..raw.pubsubMsgToPublish.author, ...extraProps } }, true);
+                await setExtraPropOnCommentAndSign(post, { author: { ...post.raw.pubsubMessageToPublish.author, ...extraProps } }, true);
 
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 
@@ -163,7 +163,7 @@ getRemotePlebbitConfigs().map((config) => {
                 postWithExtraAuthorProp = await generateMockPost(subplebbitAddress, plebbit);
                 await setExtraPropOnCommentAndSign(
                     postWithExtraAuthorProp,
-                    { author: { ...postWithExtraAuthorProp..raw.pubsubMsgToPublish.author, ...extraProps } },
+                    { author: { ...postWithExtraAuthorProp.raw.pubsubMessageToPublish.author, ...extraProps } },
                     true
                 );
 

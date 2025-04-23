@@ -55,8 +55,10 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Can recreate a stringifed local Comment instance after publishing with plebbit.createComment`, async () => {
-            const localComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const localComment = await publishRandomPost(subplebbitAddress, plebbit);
+            expect(localComment.author.subplebbit).to.be.a("object"); // should get it from subplebbit
             const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
+            expect(commentClone.author.subplebbit).to.be.a("object"); // should get it from subplebbit
             const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
             const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
 

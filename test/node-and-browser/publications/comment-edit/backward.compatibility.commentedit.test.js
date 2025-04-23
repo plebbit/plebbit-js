@@ -101,7 +101,7 @@ getRemotePlebbitConfigs().map((config) => {
 
                 await setExtraPropOnCommentEditAndSign(
                     commentEdit,
-                    { author: { ...commentEdit..raw.pubsubMsgToPublish.author, subplebbit: "random" } },
+                    { author: { ...commentEdit.raw.pubsubMessageToPublish.author, subplebbit: "random" } },
                     true
                 );
 
@@ -121,7 +121,7 @@ getRemotePlebbitConfigs().map((config) => {
                 const extraProps = { extraProp: "1234" };
                 await setExtraPropOnCommentEditAndSign(
                     commentEdit,
-                    { author: { ...commentEdit..raw.pubsubMsgToPublish.author, ...extraProps } },
+                    { author: { ...commentEdit.raw.pubsubMessageToPublish.author, ...extraProps } },
                     true
                 );
 
