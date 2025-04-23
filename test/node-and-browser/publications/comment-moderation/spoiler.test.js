@@ -40,9 +40,9 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === true);
-            expect(randomPost._rawCommentUpdate.reason).to.equal("Mod marking an author comment as spoiler");
-            expect(randomPost._rawCommentUpdate.spoiler).to.be.true;
-            expect(randomPost._rawCommentUpdate.edit).to.be.undefined;
+            expect(randomPost.raw.commentUpdate.reason).to.equal("Mod marking an author comment as spoiler");
+            expect(randomPost.raw.commentUpdate.spoiler).to.be.true;
+            expect(randomPost.raw.commentUpdate.edit).to.be.undefined;
 
             expect(randomPost.reason).to.equal("Mod marking an author comment as spoiler");
             expect(randomPost.spoiler).to.be.true;
@@ -66,9 +66,9 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === false);
-            expect(randomPost._rawCommentUpdate.reason).to.equal("Mod unspoilering an author comment");
-            expect(randomPost._rawCommentUpdate.spoiler).to.be.false;
-            expect(randomPost._rawCommentUpdate.edit).to.be.undefined;
+            expect(randomPost.raw.commentUpdate.reason).to.equal("Mod unspoilering an author comment");
+            expect(randomPost.raw.commentUpdate.spoiler).to.be.false;
+            expect(randomPost.raw.commentUpdate.edit).to.be.undefined;
 
             expect(randomPost.reason).to.equal("Mod unspoilering an author comment");
             expect(randomPost.spoiler).to.be.false;

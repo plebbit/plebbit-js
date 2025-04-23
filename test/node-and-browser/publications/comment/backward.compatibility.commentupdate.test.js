@@ -36,7 +36,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
-            const invalidCommentUpdate = remeda.clone(post._rawCommentUpdate);
+            const invalidCommentUpdate = remeda.clone(post.raw.commentUpdate);
             Object.assign(invalidCommentUpdate, extraProps);
 
             const postToUpdate = await plebbit.getComment(post.cid);
@@ -74,7 +74,7 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
         itSkipIfRpc(`Can load CommentUpdate with extra props if they're included in signedPropertyNames`, async () => {
-            const commentUpdateWithExtraProps = remeda.clone(post._rawCommentUpdate);
+            const commentUpdateWithExtraProps = remeda.clone(post.raw.commentUpdate);
             Object.assign(commentUpdateWithExtraProps, extraProps);
 
             commentUpdateWithExtraProps.signature = await _signJson(
@@ -98,7 +98,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             const shapes = [
                 postToUpdate,
-                postToUpdate._rawCommentUpdate,
+                postToUpdate.raw.commentUpdate,
                 await plebbit.createComment(postToUpdate),
                 await plebbit.createComment(JSON.parse(JSON.stringify(postToUpdate)))
             ];
@@ -107,7 +107,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`Can load CommentUpdate with extra props in commentUpdate.author`, async () => {
-            const commentUpdateWithExtraProps = remeda.clone(post._rawCommentUpdate);
+            const commentUpdateWithExtraProps = remeda.clone(post.raw.commentUpdate);
             Object.assign(commentUpdateWithExtraProps.author, extraProps);
 
             commentUpdateWithExtraProps.signature = await _signJson(
@@ -129,7 +129,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             const shapes = [
                 postToUpdate,
-                postToUpdate._rawCommentUpdate,
+                postToUpdate.raw.commentUpdate,
                 await plebbit.createComment(postToUpdate),
                 await plebbit.createComment(JSON.parse(JSON.stringify(postToUpdate)))
             ];
@@ -138,7 +138,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in them`, async () => {
-            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post.raw.commentUpdate));
             Object.assign(commentUpdateWithExtraProps, extraProps);
 
             commentUpdateWithExtraProps.signature = await _signJson(
@@ -147,10 +147,10 @@ getRemotePlebbitConfigs().map((config) => {
                 signers[0]
             );
 
-            const pageIpfs = subplebbit._rawSubplebbitIpfs.posts.pages.hot;
+            const pageIpfs = subplebbit.raw.subplebbitIpfs.posts.pages.hot;
 
             pageIpfs.comments.push({
-                comment: post._rawCommentIpfs,
+                comment: post.raw.comment,
                 commentUpdate: commentUpdateWithExtraProps
             });
 
@@ -172,7 +172,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`Can load pages with CommentUpdate that has extra props in commentUpdate.author`, async () => {
-            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post.raw.commentUpdate));
             Object.assign(commentUpdateWithExtraProps.author, extraProps);
 
             commentUpdateWithExtraProps.signature = await _signJson(
@@ -184,7 +184,7 @@ getRemotePlebbitConfigs().map((config) => {
             const pageIpfs = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new));
 
             pageIpfs.comments.push({
-                comment: post._rawCommentIpfs,
+                comment: post.raw.comment,
                 commentUpdate: commentUpdateWithExtraProps
             });
 

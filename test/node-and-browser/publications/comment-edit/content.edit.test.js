@@ -58,8 +58,8 @@ getRemotePlebbitConfigs().map((config) => {
             await publishWithExpectedResult(commentEdit, true);
             await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);
             expect(commentToBeEdited.edit.content).to.equal(editedText);
-            expect(commentToBeEdited._rawCommentUpdate.edit.content).to.equal(editedText);
-            expect(commentToBeEdited._rawCommentUpdate.edit.reason).to.equal(editReason);
+            expect(commentToBeEdited.raw.commentUpdate.edit.content).to.equal(editedText);
+            expect(commentToBeEdited.raw.commentUpdate.edit.reason).to.equal(editReason);
 
             expect(commentToBeEdited.content).to.equal(editedText);
             expect(commentToBeEdited.original?.content).to.equal(originalContent);

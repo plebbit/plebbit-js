@@ -55,11 +55,11 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue(authorPost, () => authorPost.spoiler === true);
             expect(authorPost.edit.spoiler).to.be.true;
-            expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
-            expect(authorPost._rawCommentUpdate.spoiler).to.be.undefined;
-            expect(authorPost._rawCommentUpdate.edit).to.exist;
-            expect(authorPost._rawCommentUpdate.edit.reason).to.equal("Author marking their own comment as spoiler");
-            expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.true;
+            expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.spoiler).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.edit).to.exist;
+            expect(authorPost.raw.commentUpdate.edit.reason).to.equal("Author marking their own comment as spoiler");
+            expect(authorPost.raw.commentUpdate.edit.spoiler).to.be.true;
 
             expect(authorPost.reason).to.be.undefined; // reason is only for mods editing other authors' posts
             expect(authorPost.edit.reason).to.equal("Author marking their own comment as spoiler");
@@ -90,7 +90,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentIpfsValidity).to.deep.equal({ valid: true });
 
             const commentUpdateValidity = await verifyCommentUpdate({
-                update: recreatedPost._rawCommentUpdate,
+                update: recreatedPost.raw.commentUpdate,
                 resolveAuthorAddresses: true,
                 clientsManager: recreatedPost._clientsManager,
                 subplebbit: { address: recreatedPost.subplebbitAddress },
@@ -115,11 +115,11 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue(authorPost, () => authorPost.spoiler === false);
             expect(authorPost.edit.spoiler).to.be.false;
-            expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
-            expect(authorPost._rawCommentUpdate.spoiler).to.be.undefined;
-            expect(authorPost._rawCommentUpdate.edit).to.exist;
-            expect(authorPost._rawCommentUpdate.edit.reason).to.equal("An author unspoilering their own comment");
-            expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.false;
+            expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.spoiler).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.edit).to.exist;
+            expect(authorPost.raw.commentUpdate.edit.reason).to.equal("An author unspoilering their own comment");
+            expect(authorPost.raw.commentUpdate.edit.spoiler).to.be.false;
 
             expect(authorPost.edit.reason).to.equal("An author unspoilering their own comment");
             expect(authorPost.reason).to.be.undefined;
@@ -161,11 +161,11 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with spoiler=true`, async () => {
             await resolveWhenConditionIsTrue(modPost, () => modPost.spoiler === true);
             expect(modPost.edit.spoiler).to.be.true;
-            expect(modPost._rawCommentUpdate.reason).to.be.undefined;
-            expect(modPost._rawCommentUpdate.spoiler).to.be.undefined;
-            expect(modPost._rawCommentUpdate.edit).to.exist;
-            expect(modPost._rawCommentUpdate.edit.reason).to.equal("Mod marking their own comment as spoiler");
-            expect(modPost._rawCommentUpdate.edit.spoiler).to.be.true;
+            expect(modPost.raw.commentUpdate.reason).to.be.undefined;
+            expect(modPost.raw.commentUpdate.spoiler).to.be.undefined;
+            expect(modPost.raw.commentUpdate.edit).to.exist;
+            expect(modPost.raw.commentUpdate.edit.reason).to.equal("Mod marking their own comment as spoiler");
+            expect(modPost.raw.commentUpdate.edit.spoiler).to.be.true;
 
             expect(modPost.reason).to.be.undefined; // reason is defined only when it's a mod editing other authors' posts
             expect(modPost.edit.reason).to.equal("Mod marking their own comment as spoiler");
@@ -192,11 +192,11 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with spoiler=false`, async () => {
             await resolveWhenConditionIsTrue(modPost, () => modPost.spoiler === false);
             expect(modPost.edit.spoiler).to.be.false;
-            expect(modPost._rawCommentUpdate.reason).to.be.undefined;
-            expect(modPost._rawCommentUpdate.spoiler).to.be.undefined;
-            expect(modPost._rawCommentUpdate.edit).to.exist;
-            expect(modPost._rawCommentUpdate.edit.reason).to.equal("Mod unspoilering their own comment");
-            expect(modPost._rawCommentUpdate.edit.spoiler).to.be.false;
+            expect(modPost.raw.commentUpdate.reason).to.be.undefined;
+            expect(modPost.raw.commentUpdate.spoiler).to.be.undefined;
+            expect(modPost.raw.commentUpdate.edit).to.exist;
+            expect(modPost.raw.commentUpdate.edit.reason).to.equal("Mod unspoilering their own comment");
+            expect(modPost.raw.commentUpdate.edit.spoiler).to.be.false;
 
             expect(modPost.reason).to.be.undefined;
             expect(modPost.edit.reason).to.equal("Mod unspoilering their own comment");

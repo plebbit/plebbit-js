@@ -48,7 +48,7 @@ describeSkipIfRpc(`verify pages`, async () => {
     });
 
     it(`Can validate page from live subplebbit`, async () => {
-        const page = subplebbit._rawSubplebbitIpfs.posts.pages.hot;
+        const page = subplebbit.raw.subplebbitIpfs.posts.pages.hot;
         const pageVerification = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
         expect(pageVerification).to.deep.equal({ valid: true });
     });

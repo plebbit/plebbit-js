@@ -120,10 +120,10 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with pinned=true`, async () => {
             await resolveWhenConditionIsTrue(postToPin, () => postToPin.pinned === true);
             expect(postToPin.pinned).to.be.true;
-            expect(postToPin._rawCommentUpdate.pinned).to.be.true;
-            expect(postToPin._rawCommentUpdate.edit).to.be.undefined;
+            expect(postToPin.raw.commentUpdate.pinned).to.be.true;
+            expect(postToPin.raw.commentUpdate.edit).to.be.undefined;
             expect(postToPin.reason).to.equal("To pin a post");
-            expect(postToPin._rawCommentUpdate.reason).to.equal("To pin a post");
+            expect(postToPin.raw.commentUpdate.reason).to.equal("To pin a post");
         });
 
         it(`pinned=true appears in pages of subplebbit`, async () => {
@@ -210,10 +210,10 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with pinned=false`, async () => {
             await resolveWhenConditionIsTrue(secondPostToPin, () => secondPostToPin.pinned === false);
             expect(secondPostToPin.pinned).to.be.false;
-            expect(secondPostToPin._rawCommentUpdate.pinned).to.be.false;
-            expect(secondPostToPin._rawCommentUpdate.edit).to.be.undefined;
+            expect(secondPostToPin.raw.commentUpdate.pinned).to.be.false;
+            expect(secondPostToPin.raw.commentUpdate.edit).to.be.undefined;
             expect(secondPostToPin.reason).to.equal("To unpin the second post");
-            expect(secondPostToPin._rawCommentUpdate.reason).to.equal("To unpin the second post");
+            expect(secondPostToPin.raw.commentUpdate.reason).to.equal("To unpin the second post");
         });
 
         it(`pinned=true appears in pages of subplebbit`, async () => {

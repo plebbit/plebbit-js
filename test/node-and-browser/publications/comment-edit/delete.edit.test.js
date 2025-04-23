@@ -77,12 +77,12 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
             await resolveWhenConditionIsTrue(postToDelete, () => postToDelete.deleted === true);
             expect(postToDelete.deleted).to.be.true;
-            expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
-            expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.true;
+            expect(postToDelete.raw.commentUpdate.deleted).to.be.undefined;
+            expect(postToDelete.raw.commentUpdate.edit.deleted).to.be.true;
             expect(postToDelete.reason).to.be.undefined; // reason is only for mod
             expect(postToDelete.edit.reason).to.equal("To test delete for author");
-            expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("To test delete for author");
-            expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
+            expect(postToDelete.raw.commentUpdate.edit.reason).to.equal("To test delete for author");
+            expect(postToDelete.raw.commentUpdate.reason).to.be.undefined;
         });
 
         it(`Deleted post is omitted from subplebbit.posts`, async () => {
@@ -137,12 +137,12 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
             await resolveWhenConditionIsTrue(modPostToDelete, () => modPostToDelete.deleted === true);
             expect(modPostToDelete.deleted).to.be.true;
-            expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
-            expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.true;
+            expect(modPostToDelete.raw.commentUpdate.deleted).to.be.undefined;
+            expect(modPostToDelete.raw.commentUpdate.edit.deleted).to.be.true;
             expect(modPostToDelete.reason).to.be.undefined; // .reason is for mod editing other authors posts
             expect(modPostToDelete.edit.reason).to.equal("For mod to test deleting their own post");
-            expect(modPostToDelete._rawCommentUpdate.edit.reason).to.equal("For mod to test deleting their own post");
-            expect(modPostToDelete._rawCommentUpdate.reason).to.be.undefined;
+            expect(modPostToDelete.raw.commentUpdate.edit.reason).to.equal("For mod to test deleting their own post");
+            expect(modPostToDelete.raw.commentUpdate.reason).to.be.undefined;
         });
 
         it(`Author can not undelete their own post`, async () => {

@@ -127,22 +127,22 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(modPost, () => modPost.removed === true);
             await modPost.stop();
             expect(modPost.locked).to.be.true;
-            expect(modPost._rawCommentUpdate.locked).to.be.true;
+            expect(modPost.raw.commentUpdate.locked).to.be.true;
 
             expect(modPost.pinned).to.be.true;
-            expect(modPost._rawCommentUpdate.pinned).to.be.true;
+            expect(modPost.raw.commentUpdate.pinned).to.be.true;
 
             expect(modPost.removed).to.be.true;
-            expect(modPost._rawCommentUpdate.removed).to.be.true;
+            expect(modPost.raw.commentUpdate.removed).to.be.true;
 
             expect(modPost.spoiler).to.be.true;
-            expect(modPost._rawCommentUpdate.spoiler).to.be.true;
+            expect(modPost.raw.commentUpdate.spoiler).to.be.true;
 
             expect(modPost.nsfw).to.be.true;
-            expect(modPost._rawCommentUpdate.nsfw).to.be.true;
+            expect(modPost.raw.commentUpdate.nsfw).to.be.true;
 
             expect(modPost.reason).to.equal(fieldsToChange.reason);
-            expect(modPost._rawCommentUpdate.reason).to.equal(fieldsToChange.reason);
+            expect(modPost.raw.commentUpdate.reason).to.equal(fieldsToChange.reason);
         });
     });
 
@@ -190,23 +190,23 @@ getRemotePlebbitConfigs().map((config) => {
             await modPost.stop();
             expect(modPost.locked).to.be.false;
 
-            expect(modPost._rawCommentUpdate.edit).to.be.undefined;
-            expect(modPost._rawCommentUpdate.locked).to.be.false;
+            expect(modPost.raw.commentUpdate.edit).to.be.undefined;
+            expect(modPost.raw.commentUpdate.locked).to.be.false;
 
             expect(modPost.pinned).to.be.true;
-            expect(modPost._rawCommentUpdate.pinned).to.be.true;
+            expect(modPost.raw.commentUpdate.pinned).to.be.true;
 
             expect(modPost.removed).to.be.false;
-            expect(modPost._rawCommentUpdate.removed).to.be.false;
+            expect(modPost.raw.commentUpdate.removed).to.be.false;
 
             expect(modPost.reason).to.equal(fieldsToChange.reason);
-            expect(modPost._rawCommentUpdate.reason).equal(fieldsToChange.reason);
+            expect(modPost.raw.commentUpdate.reason).equal(fieldsToChange.reason);
 
             expect(modPost.spoiler).to.be.true;
-            expect(modPost._rawCommentUpdate.spoiler).to.be.true;
+            expect(modPost.raw.commentUpdate.spoiler).to.be.true;
 
             expect(modPost.nsfw).to.be.true;
-            expect(modPost._rawCommentUpdate.nsfw).to.be.true;
+            expect(modPost.raw.commentUpdate.nsfw).to.be.true;
         });
 
         it(`Correct value of CommentUpdate after author edit, then mod edit`, async () => {
@@ -251,33 +251,33 @@ getRemotePlebbitConfigs().map((config) => {
 
             // check mod changes here
             expect(authorPost.removed).to.equal(modFieldsToChange.removed);
-            expect(authorPost._rawCommentUpdate.removed).to.equal(modFieldsToChange.removed);
+            expect(authorPost.raw.commentUpdate.removed).to.equal(modFieldsToChange.removed);
             expect(authorPost.reason).to.equal(modFieldsToChange.reason);
-            expect(authorPost._rawCommentUpdate.reason).to.equal(modFieldsToChange.reason);
+            expect(authorPost.raw.commentUpdate.reason).to.equal(modFieldsToChange.reason);
 
             expect(authorPost.spoiler).to.equal(modFieldsToChange.spoiler);
-            expect(authorPost._rawCommentUpdate.spoiler).to.equal(modFieldsToChange.spoiler);
+            expect(authorPost.raw.commentUpdate.spoiler).to.equal(modFieldsToChange.spoiler);
 
             expect(authorPost.nsfw).to.equal(modFieldsToChange.nsfw);
-            expect(authorPost._rawCommentUpdate.nsfw).to.equal(modFieldsToChange.nsfw);
+            expect(authorPost.raw.commentUpdate.nsfw).to.equal(modFieldsToChange.nsfw);
 
             expect(authorPost.pinned).to.equal(modFieldsToChange.pinned);
-            expect(authorPost._rawCommentUpdate.pinned).to.equal(modFieldsToChange.pinned);
+            expect(authorPost.raw.commentUpdate.pinned).to.equal(modFieldsToChange.pinned);
 
             // Check author changes here
 
-            expect(authorPost._rawCommentUpdate.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
+            expect(authorPost.raw.commentUpdate.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
             expect(authorPost.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
 
-            expect(authorPost._rawCommentUpdate.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
+            expect(authorPost.raw.commentUpdate.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
             expect(authorPost.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
 
             expect(authorPost.content).to.equal(authorFieldsToChange.content);
             expect(authorPost.edit.content).to.equal(authorFieldsToChange.content);
-            expect(authorPost._rawCommentUpdate.edit.content).to.equal(authorFieldsToChange.content);
+            expect(authorPost.raw.commentUpdate.edit.content).to.equal(authorFieldsToChange.content);
 
             expect(authorPost.edit.reason).to.equal(authorFieldsToChange.reason);
-            expect(authorPost._rawCommentUpdate.edit.reason).to.equal(authorFieldsToChange.reason);
+            expect(authorPost.raw.commentUpdate.edit.reason).to.equal(authorFieldsToChange.reason);
         });
 
         it(`Correct value of CommentUpdate after mod edit, then author edit`, async () => {
@@ -320,33 +320,33 @@ getRemotePlebbitConfigs().map((config) => {
 
             // check mod changes here
             expect(authorPost.removed).to.equal(modFieldsToChange.removed);
-            expect(authorPost._rawCommentUpdate.removed).to.equal(modFieldsToChange.removed);
+            expect(authorPost.raw.commentUpdate.removed).to.equal(modFieldsToChange.removed);
             expect(authorPost.reason).to.equal(modFieldsToChange.reason);
-            expect(authorPost._rawCommentUpdate.reason).to.equal(modFieldsToChange.reason);
+            expect(authorPost.raw.commentUpdate.reason).to.equal(modFieldsToChange.reason);
 
             expect(authorPost.spoiler).to.equal(modFieldsToChange.spoiler);
-            expect(authorPost._rawCommentUpdate.spoiler).to.equal(modFieldsToChange.spoiler);
+            expect(authorPost.raw.commentUpdate.spoiler).to.equal(modFieldsToChange.spoiler);
 
             expect(authorPost.nsfw).to.equal(modFieldsToChange.nsfw);
-            expect(authorPost._rawCommentUpdate.nsfw).to.equal(modFieldsToChange.nsfw);
+            expect(authorPost.raw.commentUpdate.nsfw).to.equal(modFieldsToChange.nsfw);
 
             expect(authorPost.pinned).to.equal(modFieldsToChange.pinned);
-            expect(authorPost._rawCommentUpdate.pinned).to.equal(modFieldsToChange.pinned);
+            expect(authorPost.raw.commentUpdate.pinned).to.equal(modFieldsToChange.pinned);
 
             // Check author changes here
 
-            expect(authorPost._rawCommentUpdate.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
+            expect(authorPost.raw.commentUpdate.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
             expect(authorPost.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
 
-            expect(authorPost._rawCommentUpdate.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
+            expect(authorPost.raw.commentUpdate.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
             expect(authorPost.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
 
             expect(authorPost.content).to.equal(authorFieldsToChange.content);
             expect(authorPost.edit.content).to.equal(authorFieldsToChange.content);
-            expect(authorPost._rawCommentUpdate.edit.content).to.equal(authorFieldsToChange.content);
+            expect(authorPost.raw.commentUpdate.edit.content).to.equal(authorFieldsToChange.content);
 
             expect(authorPost.edit.reason).to.equal(authorFieldsToChange.reason);
-            expect(authorPost._rawCommentUpdate.edit.reason).to.equal(authorFieldsToChange.reason);
+            expect(authorPost.raw.commentUpdate.edit.reason).to.equal(authorFieldsToChange.reason);
         });
     });
 });

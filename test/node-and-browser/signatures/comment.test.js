@@ -234,7 +234,7 @@ describeSkipIfRpc(`commentupdate`, async () => {
         await comment.stop();
         // If a comment emits "update" that means the commentUpdate have been verified correctly
 
-        const commentUpdateRecord = comment._rawCommentUpdate;
+        const commentUpdateRecord = comment.raw.commentUpdate;
         expect(
             await verifyCommentUpdate({
                 update: commentUpdateRecord,

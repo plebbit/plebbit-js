@@ -49,9 +49,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(postToRemove, () => postToRemove.removed === true);
             expect(postToRemove.removed).to.be.true;
             expect(postToRemove.reason).to.equal("To remove a post");
-            expect(postToRemove._rawCommentUpdate.removed).to.be.true;
-            expect(postToRemove._rawCommentUpdate.reason).to.equal("To remove a post");
-            expect(postToRemove._rawCommentUpdate.edit).to.be.undefined;
+            expect(postToRemove.raw.commentUpdate.removed).to.be.true;
+            expect(postToRemove.raw.commentUpdate.reason).to.equal("To remove a post");
+            expect(postToRemove.raw.commentUpdate.edit).to.be.undefined;
         });
         it(`Removed post don't show in subplebbit.posts`, async () => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
@@ -116,9 +116,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(postToRemove, () => postToRemove.removed === false);
             expect(postToRemove.removed).to.be.false;
             expect(postToRemove.reason).to.equal("To unremove a post");
-            expect(postToRemove._rawCommentUpdate.removed).to.be.false;
-            expect(postToRemove._rawCommentUpdate.reason).to.equal("To unremove a post");
-            expect(postToRemove._rawCommentUpdate.edit).to.be.undefined;
+            expect(postToRemove.raw.commentUpdate.removed).to.be.false;
+            expect(postToRemove.raw.commentUpdate.reason).to.equal("To unremove a post");
+            expect(postToRemove.raw.commentUpdate.edit).to.be.undefined;
         });
 
         it(`Unremoved post is included in subplebbit.posts with removed=false`, async () => {
@@ -167,10 +167,10 @@ getRemotePlebbitConfigs().map((config) => {
         it(`A new CommentUpdate is published with removed=true`, async () => {
             await resolveWhenConditionIsTrue(modPost, () => modPost.removed === true);
             expect(modPost.removed).to.be.true;
-            expect(modPost._rawCommentUpdate.removed).to.be.true;
-            expect(modPost._rawCommentUpdate.edit).to.be.undefined;
+            expect(modPost.raw.commentUpdate.removed).to.be.true;
+            expect(modPost.raw.commentUpdate.edit).to.be.undefined;
             expect(modPost.reason).to.equal("For mods to remove their own post");
-            expect(modPost._rawCommentUpdate.reason).to.equal("For mods to remove their own post");
+            expect(modPost.raw.commentUpdate.reason).to.equal("For mods to remove their own post");
         });
     });
 
@@ -203,9 +203,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(replyToBeRemoved, () => replyToBeRemoved.removed === true);
             expect(replyToBeRemoved.removed).to.be.true;
             expect(replyToBeRemoved.reason).to.equal("To remove a reply");
-            expect(replyToBeRemoved._rawCommentUpdate.removed).to.be.true;
-            expect(replyToBeRemoved._rawCommentUpdate.edit).to.be.undefined;
-            expect(replyToBeRemoved._rawCommentUpdate.reason).to.equal("To remove a reply");
+            expect(replyToBeRemoved.raw.commentUpdate.removed).to.be.true;
+            expect(replyToBeRemoved.raw.commentUpdate.edit).to.be.undefined;
+            expect(replyToBeRemoved.raw.commentUpdate.reason).to.equal("To remove a reply");
         });
         it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
             const recreatedPost = await plebbit.createComment({ cid: post.cid });
@@ -264,9 +264,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(replyToBeRemoved, () => replyToBeRemoved.removed === false);
             expect(replyToBeRemoved.removed).to.be.false;
             expect(replyToBeRemoved.reason).to.equal("To unremove a reply");
-            expect(replyToBeRemoved._rawCommentUpdate.removed).to.be.false;
-            expect(replyToBeRemoved._rawCommentUpdate.edit).to.be.undefined;
-            expect(replyToBeRemoved._rawCommentUpdate.reason).to.equal("To unremove a reply");
+            expect(replyToBeRemoved.raw.commentUpdate.removed).to.be.false;
+            expect(replyToBeRemoved.raw.commentUpdate.edit).to.be.undefined;
+            expect(replyToBeRemoved.raw.commentUpdate.reason).to.equal("To unremove a reply");
         });
     });
 });

@@ -159,8 +159,8 @@ getRemotePlebbitConfigs().map((config) => {
                 await commentToModWithAuthor.update();
                 await resolveWhenConditionIsTrue(commentToModWithAuthor, () => commentToModWithAuthor.removed === true);
                 expect(commentToModWithAuthor.author.subplebbit.extraProp).to.be.undefined;
-                expect(commentToModWithAuthor._rawCommentUpdate.author.subplebbit.extraProp).to.be.undefined;
-                expect(commentToModWithAuthor._rawCommentUpdate.author.extraProp).to.be.undefined;
+                expect(commentToModWithAuthor.raw.commentUpdate.author.subplebbit.extraProp).to.be.undefined;
+                expect(commentToModWithAuthor.raw.commentUpdate.author.extraProp).to.be.undefined;
 
                 await commentToModWithAuthor.stop();
             });

@@ -82,9 +82,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(postToBeLocked, () => postToBeLocked.locked === true);
             expect(postToBeLocked.locked).to.be.true;
             expect(postToBeLocked.reason).to.equal("To lock an author post");
-            expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To lock an author post");
-            expect(postToBeLocked._rawCommentUpdate.locked).to.be.true;
-            expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
+            expect(postToBeLocked.raw.commentUpdate.reason).to.equal("To lock an author post");
+            expect(postToBeLocked.raw.commentUpdate.locked).to.be.true;
+            expect(postToBeLocked.raw.commentUpdate.edit).to.be.undefined;
         });
 
         it(`subplebbit.posts includes locked post with locked=true`, async () => {
@@ -126,9 +126,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(modPost, () => modPost.locked === true);
             expect(modPost.locked).to.be.true;
             expect(modPost.reason).to.equal("To lock a mod post");
-            expect(modPost._rawCommentUpdate.reason).to.equal("To lock a mod post");
-            expect(postToBeLocked._rawCommentUpdate.locked).to.be.true;
-            expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
+            expect(modPost.raw.commentUpdate.reason).to.equal("To lock a mod post");
+            expect(postToBeLocked.raw.commentUpdate.locked).to.be.true;
+            expect(postToBeLocked.raw.commentUpdate.edit).to.be.undefined;
         });
 
         it(`locked=true for mod post when it's locked by mod in getPage of subplebbit`, async () => {
@@ -171,9 +171,9 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(postToBeLocked, () => postToBeLocked.locked === false);
             expect(postToBeLocked.locked).to.be.false;
             expect(postToBeLocked.reason).to.equal("To unlock an author post");
-            expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To unlock an author post");
-            expect(postToBeLocked._rawCommentUpdate.locked).to.be.false;
-            expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
+            expect(postToBeLocked.raw.commentUpdate.reason).to.equal("To unlock an author post");
+            expect(postToBeLocked.raw.commentUpdate.locked).to.be.false;
+            expect(postToBeLocked.raw.commentUpdate.edit).to.be.undefined;
         });
 
         it(`locked=false in getPage of subplebbit after the mod unlocks it`, async () => {

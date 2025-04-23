@@ -123,21 +123,21 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(authorPost, () => authorPost.deleted);
             await authorPost.stop();
             expect(authorPost.deleted).to.be.true;
-            expect(authorPost._rawCommentUpdate.edit.deleted).to.be.true;
+            expect(authorPost.raw.commentUpdate.edit.deleted).to.be.true;
 
             expect(authorPost.spoiler).to.be.true;
-            expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.true;
+            expect(authorPost.raw.commentUpdate.edit.spoiler).to.be.true;
 
             expect(authorPost.nsfw).to.be.true;
-            expect(authorPost._rawCommentUpdate.edit.nsfw).to.be.true;
+            expect(authorPost.raw.commentUpdate.edit.nsfw).to.be.true;
 
             expect(authorPost.content).to.equal(fieldsToChange.content);
-            expect(authorPost._rawCommentUpdate.edit.content).equal(fieldsToChange.content);
+            expect(authorPost.raw.commentUpdate.edit.content).equal(fieldsToChange.content);
 
             expect(authorPost.edit.reason).to.equal(fieldsToChange.reason);
-            expect(authorPost._rawCommentUpdate.edit.reason).equal(fieldsToChange.reason);
+            expect(authorPost.raw.commentUpdate.edit.reason).equal(fieldsToChange.reason);
             expect(authorPost.reason).to.be.undefined;
-            expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
         });
     });
 
@@ -186,24 +186,24 @@ getRemotePlebbitConfigs().map((config) => {
 
             await authorPost.stop();
             expect(authorPost.deleted).to.equal(secondEditProps.deleted);
-            expect(authorPost._rawCommentUpdate.edit.deleted).to.equal(secondEditProps.deleted);
+            expect(authorPost.raw.commentUpdate.edit.deleted).to.equal(secondEditProps.deleted);
 
             expect(authorPost.edit.reason).to.equal(secondEditProps.reason);
-            expect(authorPost._rawCommentUpdate.edit.reason).to.equal(secondEditProps.reason);
+            expect(authorPost.raw.commentUpdate.edit.reason).to.equal(secondEditProps.reason);
 
             expect(authorPost.reason).to.be.undefined; // reserved for mods
-            expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.reason).to.be.undefined;
 
             expect(authorPost.content).to.equal(secondEditProps.content);
-            expect(authorPost._rawCommentUpdate.edit.content).to.equal(secondEditProps.content);
+            expect(authorPost.raw.commentUpdate.edit.content).to.equal(secondEditProps.content);
 
             expect(authorPost.spoiler).to.equal(firstEditProps.spoiler);
-            expect(authorPost._rawCommentUpdate.edit.spoiler).to.equal(firstEditProps.spoiler);
-            expect(authorPost._rawCommentUpdate.spoiler).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.edit.spoiler).to.equal(firstEditProps.spoiler);
+            expect(authorPost.raw.commentUpdate.spoiler).to.be.undefined;
 
             expect(authorPost.nsfw).to.equal(firstEditProps.nsfw);
-            expect(authorPost._rawCommentUpdate.edit.nsfw).to.equal(firstEditProps.nsfw);
-            expect(authorPost._rawCommentUpdate.nsfw).to.be.undefined;
+            expect(authorPost.raw.commentUpdate.edit.nsfw).to.equal(firstEditProps.nsfw);
+            expect(authorPost.raw.commentUpdate.nsfw).to.be.undefined;
         });
     });
 });

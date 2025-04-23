@@ -163,7 +163,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`.getPage will throw if the first page is over 1mb`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const page = remeda.clone(subplebbit._rawSubplebbitIpfs.posts.pages.hot);
+            const page = remeda.clone(subplebbit.raw.subplebbitIpfs.posts.pages.hot);
 
             // Make sure the page is over 1MB
             // Keep adding comments until the page exceeds 1MB

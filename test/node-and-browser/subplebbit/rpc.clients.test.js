@@ -25,7 +25,7 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
         const newIpns = await createNewIpns();
         const actualSub = await plebbit.getSubplebbit(signers[0].address);
 
-        const record = JSON.parse(JSON.stringify(actualSub._rawSubplebbitIpfs));
+        const record = JSON.parse(JSON.stringify(actualSub.raw.subplebbitIpfs));
         record.address = newIpns.signer.address;
         delete record["posts"];
         record.signature = await signSubplebbit(record, newIpns.signer);

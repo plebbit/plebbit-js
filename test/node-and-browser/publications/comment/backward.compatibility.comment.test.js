@@ -96,7 +96,7 @@ getRemotePlebbitConfigs().map((config) => {
 
                 // we wanna make sure the extra prop exists on all shapes
                 const shapes = [
-                    loadedCommentWithExtraProps._rawCommentIpfs,
+                    loadedCommentWithExtraProps.raw.comment,
                     loadedCommentWithExtraProps,
                     JSON.parse(JSON.stringify(loadedCommentWithExtraProps)),
                     await plebbit.createComment(loadedCommentWithExtraProps),

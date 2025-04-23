@@ -136,8 +136,8 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
             let invalidComment;
             try {
                 invalidComment = await plebbit.createComment(postCommentInstance);
-                invalidComment._rawCommentIpfs = remeda.clone(invalidComment._rawCommentIpfs);
-                invalidComment._rawCommentIpfs.signature.signature += "invalid";
+                invalidComment.raw.comment = remeda.clone(invalidComment.raw.comment);
+                invalidComment.raw.comment.signature.signature += "invalid";
                 await plebbit.validateComment(invalidComment);
                 expect.fail("Expected promise to reject, but it fulfilled.");
             } catch (e) {
@@ -152,9 +152,9 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
             let invalidComment;
             try {
                 invalidComment = await plebbit.createComment(postCommentInstance);
-                const tamperedUpdate = remeda.clone(invalidComment._rawCommentUpdate);
+                const tamperedUpdate = remeda.clone(invalidComment.raw.commentUpdate);
                 tamperedUpdate.signature.signature += "invalid"; // Tamper signature directly
-                invalidComment._rawCommentUpdate = tamperedUpdate;
+                invalidComment.raw.commentUpdate = tamperedUpdate;
                 await plebbit.validateComment(invalidComment);
                 expect.fail("Expected promise to reject, but it fulfilled.");
             } catch (e) {
@@ -169,7 +169,7 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
             let invalidComment;
             try {
                 invalidComment = await plebbit.createComment(remeda.clone(postCommentInstance));
-                invalidComment._rawCommentIpfs = undefined;
+                invalidComment.raw.comment = undefined;
                 await plebbit.validateComment(invalidComment);
                 expect.fail("Expected promise to reject, but it fulfilled.");
             } catch (e) {
@@ -184,7 +184,7 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
             let invalidComment;
             try {
                 invalidComment = await plebbit.createComment(postCommentInstance);
-                invalidComment._rawCommentUpdate = undefined;
+                invalidComment.raw.commentUpdate = undefined;
                 await plebbit.validateComment(invalidComment);
                 expect.fail("Expected promise to reject, but it fulfilled.");
             } catch (e) {
@@ -200,7 +200,7 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
             try {
                 invalidComment = await plebbit.createComment(postCommentInstance);
                 invalidComment.cid = undefined;
-                invalidComment._rawCommentUpdate.cid = undefined;
+                invalidComment.raw.commentUpdate.cid = undefined;
                 await plebbit.validateComment(invalidComment);
                 expect.fail("Expected promise to reject, but it fulfilled.");
             } catch (e) {

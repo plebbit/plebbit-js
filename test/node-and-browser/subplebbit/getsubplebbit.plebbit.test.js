@@ -58,7 +58,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`plebbit.getSubplebbit should throw immedietly if it encounters a non retriable error`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             const ipnsObj = await createNewIpns();
-            await ipnsObj.publishToIpns(JSON.stringify({ ...loadedSubplebbit._rawSubplebbitIpfs, updatedAt: 12345 })); // publish invalid signature
+            await ipnsObj.publishToIpns(JSON.stringify({ ...loadedSubplebbit.raw.subplebbitIpfs, updatedAt: 12345 })); // publish invalid signature
 
             try {
                 await plebbit.getSubplebbit(ipnsObj.signer.address);
