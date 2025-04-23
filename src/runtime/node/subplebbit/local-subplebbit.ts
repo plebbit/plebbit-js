@@ -77,7 +77,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     calculateExpectedSignatureSize,
-    getThumbnailUrlOfLink,
+    getThumbnailPropsOfLink,
     importSignerIntoKuboNode,
     listSubplebbits,
     moveSubplebbitDbToDeletedDirectory
@@ -790,7 +790,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         link: CommentPubsubMessagePublication["link"]
     ): Promise<Pick<CommentIpfsType, "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"> | undefined> {
         if (!link || !this.settings?.fetchThumbnailUrls) return undefined;
-        return getThumbnailUrlOfLink(link, this, this.settings.fetchThumbnailUrlsProxyUrl);
+        return getThumbnailPropsOfLink(link, this, this.settings.fetchThumbnailUrlsProxyUrl);
     }
 
     private async _calculatePostProps(

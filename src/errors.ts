@@ -46,6 +46,7 @@ export enum messages {
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
     ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK = "Failed to fetch the thumbnail url of the link",
+    ERR_FAILED_TO_FETCH_THUMBNAIL_DIMENSION_OF_LINK = "Failed to fetch the thumbnail dimension of the link",
     ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase",
     ERR_GATEWAY_TIMED_OUT_OR_ABORTED = "Fetching from gateway has been aborted/timed out",
     ERR_FAILED_TO_PARSE_CID_FROM_IPNS_GATEWAY_RESPONSE = "Failed to parse the CID of IPNS file from x-ipfs-roots header",
@@ -270,6 +271,7 @@ export enum messages {
     CAN_NOT_LOAD_LOCAL_SUBPLEBBIT_IF_DB_DOES_NOT_EXIST = "Can't load the local sub because its DB does not exist in dataPath",
     ERR_SUB_START_FAILED_UNKNOWN_ERROR = "Subplebbit start failed with unknown error",
     ERR_SUB_ALREADY_STARTED_IN_SAME_PLEBBIT_INSTANCE = "Subplebbit already started in the same Plebbit instance. You can check plebbit._startedSubplebbits to see all started subplebbits",
+    ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE = "Page generated is over expected size. This is a critical error and a bug in plebbit-js",
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
     ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",

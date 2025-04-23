@@ -14,7 +14,7 @@ import { STORAGE_KEYS } from "../../constants.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import os from "os";
 import * as fileType from "file-type";
-import type { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types.js";
+import type { OpenGraphScraperOptions } from "open-graph-scraper/types";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import { sha256 } from "js-sha256";
@@ -54,60 +54,95 @@ export const getDefaultSubplebbitDbConfig = async (
     };
 };
 
-// Should be moved to subplebbit.ts
-export async function getThumbnailUrlOfLink(
-    url: string,
-    subplebbit: RemoteSubplebbit,
-    proxyHttpUrl?: string
-): Promise<{ thumbnailUrl: string; thumbnailUrlWidth: number; thumbnailUrlHeight: number } | undefined> {
-    const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
+async function _getThumbnailUrlOfLink(url: string, agent?: { https: any; http: any }) {
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    const lowerCaseLink = url.toLowerCase();
+    if (imageExtensions.some((ext) => lowerCaseLink.endsWith(ext))) {
+        return { thumbnailUrl: url };
+    }
 
-    const userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
-    //@ts-expect-error
-    const thumbnail: { thumbnailUrl: string; thumbnailUrlWidth: number; thumbnailUrlHeight: number } = {};
     const options: OpenGraphScraperOptions & { agent?: { https: any; http: any } } = {
         url,
         fetchOptions: {
-            headers: {
-                "user-agent": userAgent
-            },
+            // not sure which prop is used here, but let's use both
             //@ts-expect-error
-            downloadLimit: 2000000
+            downloadLimit: 2000000,
+            size: 2000000
         }
     };
 
+    if (agent) options["agent"] = agent;
+
+    const res = await scraper(options);
+
+    if (res.error) {
+        throw res;
+    }
+    if (!res?.result?.ogImage) return undefined;
+
+    return {
+        thumbnailUrl: res.result.ogImage[0].url,
+        thumbnailUrlWidth: Number(res.result.ogImage[0].width),
+        thumbnailUrlHeight: Number(res.result.ogImage[0].height)
+    };
+}
+
+// Should be moved to subplebbit.ts
+export async function getThumbnailPropsOfLink(
+    url: string,
+    subplebbit: RemoteSubplebbit,
+    proxyHttpUrl?: string
+): Promise<{ thumbnailUrl: string; thumbnailUrlWidth?: number; thumbnailUrlHeight?: number } | undefined> {
+    const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
+
+    const agent = proxyHttpUrl
+        ? {
+              http: new HttpProxyAgent({ proxy: proxyHttpUrl }),
+              https: new HttpsProxyAgent({ proxy: proxyHttpUrl })
+          }
+        : undefined;
+
+    let thumbnailOg: Awaited<ReturnType<typeof _getThumbnailUrlOfLink>>;
+
     try {
-        if (proxyHttpUrl) {
-            const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
-            const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });
-            options["agent"] = { https: httpsAgent, http: httpAgent };
-        }
-        const res = await scraper(options);
-
-        if (res.error) return undefined;
-        if (!res?.result?.ogImage) return undefined;
-
-        thumbnail.thumbnailUrl = res.result.ogImage[0].url;
-        assert(typeof thumbnail.thumbnailUrl === "string", "thumbnailUrl needs to be a string");
-
-        thumbnail.thumbnailUrlHeight = Number(res.result.ogImage?.[0]?.height);
-        thumbnail.thumbnailUrlWidth = Number(res.result.ogImage?.[0]?.width);
-        if (thumbnail.thumbnailUrlHeight === 0 || isNaN(thumbnail.thumbnailUrlHeight)) {
-            const probedDimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl, options["agent"]);
-            if (probedDimensions) {
-                thumbnail.thumbnailUrlHeight = probedDimensions.height;
-                thumbnail.thumbnailUrlWidth = probedDimensions.width;
-            }
-        }
-        return thumbnail;
+        thumbnailOg = await _getThumbnailUrlOfLink(url, agent);
     } catch (e) {
         const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
+            error: e,
             url,
-            scrapeOptions: options,
             proxyHttpUrl,
-            error: e
+            subplebbitAddress: subplebbit.address
         });
-        log.error(String(plebbitError));
+        //@ts-expect-error
+        plebbitError.stack = e.stack;
+        log.error(plebbitError);
+        subplebbit.emit("error", plebbitError);
+        return undefined;
+    }
+    if (!thumbnailOg) return undefined;
+
+    try {
+        let thumbnailHeight = thumbnailOg.thumbnailUrlHeight;
+        let thumbnailWidth = thumbnailOg.thumbnailUrlWidth;
+        if (typeof thumbnailHeight !== "number" || thumbnailHeight === 0 || isNaN(thumbnailHeight)) {
+            const probedDimensions = await fetchDimensionsOfImage(thumbnailOg.thumbnailUrl, agent);
+            if (probedDimensions) {
+                thumbnailHeight = probedDimensions.height;
+                thumbnailWidth = probedDimensions.width;
+            }
+        }
+        if (typeof thumbnailWidth !== "number" || typeof thumbnailHeight !== "number") return { thumbnailUrl: thumbnailOg.thumbnailUrl };
+        return { thumbnailUrl: thumbnailOg.thumbnailUrl, thumbnailUrlHeight: thumbnailHeight, thumbnailUrlWidth: thumbnailWidth };
+    } catch (e) {
+        const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_DIMENSION_OF_LINK", {
+            url,
+            proxyHttpUrl,
+            error: e,
+            subplebbitAddress: subplebbit.address
+        });
+        //@ts-expect-error
+        plebbitError.stack = e.stack;
+        log.error(plebbitError);
         subplebbit.emit("error", plebbitError);
         return undefined;
     }
