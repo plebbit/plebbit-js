@@ -3,10 +3,10 @@ import {
     shouldExcludeChallengeCommentCids,
     shouldExcludePublication,
     shouldExcludeChallengeSuccess
-} from "../../dist/node/runtime/node/subplebbit/challenges/exclude";
-import { addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter";
+} from "../../dist/node/runtime/node/subplebbit/challenges/exclude/index.js";
+import { addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter.js";
 import * as remeda from "remeda";
-import { Plebbit, authors } from "./fixtures/fixtures";
+import { Plebbit, authors } from "./fixtures/fixtures.js";
 import validCommentEditFixture from "../fixtures/signatures/commentEdit/valid_comment_edit.json" with { type: "json" };
 import validCommentFixture from "..//fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };
 import validVoteFixture from "../fixtures/valid_vote.json" with { type: "json" };

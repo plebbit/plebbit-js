@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-import { plebbitJsChallenges } from "../../../dist/node/runtime/node/subplebbit/challenges";
+import { plebbitJsChallenges } from "../../../dist/node/runtime/node/subplebbit/challenges/index.js";
 
 // define mock Author instances
 const highKarmaAuthor = {
