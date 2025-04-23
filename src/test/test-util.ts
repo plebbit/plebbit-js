@@ -463,7 +463,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
 
     plebbit.on("error", (e) => {
-        console.error("Plebbit error", e);
+        log.error("Plebbit error", e);
     });
     return plebbit;
 }
@@ -501,7 +501,7 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
         mockResolve: true,
         forceMockPubsub: true,
         remotePlebbit: false,
-        stubStorage: false
+        stubStorage: true // we want storage to force new resolve-subplebbit-address states
     });
     return plebbit;
 }
@@ -1096,12 +1096,19 @@ export function setPlebbitConfigs(configs: PlebbitTestConfig[]) {
 
     plebbitConfigs = configs.map((config) => mapper[config]);
 
-    if (process) {
-        process.on("uncaughtException", (err) => {
-            console.error("uncaughtException", err);
+    if (globalThis.window) {
+        window.addEventListener("uncaughtException", (err) => {
+            console.error("uncaughtException", JSON.stringify(err, ["message", "arguments", "type", "name"]));
         });
-        process.on("unhandledRejection", (reason, p) => {
-            console.error("unhandledRejection", reason, p);
+        window.addEventListener("unhandledrejection", (err) => {
+            console.error("unhandledRejection", JSON.stringify(err, ["message", "arguments", "type", "name"]));
+        });
+    } else if (process) {
+        process.on("uncaughtException", (...err: any[]) => {
+            console.error("uncaughtException", ...err);
+        });
+        process.on("unhandledRejection", (...err: any[]) => {
+            console.error("unhandledRejection", ...err);
         });
     }
 }
