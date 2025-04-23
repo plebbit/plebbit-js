@@ -39,7 +39,7 @@
         "dist/"
     ],
     "dependencies": {
-        "@bonfida/spl-name-service": "3.0.9",
+        "@bonfida/spl-name-service": "3.0.10",
         "@chainsafe/libp2p-gossipsub": "14.1.0",
         "@helia/block-brokers": "4.0.3",
         "@helia/delegated-routing-v1-http-api-client": "4.2.1",
@@ -183,6 +183,6 @@
     },
     "homepage": "https://github.com/plebbit/plebbit-js#readme",
     "engines": {
-        "node": ">=18.20.0"
+        "node": ">=20.18.0"
     }
 }
