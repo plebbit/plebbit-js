@@ -44,6 +44,12 @@
             "browser": "./dist/browser/index.js",
             "import": "./dist/node/index.js",
             "require": "./dist/node/index.js"
+        },
+        "./rpc": {
+            "types": "./dist/node/rpc/src/index.d.ts",
+            "browser": null,
+            "import": "./dist/node/rpc/src/index.js",
+            "require": "./dist/node/rpc/src/index.js"
         }
     },
     "dependencies": {
@@ -62,7 +68,6 @@
         "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger#355a96d7659ed820047980049dfa627d30d83a69",
         "@plebbit/proper-lockfile": "github:plebbit/node-proper-lockfile#7fd6332117340c1d3d98dd0afee2d31cc06f72b8",
         "@types/proper-lockfile": "4.1.2",
-        "@types/uuid": "8.3.4",
         "assert": "2.1.0",
         "better-sqlite3": "11.9.1",
         "blockstore-core": "5.0.2",
@@ -106,7 +111,7 @@
         "tinycache": "1.1.2",
         "ts-custom-error": "3.3.1",
         "typestub-ipfs-only-hash": "4.0.0",
-        "uuid": "9.0.1",
+        "uuid": "11.1.0",
         "viem": "2.23.5",
         "zod": "3.24.3"
     },
