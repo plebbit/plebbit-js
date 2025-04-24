@@ -2541,10 +2541,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // scenario 3: we call delete() on a subplebbit that is started
         // scenario 4: we call delete() on a subplebbit that is not started, but the same sub is started in plebbit._startedSubplebbits[address]
 
-        await this.initDbHandlerIfNeeded();
-        await this._dbHandler.initDbIfNeeded();
-        const allCids = await this._dbHandler.queryAllCidsUnderThisSubplebbit();
-        allCids.forEach((cid) => this._cidsToUnPin.add(cid));
+        try {
+            await this.initDbHandlerIfNeeded();
+            await this._dbHandler.initDbIfNeeded();
+            const allCids = await this._dbHandler.queryAllCidsUnderThisSubplebbit();
+            allCids.forEach((cid) => this._cidsToUnPin.add(cid));
+        } catch (e) {
+            log.error("Failed to query all cids under this subplebbit to delete them", e);
+        }
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid);
         if (this.statsCid) this._cidsToUnPin.add(this.statsCid);
         if (this.posts.pageCids) Object.values(this.posts.pageCids).forEach((pageCid) => this._cidsToUnPin.add(pageCid));
