@@ -190,8 +190,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             this._subplebbit.emit("updatingstatechange", "failed");
         } else if (
             subLoadingRes?.subplebbit &&
-            (this._subplebbit.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt &&
-            this._subplebbit.updateCid !== subLoadingRes.cid
+            (this._subplebbit.raw.subplebbitIpfs?.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt
         ) {
             await this._subplebbit.initSubplebbitIpfsPropsNoMerge(subLoadingRes.subplebbit);
             this._subplebbit.updateCid = subLoadingRes.cid;
