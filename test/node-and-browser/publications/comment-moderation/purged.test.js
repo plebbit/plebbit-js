@@ -105,6 +105,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Purged post don't show in subplebbit.posts`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
             const sub = await plebbit.createSubplebbit({ address: postToPurge.subplebbitAddress });
 
             await sub.update();
@@ -123,6 +124,7 @@ getRemotePlebbitConfigs().map((config) => {
 
                 expect(purgedPostInPage).to.be.undefined;
             }
+            await plebbit.destroy();
         });
 
         it(`Sub rejects votes on purged post`, async () => {
