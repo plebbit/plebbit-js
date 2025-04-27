@@ -982,7 +982,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log(
-            `Subplebbit ${this.address} published ${challengeMessage.type} over pubsub: `,
+            `Subplebbit ${this.address} with pubsub topic ${this.pubsubTopicWithfallback()} published ${challengeMessage.type} over pubsub: `,
             remeda.pick(toSignChallenge, ["timestamp"]),
             toEncryptChallenge.challenges.map((challenge) => challenge.type)
         );
@@ -1017,7 +1017,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
 
         this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
-        log(`Will publish ${challengeVerification.type} over pubsub:`, remeda.omit(toSignVerification, ["challengeRequestId"]));
+        log(
+            `Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`,
+            remeda.omit(toSignVerification, ["challengeRequestId"])
+        );
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
         this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
@@ -1095,7 +1098,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
             log(
-                `Published ${challengeVerification.type} over pubsub:`,
+                `Published ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`,
                 remeda.omit(objectToEmit, ["signature", "encrypted", "challengeRequestId"])
             );
         }
@@ -2237,9 +2240,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw e;
         }
 
-        this._publishLoopPromise = this.syncIpnsWithDb();
-
-        this._publishLoopPromise
+        this._publishLoopPromise = this.syncIpnsWithDb()
             .catch((reason) => {
                 log.error(reason);
                 this.emit("error", reason);
