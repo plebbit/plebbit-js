@@ -176,7 +176,12 @@ export class BaseClientsManager {
         for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients)) {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
-            } catch {}
+            } catch (e) {
+                await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-unsubscribe");
+                //@ts-expect-error
+                e.details = { ...e.details, pubsubProviderUrl, pubsubTopic };
+                this.emitError(<PlebbitError>e);
+            }
         }
     }
 
