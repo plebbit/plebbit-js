@@ -47,7 +47,7 @@ const pubsubNodeArgs = {
     gatewayPort: 18081,
     swarmPort: 4002,
     daemonArgs: "--enable-pubsub-experiment --enable-namesys-pubsub",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const onlineNodeArgs = {
@@ -73,7 +73,7 @@ const anotherPubsubNodeArgs = {
     gatewayPort: 18084,
     swarmPort: 4005,
     daemonArgs: "--enable-pubsub-experiment",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const httpRouterNodeArgs = {
@@ -82,7 +82,7 @@ const httpRouterNodeArgs = {
     gatewayPort: 18085,
     swarmPort: 4006,
     daemonArgs: "--enable-pubsub-experiment",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, httpRouterNodeArgs];
