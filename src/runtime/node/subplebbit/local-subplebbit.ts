@@ -2228,6 +2228,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setStartedState("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
+            await this._listenToIncomingRequests();
             this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings); // make sure subplebbit.challenges is using latest props from settings.challenges
         } catch (e) {
             await this.stop(); // Make sure to reset the sub state
