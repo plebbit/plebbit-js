@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
-import { createSubWithNoChallenge, describeSkipIfRpc } from "../../dist/node/test/test-util.js";
+import { createSubWithNoChallenge, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
 
 import tcpPortUsed from "tcp-port-used";
 
@@ -74,9 +74,8 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
         });
         const sub = await createSubWithNoChallenge({}, plebbit); // an online sub
 
-        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.start();
-        await updatePromise;
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till it's propgated on the http router
 
         for (const httpRouterUrl of httpRouterUrls) {
