@@ -64,7 +64,6 @@ export class PlebbitWithRpcClient extends Plebbit {
         for (const startedSubplebbit of Object.values(this._startedSubplebbits)) {
             await startedSubplebbit.stopWithoutRpcCall();
         }
-        this._startedSubplebbits = {};
         await super.destroy();
         await this._plebbitRpcClient.destroy();
     }
