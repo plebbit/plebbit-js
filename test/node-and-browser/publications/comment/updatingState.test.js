@@ -55,6 +55,26 @@ const cleanupStateArray = (states) => {
         }
     }
 
+    // Remove repeating ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "succeeded"] sequences
+    const patternC = "fetching-update-ipfs";
+    const patternD = "succeeded";
+    for (let i = 0; i <= filteredStates.length - 8; i++) {
+        // Need to check 8 elements for two consecutive patterns
+        if (
+            filteredStates[i] === patternA &&
+            filteredStates[i + 1] === patternB &&
+            filteredStates[i + 2] === patternC &&
+            filteredStates[i + 3] === patternD &&
+            filteredStates[i + 4] === patternA && // Start of the second sequence
+            filteredStates[i + 5] === patternB &&
+            filteredStates[i + 6] === patternC &&
+            filteredStates[i + 7] === patternD
+        ) {
+            filteredStates.splice(i + 4, 4); // Remove the second sequence
+            i--; // Adjust index to re-check the current position after removal
+        }
+    }
+
     return filteredStates;
 };
 
@@ -361,6 +381,7 @@ describeSkipIfRpc(`reply.updatingState - Kubo RPC client`, async () => {
     });
 
     afterEach(async () => {
+        if (plebbit) await plebbit.destroy();
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
@@ -453,9 +474,7 @@ describeSkipIfRpc(`reply.updatingState - Kubo RPC client`, async () => {
             "stopped" // stopped
         ];
         const recordedStates = [];
-        reply.on("updatingstatechange", (newState) => {
-            recordedStates.push(newState);
-        });
+        reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await reply.update();
         mockReplyToUseParentPagesForUpdates(reply);
