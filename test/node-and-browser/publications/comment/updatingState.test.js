@@ -489,6 +489,7 @@ describeSkipIfRpc(`reply.updatingState - Kubo RPC client`, async () => {
         const filteredExpectedStates = cleanupStateArray(expectedStates);
         const filteredRecordedStates = cleanupStateArray(recordedStates);
 
+        console.log("recordedStates", recordedStates);
         console.log("filteredRecordedStates", filteredRecordedStates);
         console.log("filteredExpectedStates", filteredExpectedStates);
         expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
