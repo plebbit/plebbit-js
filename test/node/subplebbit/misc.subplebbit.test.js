@@ -95,7 +95,7 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await publishRandomPost(sub.address, plebbit);
-        await sub.stop();
+        await sub.delete();
         await plebbit.destroy();
     });
 
@@ -111,8 +111,9 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        await publishRandomPost(sub.address, plebbit, {});
-        await sub.stop();
+        await publishRandomPost(sub.address, plebbit);
+        await sub.delete();
+        await plebbit.destroy();
     });
 });
 
