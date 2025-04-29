@@ -116,7 +116,8 @@ export const parseDbResponses = (obj) => {
         "commentUpdate_locked",
         "commentUpdate_removed",
         "commentUpdate_nsfw",
-        "isAuthorEdit"
+        "isAuthorEdit",
+        "publishedToPostUpdatesIpfs"
     ]; // TODO use zod here
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]")
@@ -283,6 +284,7 @@ export async function resolveWhenPredicateIsTrue(toUpdate, predicate, eventName 
         });
 }
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs) {
+    const wasUpdating = subplebbit.state === "updating";
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
     let updateError;
     const errorListener = (err) => (updateError = err);
@@ -291,7 +293,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
+            message: updateError || new TimeoutError(`Subplebbit ${subplebbit.address} update timed out after ${timeoutMs}ms`)
         });
         if (updateError)
             throw updateError;
@@ -305,7 +307,8 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
     }
     finally {
         subplebbit.removeListener("error", errorListener);
-        await subplebbit.stop();
+        if (!wasUpdating)
+            await subplebbit.stop();
     }
 }
 export function calculateIpfsCidV0(content) {

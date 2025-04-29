@@ -7,7 +7,9 @@ declare class Vote extends Publication implements VotePubsubMessagePublication {
     commentCid: VotePubsubMessagePublication["commentCid"];
     vote: VotePubsubMessagePublication["vote"];
     signature: VotePubsubMessagePublication["signature"];
-    _pubsubMsgToPublish?: VotePubsubMessagePublication;
+    raw: {
+        pubsubMessageToPublish?: VotePubsubMessagePublication;
+    };
     challengeRequest?: CreateVoteOptions["challengeRequest"];
     constructor(plebbit: Plebbit);
     _initLocalProps(props: {

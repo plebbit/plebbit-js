@@ -23,6 +23,7 @@ import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
 import type { CreateSubplebbitEditPublicationOptions, SubplebbitEditJson, SubplebbitEditPubsubMessagePublication } from "../publications/subplebbit-edit/types.js";
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
+import type { PageTypeJson } from "../pages/types.js";
 export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
@@ -64,6 +65,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     _storage: StorageInterface;
     _updatingSubplebbits: Record<SubplebbitIpfsType["address"], Awaited<ReturnType<Plebbit["createSubplebbit"]>>>;
     _updatingComments: Record<string, Awaited<ReturnType<Plebbit["createComment"]>>>;
+    _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit | RpcLocalSubplebbit>;
     private _subplebbitFsWatchAbort?;
     private _subplebbitschangeEventHasbeenEmitted;
     private _storageLRUs;
@@ -90,8 +92,6 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     getComment(cid: z.infer<typeof CidStringSchema>): Promise<Comment>;
     private _initMissingFieldsOfPublicationBeforeSigning;
     private _createCommentInstanceFromAnotherCommentInstance;
-    private _createCommentInstanceFromJsonfiedPageComment;
-    private _createCommentInstanceFromJsonfiedCommentInstance;
     createComment(options: CommentIpfsType | CommentPubsubMessagePublication | {
         cid: CommentUpdateType["cid"];
         subplebbitAddress?: CommentPubsubMessagePublication["subplebbitAddress"];
@@ -117,6 +117,9 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     pubsubSubscribe(pubsubTopic: string): Promise<void>;
     pubsubUnsubscribe(pubsubTopic: string): Promise<void>;
     resolveAuthorAddress(authorAddress: string): Promise<string | null>;
+    validateComment(comment: Comment | PageTypeJson["comments"][number], opts?: {
+        validateReplies?: boolean;
+    }): Promise<void>;
     _createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">): Promise<LRUStorageInterface>;
     destroy(): Promise<void>;
 }

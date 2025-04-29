@@ -42,26 +42,30 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     ipnsPubsubTopicDhtKey?: string;
     _plebbit: Plebbit;
     _clientsManager: SubplebbitClientsManager;
-    _rawSubplebbitIpfs?: SubplebbitIpfsType;
-    _lastInvalidSubplebbitCid?: string;
+    raw: {
+        subplebbitIpfs?: SubplebbitIpfsType;
+    };
     _updatingSubInstanceWithListeners?: {
         subplebbit: RemoteSubplebbit;
-    } & Pick<SubplebbitEvents, "error" | "updatingstatechange" | "update" | "waiting-retry">;
+    } & Pick<SubplebbitEvents, "error" | "updatingstatechange" | "update" | "statechange">;
+    _numOfListenersForUpdatingInstance: number;
     constructor(plebbit: Plebbit);
     _updateLocalPostsInstance(newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">): Promise<void>;
     initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType): Promise<void>;
     initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): Promise<void>;
     setAddress(newAddress: string): void;
-    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
+    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "challenges" | "description" | "title" | "protocolVersion" | "lastCommentCid" | "encryption" | "createdAt" | "updatedAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
     toJSONIpfs(): SubplebbitIpfsType;
     toJSONRpcRemote(): RpcRemoteSubplebbitType;
     _setState(newState: RemoteSubplebbit["state"]): void;
-    _setUpdatingState(newState: RemoteSubplebbit["updatingState"]): void;
+    _setUpdatingStateNoEmission(newState: RemoteSubplebbit["updatingState"]): void;
+    _setUpdatingStateWithEventEmissionIfNewState(newState: RemoteSubplebbit["updatingState"]): void;
     _isRetriableErrorWhenLoading(err: PlebbitError | Error): boolean;
     _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible(): Promise<void>;
     private _initSubInstanceWithListeners;
     private fetchLatestSubOrSubscribeToEvent;
     update(): Promise<void>;
+    private _cleanUpUpdatingSubInstanceWithListeners;
     stop(): Promise<void>;
     edit(options: any): Promise<any>;
     delete(): Promise<void>;

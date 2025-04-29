@@ -37,8 +37,12 @@ export class PlebbitTypedEmitter extends TypedEmitter {
         //@ts-expect-error
         this._mirroredClient.off("statechange", this._stateListener);
         // // Reset to stopped state
-        // this.state = "stopped" as T;
-        // this.emit("statechange", this.state);
+        if (this.state !== "stopped") {
+            //@ts-expect-error
+            this.state = "stopped";
+            //@ts-expect-error
+            this.emit("statechange", this.state);
+        }
         // Clear references
         this._stateListener = undefined;
         this._mirroredClient = undefined;

@@ -62,7 +62,11 @@ async function _validateAuthorAddressBeforeSigning(author, signer, plebbit) {
     else {
         const derivedAddress = await getPlebbitAddressFromPrivateKey(signer.privateKey);
         if (derivedAddress !== author.address)
-            throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", { authorAddress: author.address, signerAddress: derivedAddress });
+            throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", {
+                authorAddress: author.address,
+                signerAddress: derivedAddress,
+                author
+            });
     }
 }
 export async function _signJson(signedPropertyNames, cleanedPublication, // should call cleanUpBeforePublish before calling _signJson
@@ -342,16 +346,15 @@ export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolve
     if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey))
         return { valid: true };
     if (subplebbit.posts?.pages && validatePages)
-        for (const pageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
-            const pageCid = subplebbit.posts.pageCids[pageSortName];
-            if (typeof pageCid !== "string")
-                throw Error("Failed to find page cid of subplebbit to verify");
-            const page = subplebbit.posts.pages[pageSortName];
-            if (!remeda.isPlainObject(page))
+        for (const preloadedPageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
+            const pageCid = subplebbit.posts.pageCids?.[preloadedPageSortName];
+            const preloadedPage = subplebbit.posts.pages[preloadedPageSortName];
+            if (!remeda.isPlainObject(preloadedPage))
                 throw Error("failed to find page ipfs of subplebbit to verify");
             const pageValidity = await verifyPage({
                 pageCid,
-                page,
+                page: preloadedPage,
+                pageSortName: preloadedPageSortName,
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
@@ -361,7 +364,7 @@ export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolve
                 validateUpdateSignature: false // no need because we already verified subplebbit signature
             });
             if (!pageValidity.valid) {
-                log.error(`Subplebbit (${subplebbit.address}) page (${pageSortName} - ${subplebbit.posts.pageCids[pageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`);
+                log.error(`Subplebbit (${subplebbit.address}) page (${preloadedPageSortName} - ${subplebbit.posts.pageCids?.[preloadedPageSortName]}) has an invalid signature due to reason (${pageValidity.reason})`);
                 return { valid: false, reason: messages.ERR_SUBPLEBBIT_POSTS_INVALID };
             }
         }
@@ -420,15 +423,14 @@ export async function verifyCommentUpdate({ update, resolveAuthorAddresses, clie
         // Validate update.replies
         const replyPageKeys = remeda.keys.strict(update.replies.pages);
         for (const replySortName of replyPageKeys) {
-            const pageCid = update.replies.pageCids[replySortName];
-            if (!pageCid)
-                throw Error("Failed to find page cid of the page");
+            const pageCid = update.replies.pageCids?.[replySortName];
             const page = update.replies.pages[replySortName];
             if (!page)
                 throw Error("Failed to find page to verify within comment update");
             const validity = await verifyPage({
                 pageCid,
                 page,
+                pageSortName: replySortName,
                 resolveAuthorAddresses,
                 clientsManager,
                 subplebbit,
@@ -559,17 +561,19 @@ export async function verifyPageComment({ pageComment, subplebbit, parentComment
         return commentUpdateSignatureValidity;
     return commentSignatureValidity;
 }
-export async function verifyPage({ pageCid, page, resolveAuthorAddresses, clientsManager, subplebbit, parentComment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }) {
-    const cacheKey = sha256((pageCid || JSON.stringify(page)) +
-        resolveAuthorAddresses +
-        overrideAuthorAddressIfInvalid +
-        subplebbit.address +
-        subplebbit.signature?.publicKey +
-        JSON.stringify(parentComment) +
-        validatePages +
-        validateUpdateSignature);
-    if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey))
-        return { valid: true };
+export async function verifyPage({ pageCid, pageSortName, page, resolveAuthorAddresses, clientsManager, subplebbit, parentComment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }) {
+    const cacheKey = pageCid &&
+        sha256(pageCid +
+            resolveAuthorAddresses +
+            overrideAuthorAddressIfInvalid +
+            subplebbit.address +
+            subplebbit.signature?.publicKey +
+            JSON.stringify(parentComment) +
+            validatePages +
+            validateUpdateSignature);
+    if (cacheKey)
+        if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey))
+            return { valid: true };
     for (const pageComment of page.comments) {
         const verifyRes = await verifyPageComment({
             pageComment,
@@ -584,7 +588,8 @@ export async function verifyPage({ pageCid, page, resolveAuthorAddresses, client
         if (!verifyRes.valid)
             return verifyRes;
     }
-    clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
+    if (cacheKey)
+        clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
     return { valid: true };
 }
 //# sourceMappingURL=signatures.js.map

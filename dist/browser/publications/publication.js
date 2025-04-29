@@ -17,6 +17,7 @@ import { PublicationClientsManager } from "./publication-client-manager.js";
 class Publication extends TypedEmitter {
     constructor(plebbit) {
         super();
+        this.raw = {};
         // private
         this._subplebbit = undefined; // will be used for publishing
         this._challengeAnswer = undefined;
@@ -29,7 +30,7 @@ class Publication extends TypedEmitter {
         this._challenge = undefined;
         this._rpcPublishSubscriptionId = undefined;
         this._plebbit = plebbit;
-        this._updatePublishingState("stopped");
+        this._updatePublishingStateWithEmission("stopped");
         this._updateState("stopped");
         this._initClients();
         this._handleChallengeExchange = this._handleChallengeExchange.bind(this);
@@ -74,13 +75,20 @@ class Publication extends TypedEmitter {
         };
     }
     async _handleRpcChallengeVerification(verification) {
+        const log = Logger("plebbit-js:publication:_handleRpcChallengeVerification");
         this._receivedChallengeVerification = true;
         if (verification.comment)
             await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(verification);
         this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
-        if (this._rpcPublishSubscriptionId)
-            await this._plebbit._plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
-        this._rpcPublishSubscriptionId = undefined;
+        if (this._rpcPublishSubscriptionId) {
+            try {
+                await this._plebbit._plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+            }
+            catch (e) {
+                log.error("Failed to unsubscribe from publication publish", e);
+            }
+            this._rpcPublishSubscriptionId = undefined;
+        }
     }
     async _handleIncomingChallengePubsubMessage(msg) {
         const log = Logger("plebbit-js:publication:_handleIncomingChallengePubsubMessage");
@@ -93,8 +101,9 @@ class Publication extends TypedEmitter {
                 reason: challengeMsgValidity.reason
             });
             log.error("received challenge message with invalid signature", error.toString());
-            this._updatePublishingState("failed");
+            this._updatePublishingStateNoEmission("failed");
             this.emit("error", error);
+            this.emit("publishingstatechange", "failed");
             return;
         }
         log(`Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`);
@@ -105,8 +114,9 @@ class Publication extends TypedEmitter {
         catch (e) {
             const plebbitError = new PlebbitError("ERR_PUBLICATION_FAILED_TO_DECRYPT_CHALLENGE", { decryptErr: e });
             log.error("could not decrypt challengemessage.encrypted", plebbitError.toString());
-            this._updatePublishingState("failed");
+            this._updatePublishingStateNoEmission("failed");
             this.emit("error", plebbitError);
+            this.emit("publishingstatechange", "failed");
             return;
         }
         let decryptedJson;
@@ -115,8 +125,9 @@ class Publication extends TypedEmitter {
         }
         catch (e) {
             log.error("could not parse decrypted challengemessage.encrypted as a json", String(e));
-            this._updatePublishingState("failed");
+            this._updatePublishingStateNoEmission("failed");
             this.emit("error", e);
+            this.emit("publishingstatechange", "failed");
             return;
         }
         let decryptedChallenge;
@@ -125,8 +136,9 @@ class Publication extends TypedEmitter {
         }
         catch (e) {
             log.error("could not parse z challengemessage.encrypted as a json", String(e));
-            this._updatePublishingState("failed");
+            this._updatePublishingStateNoEmission("failed");
             this.emit("error", e);
+            this.emit("publishingstatechange", "failed");
             return;
         }
         this._challenge = {
@@ -134,7 +146,7 @@ class Publication extends TypedEmitter {
             ...decryptedChallenge
         };
         this._receivedChallengeFromSub = true;
-        this._updatePublishingState("waiting-challenge-answers");
+        this._updatePublishingStateWithEmission("waiting-challenge-answers");
         const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
             .map(([provider]) => provider);
@@ -151,15 +163,16 @@ class Publication extends TypedEmitter {
                 pubsubMsg: msg,
                 reason: signatureValidation.reason
             });
-            this._updatePublishingState("failed");
+            this._updatePublishingStateNoEmission("failed");
             log.error("Publication received a challenge verification with invalid signature", error);
             this.emit("error", error);
+            this.emit("publishingstatechange", "failed");
             return;
         }
         this._receivedChallengeVerification = true;
         let decryptedChallengeVerification;
         if (msg.challengeSuccess) {
-            this._updatePublishingState("succeeded");
+            this._updatePublishingStateWithEmission("succeeded");
             log(`Received a challengeverification with challengeSuccess=true`, "for publication", this.getType());
             if (msg.encrypted) {
                 let decryptedRawString;
@@ -199,7 +212,7 @@ class Publication extends TypedEmitter {
             }
         }
         else {
-            this._updatePublishingState("failed");
+            this._updatePublishingStateWithEmission("failed");
             log.error(`Challenge exchange with publication`, this.getType(), `has failed to pass`, "Challenge errors", msg.challengeErrors, `reason`, msg.reason);
         }
         await this._postSucessOrFailurePublishing();
@@ -271,14 +284,14 @@ class Publication extends TypedEmitter {
             ...toSignAnswer,
             signature: await signChallengeAnswer(toSignAnswer, this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()])
         };
-        this._updatePublishingState("publishing-challenge-answer");
+        this._updatePublishingStateWithEmission("publishing-challenge-answer");
         this._clientsManager.updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
         await this._clientsManager.pubsubPublishOnProvider(this._pubsubTopicWithfallback(), answerMsgToPublish, this._pubsubProviders[this._currentPubsubProviderIndex]);
         this._challengeAnswer = {
             ...toEncryptAnswers,
             ...answerMsgToPublish
         };
-        this._updatePublishingState("waiting-challenge-verification");
+        this._updatePublishingStateWithEmission("waiting-challenge-verification");
         const providers = Object.entries(this._clientsManager.providerSubscriptions)
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
             .map(([provider]) => provider);
@@ -303,7 +316,10 @@ class Publication extends TypedEmitter {
                 address: this._subplebbit?.address
             });
     }
-    _updatePublishingState(newState) {
+    _updatePublishingStateNoEmission(newState) {
+        this.publishingState = newState;
+    }
+    _updatePublishingStateWithEmission(newState) {
         if (this.publishingState === newState)
             return;
         this.publishingState = newState;
@@ -348,7 +364,8 @@ class Publication extends TypedEmitter {
     }
     _getSubplebbitCache() {
         return (this._plebbit._memCaches.subplebbitForPublishing.get(this.subplebbitAddress, { allowStale: true }) ||
-            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?._rawSubplebbitIpfs);
+            this._plebbit._updatingSubplebbits[this.subplebbitAddress]?.raw.subplebbitIpfs ||
+            this._plebbit._startedSubplebbits[this.subplebbitAddress]?.raw.subplebbitIpfs);
     }
     async _fetchSubplebbitForPublishing() {
         const log = Logger("plebbit-js:publish:_fetchSubplebbitForPublishing");
@@ -369,7 +386,7 @@ class Publication extends TypedEmitter {
             // we have no cache or plebbit._updatingSubplebbit[this.subplebbitAddress]
             const updatingSubInstance = await this._clientsManager._createSubInstanceWithStateTranslation();
             let subIpfs;
-            if (!updatingSubInstance.subplebbit._rawSubplebbitIpfs) {
+            if (!updatingSubInstance.subplebbit.raw.subplebbitIpfs) {
                 const timeoutMs = this._plebbit._timeouts["subplebbit-ipns"];
                 try {
                     await waitForUpdateInSubInstanceWithErrorAndTimeout(updatingSubInstance.subplebbit, timeoutMs);
@@ -392,7 +409,7 @@ class Publication extends TypedEmitter {
     }
     async stop() {
         await this._postSucessOrFailurePublishing();
-        this._updatePublishingState("stopped");
+        this._updatePublishingStateWithEmission("stopped");
     }
     _isAllAttemptsExhausted() {
         // When all providers failed to publish
@@ -417,7 +434,7 @@ class Publication extends TypedEmitter {
                 this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
                 if (this._isAllAttemptsExhausted()) {
                     await this._postSucessOrFailurePublishing();
-                    this._updatePublishingState("failed");
+                    this._updatePublishingStateNoEmission("failed");
                     const allAttemptsFailedError = new PlebbitError("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER", {
                         attemptedPubsubProviders: this._pubsubProviders,
                         pubsubTopic: this._pubsubTopicWithfallback()
@@ -425,18 +442,26 @@ class Publication extends TypedEmitter {
                     });
                     log.error(String(allAttemptsFailedError));
                     this.emit("error", allAttemptsFailedError); // TODO this line is causing an uncaught error
+                    this.emit("publishingstatechange", "failed");
                 }
             }
         }, this._setProviderFailureThresholdSeconds * 1000);
     }
     async _postSucessOrFailurePublishing() {
+        const log = Logger("plebbit-js:publication:_postSucessOrFailurePublishing");
         this._updateState("stopped");
         if (this._rpcPublishSubscriptionId) {
-            await this._plebbit._plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+            try {
+                await this._plebbit._plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+            }
+            catch (e) {
+                log.error("Failed to unsubscribe from publication publish", e);
+            }
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         }
         else if (this._subplebbit) {
+            // the client is publishing to pubsub without using plebbit RPC
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this._handleChallengeExchange);
             this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
         }
@@ -470,7 +495,7 @@ class Publication extends TypedEmitter {
     }
     _handleIncomingPublishingStateFromRpc(args) {
         const publishState = args.params.result; // we're optimistic that RPC server transmitted a correct string
-        this._updatePublishingState(publishState);
+        this._updatePublishingStateWithEmission(publishState);
         this._updateRpcClientStateFromPublishingState(publishState);
     }
     _handleIncomingStateFromRpc(args) {
@@ -498,7 +523,7 @@ class Publication extends TypedEmitter {
         catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));
             this._updateState("stopped");
-            this._updatePublishingState("failed");
+            this._updatePublishingStateWithEmission("failed");
             throw e;
         }
         this._plebbit._plebbitRpcClient
@@ -540,7 +565,7 @@ class Publication extends TypedEmitter {
         }
         catch (e) {
             this._updateState("stopped");
-            this._updatePublishingState("failed");
+            this._updatePublishingStateWithEmission("failed");
             throw e;
         }
         const pubsubMessageSigner = await this._plebbit.createSigner();
@@ -560,7 +585,7 @@ class Publication extends TypedEmitter {
         const challengeRequest = await this._signAndValidateChallengeRequestBeforePublishing(toSignMsg, pubsubMessageSigner);
         log("Attempting to publish", this.getType(), "to pubsub topic", this._pubsubTopicWithfallback(), "with provider", this._pubsubProviders[this._currentPubsubProviderIndex], "request.encrypted=", this.toJSONPubsubRequestToEncrypt());
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
-            this._updatePublishingState("publishing-challenge-request");
+            this._updatePublishingStateWithEmission("publishing-challenge-request");
             this._clientsManager.updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);
             try {
                 await this._clientsManager.pubsubSubscribeOnProvider(this._pubsubTopicWithfallback(), this._handleChallengeExchange, this._pubsubProviders[this._currentPubsubProviderIndex]);
@@ -573,14 +598,16 @@ class Publication extends TypedEmitter {
                 this._currentPubsubProviderIndex += 1;
                 if (this._isAllAttemptsExhausted()) {
                     await this._postSucessOrFailurePublishing();
-                    this._updatePublishingState("failed");
                     const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
                         pubsubProviders: this._pubsubProviders,
-                        pubsubTopic: this._pubsubTopicWithfallback()
-                        // TODO should include errors
+                        pubsubTopic: this._pubsubTopicWithfallback(),
+                        lastError: e
+                        // TODO should include all errors
                     });
                     log.error("All attempts to publish", this.getType(), "has failed", allAttemptsFailedError);
+                    this._updatePublishingStateNoEmission("failed");
                     this.emit("error", allAttemptsFailedError);
+                    this.emit("publishingstatechange", "failed");
                     throw allAttemptsFailedError;
                 }
                 else if (this._currentPubsubProviderIndex === this._pubsubProviders.length)
@@ -596,7 +623,7 @@ class Publication extends TypedEmitter {
             this._publishedChallengeRequests.push(decryptedRequest);
             this._clientsManager.updatePubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
             this._setProviderToFailIfNoResponse(this._currentPubsubProviderIndex);
-            this._updatePublishingState("waiting-challenge");
+            this._updatePublishingStateWithEmission("waiting-challenge");
             log(`Published a challenge request of publication`, this.getType(), "with provider", this._pubsubProviders[this._currentPubsubProviderIndex]);
             this.emit("challengerequest", decryptedRequest);
             break;
@@ -611,14 +638,15 @@ class Publication extends TypedEmitter {
                     // plebbit-js tried all providers and still no response is received
                     log.error(`Failed to receive any response for publication`, this.getType());
                     await this._postSucessOrFailurePublishing();
-                    this._updatePublishingState("failed");
                     const error = new PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {
                         pubsubProviders: this._pubsubProviders,
                         publishedChallengeRequests: this._publishedChallengeRequests,
                         publishToDifferentProviderThresholdSeconds: this._publishToDifferentProviderThresholdSeconds
                         // TODO should include errors
                     });
-                    this.emit("error", error);
+                    this._updatePublishingStateNoEmission("failed");
+                    this.emit("error", error); // I think this line could cause an uncaught error
+                    this.emit("publishingstatechange", "failed");
                 }
                 else {
                     log(`Re-publishing publication after ${this._publishToDifferentProviderThresholdSeconds}s of not receiving challenge from provider (${this._pubsubProviders[this._currentPubsubProviderIndex]})`);

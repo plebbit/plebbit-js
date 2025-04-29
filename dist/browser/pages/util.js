@@ -3,13 +3,12 @@ import { BasePages } from "./pages.js";
 import * as remeda from "remeda";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
-//This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
-    HOUR: 60 * 60,
-    DAY: 60 * 60 * 24,
-    WEEK: 60 * 60 * 24 * 7,
-    MONTH: 60 * 60 * 24 * 7 * 4,
-    YEAR: 60 * 60 * 24 * 7 * 4 * 12,
+    HOUR: 3600, // 60 * 60
+    DAY: 86400, // 60 * 60 * 24
+    WEEK: 604800, // 60 * 60 * 24 * 7
+    MONTH: 2629746, // Average seconds in a month (60 * 60 * 24 * 30.436875)
+    YEAR: 31557600, // Seconds in a year including leap years (60 * 60 * 24 * 365.25)
     ALL: Infinity
 });
 export const POSTS_SORT_TYPES = {
@@ -26,19 +25,18 @@ export const POSTS_SORT_TYPES = {
     topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
     topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
     topAll: { timeframe: "ALL", score: (...args) => topScore(...args) }
-    // remove it for now, might turn back on
-    // controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
-    // controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
-    // controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
-    // controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
-    // controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
-    // controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
 };
-export const REPLIES_SORT_TYPES = {
-    ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+export const POST_REPLIES_SORT_TYPES = {
+    ...remeda.pick(POSTS_SORT_TYPES, ["new"]),
+    best: { score: (...args) => bestScore(...args) },
     old: { score: (...args) => oldScore(...args) },
     newFlat: { ...POSTS_SORT_TYPES["new"], flat: true },
     oldFlat: { score: (...args) => oldScore(...args), flat: true }
+};
+export const REPLY_REPLIES_SORT_TYPES = {
+    ...remeda.pick(POSTS_SORT_TYPES, ["new"]),
+    best: { score: (...args) => bestScore(...args) },
+    old: { score: (...args) => oldScore(...args) }
 };
 export function hotScore(comment) {
     assert(typeof comment.commentUpdate.downvoteCount === "number" &&
@@ -50,6 +48,25 @@ export function hotScore(comment) {
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
     return remeda.round(sign * order + seconds / 45000, 7);
+}
+export function bestScore(comment) {
+    assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
+    const originalUpvoteCount = comment.commentUpdate.upvoteCount; // can be 0
+    const upvoteCount = comment.commentUpdate.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
+    const downvoteCount = comment.commentUpdate.downvoteCount;
+    // n is the total number of ratings
+    const n = originalUpvoteCount + downvoteCount;
+    if (n === 0) {
+        return 0;
+    }
+    // zα/2 is the (1-α/2) quantile of the standard normal distribution
+    const z = 1.281551565545;
+    // p is the observed fraction of positive ratings
+    const p = upvoteCount / n;
+    const left = p + (1 / (2 * n)) * z * z;
+    const right = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n));
+    const under = 1 + (1 / n) * z * z;
+    return (left - right) / under;
 }
 export function controversialScore(comment) {
     assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
@@ -74,124 +91,149 @@ export function oldScore(comment) {
     assert(typeof comment.comment.timestamp === "number");
     return -comment.comment.timestamp;
 }
+export function mapPageIpfsCommentToPageJsonComment(pageComment) {
+    const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
+    const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
+    if (!postCid)
+        throw Error("Failed to infer postCid from pageIpfs.comments.comment");
+    const spoiler = typeof pageComment.commentUpdate.spoiler === "boolean"
+        ? pageComment.commentUpdate.spoiler
+        : typeof pageComment.commentUpdate.edit?.spoiler === "boolean"
+            ? pageComment.commentUpdate.edit?.spoiler
+            : pageComment.comment.spoiler;
+    const nsfw = typeof pageComment.commentUpdate.nsfw === "boolean"
+        ? pageComment.commentUpdate.nsfw
+        : typeof pageComment.commentUpdate.edit?.nsfw === "boolean"
+            ? pageComment.commentUpdate.edit?.nsfw
+            : pageComment.comment.nsfw;
+    return {
+        ...pageComment.comment,
+        ...pageComment.commentUpdate,
+        signature: pageComment.comment.signature,
+        author: {
+            ...pageComment.comment.author,
+            ...pageComment.commentUpdate.author,
+            shortAddress: shortifyAddress(pageComment.comment.author.address),
+            flair: pageComment.commentUpdate?.author?.subplebbit?.flair ||
+                pageComment.commentUpdate?.edit?.author?.flair ||
+                pageComment.comment.author.flair
+        },
+        shortCid: shortifyCid(pageComment.commentUpdate.cid),
+        shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
+        original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
+        deleted: pageComment.commentUpdate.edit?.deleted,
+        replies: parsedPages,
+        content: pageComment.commentUpdate.edit?.content || pageComment.comment.content,
+        reason: pageComment.commentUpdate.reason,
+        spoiler,
+        nsfw,
+        flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
+        postCid,
+        raw: {
+            comment: pageComment.comment,
+            commentUpdate: pageComment.commentUpdate
+        }
+    };
+}
 export function parsePageIpfs(pageIpfs) {
-    const finalComments = pageIpfs.comments.map((pageComment) => {
-        // This code below is duplicated in comment._initCommentUpdate
-        // TODO move it to a shared function
-        const parsedPages = pageComment.commentUpdate.replies ? parsePagesIpfs(pageComment.commentUpdate.replies) : undefined;
-        const postCid = pageComment.comment.postCid ?? (pageComment.comment.depth === 0 ? pageComment.commentUpdate.cid : undefined);
-        if (!postCid)
-            throw Error("Failed to infer postCid from pageIpfs.comments.comment");
-        const spoiler = typeof pageComment.commentUpdate.spoiler === "boolean"
-            ? pageComment.commentUpdate.spoiler
-            : typeof pageComment.commentUpdate.edit?.spoiler === "boolean"
-                ? pageComment.commentUpdate.edit?.spoiler
-                : pageComment.comment.spoiler;
-        const nsfw = typeof pageComment.commentUpdate.nsfw === "boolean"
-            ? pageComment.commentUpdate.nsfw
-            : typeof pageComment.commentUpdate.edit?.nsfw === "boolean"
-                ? pageComment.commentUpdate.edit?.nsfw
-                : pageComment.comment.nsfw;
-        const finalJson = {
-            ...pageComment.comment,
-            ...pageComment.commentUpdate,
-            signature: pageComment.comment.signature,
-            author: {
-                ...pageComment.comment.author,
-                ...pageComment.commentUpdate.author,
-                shortAddress: shortifyAddress(pageComment.comment.author.address),
-                flair: pageComment.commentUpdate?.author?.subplebbit?.flair ||
-                    pageComment.commentUpdate?.edit?.author?.flair ||
-                    pageComment.comment.author.flair
-            },
-            shortCid: shortifyCid(pageComment.commentUpdate.cid),
-            shortSubplebbitAddress: shortifyAddress(pageComment.comment.subplebbitAddress),
-            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(pageComment.comment),
-            deleted: pageComment.commentUpdate.edit?.deleted,
-            replies: parsedPages,
-            content: pageComment.commentUpdate.edit?.content || pageComment.comment.content,
-            reason: pageComment.commentUpdate.reason,
-            spoiler,
-            nsfw,
-            flair: pageComment.comment.flair || pageComment.commentUpdate.edit?.flair,
-            postCid,
-            pageComment
-        };
-        return finalJson;
-    });
+    const finalComments = pageIpfs.comments.map(mapPageIpfsCommentToPageJsonComment);
     return { comments: finalComments, ...remeda.pick(pageIpfs, ["nextCid"]) };
 }
 export function parsePagesIpfs(pagesRaw) {
     const keys = remeda.keys.strict(pagesRaw.pages);
     const parsedPages = Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs));
     const pagesType = remeda.fromEntries.strict(keys.map((key, i) => [key, parsedPages[i]]));
-    return { pages: pagesType, pageCids: pagesRaw.pageCids };
+    return { pages: pagesType, pageCids: pagesRaw.pageCids || {} };
+}
+export function processAllCommentsRecursively(comments, processor) {
+    if (!comments || comments.length === 0)
+        return;
+    comments.forEach((comment) => processor(comment));
+    for (const comment of comments)
+        if (comment.commentUpdate.replies?.pages?.best?.comments)
+            processAllCommentsRecursively(comment.commentUpdate.replies.pages.best.comments, processor);
 }
 // To use for both subplebbit.posts and comment.replies
-export function parseRawPages(pages) {
+export function parseRawPages(pages, pageCreationTimestamp // to use to calculate sort pages client-side
+) {
     if (!pages)
         return {
-            pages: {},
-            pagesIpfs: undefined
+            pages: {}
         };
     const isIpfs = typeof Object.values(pages.pages)[0]?.comments[0]?.["commentUpdate"]?.["cid"] === "string";
     if (isIpfs) {
-        pages = pages;
+        const pagesIpfs = pages;
         // pages is a PagesTypeIpfs
-        const parsedPages = parsePagesIpfs(pages);
-        return {
-            pages: parsedPages.pages,
-            pagesIpfs: pages
-        };
+        const parsedPages = parsePagesIpfs(pagesIpfs);
+        return { pages: parsedPages.pages };
     }
     else if (pages instanceof BasePages)
-        return { pages: pages.pages, pagesIpfs: pages.toJSONIpfs() }; // already parsed
+        return { pages: pages.pages }; // already parsed
     else {
         pages = pages;
         return {
-            pages: pages.pages,
-            pagesIpfs: undefined
+            pages: pages.pages
         };
     }
 }
 // finding comments within pages
-export function findCommentInPages(pageIpfs, targetCommentCid) {
-    if (!pageIpfs)
+export function findCommentInPageInstance(pageInstance, targetCommentCid) {
+    if (!pageInstance)
         throw Error("should define page ipfs");
     if (!targetCommentCid)
         throw Error("should define target comment cid");
-    for (const page of Object.values(pageIpfs.pages))
-        for (const pageComment of page.comments)
-            if (pageComment.commentUpdate.cid === targetCommentCid)
-                return pageComment;
+    const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCommentCid];
+    if (commentInLoadedUniqueComment)
+        return commentInLoadedUniqueComment;
+    for (const page of Object.values(pageInstance.pages))
+        if (page)
+            for (const pageComment of page.comments)
+                if (pageComment.cid === targetCommentCid)
+                    return pageComment.raw;
     return undefined;
 }
-export function findCommentInPagesRecrusively(pages, targetCid, targetDepth, visited = new Set()) {
-    if (!pages)
+export function findCommentInParsedPages(pageJson, targetCommentCid) {
+    if (!pageJson)
+        throw Error("should define page json");
+    if (!targetCommentCid)
+        throw Error("should define target comment cid");
+    for (const pageComment of pageJson.comments)
+        if (pageComment.cid === targetCommentCid)
+            return pageComment;
+}
+export function findCommentInHierarchicalPageIpfsRecursively(page, targetCid) {
+    if (!page)
         throw Error("should define page ipfs");
     if (!targetCid)
         throw Error("should define target comment cid");
-    // Check all pages in the current level
-    for (const [pageCid, page] of Object.entries(pages.pages)) {
-        // Skip if we've visited this page
-        if (visited.has(pageCid))
-            continue;
-        visited.add(pageCid);
-        const currentDepth = page.comments[0].comment.depth;
-        if (currentDepth === targetDepth || targetDepth === undefined) {
-            for (const pageComment of page.comments)
-                if (pageComment.commentUpdate.cid === targetCid)
-                    return pageComment;
-        }
-        if (targetDepth === undefined || currentDepth < targetDepth) {
-            for (const pageComment of page.comments) {
-                if (pageComment.commentUpdate.replies?.pages) {
-                    const result = findCommentInPagesRecrusively(pageComment.commentUpdate.replies, targetCid, targetDepth, visited);
-                    if (result)
-                        return result;
-                }
+    for (const pageComment of page.comments) {
+        if (pageComment.commentUpdate.cid === targetCid)
+            return pageComment;
+        if (pageComment.commentUpdate.replies?.pages) {
+            for (const preloadedPage of Object.values(pageComment.commentUpdate.replies.pages)) {
+                const result = findCommentInHierarchicalPageIpfsRecursively(preloadedPage, targetCid);
+                if (result)
+                    return result;
             }
         }
+    }
+    return undefined;
+}
+export function findCommentInPageInstanceRecursively(pageInstance, targetCid) {
+    if (!pageInstance)
+        throw Error("should define page instance");
+    if (!targetCid)
+        throw Error("should define target comment cid");
+    const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCid];
+    if (commentInLoadedUniqueComment)
+        return commentInLoadedUniqueComment;
+    for (const preloadedPage of Object.values(pageInstance.pages)) {
+        if (!preloadedPage)
+            continue;
+        const pageIpfs = { comments: preloadedPage.comments.map((page) => page.raw), nextCid: preloadedPage.nextCid };
+        const foundComment = findCommentInHierarchicalPageIpfsRecursively(pageIpfs, targetCid);
+        if (foundComment)
+            return foundComment;
     }
     return undefined;
 }

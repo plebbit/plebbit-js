@@ -1,4 +1,4 @@
-export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod").ZodObject<import("zod").objectUtil.extendShape<{
+export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod").ZodObject<{
     signer: import("zod").ZodObject<{
         type: import("zod").ZodEnum<["ed25519"]>;
         privateKey: import("zod").ZodString;
@@ -28,18 +28,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -122,18 +122,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -216,18 +216,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -305,11 +305,11 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     }>>;
-}, {
+} & {
     subplebbitEdit: import("zod").ZodObject<{
         address: import("zod").ZodOptional<import("zod").ZodString>;
-        title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+        title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
         features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -1387,8 +1387,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
     }, "strict", import("zod").ZodTypeAny, {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -1569,8 +1569,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         } | undefined;
     }, {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -1750,7 +1750,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             fetchThumbnailUrlsProxyUrl?: string | undefined;
         } | undefined;
     }>;
-}>, "strict", import("zod").ZodTypeAny, {
+}, "strict", import("zod").ZodTypeAny, {
     signer: {
         type: "ed25519";
         privateKey: string;
@@ -1758,8 +1758,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
     subplebbitAddress: string;
     subplebbitEdit: {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -1959,18 +1959,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -2048,8 +2048,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
     subplebbitAddress: string;
     subplebbitEdit: {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -2249,18 +2249,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -2332,303 +2332,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
     } | undefined;
 }>;
 export declare const SubplebbitEditPublicationSignedPropertyNames: ("timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit")[];
-export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod").ZodObject<Pick<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<{
-    signer: import("zod").ZodObject<{
-        type: import("zod").ZodEnum<["ed25519"]>;
-        privateKey: import("zod").ZodString;
-    }, "strip", import("zod").ZodTypeAny, {
-        type: "ed25519";
-        privateKey: string;
-    }, {
-        type: "ed25519";
-        privateKey: string;
-    }>;
-    author: import("zod").ZodOptional<import("zod").ZodObject<{
-        address: import("zod").ZodOptional<import("zod").ZodString>;
-        previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-        displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-        wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "strip", import("zod").ZodTypeAny, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }>>>>;
-        avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">>>>;
-        flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">>>>;
-    }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-        address: import("zod").ZodOptional<import("zod").ZodString>;
-        previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-        displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-        wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "strip", import("zod").ZodTypeAny, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }>>>>;
-        avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">>>>;
-        flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">>>>;
-    }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-        address: import("zod").ZodOptional<import("zod").ZodString>;
-        previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-        displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-        wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "strip", import("zod").ZodTypeAny, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }>>>>;
-        avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">>>>;
-        flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">>>>;
-    }, import("zod").ZodTypeAny, "passthrough">>>;
+export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod").ZodObject<Pick<{
     subplebbitAddress: import("zod").ZodString;
-    protocolVersion: import("zod").ZodOptional<import("zod").ZodString>;
-    timestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
     challengeRequest: import("zod").ZodOptional<import("zod").ZodObject<{
         challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
         challengeCommentCids: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEffects<import("zod").ZodString, string, string>, "many">>;
@@ -2639,11 +2344,10 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     }>>;
-}, {
     subplebbitEdit: import("zod").ZodObject<{
         address: import("zod").ZodOptional<import("zod").ZodString>;
-        title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+        title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
         features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -3721,8 +3425,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
     }, "strict", import("zod").ZodTypeAny, {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -3903,8 +3607,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         } | undefined;
     }, {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -4084,190 +3788,26 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             fetchThumbnailUrlsProxyUrl?: string | undefined;
         } | undefined;
     }>;
-}>, {
-    signer: import("zod").ZodObject<import("zod").objectUtil.extendShape<{
+    signer: import("zod").ZodObject<{
         type: import("zod").ZodEnum<["ed25519"]>;
         privateKey: import("zod").ZodString;
-    }, {
+    } & {
         address: import("zod").ZodString;
         publicKey: import("zod").ZodString;
-    }>, "strip", import("zod").ZodTypeAny, {
+    }, "strip", import("zod").ZodTypeAny, {
         type: "ed25519";
-        privateKey: string;
         address: string;
+        privateKey: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        privateKey: string;
         address: string;
+        privateKey: string;
         publicKey: string;
     }>;
     timestamp: import("zod").ZodNumber;
-    author: import("zod").ZodObject<{
-        address: import("zod").ZodString;
-        previousCommentCid: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>;
-        displayName: import("zod").ZodOptional<import("zod").ZodString>;
-        wallets: import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "strip", import("zod").ZodTypeAny, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }>>>;
-        avatar: import("zod").ZodOptional<import("zod").ZodObject<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough">>>;
-        flair: import("zod").ZodOptional<import("zod").ZodObject<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough">>>;
-    }, "strict", import("zod").ZodTypeAny, {
-        address: string;
-        previousCommentCid?: string | undefined;
-        displayName?: string | undefined;
-        wallets?: Record<string, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }> | undefined;
-        avatar?: import("zod").objectOutputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        flair?: import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        address: string;
-        previousCommentCid?: string | undefined;
-        displayName?: string | undefined;
-        wallets?: Record<string, {
-            address: string;
-            timestamp: number;
-            signature: {
-                type: "eip191";
-                signature: string;
-            };
-        }> | undefined;
-        avatar?: import("zod").objectInputType<{
-            chainTicker: import("zod").ZodString;
-            address: import("zod").ZodString;
-            id: import("zod").ZodString;
-            timestamp: import("zod").ZodNumber;
-            signature: import("zod").ZodObject<{
-                signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
-            }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
-                signature: string;
-            }, {
-                type: "eip191";
-                signature: string;
-            }>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        flair?: import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-    }>;
     protocolVersion: import("zod").ZodString;
-}>, {
+} & {
     signature: import("zod").ZodObject<{
         type: import("zod").ZodEnum<["ed25519", "eip191"]>;
         signature: import("zod").ZodString;
@@ -4275,13 +3815,13 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
     }, "strip", import("zod").ZodTypeAny, {
         type: "ed25519" | "eip191";
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     author: import("zod").ZodObject<{
@@ -4303,18 +3843,18 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -4397,18 +3937,18 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -4491,18 +4031,18 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -4567,25 +4107,31 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough">>>;
     }, import("zod").ZodTypeAny, "passthrough">>;
-}>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "strict", import("zod").ZodTypeAny, {
-    timestamp: number;
+}, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "strict", import("zod").ZodTypeAny, {
     signature: {
         type: "ed25519" | "eip191";
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
+    timestamp: number;
     author: {
         address: string;
+        flair?: import("zod").objectOutputType<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }> | undefined;
         avatar?: import("zod").objectOutputType<{
             chainTicker: import("zod").ZodString;
@@ -4603,12 +4149,6 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        flair?: import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -4616,8 +4156,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     protocolVersion: string;
     subplebbitEdit: {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -4798,24 +4338,30 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         } | undefined;
     };
 }, {
-    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
+    timestamp: number;
     author: {
         address: string;
+        flair?: import("zod").objectInputType<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
-            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
+            timestamp: number;
         }> | undefined;
         avatar?: import("zod").objectInputType<{
             chainTicker: import("zod").ZodString;
@@ -4833,12 +4379,6 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        flair?: import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -4846,8 +4386,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     protocolVersion: string;
     subplebbitEdit: {
         address?: string | undefined;
-        title?: string | undefined;
         description?: string | undefined;
+        title?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -5028,307 +4568,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         } | undefined;
     };
 }>;
-export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: import("zod").ZodObject<import("zod").objectUtil.extendShape<{
+export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: import("zod").ZodObject<{
     challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
     challengeCommentCids: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEffects<import("zod").ZodString, string, string>, "many">>;
-}, {
-    subplebbitEdit: import("zod").ZodObject<Pick<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<{
-        signer: import("zod").ZodObject<{
-            type: import("zod").ZodEnum<["ed25519"]>;
-            privateKey: import("zod").ZodString;
-        }, "strip", import("zod").ZodTypeAny, {
-            type: "ed25519";
-            privateKey: string;
-        }, {
-            type: "ed25519";
-            privateKey: string;
-        }>;
-        author: import("zod").ZodOptional<import("zod").ZodObject<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, import("zod").ZodTypeAny, "passthrough">>>;
+} & {
+    subplebbitEdit: import("zod").ZodObject<Pick<{
         subplebbitAddress: import("zod").ZodString;
-        protocolVersion: import("zod").ZodOptional<import("zod").ZodString>;
-        timestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
         challengeRequest: import("zod").ZodOptional<import("zod").ZodObject<{
             challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
             challengeCommentCids: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEffects<import("zod").ZodString, string, string>, "many">>;
@@ -5339,11 +4584,10 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             challengeAnswers?: [string, ...string[]] | undefined;
             challengeCommentCids?: string[] | undefined;
         }>>;
-    }, {
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
-            title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+            title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
             features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -6421,8 +5665,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -6603,8 +5847,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             } | undefined;
         }, {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -6784,190 +6028,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             } | undefined;
         }>;
-    }>, {
-        signer: import("zod").ZodObject<import("zod").objectUtil.extendShape<{
+        signer: import("zod").ZodObject<{
             type: import("zod").ZodEnum<["ed25519"]>;
             privateKey: import("zod").ZodString;
-        }, {
+        } & {
             address: import("zod").ZodString;
             publicKey: import("zod").ZodString;
-        }>, "strip", import("zod").ZodTypeAny, {
+        }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519";
-            privateKey: string;
             address: string;
+            privateKey: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            privateKey: string;
             address: string;
+            privateKey: string;
             publicKey: string;
         }>;
         timestamp: import("zod").ZodNumber;
-        author: import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodString>;
-            wallets: import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>;
-            flair: import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>;
-        }, "strict", import("zod").ZodTypeAny, {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        }>;
         protocolVersion: import("zod").ZodString;
-    }>, {
+    } & {
         signature: import("zod").ZodObject<{
             type: import("zod").ZodEnum<["ed25519", "eip191"]>;
             signature: import("zod").ZodString;
@@ -6975,13 +6055,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -7003,18 +6083,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -7097,18 +6177,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -7191,18 +6271,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -7267,303 +6347,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
         }, import("zod").ZodTypeAny, "passthrough">>;
-    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<Pick<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<{
-        signer: import("zod").ZodObject<{
-            type: import("zod").ZodEnum<["ed25519"]>;
-            privateKey: import("zod").ZodString;
-        }, "strip", import("zod").ZodTypeAny, {
-            type: "ed25519";
-            privateKey: string;
-        }, {
-            type: "ed25519";
-            privateKey: string;
-        }>;
-        author: import("zod").ZodOptional<import("zod").ZodObject<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, import("zod").ZodTypeAny, "passthrough">>>;
+    }, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<Pick<{
         subplebbitAddress: import("zod").ZodString;
-        protocolVersion: import("zod").ZodOptional<import("zod").ZodString>;
-        timestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
         challengeRequest: import("zod").ZodOptional<import("zod").ZodObject<{
             challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
             challengeCommentCids: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEffects<import("zod").ZodString, string, string>, "many">>;
@@ -7574,11 +6359,10 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             challengeAnswers?: [string, ...string[]] | undefined;
             challengeCommentCids?: string[] | undefined;
         }>>;
-    }, {
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
-            title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+            title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
             features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -8656,8 +7440,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -8838,8 +7622,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             } | undefined;
         }, {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -9019,190 +7803,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             } | undefined;
         }>;
-    }>, {
-        signer: import("zod").ZodObject<import("zod").objectUtil.extendShape<{
+        signer: import("zod").ZodObject<{
             type: import("zod").ZodEnum<["ed25519"]>;
             privateKey: import("zod").ZodString;
-        }, {
+        } & {
             address: import("zod").ZodString;
             publicKey: import("zod").ZodString;
-        }>, "strip", import("zod").ZodTypeAny, {
+        }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519";
-            privateKey: string;
             address: string;
+            privateKey: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            privateKey: string;
             address: string;
+            privateKey: string;
             publicKey: string;
         }>;
         timestamp: import("zod").ZodNumber;
-        author: import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodString>;
-            wallets: import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>;
-            flair: import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>;
-        }, "strict", import("zod").ZodTypeAny, {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        }>;
         protocolVersion: import("zod").ZodString;
-    }>, {
+    } & {
         signature: import("zod").ZodObject<{
             type: import("zod").ZodEnum<["ed25519", "eip191"]>;
             signature: import("zod").ZodString;
@@ -9210,13 +7830,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -9238,18 +7858,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -9332,18 +7952,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -9426,18 +8046,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -9502,303 +8122,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
         }, import("zod").ZodTypeAny, "passthrough">>;
-    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<Pick<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<import("zod").objectUtil.extendShape<{
-        signer: import("zod").ZodObject<{
-            type: import("zod").ZodEnum<["ed25519"]>;
-            privateKey: import("zod").ZodString;
-        }, "strip", import("zod").ZodTypeAny, {
-            type: "ed25519";
-            privateKey: string;
-        }, {
-            type: "ed25519";
-            privateKey: string;
-        }>;
-        author: import("zod").ZodOptional<import("zod").ZodObject<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            address: import("zod").ZodOptional<import("zod").ZodString>;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
-            wallets: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-            flair: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>>;
-        }, import("zod").ZodTypeAny, "passthrough">>>;
+    }, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<Pick<{
         subplebbitAddress: import("zod").ZodString;
-        protocolVersion: import("zod").ZodOptional<import("zod").ZodString>;
-        timestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
         challengeRequest: import("zod").ZodOptional<import("zod").ZodObject<{
             challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
             challengeCommentCids: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEffects<import("zod").ZodString, string, string>, "many">>;
@@ -9809,11 +8134,10 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             challengeAnswers?: [string, ...string[]] | undefined;
             challengeCommentCids?: string[] | undefined;
         }>>;
-    }, {
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
-            title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+            title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
             features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -10891,8 +9215,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -11073,8 +9397,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             } | undefined;
         }, {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -11254,190 +9578,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             } | undefined;
         }>;
-    }>, {
-        signer: import("zod").ZodObject<import("zod").objectUtil.extendShape<{
+        signer: import("zod").ZodObject<{
             type: import("zod").ZodEnum<["ed25519"]>;
             privateKey: import("zod").ZodString;
-        }, {
+        } & {
             address: import("zod").ZodString;
             publicKey: import("zod").ZodString;
-        }>, "strip", import("zod").ZodTypeAny, {
+        }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519";
-            privateKey: string;
             address: string;
+            privateKey: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            privateKey: string;
             address: string;
+            privateKey: string;
             publicKey: string;
         }>;
         timestamp: import("zod").ZodNumber;
-        author: import("zod").ZodObject<{
-            address: import("zod").ZodString;
-            previousCommentCid: import("zod").ZodOptional<import("zod").ZodEffects<import("zod").ZodString, string, string>>;
-            displayName: import("zod").ZodOptional<import("zod").ZodString>;
-            wallets: import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodObject<{
-                address: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "strip", import("zod").ZodTypeAny, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }>>>;
-            avatar: import("zod").ZodOptional<import("zod").ZodObject<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough">>>;
-            flair: import("zod").ZodOptional<import("zod").ZodObject<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough">>>;
-        }, "strict", import("zod").ZodTypeAny, {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        }, {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectInputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        }>;
         protocolVersion: import("zod").ZodString;
-    }>, {
+    } & {
         signature: import("zod").ZodObject<{
             type: import("zod").ZodEnum<["ed25519", "eip191"]>;
             signature: import("zod").ZodString;
@@ -11445,13 +9605,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -11473,18 +9633,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -11567,18 +9727,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -11661,18 +9821,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -11737,27 +9897,33 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
         }, import("zod").ZodTypeAny, "passthrough">>;
-    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">>;
-}>, "strip", import("zod").ZodTypeAny, {
+    }, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">>;
+}, "strip", import("zod").ZodTypeAny, {
     subplebbitEdit: {
-        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
+        timestamp: number;
         author: {
             address: string;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -11774,12 +9940,6 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                     type: "eip191";
                     signature: string;
                 }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
@@ -11788,8 +9948,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: string;
         subplebbitEdit: {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -11976,24 +10136,30 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
     challengeCommentCids?: string[] | undefined;
 }, {
     subplebbitEdit: {
-        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
+        timestamp: number;
         author: {
             address: string;
+            flair?: import("zod").objectInputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
-                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
+                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectInputType<{
                 chainTicker: import("zod").ZodString;
@@ -12011,12 +10177,6 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
@@ -12024,8 +10184,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: string;
         subplebbitEdit: {
             address?: string | undefined;
-            title?: string | undefined;
             description?: string | undefined;
+            title?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;

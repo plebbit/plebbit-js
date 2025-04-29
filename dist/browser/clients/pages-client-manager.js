@@ -5,9 +5,10 @@ import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import * as remeda from "remeda";
 import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
+import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
+import { sha256 } from "js-sha256";
 export class BasePagesClientsManager extends BaseClientsManager {
     constructor(opts) {
         super(opts.plebbit);
@@ -84,6 +85,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
         for (const [sortType, pageCid] of Object.entries(newPageCids))
             this._updatePageCidsSortCache(pageCid, [sortType]);
     }
+    _calculatePageMaxSizeCacheKey(pageCid) {
+        return sha256(this._pages._subplebbit.address + pageCid);
+    }
+    updatePagesMaxSizeCache(newPageCids, pageMaxSizeBytes) {
+        remeda
+            .unique(newPageCids)
+            .forEach((pageCid) => this._plebbit._memCaches.pagesMaxSize.set(this._calculatePageMaxSizeCacheKey(pageCid), pageMaxSizeBytes));
+    }
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid, previousPageCid) {
         const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(previousPageCid);
         if (!Array.isArray(sortTypes))
@@ -147,6 +156,8 @@ export class BasePagesClientsManager extends BaseClientsManager {
             return parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })));
         }
         catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, pageCid, sortTypes, pageMaxSize };
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
         }
@@ -177,28 +188,39 @@ export class BasePagesClientsManager extends BaseClientsManager {
         if (sortTypesFromPageCids.length > 0) {
             this.updatePageCidsToSortTypes(this._pages.pageCids);
         }
-        const sortTypes = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
+        const sortTypesFromMemcache = this._plebbit._memCaches.pageCidToSortTypes.get(pageCid);
         const isFirstPage = Object.values(this._pages.pageCids).includes(pageCid) || remeda.isEmpty(this._pages.pageCids);
-        const pageMaxSize = isFirstPage ? 1024 * 1024 : this._plebbit._memCaches.pagesMaxSize.get(pageCid);
+        const pageMaxSize = this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
+            ? this._plebbit._memCaches.pagesMaxSize.get(this._calculatePageMaxSizeCacheKey(pageCid))
+            : isFirstPage
+                ? 1024 * 1024
+                : undefined;
         if (!pageMaxSize)
             throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page;
-        if (this._plebbit._plebbitRpcClient)
-            page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
-        else if (this._defaultIpfsProviderUrl)
-            page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes, pageMaxSize);
-        else
-            page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
+        try {
+            if (this._plebbit._plebbitRpcClient)
+                page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
+            else if (this._defaultIpfsProviderUrl)
+                page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypesFromMemcache, pageMaxSize);
+            else
+                page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
+        }
+        catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, pageCid, pageMaxSize, isFirstPage, sortTypesFromPageCids, sortTypesFromMemcache };
+            throw e;
+        }
         if (page.nextCid) {
             this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
-            this._plebbit._memCaches.pagesMaxSize.set(page.nextCid, pageMaxSize * 2);
+            this.updatePagesMaxSizeCache([page.nextCid], pageMaxSize * 2);
         }
         return page;
     }
 }
 export class RepliesPagesClientsManager extends BasePagesClientsManager {
     getSortTypes() {
-        return remeda.keys.strict(REPLIES_SORT_TYPES);
+        return remeda.keys.strict(POST_REPLIES_SORT_TYPES);
     }
 }
 export class PostsPagesClientsManager extends BasePagesClientsManager {

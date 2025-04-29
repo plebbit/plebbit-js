@@ -28,6 +28,7 @@ export declare class PublicationClientsManager extends ClientsManager {
     _subplebbitForUpdating?: {
         subplebbit: RemoteSubplebbit;
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
+        kuboRpcListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]>;
         chainProviderListeners?: Record<ChainTicker, Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>>;
     } & Pick<SubplebbitEvents, "updatingstatechange" | "update" | "error">;
     constructor(publication: Publication);
@@ -39,16 +40,17 @@ export declare class PublicationClientsManager extends ClientsManager {
     updatePubsubState(newState: PublicationKuboPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void;
     _translateSubUpdatingStateToPublishingState(newUpdatingState: RemoteSubplebbit["updatingState"]): void;
-    _translateSubUpdatingStateToKuboClientState(newUpdatingState: RemoteSubplebbit["updatingState"]): void;
     handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]): void;
-    handleUpdateEventFromSub(): void;
+    handleUpdateEventFromSub(sub: RemoteSubplebbit): void;
     handleErrorEventFromSub(err: PlebbitError | Error): void;
     handleIpfsGatewaySubplebbitState(subplebbitNewGatewayState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"], gatewayUrl: string): void;
     handleChainProviderSubplebbitState(subplebbitNewChainState: RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["state"], chainTicker: ChainTicker, providerUrl: string): void;
+    handleKuboRpcSubplebbitState(subplebbitNewKuboRpcState: RemoteSubplebbit["clients"]["kuboRpcClients"][string]["state"], kuboRpcUrl: string): void;
     _createSubInstanceWithStateTranslation(): Promise<{
         subplebbit: RemoteSubplebbit;
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
+        kuboRpcListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]>;
         chainProviderListeners?: Record<ChainTicker, Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>>;
-    } & Pick<SubplebbitEvents, "error" | "updatingstatechange" | "update">>;
+    } & Pick<SubplebbitEvents, "error" | "update" | "updatingstatechange">>;
     cleanUpUpdatingSubInstance(): Promise<void>;
 }

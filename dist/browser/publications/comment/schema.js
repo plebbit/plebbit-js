@@ -85,7 +85,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
     protocolVersion: ProtocolVersionSchema
 });
 export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
-    replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+    replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'best', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }).strict();
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
 export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.pick({
@@ -103,7 +103,7 @@ const originalFieldsObj = remeda.fromKeys(originalFields, () => true);
 export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageWithFlexibleAuthorSchema.pick(originalFieldsObj).strip();
 // Comment table here
 export const CommentsTableRowSchema = CommentIpfsSchema.extend({
-    cid: CidStringSchema,
+    cid: CidStringSchema, // cid of CommentIpfs, cid v0
     postCid: CidStringSchema,
     id: z.number().nonnegative().int(),
     insertedAt: PlebbitTimestampSchema,
@@ -122,6 +122,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(remeda.uniqu
     "shortSubplebbitAddress",
     "deleted",
     "signer",
+    "raw",
     "comment",
     "commentUpdate",
     "state",

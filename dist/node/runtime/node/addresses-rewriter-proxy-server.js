@@ -61,19 +61,61 @@ export class AddressesRewriterProxyServer {
                     "Content-Length": Buffer.byteLength(rewrittenBody),
                     "content-length": Buffer.byteLength(rewrittenBody),
                     host: this.proxyTarget.host // Add the host header
-                }
+                },
+                // Add a reasonable timeout
+                timeout: 60000 // 1 minute timeout
             };
-            const proxyReq = httpRequest(requestOptions, (proxyRes) => {
-                res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
-                proxyRes.pipe(res, { end: true });
+            // Create proxy request with proper error handling
+            const proxyReq = httpRequest(requestOptions);
+            // Handle timeout
+            proxyReq.setTimeout(60000, () => {
+                debug.error("Proxy request timed out");
+                proxyReq.destroy();
             });
+            // Handle proxy request errors - make sure to close connections
             proxyReq.on("error", (e) => {
                 debug.error("proxy error:", e, "Request options", requestOptions, "request.body", rewrittenBody);
-                res.writeHead(500);
-                res.end("Internal Server Error");
+                if (!res.headersSent) {
+                    res.writeHead(500);
+                    res.end("Internal Server Error");
+                }
+                // Make sure to destroy the request to free up file handles
+                proxyReq.destroy();
             });
+            // Handle the proxy response
+            proxyReq.on("response", (proxyRes) => {
+                // Handle proxy response errors
+                proxyRes.on("error", (err) => {
+                    debug.error("Proxy response error:", err);
+                    if (!res.headersSent) {
+                        res.writeHead(500);
+                        res.end("Proxy Response Error");
+                    }
+                    proxyRes.destroy();
+                });
+                // Pipe the response with proper error handling
+                res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+                proxyRes.pipe(res);
+                // Ensure cleanup when response ends
+                res.on("finish", () => {
+                    proxyRes.resume(); // Make sure to consume any remaining data
+                });
+            });
+            // Write the request body and end
             proxyReq.write(rewrittenBody);
             proxyReq.end();
+        });
+        // Handle client disconnect
+        req.on("close", () => {
+            debug("Client connection closed");
+        });
+        // Handle request errors
+        req.on("error", (err) => {
+            debug.error("Request error:", err);
+            if (!res.headersSent) {
+                res.writeHead(500);
+                res.end("Internal Server Error");
+            }
         });
     }
     // get up to date listen addresses from kubo every x minutes

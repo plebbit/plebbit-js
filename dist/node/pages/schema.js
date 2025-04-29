@@ -7,33 +7,17 @@ export const PageIpfsSchema = z.object({
     nextCid: CidStringSchema.optional()
 });
 export const PostSortNameSchema = z
-    .enum([
-    "hot",
-    "new",
-    "topHour",
-    "topDay",
-    "topWeek",
-    "topMonth",
-    "topYear",
-    "topAll",
-    "controversialHour",
-    "controversialDay",
-    "controversialWeek",
-    "controversialMonth",
-    "controversialYear",
-    "controversialAll",
-    "active"
-])
+    .enum(["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"])
     .or(z.string().min(1)); // this is added to allow flexibility
 // Comment pages here
-export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]).or(z.string().min(1)); // this is added to allow flexiblity;
+export const ReplySortNameSchema = z.enum(["best", "new", "old", "newFlat", "oldFlat"]).or(z.string().min(1)); // this is added to allow flexiblity;
 // TODO combine the two into one schema
 export const PostsPagesIpfsSchema = z.object({
     pages: z.record(PostSortNameSchema, PageIpfsSchema), // pre loaded pages
-    pageCids: z.record(PostSortNameSchema, CidStringSchema)
+    pageCids: z.record(PostSortNameSchema, CidStringSchema).optional() // pageCids is optional if all posts can fit in one preloaded page
 });
 export const RepliesPagesIpfsSchema = z.object({
     pages: z.record(ReplySortNameSchema, PageIpfsSchema), // pre loaded pages
-    pageCids: z.record(ReplySortNameSchema, CidStringSchema)
+    pageCids: z.record(ReplySortNameSchema, CidStringSchema).optional() // pageCids is optional if all replies can fit in one preloaded page
 });
 //# sourceMappingURL=schema.js.map

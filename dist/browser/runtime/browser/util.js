@@ -1,10 +1,7 @@
-import { sha256 } from "js-sha256";
 import { default as browserNativeFunctions } from "./native-functions.js";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Logger from "@plebbit/plebbit-logger";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import { throwWithErrorCode } from "../../util.js";
-const storedKuboRpcClients = {}; // ipfs api url -> Ipfs Client
 // Functions should not be called in browser
 export const getDefaultDataPath = () => undefined;
 export const mkdir = () => {
@@ -38,15 +35,12 @@ export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, ipfsNode) {
     return { id: resJson.Id, name: resJson.Name };
 }
 export function createKuboRpcClient(kuboRpcClientOptions) {
-    const cacheKey = sha256(deterministicStringify(kuboRpcClientOptions));
-    if (storedKuboRpcClients[cacheKey])
-        return storedKuboRpcClients[cacheKey];
     const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
     log("Creating a new ipfs client on browser with options", kuboRpcClientOptions);
-    storedKuboRpcClients[cacheKey] = CreateKuboRpcClient({
+    const kuboRpcClient = CreateKuboRpcClient({
         ...kuboRpcClientOptions
     });
-    return storedKuboRpcClients[cacheKey];
+    return kuboRpcClient;
 }
 export const nativeFunctions = browserNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions) => {

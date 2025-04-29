@@ -1,6 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import { messages } from "../errors.js";
 import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
 import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "./schema.js";
@@ -61,12 +60,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
         this.updateCid = newProps.updateCid;
     }
-    _setStartedState(newState) {
-        if (newState === this.startedState)
-            return;
-        this.startedState = newState;
-        this.emit("startedstatechange", this.startedState);
-    }
     _updateRpcClientStateFromStartedState(startedState) {
         const mapper = {
             failed: ["stopped"],
@@ -98,12 +91,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         }
         else
             await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
-        if (updateRecord.started === false) {
-            // This is the rpc server telling us that this sub has been stopped by another instance
-            // we should stop this instance as well
-            log("Received an update record with started=false", "will stop the current instance");
-            await this._cleanUpRpcConnection(log);
-        }
         this.emit("update", this);
     }
     _handleRpcStartedStateChangeEvent(args) {
@@ -140,9 +127,13 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
     async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
+        if (this.state === "updating")
+            throw new PlebbitError("ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING", { address: this.address });
         // we can't start the same instance multiple times
         if (typeof this._startRpcSubscriptionId === "number")
             throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: this.address });
+        if (this._plebbit._startedSubplebbits[this.address])
+            throw new PlebbitError("ERR_SUB_ALREADY_STARTED_IN_SAME_PLEBBIT_INSTANCE", { subplebbitAddress: this.address });
         try {
             this._startRpcSubscriptionId = await this._plebbit._plebbitRpcClient.startSubplebbit(this.address);
             this._setState("started");
@@ -153,6 +144,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             this._setStartedState("failed");
             throw e;
         }
+        this._plebbit._startedSubplebbits[this.address] = this;
         this.started = true;
         this._plebbit
             ._plebbitRpcClient.getSubscription(this._startRpcSubscriptionId)
@@ -166,8 +158,14 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._startRpcSubscriptionId);
     }
     async _cleanUpRpcConnection(log) {
-        if (this._startRpcSubscriptionId)
-            await this._plebbit._plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+        if (this._startRpcSubscriptionId) {
+            try {
+                await this._plebbit._plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+            }
+            catch (e) {
+                log.error("Failed to unsubscribe from subplebbitStart", e);
+            }
+        }
         this._setStartedState("stopped");
         this._setRpcClientState("stopped");
         this.started = false;
@@ -175,24 +173,33 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
         this._setState("stopped");
     }
+    async stopWithoutRpcCall() {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
+        await this._cleanUpRpcConnection(log);
+        this.posts._stop();
+        this._setState("stopped");
+        this._setStartedState("stopped");
+        this._setRpcClientState("stopped");
+        this.started = false;
+        delete this._plebbit._startedSubplebbits[this.address];
+    }
     async stop() {
+        this.posts._stop();
         if (this.state === "updating") {
             return super.stop();
         }
-        else if (this.state === "started" || this.started) {
+        else if (this.state === "started") {
             // Need to be careful not to stop an already running sub
             const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
             try {
                 await this._plebbit._plebbitRpcClient.stopSubplebbit(this.address);
             }
             catch (e) {
-                if (e instanceof Error && e.message !== messages.ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING)
-                    throw e;
+                log.error("RPC client received an error when asking rpc server to stop subplebbit", e);
             }
             await this._cleanUpRpcConnection(log);
+            delete this._plebbit._startedSubplebbits[this.address];
         }
-        else
-            throw Error("User called rpcLocalSub.stop() without updating or starting");
     }
     async edit(newSubplebbitOptions) {
         const subPropsAfterEdit = await this._plebbit._plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
@@ -205,18 +212,23 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
     async update() {
         if (this.state === "started")
-            return;
-        else
-            return super.update();
+            throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { address: this.address });
+        return super.update();
     }
     async delete() {
         // Make sure to stop updating or starting first
-        if (this.state === "started" || this.state === "updating")
-            await this.stop();
-        await this._plebbit._plebbitRpcClient.deleteSubplebbit(this.address);
+        if (this._plebbit._startedSubplebbits[this.address] && this._plebbit._startedSubplebbits[this.address] !== this) {
+            await this._plebbit._startedSubplebbits[this.address].delete();
+        }
+        else {
+            if (this.state === "started" || this.state === "updating")
+                await this.stop();
+            await this._plebbit._plebbitRpcClient.deleteSubplebbit(this.address);
+        }
         this.started = false;
         this._setRpcClientState("stopped");
         this._setState("stopped");
+        this._setStartedState("stopped");
     }
 }
 //# sourceMappingURL=rpc-local-subplebbit.js.map

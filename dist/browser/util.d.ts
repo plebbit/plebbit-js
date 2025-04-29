@@ -31,7 +31,7 @@ export declare function hideClassPrivateProps(_this: any): void;
 export declare function derivePublicationFromChallengeRequest<T extends Pick<DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeRequestMessageType, keyof DecryptedChallengeRequestPublication>>(request: T): T extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor ? PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest : PublicationFromDecryptedChallengeRequest;
 export declare function isRequestPubsubPublicationOfReply(request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): request is DecryptedChallengeRequestMessageWithReplySubplebbitAuthor;
 export declare function isRequestPubsubPublicationOfPost(request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): request is DecryptedChallengeRequestMessageWithPostSubplebbitAuthor;
-export declare function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName?: string): Promise<void>;
+export declare function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean> | boolean, eventName?: string): Promise<void>;
 export declare function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number): Promise<void>;
 export declare function calculateIpfsCidV0(content: string): Promise<string>;
 /**

@@ -39,6 +39,8 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
     postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]): void;
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]): void;
+    private _calculatePageMaxSizeCacheKey;
+    updatePagesMaxSizeCache(newPageCids: string[], pageMaxSizeBytes: number): void;
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string): void;
     updateIpfsState(newState: PagesKuboRpcClient["state"], sortTypes: string[] | undefined): void;
     updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[] | undefined): void;

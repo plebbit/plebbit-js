@@ -12,14 +12,12 @@ import os from "os";
 import * as fileType from "file-type";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
-import { sha256 } from "js-sha256";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
-const storedKuboRpcClients = {};
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) => {
     let filename;
@@ -40,54 +38,87 @@ export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) =
         }
     };
 };
-// Should be moved to subplebbit.ts
-export async function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
-    const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
-    const userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
-    //@ts-expect-error
-    const thumbnail = {};
+async function _getThumbnailUrlOfLink(url, agent) {
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+    const lowerCaseLink = url.toLowerCase();
+    if (imageExtensions.some((ext) => lowerCaseLink.endsWith(ext))) {
+        return { thumbnailUrl: url };
+    }
     const options = {
         url,
         fetchOptions: {
-            headers: {
-                "user-agent": userAgent
-            },
+            // not sure which prop is used here, but let's use both
             //@ts-expect-error
-            downloadLimit: 2000000
+            downloadLimit: 2000000,
+            size: 2000000
         }
     };
+    if (agent)
+        options["agent"] = agent;
+    const res = await scraper(options);
+    if (res.error) {
+        throw res;
+    }
+    if (!res?.result?.ogImage)
+        return undefined;
+    return {
+        thumbnailUrl: res.result.ogImage[0].url,
+        thumbnailUrlWidth: Number(res.result.ogImage[0].width),
+        thumbnailUrlHeight: Number(res.result.ogImage[0].height)
+    };
+}
+// Should be moved to subplebbit.ts
+export async function getThumbnailPropsOfLink(url, subplebbit, proxyHttpUrl) {
+    const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
+    const agent = proxyHttpUrl
+        ? {
+            http: new HttpProxyAgent({ proxy: proxyHttpUrl }),
+            https: new HttpsProxyAgent({ proxy: proxyHttpUrl })
+        }
+        : undefined;
+    let thumbnailOg;
     try {
-        if (proxyHttpUrl) {
-            const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
-            const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });
-            options["agent"] = { https: httpsAgent, http: httpAgent };
-        }
-        const res = await scraper(options);
-        if (res.error)
-            return undefined;
-        if (!res?.result?.ogImage)
-            return undefined;
-        thumbnail.thumbnailUrl = res.result.ogImage[0].url;
-        assert(typeof thumbnail.thumbnailUrl === "string", "thumbnailUrl needs to be a string");
-        thumbnail.thumbnailUrlHeight = Number(res.result.ogImage?.[0]?.height);
-        thumbnail.thumbnailUrlWidth = Number(res.result.ogImage?.[0]?.width);
-        if (thumbnail.thumbnailUrlHeight === 0 || isNaN(thumbnail.thumbnailUrlHeight)) {
-            const probedDimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl, options["agent"]);
-            if (probedDimensions) {
-                thumbnail.thumbnailUrlHeight = probedDimensions.height;
-                thumbnail.thumbnailUrlWidth = probedDimensions.width;
-            }
-        }
-        return thumbnail;
+        thumbnailOg = await _getThumbnailUrlOfLink(url, agent);
     }
     catch (e) {
         const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
+            error: e,
             url,
-            scrapeOptions: options,
             proxyHttpUrl,
-            error: e
+            subplebbitAddress: subplebbit.address
         });
-        log.error(String(plebbitError));
+        //@ts-expect-error
+        plebbitError.stack = e.stack;
+        log.error(plebbitError);
+        subplebbit.emit("error", plebbitError);
+        return undefined;
+    }
+    if (!thumbnailOg)
+        return undefined;
+    try {
+        let thumbnailHeight = thumbnailOg.thumbnailUrlHeight;
+        let thumbnailWidth = thumbnailOg.thumbnailUrlWidth;
+        if (typeof thumbnailHeight !== "number" || thumbnailHeight === 0 || isNaN(thumbnailHeight)) {
+            const probedDimensions = await fetchDimensionsOfImage(thumbnailOg.thumbnailUrl, agent);
+            if (probedDimensions) {
+                thumbnailHeight = probedDimensions.height;
+                thumbnailWidth = probedDimensions.width;
+            }
+        }
+        if (typeof thumbnailWidth !== "number" || typeof thumbnailHeight !== "number")
+            return { thumbnailUrl: thumbnailOg.thumbnailUrl };
+        return { thumbnailUrl: thumbnailOg.thumbnailUrl, thumbnailUrlHeight: thumbnailHeight, thumbnailUrlWidth: thumbnailWidth };
+    }
+    catch (e) {
+        const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_DIMENSION_OF_LINK", {
+            url,
+            proxyHttpUrl,
+            error: e,
+            subplebbitAddress: subplebbit.address
+        });
+        //@ts-expect-error
+        plebbitError.stack = e.stack;
+        log.error(plebbitError);
         subplebbit.emit("error", plebbitError);
         return undefined;
     }
@@ -208,23 +239,20 @@ export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress, pleb
         await fs.rm(oldPath);
 }
 export function createKuboRpcClient(kuboRpcClientOptions) {
-    const cacheKey = sha256(deterministicStringify(kuboRpcClientOptions));
-    if (storedKuboRpcClients[cacheKey])
-        return storedKuboRpcClients[cacheKey];
     const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
-    log("Creating a new kubo client on node with options", kuboRpcClientOptions);
+    log.trace("Creating a new kubo client on node with options", kuboRpcClientOptions);
     const isHttpsAgent = (typeof kuboRpcClientOptions.url === "string" && kuboRpcClientOptions.url.startsWith("https")) ||
         kuboRpcClientOptions?.protocol === "https" ||
         (kuboRpcClientOptions.url instanceof URL && kuboRpcClientOptions?.url?.protocol === "https:") ||
         kuboRpcClientOptions.url?.toString()?.includes("https");
     const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
     const onehourMs = 1000 * 60 * 60;
-    storedKuboRpcClients[cacheKey] = CreateKuboRpcClient({
+    const kuboRpcClient = CreateKuboRpcClient({
         ...kuboRpcClientOptions,
         agent: kuboRpcClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
         timeout: onehourMs
     });
-    return storedKuboRpcClients[cacheKey];
+    return kuboRpcClient;
 }
 export async function monitorSubplebbitsDirectory(plebbit) {
     const watchAbortController = new AbortController();
@@ -242,21 +270,17 @@ export async function monitorSubplebbitsDirectory(plebbit) {
         plebbit.emit("subplebbitschange", currentListedSubs);
     return watchAbortController;
 }
-export async function isDirectoryEmptyRecursive(dirPath) {
-    // does this directory have files or just empty directories
-    const items = await fs.readdir(dirPath);
-    for (const item of items) {
-        const fullPath = path.join(dirPath, item);
-        const stat = await fs.stat(fullPath);
-        if (stat.isFile()) {
-            return false;
-        }
-        if (stat.isDirectory()) {
-            if (!(await isDirectoryEmptyRecursive(fullPath))) {
-                return false;
-            }
-        }
-    }
-    return true;
+export function calculateExpectedSignatureSize(newIpns) {
+    // Get all non-undefined properties as they'll be in signedPropertyNames
+    const signedProps = Object.entries(newIpns)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key]) => key);
+    const mockSignature = {
+        signature: "A".repeat(88), // ed25519 sig is 64 bytes -> 88 bytes in base64
+        publicKey: "A".repeat(44), // ed25519 pubkey is 32 bytes -> 44 bytes in base64
+        type: "ed25519",
+        signedPropertyNames: signedProps
+    };
+    return Buffer.byteLength(JSON.stringify(mockSignature), "utf8");
 }
 //# sourceMappingURL=util.js.map

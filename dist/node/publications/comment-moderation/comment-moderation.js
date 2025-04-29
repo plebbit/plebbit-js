@@ -4,7 +4,7 @@ import { verifyCommentModeration } from "../../signer/signatures.js";
 export class CommentModeration extends Publication {
     constructor(plebbit) {
         super(plebbit);
-        this._pubsubMsgToPublish = undefined;
+        this.raw = {};
         // public method should be bound
         this.publish = this.publish.bind(this);
         hideClassPrivateProps(this);
@@ -18,12 +18,12 @@ export class CommentModeration extends Publication {
         super._initBaseRemoteProps(pubsubMsgPub);
         this.commentCid = pubsubMsgPub.commentCid;
         this.commentModeration = pubsubMsgPub.commentModeration;
-        this._pubsubMsgToPublish = pubsubMsgPub;
+        this.raw.pubsubMessageToPublish = pubsubMsgPub;
     }
     toJSONPubsubMessagePublication() {
-        if (!this._pubsubMsgToPublish)
+        if (!this.raw.pubsubMessageToPublish)
             throw Error("Need to define local CommentModerationPubsubMessage first");
-        return this._pubsubMsgToPublish;
+        return this.raw.pubsubMessageToPublish;
     }
     getType() {
         return "commentModeration";
