@@ -106,6 +106,7 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
     ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
     ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+    ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
     ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map((swarmAddr) => swarmAddr.replace("/4001", "/" + nodeArgs.swarmPort));
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
