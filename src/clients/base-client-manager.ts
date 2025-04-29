@@ -284,7 +284,7 @@ export class BaseClientsManager {
             }
             const sizeHeader = <string | null>res.headers.get("Content-Length");
             if (sizeHeader && Number(sizeHeader) > options.maxFileSizeBytes)
-                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
+                throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
 
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
@@ -308,7 +308,7 @@ export class BaseClientsManager {
                     if (value) resText += decoder.decode(value);
                     if (done || !value) break;
                     if (value.length + totalBytesRead > options.maxFileSizeBytes)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
+                        throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
                     totalBytesRead += value.length;
                 }
                 return { resText, res };
