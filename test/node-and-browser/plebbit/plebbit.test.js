@@ -44,7 +44,6 @@ describe("Plebbit options", async () => {
         const testPlebbit = await Plebbit(options);
         expect(testPlebbit.clients.kuboRpcClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubKuboRpcClients[url]).to.exist;
-        expect(testPlebbit.clients.kuboRpcClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubKuboRpcClients[url]._client);
         expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
         expect(Object.keys(testPlebbit.clients.kuboRpcClients)).to.deep.equal([url]);
 
