@@ -74,8 +74,9 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
         });
         const sub = await createSubWithNoChallenge({}, plebbit); // an online sub
 
+        const updatePromise = new Promise((resolve) => sub.once("update", resolve));
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
+        await updatePromise;
         await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till it's propgated on the http router
 
         for (const httpRouterUrl of httpRouterUrls) {
@@ -92,6 +93,9 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
                 }
             }
         }
+
+        await sub.delete();
+        await plebbit.destroy();
     });
 
     it(`Calling plebbit.destroy() frees up the proxy`);
