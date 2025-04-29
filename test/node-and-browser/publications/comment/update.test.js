@@ -14,7 +14,8 @@ import {
     mockPostToReturnSpecificCommentUpdate,
     describeSkipIfRpc,
     isPlebbitFetchingUsingGateways,
-    itSkipIfRpc
+    itSkipIfRpc,
+    waitTillReplyInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
 
@@ -103,20 +104,20 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`comment.update() is working as expected after calling comment.stop()`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
+            const postToStop = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
-            await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve)); // CommentIpfs Update
-            await new Promise((resolve) => comment.once("update", resolve)); // CommentUpdate update
+            await postToStop.update();
+            await resolveWhenConditionIsTrue(postToStop, () => typeof postToStop.updatedAt === "number"); // CommentIpfs and CommentUpdate should be defined now
+            await postToStop.stop();
 
-            await comment.stop();
+            await postToStop.update();
 
-            await comment.update();
-
-            await publishRandomReply(comment, plebbit);
-            await new Promise((resolve) => comment.once("update", resolve));
-            await comment.stop();
+            const reply = await publishRandomReply(postToStop, plebbit);
+            await waitTillReplyInParentPagesInstance(reply, postToStop);
+            await postToStop.stop();
+            await plebbit.destroy();
         });
 
         it(`comment.update() is working as expected after comment.publish()`, async () => {
