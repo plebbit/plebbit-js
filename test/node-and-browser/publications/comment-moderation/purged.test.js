@@ -104,29 +104,6 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
 
-        it(`Purged post don't show in subplebbit.posts`, async () => {
-            const plebbit = await config.plebbitInstancePromise();
-            const sub = await plebbit.createSubplebbit({ address: postToPurge.subplebbitAddress });
-
-            await sub.update();
-
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-
-            await resolveWhenConditionIsTrue(sub, async () => {
-                const purgedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPurge.cid, sub.posts);
-                return purgedPostInPage === undefined; // if we can't find it then it's purged
-            });
-
-            await sub.stop();
-
-            for (const pageCid of Object.values(sub.posts.pageCids)) {
-                const purgedPostInPage = await iterateThroughPageCidToFindComment(postToPurge.cid, pageCid, sub.posts);
-
-                expect(purgedPostInPage).to.be.undefined;
-            }
-            await plebbit.destroy();
-        });
-
         it(`Sub rejects votes on purged post`, async () => {
             const vote = await generateMockVote(postToPurge, 1, plebbit, remeda.sample(signers, 1)[0]);
             await publishWithExpectedResult(vote, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
@@ -170,6 +147,29 @@ getRemotePlebbitConfigs().map((config) => {
                 signer: roles[2].signer
             });
             await publishWithExpectedResult(unPurgeMod, false, messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB);
+        });
+
+        it(`Purged post don't show in subplebbit.posts`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
+            const sub = await plebbit.createSubplebbit({ address: postToPurge.subplebbitAddress });
+
+            await sub.update();
+
+            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+
+            await resolveWhenConditionIsTrue(sub, async () => {
+                const purgedPostInPage = await iterateThroughPagesToFindCommentInParentPagesInstance(postToPurge.cid, sub.posts);
+                return purgedPostInPage === undefined; // if we can't find it then it's purged
+            });
+
+            await sub.stop();
+
+            for (const pageCid of Object.values(sub.posts.pageCids)) {
+                const purgedPostInPage = await iterateThroughPageCidToFindComment(postToPurge.cid, pageCid, sub.posts);
+
+                expect(purgedPostInPage).to.be.undefined;
+            }
+            await plebbit.destroy();
         });
 
         it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
