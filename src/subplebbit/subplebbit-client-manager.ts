@@ -241,6 +241,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
         if (!ipnsName) throw Error("Failed to resolve subplebbit address to an IPNS name");
+        if (this._subplebbit.updateCid) this._updateCidsAlreadyLoaded.add(this._subplebbit.updateCid);
 
         // This function should fetch SubplebbitIpfs, parse it and verify its signature
         // Then return SubplebbitIpfs
