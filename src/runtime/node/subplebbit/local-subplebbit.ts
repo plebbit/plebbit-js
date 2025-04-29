@@ -2521,6 +2521,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             return;
         }
 
+        if (this.state === "updating" || this.state === "started") await this.stop();
+
         const kuboClient = this._clientsManager.getDefaultIpfs();
         if (!kuboClient) throw Error("Ipfs client is not defined");
 
@@ -2560,7 +2562,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log.error("Failed to unpin stale cids before deleting", e);
         }
 
-        if (this.state === "updating" || this.state === "started") await this.stop(); // stop()
+        try {
+            await this._updateDbInternalState(
+                typeof this.updatedAt === "number" ? this.toJSONInternalAfterFirstUpdate() : this.toJSONInternalBeforeFirstUpdate()
+            );
+        } catch (e) {
+            log.error("Failed to update db internal state before deleting", e);
+        } finally {
+            await this._dbHandler.destoryConnection();
+        }
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);
 
