@@ -19,7 +19,7 @@ describe(`comment.replies.clients`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
 
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies).cid;
+        commentCid = subplebbit.posts.pages.hot.comments[0].cid;
         expect(commentCid).to.be.a("string");
     });
     describeSkipIfRpc(`comment.replies.clients.kuboRpcClients`, async () => {
