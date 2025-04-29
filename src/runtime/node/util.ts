@@ -17,7 +17,6 @@ import * as fileType from "file-type";
 import type { OpenGraphScraperOptions } from "open-graph-scraper/types";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
-import { sha256 } from "js-sha256";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
@@ -26,8 +25,6 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
 import type { CommentUpdateType } from "../../publications/comment/types.js";
-
-const storedKuboRpcClients: Record<string, ReturnType<typeof createKuboRpcClient>> = {};
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -283,10 +280,8 @@ export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: stri
 }
 
 export function createKuboRpcClient(kuboRpcClientOptions: KuboRpcClient["_clientOptions"]): KuboRpcClient["_client"] {
-    const cacheKey = sha256(deterministicStringify(kuboRpcClientOptions));
-    if (storedKuboRpcClients[cacheKey]) return storedKuboRpcClients[cacheKey];
     const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
-    log("Creating a new kubo client on node with options", kuboRpcClientOptions);
+    log.trace("Creating a new kubo client on node with options", kuboRpcClientOptions);
     const isHttpsAgent =
         (typeof kuboRpcClientOptions.url === "string" && kuboRpcClientOptions.url.startsWith("https")) ||
         kuboRpcClientOptions?.protocol === "https" ||
@@ -296,13 +291,13 @@ export function createKuboRpcClient(kuboRpcClientOptions: KuboRpcClient["_client
 
     const onehourMs = 1000 * 60 * 60;
 
-    storedKuboRpcClients[cacheKey] = CreateKuboRpcClient({
+    const kuboRpcClient = CreateKuboRpcClient({
         ...kuboRpcClientOptions,
         agent: kuboRpcClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
         timeout: onehourMs
     });
 
-    return storedKuboRpcClients[cacheKey];
+    return kuboRpcClient;
 }
 
 export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
