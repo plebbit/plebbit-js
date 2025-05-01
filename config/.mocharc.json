@@ -4,9 +4,8 @@
     "node-option": ["experimental-specifier-resolution=node", "trace-warnings", "unhandled-rejections=strict", "trace-deprecation"],
     "full-trace": true,
     "bail": true,
-    "async-only": true,
     "stack-trace-limit": 30,
-    "exit": true,
     "reporter": "spec",
+    "allow-uncaught": false,
     "trace-warnings": true
 }
