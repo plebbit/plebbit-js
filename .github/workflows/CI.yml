@@ -46,8 +46,10 @@ jobs:
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
             - run: DEBUG="plebbit*" npm run test:node:local
+              shell: bash
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
+              shell: bash
 
     test-plebbit-js-node-remote-configs:
         name: test-plebbit-js-node-${{ matrix.config }}
