@@ -174,6 +174,7 @@ export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pic
         const subsThatWeFailedToDelete: string[] = (await plebbit._storage.getItem(storageKey)) || [];
         if (!subsThatWeFailedToDelete.includes(subAddress)) subsThatWeFailedToDelete.push(subAddress);
         await plebbit._storage.setItem(storageKey, subsThatWeFailedToDelete);
+        log(`Updated persistent deleted subplebbits in storage`, subsThatWeFailedToDelete);
     }
 };
 
