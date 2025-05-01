@@ -42,6 +42,7 @@ jobs:
             - run: npm run build
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+              shell: bash
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
             - run: DEBUG="plebbit*" npm run test:node:local
