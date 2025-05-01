@@ -42,6 +42,7 @@ import KeyvSqlite from "@keyv/sqlite";
 
 import { exec } from "child_process";
 import { promisify } from "util";
+import pLimit from "p-limit";
 
 const execPromise = promisify(exec);
 
@@ -691,12 +692,14 @@ export class DbHandler {
             excludeRemovedComments: true,
             parentCid: commentCid
         };
-        const children = await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
+        const children = <Pick<CommentsTableRow, "cid">[]>await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
 
-        let childrenReplyCount = 0;
-        for (const comment of children) {
-            childrenReplyCount += await this.queryReplyCount(comment.cid, trx);
-        }
+        const limit = pLimit(50);
+        const replyCountPromises = children.map((comment) => limit(() => this.queryReplyCount(comment.cid, trx)));
+
+        // Wait for all queries to complete and sum the results
+        const replyCounts = await Promise.all(replyCountPromises);
+        const childrenReplyCount = replyCounts.reduce((sum, count) => sum + count, 0);
 
         return children.length + childrenReplyCount;
     }
@@ -934,11 +937,22 @@ export class DbHandler {
         const commentsToUpdate = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
 
         // not just direct parent, also grandparents, till we reach the root post
+        const limit = pLimit(50);
         const allParentsOfCommentsToUpdate = [];
-        for (const commentToUpdateWithParent of commentsToUpdate.filter((comment) => comment.parentCid)) {
-            const parents = await this.queryParents(commentToUpdateWithParent, trx);
-            allParentsOfCommentsToUpdate.push(...parents);
-        }
+
+        // Get comments that have a parentCid
+        const commentsWithParents = remeda.unique(commentsToUpdate.filter((comment) => comment.parentCid));
+
+        // Create parallel queries with concurrency limit
+        const parentQueries = commentsWithParents.map((commentToUpdateWithParent) =>
+            limit(() => this.queryParents(commentToUpdateWithParent, trx))
+        );
+
+        // Wait for all parent queries to complete
+        const parentsResults = await Promise.all(parentQueries);
+
+        // Flatten the results into allParentsOfCommentsToUpdate
+        for (const parents of parentsResults) allParentsOfCommentsToUpdate.push(...parents);
 
         const authorComments = await this.queryCommentsOfAuthors(
             remeda.unique(commentsToUpdate.map((comment) => comment.authorSignerAddress)),
@@ -1028,9 +1042,11 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount">> {
-        const replyCount = await this.queryReplyCount(cid, trx);
-        const upvoteCount = await this._queryCommentUpvote(cid, trx);
-        const downvoteCount = await this._queryCommentDownvote(cid, trx);
+        const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
+            this.queryReplyCount(cid, trx),
+            this._queryCommentUpvote(cid, trx),
+            this._queryCommentDownvote(cid, trx)
+        ]);
         return { replyCount, upvoteCount, downvoteCount };
     }
 
@@ -1071,20 +1087,20 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">> {
-        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = {};
-        const fields = ["spoiler", "pinned", "locked", "removed", "nsfw"] as const;
-
-        for (const field of fields) {
-            const result = await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
-                .jsonExtract("commentModeration", `$.${field}`, field, true)
-                .where("commentCid", cid)
-                .whereNotNull(field)
-                .orderBy("id", "desc")
-                .first();
-
-            if (result) Object.assign(res, result);
-        }
-
+        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = Object.assign(
+            {},
+            ...(await Promise.all(
+                ["spoiler", "pinned", "locked", "removed"].map((field) =>
+                    this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+                        .select(field)
+                        .where("commentCid", cid)
+                        .whereNotNull(field)
+                        .where("isAuthorEdit", false)
+                        .orderBy("id", "desc")
+                        .first()
+                )
+            ))
+        );
         return res;
     }
 
@@ -1128,13 +1144,24 @@ export class DbHandler {
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">,
         trx?: Transaction
     ): Promise<Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
-        const authorSubplebbit = await this.querySubplebbitAuthor(comment.authorSignerAddress, trx);
-        const authorEdit = await this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress, trx);
-        const commentUpdateCounts = await this._queryCommentCounts(comment.cid, trx);
-        const moderatorReason = await this._queryLatestModeratorReason(comment, trx);
-        const commentFlags = await this.queryCommentFlagsSetByMod(comment.cid, trx);
-        const commentModFlair = await this._queryModCommentFlair(comment, trx);
-        const lastChildAndLastReplyTimestamp = await this._queryLastChildCidAndLastReplyTimestamp(comment, trx);
+        const [
+            authorSubplebbit,
+            authorEdit,
+            commentUpdateCounts,
+            moderatorReason,
+            commentFlags,
+            commentModFlair,
+            lastChildAndLastReplyTimestamp
+        ] = await Promise.all([
+            this.querySubplebbitAuthor(comment.authorSignerAddress, trx),
+            this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress, trx),
+            this._queryCommentCounts(comment.cid, trx),
+            this._queryLatestModeratorReason(comment, trx),
+            this.queryCommentFlagsSetByMod(comment.cid, trx),
+            this._queryModCommentFlair(comment, trx),
+            this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
+        ]);
+
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             cid: comment.cid,

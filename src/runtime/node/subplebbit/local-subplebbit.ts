@@ -1889,17 +1889,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!(<Error>e).message.includes("file does not exist")) throw e;
         }
 
-        // here we will go ahead to and rewrite all comment updates
+        // sub has no comment updates, we can return
+        if (!this.lastCommentCid) return;
 
-        const storedCommentUpdates = await this._dbHandler.queryAllStoredCommentUpdates();
-        if (storedCommentUpdates.length === 0) return;
-
-        log(
-            `CommentUpdate directory`,
-            this.address,
-            `does not exist under MFS, will drop all comment updates (${storedCommentUpdates.length})`,
-            "to force publishing of new comment updates"
-        );
+        log(`CommentUpdate directory`, this.address, "will republish all comment updates");
 
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // plebbit-js will recalculate and publish all comment updates
     }
@@ -1916,7 +1909,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const postUpdatesDirectory = "/" + this.address;
 
-        const commentUpdatesOfPosts = commentUpdateRowsToPublishToIpfs.filter((row) => row.depth === 0);
+        const commentUpdatesOfPosts = <
+            (CommentUpdateToBeUpdated & { postCommentUpdateRecordString: string; postCommentUpdateCid: string })[]
+        >commentUpdateRowsToPublishToIpfs.filter((row) => row.depth === 0);
 
         if (commentUpdatesOfPosts.length === 0) {
             log("No comment updates of posts to publish to postUpdates directory");
@@ -1934,19 +1929,29 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         postCommentUpdateMfsPaths.forEach((path) => this._mfsPathsToRemove.add(path)); // need to make sure we don't cp to path without it not existing to begin with
         const removedMfsPaths = await this._rmUnneededMfsPaths();
 
-        // TODO need to do this in parallel
+        // Create a concurrency limiter with a limit of 50
+        const limit = pLimit(50);
+        const copyPromises = [];
+
         for (const commentUpdateFile of newCommentUpdatesAddAll) {
             const commentUpdateFilePath = commentUpdatesOfPosts.find(
-                (row) => row.postCommentUpdateCid! === commentUpdateFile.cid.toV0().toString()
+                (row) => row.postCommentUpdateCid === commentUpdateFile.cid.toV0().toString()
             )?.localMfsPath;
+
             if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
-            await this._clientsManager
-                .getDefaultIpfs()
-                ._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
+
+            const copyPromise = limit(() =>
+                this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
                     parents: true,
                     flush: false
-                });
+                })
+            );
+
+            copyPromises.push(copyPromise);
         }
+
+        // Wait for all copy operations to complete
+        await Promise.all(copyPromises);
 
         const postUpdatesDirectoryCid = await this._clientsManager.getDefaultIpfs()._client.files.flush(postUpdatesDirectory);
         removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
