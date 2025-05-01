@@ -1090,12 +1090,11 @@ export class DbHandler {
         const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = Object.assign(
             {},
             ...(await Promise.all(
-                ["spoiler", "pinned", "locked", "removed"].map((field) =>
-                    this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-                        .select(field)
+                ["spoiler", "pinned", "locked", "removed", "nsfw"].map((field) =>
+                    this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+                        .jsonExtract("commentModeration", `$.${field}`, field, true)
                         .where("commentCid", cid)
                         .whereNotNull(field)
-                        .where("isAuthorEdit", false)
                         .orderBy("id", "desc")
                         .first()
                 )
