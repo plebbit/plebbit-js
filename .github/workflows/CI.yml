@@ -44,7 +44,7 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
-            - run: DEBUG="*" node --trace-warnings ./node_modules/.bin/mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node
+            - run: DEBUG="plebbit*" npm run test:node:local
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
