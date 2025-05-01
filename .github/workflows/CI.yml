@@ -40,9 +40,9 @@ jobs:
 
             - run: npm ci
             - run: npm run build
-            - name: Increase file descriptor limit (Linux only)
+            - name: Increase file descriptor limit and UDP buffer size (Linux only)
               if: runner.os == 'Linux'
-              run: ulimit -n 8192
+              run: ulimit -n 8192 && sysctl -w net.core.rmem_max=7500000 && sysctl -w net.core.wmem_max=7500000
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run mocked challenge tests
