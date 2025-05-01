@@ -1718,51 +1718,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
 
-        // Create a concurrency limiter with a limit of 50
-        const limit = pLimit(50);
+        const commentsGroupedByDepth = remeda.groupBy.strict(commentsToUpdate, (x) => x.depth);
 
-        // First group comments by postCid
-        const commentsByPostCid = remeda.groupBy.strict(commentsToUpdate, (x) => x.postCid);
+        const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
 
         const allCommentUpdateRows: CommentUpdateToBeUpdated[] = [];
-        const allUpdatePromises: Promise<void>[] = [];
+        // TODO potential optimization here is to separate _calculateNewCommentUpdateAndWriteToDb based on postCid + depth
+        // because we know the comment updates of two different posts are independent of each other
+        // TODO we should also parallelize the writing to db, right now it's sequential because Promise.all throws on CI
+        for (const depthKey of depthsKeySorted)
+            for (const comment of commentsGroupedByDepth[depthKey]) {
+                const result = await this._calculateNewCommentUpdateAndWriteToDb(comment);
+                allCommentUpdateRows.push({ ...result, depth: Number(depthKey) });
+            }
 
-        // Process each postCid group independently and in parallel
-        for (const postCid in commentsByPostCid) {
-            const commentsForPost = commentsByPostCid[postCid];
-
-            // For each postCid, we need to process in depth order (highest first)
-            const postPromise = (async () => {
-                // Group by depth within this postCid
-                const commentsByDepth = remeda.groupBy.strict(commentsForPost, (x) => x.depth);
-                const depthsKeySorted = remeda.keys.strict(commentsByDepth).sort((a, b) => Number(b) - Number(a)); // Sort depths from highest to lowest
-
-                // Process each depth level in sequence for this postCid
-                for (const depthKey of depthsKeySorted) {
-                    const commentsAtDepth = commentsByDepth[depthKey];
-
-                    // Process all comments at this depth in parallel
-                    const updateResults = await Promise.all(
-                        commentsAtDepth.map((comment) => limit(() => this._calculateNewCommentUpdateAndWriteToDb(comment)))
-                    );
-
-                    // Add results with correct depth
-                    const resultsWithDepth = updateResults.map((result) => ({
-                        ...result,
-                        depth: Number(depthKey)
-                    }));
-
-                    synchronized: {
-                        allCommentUpdateRows.push(...resultsWithDepth);
-                    }
-                }
-            })();
-
-            allUpdatePromises.push(postPromise);
-        }
-
-        // Wait for all postCid groups to complete
-        await Promise.all(allUpdatePromises);
+        // Return the flat array of all comment update rows
 
         return allCommentUpdateRows;
     }
