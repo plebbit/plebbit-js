@@ -7,6 +7,11 @@ const os = require("os");
 const mochaConfig = require("./.mocharc.json");
 delete mochaConfig["node-option"];
 delete mochaConfig["colors"];
+delete mochaConfig["trace-warnings"];
+delete mochaConfig["full-trace"];
+delete mochaConfig["allow-uncaught"];
+delete mochaConfig["stack-trace-limit"];
+
 mochaConfig.bail = true; // Add bail to browser tests
 // possible to add flags when launching the browser
 const CustomChrome = {

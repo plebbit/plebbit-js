@@ -5,7 +5,6 @@
     "full-trace": true,
     "bail": true,
     "stack-trace-limit": 30,
-    "reporter": "spec",
     "allow-uncaught": false,
     "trace-warnings": true
 }
