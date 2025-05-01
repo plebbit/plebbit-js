@@ -1071,19 +1071,20 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">> {
-        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = Object.assign(
-            {},
-            ...(await Promise.all(
-                ["spoiler", "pinned", "locked", "removed", "nsfw"].map((field) =>
-                    this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
-                        .jsonExtract("commentModeration", `$.${field}`, field, true)
-                        .where("commentCid", cid)
-                        .whereNotNull(field)
-                        .orderBy("id", "desc")
-                        .first()
-                )
-            ))
-        );
+        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = {};
+        const fields = ["spoiler", "pinned", "locked", "removed", "nsfw"] as const;
+
+        for (const field of fields) {
+            const result = await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+                .jsonExtract("commentModeration", `$.${field}`, field, true)
+                .where("commentCid", cid)
+                .whereNotNull(field)
+                .orderBy("id", "desc")
+                .first();
+
+            if (result) Object.assign(res, result);
+        }
+
         return res;
     }
 
