@@ -35,7 +35,7 @@ jobs:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
               with:
-                  node-version: 22
+                  node-version: 20
                   cache: "npm"
 
             - run: npm ci
@@ -47,7 +47,7 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
-            - run: DEBUG="plebbit*" node --trace-warnings --trace-sync-io --trace-event-file-pattern='trace-%p-%d.log' --diagnostic-dir=. --report-on-fatalerror --report-on-signal --report-uncaught-exception ./node_modules/.bin/mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node
+            - run: NODE_DEBUG=async_hooks,fs,net,timer,module,http DEBUG="plebbit*" node --trace-warnings ./node_modules/.bin/mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
