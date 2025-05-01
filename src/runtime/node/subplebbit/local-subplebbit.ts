@@ -1578,7 +1578,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             publishedToPostUpdatesMFS: false
         };
         await this._dbHandler.upsertCommentUpdate(row);
-        log.trace("Wrote comment update of comment", newCommentUpdate.cid, "to database successfully with cid", postCommentUpdateCid);
+        log.trace(
+            "Wrote comment update of comment",
+            newCommentUpdate.cid,
+            "to database successfully with postCommentUpdateCid",
+            postCommentUpdateCid
+        );
         return row;
     }
 
@@ -1588,12 +1593,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:_calculateNewCommentUpdateAndWriteToFilesystemAndDb");
 
         // If we're here that means we're gonna calculate the new update and publish it
-        log.trace(`Attempting to publish new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
+        log.trace(`Attempting to calculate new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const storedCommentUpdate = await this._dbHandler.queryStoredCommentUpdate(comment);
         const calculatedCommentUpdate = await this._dbHandler.queryCalculatedCommentUpdate(comment);
+        log.trace("Calculated comment update for comment", comment.cid, "on subplebbit", this.address);
 
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
