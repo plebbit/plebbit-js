@@ -194,16 +194,16 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
             } catch (e) {
                 log.error(`Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`, e);
             }
-            const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
-            if (newPersistentDeletedSubplebbits.length === 0) {
-                await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
-                log("Removed persistent deleted subplebbits from storage because there are none left");
-                return undefined;
-            } else {
-                await plebbit._storage.setItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits);
-                log(`Updated persistent deleted subplebbits in storage`, newPersistentDeletedSubplebbits);
-                return newPersistentDeletedSubplebbits;
-            }
+        }
+        const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+        if (newPersistentDeletedSubplebbits.length === 0) {
+            await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+            log("Removed persistent deleted subplebbits from storage because there are none left");
+            return undefined;
+        } else {
+            await plebbit._storage.setItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits);
+            log(`Updated persistent deleted subplebbits in storage`, newPersistentDeletedSubplebbits);
+            return newPersistentDeletedSubplebbits;
         }
     }
 }
