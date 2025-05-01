@@ -918,7 +918,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         await this._domainResolver.destroy();
 
         await this._storage.destroy();
-        await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
+        for (const storage of Object.values(this._storageLRUs)) await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
 
         // Get all methods on the instance and override them to throw errors if used after destruction
