@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { mockPlebbit, itSkipIfRpc, mockPlebbitV2 } from "../../../dist/node/test/test-util.js";
+import { itSkipIfRpc, mockPlebbitV2, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 
 import path from "path";
 import fs from "fs";
@@ -17,7 +17,7 @@ describe(`subplebbit.delete`, async () => {
         expect(subs).to.include(sub.address);
         const subRecreated = await plebbit.createSubplebbit({ address: sub.address });
         await subRecreated.delete();
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await resolveWhenConditionIsTrue(plebbit, () => !plebbit.subplebbits.includes(sub.address), "subplebbitschange");
         const subsAfterDeletion = plebbit.subplebbits;
         expect(subsAfterDeletion).to.not.include(sub.address);
     });
