@@ -42,7 +42,7 @@ jobs:
             - run: npm run build
             - name: Increase file descriptor limit (Linux only)
               if: runner.os == 'Linux'
-              run: ulimit -n 4096
+              run: ulimit -n 8192
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run mocked challenge tests
