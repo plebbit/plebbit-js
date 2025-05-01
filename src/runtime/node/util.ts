@@ -13,7 +13,7 @@ import { Plebbit } from "../../plebbit/plebbit.js";
 import { STORAGE_KEYS } from "../../constants.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import os from "os";
-import * as fileType from "file-type";
+import { fileTypeFromFile } from "file-type";
 import type { OpenGraphScraperOptions } from "open-graph-scraper/types";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
@@ -217,7 +217,7 @@ export async function listSubplebbits(plebbit: Plebbit) {
 
     const deletedPersistentSubs = (await _handlePersistentSubsIfNeeded(plebbit, log)) || [];
 
-    if (deletedPersistentSubs.length > 0) log(`Deleted persistent subplebbits from storage`, deletedPersistentSubs);
+    if (deletedPersistentSubs.length > 0) log(`persistent subplebbits that refuse to be deleted`, deletedPersistentSubs);
 
     const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter(
         (file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)
@@ -226,8 +226,7 @@ export async function listSubplebbits(plebbit: Plebbit) {
     const filterResults = await Promise.all(
         files.map(async (address) => {
             try {
-                //@ts-expect-error
-                const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
+                const typeOfFile = await fileTypeFromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
                 return typeOfFile?.mime === "application/x-sqlite3";
             } catch (e) {
                 return false;
