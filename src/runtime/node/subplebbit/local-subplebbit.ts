@@ -153,6 +153,7 @@ import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
+import pLimit from "p-limit";
 
 type CommentUpdateToBeUpdated = CommentUpdatesRow &
     Pick<CommentsTableRow, "depth"> & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined };
@@ -1591,10 +1592,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
-        const [calculatedCommentUpdate, storedCommentUpdate] = await Promise.all([
-            this._dbHandler.queryCalculatedCommentUpdate(comment),
-            this._dbHandler.queryStoredCommentUpdate(comment)
-        ]);
+        const storedCommentUpdate = await this._dbHandler.queryStoredCommentUpdate(comment);
+        const calculatedCommentUpdate = await this._dbHandler.queryCalculatedCommentUpdate(comment);
 
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
@@ -1719,21 +1718,51 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
 
-        const commentsGroupedByDepth = remeda.groupBy.strict(commentsToUpdate, (x) => x.depth);
+        // Create a concurrency limiter with a limit of 50
+        const limit = pLimit(50);
 
-        const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
+        // First group comments by postCid
+        const commentsByPostCid = remeda.groupBy.strict(commentsToUpdate, (x) => x.postCid);
 
         const allCommentUpdateRows: CommentUpdateToBeUpdated[] = [];
-        // TODO potential optimization here is to separate _calculateNewCommentUpdateAndWriteToDb based on postCid + depth
-        // because we know the comment updates of two different posts are independent of each other
-        // TODO we should also parallelize the writing to db, right now it's sequential because Promise.all throws on CI
-        for (const depthKey of depthsKeySorted)
-            for (const comment of commentsGroupedByDepth[depthKey]) {
-                const result = await this._calculateNewCommentUpdateAndWriteToDb(comment);
-                allCommentUpdateRows.push({ ...result, depth: Number(depthKey) });
-            }
+        const allUpdatePromises: Promise<void>[] = [];
 
-        // Return the flat array of all comment update rows
+        // Process each postCid group independently and in parallel
+        for (const postCid in commentsByPostCid) {
+            const commentsForPost = commentsByPostCid[postCid];
+
+            // For each postCid, we need to process in depth order (highest first)
+            const postPromise = (async () => {
+                // Group by depth within this postCid
+                const commentsByDepth = remeda.groupBy.strict(commentsForPost, (x) => x.depth);
+                const depthsKeySorted = remeda.keys.strict(commentsByDepth).sort((a, b) => Number(b) - Number(a)); // Sort depths from highest to lowest
+
+                // Process each depth level in sequence for this postCid
+                for (const depthKey of depthsKeySorted) {
+                    const commentsAtDepth = commentsByDepth[depthKey];
+
+                    // Process all comments at this depth in parallel
+                    const updateResults = await Promise.all(
+                        commentsAtDepth.map((comment) => limit(() => this._calculateNewCommentUpdateAndWriteToDb(comment)))
+                    );
+
+                    // Add results with correct depth
+                    const resultsWithDepth = updateResults.map((result) => ({
+                        ...result,
+                        depth: Number(depthKey)
+                    }));
+
+                    synchronized: {
+                        allCommentUpdateRows.push(...resultsWithDepth);
+                    }
+                }
+            })();
+
+            allUpdatePromises.push(postPromise);
+        }
+
+        // Wait for all postCid groups to complete
+        await Promise.all(allUpdatePromises);
 
         return allCommentUpdateRows;
     }
@@ -1782,23 +1811,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _unpinStaleCids() {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
 
-        // TODO need to optimize this for parallel unpinning
-        // what if we get 1000 cids to unpin, it would take a lot of time
-
         if (this._cidsToUnPin.size > 0) {
             const sizeBefore = this._cidsToUnPin.size;
-            const cidsToUnPin = Array.from(this._cidsToUnPin.values());
 
-            for (const cid of cidsToUnPin) {
-                try {
-                    await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
-                    this._cidsToUnPin.delete(cid);
-                } catch (e) {
-                    const error = <Error>e;
-                    if (error.message.startsWith("not pinned")) this._cidsToUnPin.delete(cid);
-                    else log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
-                }
-            }
+            // Create a concurrency limiter with a limit of 50
+            const limit = pLimit(50);
+
+            // Process all unpinning in parallel with concurrency limit
+            await Promise.all(
+                Array.from(this._cidsToUnPin.values()).map((cid) =>
+                    limit(async () => {
+                        try {
+                            await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
+                            this._cidsToUnPin.delete(cid);
+                        } catch (e) {
+                            const error = <Error>e;
+                            if (error.message.startsWith("not pinned")) {
+                                this._cidsToUnPin.delete(cid);
+                            } else {
+                                log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
+                            }
+                        }
+                    })
+                )
+            );
 
             log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }

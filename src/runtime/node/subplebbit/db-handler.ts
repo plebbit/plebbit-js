@@ -684,7 +684,12 @@ export class DbHandler {
         };
         const children = await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
 
-        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.cid, trx))));
+        let childrenReplyCount = 0;
+        for (const comment of children) {
+            childrenReplyCount += await this.queryReplyCount(comment.cid, trx);
+        }
+
+        return children.length + childrenReplyCount;
     }
 
     async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
@@ -778,17 +783,17 @@ export class DbHandler {
     ): Promise<PageIpfs["comments"]> {
         const firstLevelReplies = await this.queryPageComments(options, trx);
 
-        const nestedReplies = await Promise.all(
-            firstLevelReplies.map(async (baseComment) => {
-                const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
-                if (commentHasReplies) {
-                    // Only get the nested replies, don't include the base comment again
-                    return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
-                } else {
-                    return []; // No replies to this comment
-                }
-            })
-        );
+        const nestedReplies = [];
+        for (const baseComment of firstLevelReplies) {
+            const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
+            if (commentHasReplies) {
+                // Only get the nested replies, don't include the base comment again
+                const replies = await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                nestedReplies.push(replies);
+            } else {
+                nestedReplies.push([]); // No replies to this comment
+            }
+        }
 
         // Combine first level replies with all nested replies
         return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
@@ -917,16 +922,23 @@ export class DbHandler {
             .orHaving(`modEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
 
-        const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+        const commentsToUpdate = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
 
-        const parents = remeda.flattenDeep(
-            await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx)))
-        );
+        // not just direct parent, also grandparents, till we reach the root post
+        const allParentsOfCommentsToUpdate = [];
+        for (const commentToUpdateWithParent of commentsToUpdate.filter((comment) => comment.parentCid)) {
+            const parents = await this.queryParents(commentToUpdateWithParent, trx);
+            allParentsOfCommentsToUpdate.push(...parents);
+        }
+
         const authorComments = await this.queryCommentsOfAuthors(
-            remeda.unique(comments.map((comment) => comment.authorSignerAddress)),
+            remeda.unique(commentsToUpdate.map((comment) => comment.authorSignerAddress)),
             trx
         );
-        const uniqComments = remeda.uniqueBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+        const uniqComments = remeda.uniqueBy(
+            [...commentsToUpdate, ...allParentsOfCommentsToUpdate, ...authorComments],
+            (comment) => comment.cid
+        );
 
         return uniqComments;
     }
@@ -1007,11 +1019,9 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount">> {
-        const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
-            this.queryReplyCount(cid, trx),
-            this._queryCommentUpvote(cid, trx),
-            this._queryCommentDownvote(cid, trx)
-        ]);
+        const replyCount = await this.queryReplyCount(cid, trx);
+        const upvoteCount = await this._queryCommentUpvote(cid, trx);
+        const downvoteCount = await this._queryCommentDownvote(cid, trx);
         return { replyCount, upvoteCount, downvoteCount };
     }
 
@@ -1107,23 +1117,13 @@ export class DbHandler {
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">,
         trx?: Transaction
     ): Promise<Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
-        const [
-            authorSubplebbit,
-            authorEdit,
-            commentUpdateCounts,
-            moderatorReason,
-            commentFlags,
-            commentModFlair,
-            lastChildAndLastReplyTimestamp
-        ] = await Promise.all([
-            this.querySubplebbitAuthor(comment.authorSignerAddress, trx),
-            this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress, trx),
-            this._queryCommentCounts(comment.cid, trx),
-            this._queryLatestModeratorReason(comment, trx),
-            this.queryCommentFlagsSetByMod(comment.cid, trx),
-            this._queryModCommentFlair(comment, trx),
-            this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
-        ]);
+        const authorSubplebbit = await this.querySubplebbitAuthor(comment.authorSignerAddress, trx);
+        const authorEdit = await this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress, trx);
+        const commentUpdateCounts = await this._queryCommentCounts(comment.cid, trx);
+        const moderatorReason = await this._queryLatestModeratorReason(comment, trx);
+        const commentFlags = await this.queryCommentFlagsSetByMod(comment.cid, trx);
+        const commentModFlair = await this._queryModCommentFlair(comment, trx);
+        const lastChildAndLastReplyTimestamp = await this._queryLastChildCidAndLastReplyTimestamp(comment, trx);
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             cid: comment.cid,
@@ -1206,7 +1206,7 @@ export class DbHandler {
         const lastCommentCid = remeda.maxBy(authorComments, (comment) => comment.id)?.cid;
         if (!lastCommentCid) throw Error("Failed to query subplebbitAuthor.lastCommentCid");
         const firstCommentTimestamp = remeda.minBy(authorComments, (comment) => comment.id)?.timestamp;
-        if (typeof firstCommentTimestamp !== "number") throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
+        if (typeof firstCommentTimestamp !== "number") throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
 
         const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);
 
