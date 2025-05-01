@@ -206,7 +206,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
             })
         );
     }
-    return deletedPersistentSubs;
+    return <string[] | undefined>await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
 }
 
 export async function listSubplebbits(plebbit: Plebbit) {
@@ -216,15 +216,14 @@ export async function listSubplebbits(plebbit: Plebbit) {
 
     await fs.mkdir(subplebbitsPath, { recursive: true });
 
-    const deletedPersistentSubs = await _handlePersistentSubsIfNeeded(plebbit, log);
+    const deletedPersistentSubs = (await _handlePersistentSubsIfNeeded(plebbit, log)) || [];
 
     const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter(
-        (file) => !file.includes(".lock") && !file.endsWith("-journal")
+        (file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)
     ); // Filter locks and journal files out
 
     const filterResults = await Promise.all(
         files.map(async (address) => {
-            if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address)) return false;
             try {
                 //@ts-expect-error
                 const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
