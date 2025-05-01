@@ -19,6 +19,8 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import fs from "fs";
 
+process.env["PLEBBIT_CONFIGS"] = process.env["PLEBBIT_CONFIGS"] || "local-kubo-rpc";
+
 const ipfsPath = getIpfsPath();
 
 const rpcPort = 39652;
