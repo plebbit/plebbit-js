@@ -6,17 +6,13 @@ import tcpPortUsed from "tcp-port-used";
 
 // TODO calling plebbit.destroy() should stop the address rewriter proxy
 describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
-    const nodeForHttpRouter = "http://localhost:15006/api/v0";
+    const kuboNodeForHttpRouter = "http://localhost:15006/api/v0";
     // default list of http routers to use
     const httpRouterUrls = ["https://routing.lol", "https://peers.pleb.bot"];
 
     const startPort = 19575;
 
     let plebbit;
-
-    before(async () => {
-        plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter] });
-    });
 
     after(async () => {
         try {
@@ -25,17 +21,22 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
     });
 
     it(`Plebbit({kuboRpcClientsOptions}) sets correct default http routers`, async () => {
-        expect(plebbit.httpRoutersOptions).to.deep.equal([
+        const anotherPlebbit = await Plebbit({ kuboRpcClientsOptions: [kuboNodeForHttpRouter], dataPath: undefined });
+        expect(anotherPlebbit.httpRoutersOptions).to.deep.equal([
             "https://peers.pleb.bot",
             "https://routing.lol",
             "https://peers.forumindex.com",
             "https://peers.plebpubsub.xyz"
         ]);
-        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
+        expect(anotherPlebbit.dataPath).to.be.undefined;
+        await anotherPlebbit.destroy();
     });
 
     it(`Plebbit({kuboRpcClientsOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        plebbit = await Plebbit({ kuboRpcClientsOptions: [kuboNodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
+        expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
+        const kuboRpcClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
         const configValueType = await kuboRpcClient.config.get("Routing.Type");
         expect(configValueType).to.equal("custom");
 
@@ -51,18 +52,23 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
     });
 
     it(`Routing.Routers should be set to proxy`, async () => {
-        const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const kuboRpcClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
         const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
         expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
         expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
     });
 
     it(`Can create another plebbit instance with same configs with no problem`, async () => {
-        const anotherInstance = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
-        const kuboRpcClient = anotherInstance.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const anotherInstance = await Plebbit({
+            kuboRpcClientsOptions: [kuboNodeForHttpRouter],
+            httpRoutersOptions: httpRouterUrls,
+            dataPath: plebbit.dataPath
+        });
+        const kuboRpcClient = anotherInstance.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
         const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
-        expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:19575")).to.be.true;
-        expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:19576")).to.be.true;
+        for (let i = 0; i < httpRouterUrls.length; i++)
+            expect(configValueRouters[`HttpRouter${i + 1}`].Parameters.Endpoint.startsWith(`http://127.0.0.1:${startPort + i}`)).to.be.true;
+
         await anotherInstance.destroy();
     });
 
