@@ -1386,11 +1386,10 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
+    const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedReply: Comment;
     await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            const content = "x".repeat(1024 * 30); //30kb
-
             //@ts-expect-error
             const reply = await publishRandomReply(comment, comment._plebbit, { content });
 
@@ -1417,10 +1416,10 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
+    const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedPost: Comment;
     await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            const content = "x".repeat(1024 * 30); //30kb
             const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
             lastPublishedPost = post;
         })
