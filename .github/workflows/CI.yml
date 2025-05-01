@@ -40,14 +40,11 @@ jobs:
 
             - run: npm ci
             - run: npm run build
-            - name: Increase file descriptor limit and UDP buffer size (Linux only)
-              if: runner.os == 'Linux'
-              run: ulimit -n 8192 && sysctl -w net.core.rmem_max=7500000 && sysctl -w net.core.wmem_max=7500000
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
-            - run: NODE_DEBUG=async_hooks,fs,net,timer,module,http DEBUG="plebbit*" node --trace-warnings ./node_modules/.bin/mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node
+            - run: DEBUG="*" node --trace-warnings ./node_modules/.bin/mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
