@@ -46,7 +46,7 @@ jobs:
               run: npm run test:mocked:challenges
             - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:local
             - run: cat test_server.log
-              if: ${{ !cancelled() }}
+              if: ${{ !cancelled() && failure() }}
 
     test-plebbit-js-node-remote-configs:
         name: test-plebbit-js-node-${{ matrix.config }}
@@ -70,7 +70,7 @@ jobs:
             - name: Run tests with config
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node
             - run: cat test_server.log
-              if: ${{ !cancelled() }}
+              if: ${{ !cancelled() && failure() }}
 
     test-plebbit-js-browser-remote-configs:
         name: test-plebbit-js-${{ matrix.environment }}-${{ matrix.config }}
@@ -104,7 +104,7 @@ jobs:
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
 
             - run: cat test_server.log
-              if: ${{ !cancelled() }}
+              if: ${{ !cancelled() && failure() }}
 
     test-plebbit-rpc:
         runs-on: ubuntu-latest
@@ -124,7 +124,7 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node:rpc |& tee test_server.log & npm run test:server:wait-on
             - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
             - run: cat test_server.log
-              if: ${{ !cancelled() }}
+              if: ${{ !cancelled() && failure() }}
 
             # Setup tests for rpc directory here (skipped for now)
 
