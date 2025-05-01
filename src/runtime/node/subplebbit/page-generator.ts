@@ -63,7 +63,9 @@ export class PageGenerator {
         for (let i = chunks.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
+            console.log("Before ipfs add in", "addCommentChunksToIpfs", pageIpfs.comments.length);
             const addRes = await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs));
+            console.log("After ipfs add in", "addCommentChunksToIpfs", addRes.size);
             if (addRes.size > expectedSize)
                 throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
                     addRes,
@@ -88,7 +90,9 @@ export class PageGenerator {
         for (let i = chunks.length - 1; i >= 1; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
+            console.log("Before ipfs add in", "addPreloadedCommentChunksToIpfs", pageIpfs.comments.length);
             cids[i] = (await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+            console.log("After ipfs add in", "addPreloadedCommentChunksToIpfs", cids[i]);
             listOfPage[i] = pageIpfs;
         }
         const firstPage = <PageIpfs>{ comments: chunks[0], nextCid: cids[1] };

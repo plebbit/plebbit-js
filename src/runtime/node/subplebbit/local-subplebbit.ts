@@ -1553,7 +1553,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return ["/" + this.address, "postUpdates", timestampRange, ...pathParts.slice(4)].join("/");
     }
 
-    private async _calculateLocalMfsPathForCommentUpdate(postDbComment: CommentsTableRow, postStoredCommentUpdate?: CommentUpdatesRow) {
+    private _calculateLocalMfsPathForCommentUpdate(postDbComment: CommentsTableRow, postStoredCommentUpdate?: CommentUpdatesRow) {
         // TODO Can optimize the call below by only asking for timestamp field
         if (postDbComment.depth !== 0) return undefined;
         const postTimestamp = postDbComment.timestamp;
@@ -1649,7 +1649,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
 
-        const newLocalMfsPath = await this._calculateLocalMfsPathForCommentUpdate(comment, storedCommentUpdate);
+        const newLocalMfsPath = this._calculateLocalMfsPathForCommentUpdate(comment, storedCommentUpdate);
 
         const newCommentUpdateRow = await this._writeCommentUpdateToDatabase(newCommentUpdate, postCommentUpdateCid, newLocalMfsPath);
 
