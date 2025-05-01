@@ -1787,36 +1787,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
         const unpinnedCommentsFromDb = await this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
-        // Repin comments in parallel with a concurrency limit of 50
-        const limit = pLimit(50);
-        const pinPromises = [];
-
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
-            const pinPromise = limit(async () => {
-                const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
-                const baseSignatureProps = remeda.pick(
-                    unpinnedCommentRow,
-                    //@ts-expect-error
-                    remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
-                );
-                const commentIpfsJson = <CommentIpfsType>{
-                    ...baseSignatureProps,
-                    ...baseIpfsProps,
-                    ...unpinnedCommentRow.extraProps
-                };
-                if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
-                const commentIpfsContent = deterministicStringify(commentIpfsJson);
-                const contentHash: string = await calculateIpfsHash(commentIpfsContent);
-                if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-                await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-                log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
-            });
-
-            pinPromises.push(pinPromise);
+            const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
+            const baseSignatureProps = remeda.pick(
+                unpinnedCommentRow,
+                //@ts-expect-error
+                remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
+            );
+            const commentIpfsJson = <CommentIpfsType>{
+                ...baseSignatureProps,
+                ...baseIpfsProps,
+                ...unpinnedCommentRow.extraProps
+            };
+            if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
+            const commentIpfsContent = deterministicStringify(commentIpfsJson);
+            const contentHash: string = await calculateIpfsHash(commentIpfsContent);
+            if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+            await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
+            log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
         }
-
-        // Wait for all pin operations to complete
-        await Promise.all(pinPromises);
 
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // force plebbit-js to republish all comment updates
 
