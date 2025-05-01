@@ -1724,21 +1724,49 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
 
-        const commentsGroupedByDepth = remeda.groupBy.strict(commentsToUpdate, (x) => x.depth);
+        // Create a concurrency limiter with a limit of 50
+        const limit = pLimit(50);
 
-        const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
+        // First group comments by postCid
+        const commentsByPostCid = remeda.groupBy.strict(commentsToUpdate, (x) => x.postCid);
 
         const allCommentUpdateRows: CommentUpdateToBeUpdated[] = [];
-        // TODO potential optimization here is to separate _calculateNewCommentUpdateAndWriteToDb based on postCid + depth
-        // because we know the comment updates of two different posts are independent of each other
-        // TODO we should also parallelize the writing to db, right now it's sequential because Promise.all throws on CI
-        for (const depthKey of depthsKeySorted)
-            for (const comment of commentsGroupedByDepth[depthKey]) {
-                const result = await this._calculateNewCommentUpdateAndWriteToDb(comment);
-                allCommentUpdateRows.push({ ...result, depth: Number(depthKey) });
-            }
+        const allUpdatePromises: Promise<void>[] = [];
 
-        // Return the flat array of all comment update rows
+        // Process each postCid group independently and in parallel
+        for (const postCid in commentsByPostCid) {
+            const commentsForPost = commentsByPostCid[postCid];
+
+            // For each postCid, we need to process in depth order (highest first)
+            const postPromise = (async () => {
+                // Group by depth within this postCid
+                const commentsByDepth = remeda.groupBy.strict(commentsForPost, (x) => x.depth);
+                const depthsKeySorted = remeda.keys.strict(commentsByDepth).sort((a, b) => Number(b) - Number(a)); // Sort depths from highest to lowest
+
+                // Process each depth level in sequence for this postCid
+                for (const depthKey of depthsKeySorted) {
+                    const commentsAtDepth = commentsByDepth[depthKey];
+
+                    // Process all comments at this depth in parallel
+                    const updateResults = await Promise.all(
+                        commentsAtDepth.map((comment) => limit(() => this._calculateNewCommentUpdateAndWriteToDb(comment)))
+                    );
+
+                    // Add results with correct depth
+                    const resultsWithDepth = updateResults.map((result) => ({
+                        ...result,
+                        depth: Number(depthKey)
+                    }));
+
+                    allCommentUpdateRows.push(...resultsWithDepth);
+                }
+            })();
+
+            allUpdatePromises.push(postPromise);
+        }
+
+        // Wait for all postCid groups to complete
+        await Promise.all(allUpdatePromises);
 
         return allCommentUpdateRows;
     }
@@ -1759,25 +1787,36 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
         const unpinnedCommentsFromDb = await this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
+        // Repin comments in parallel with a concurrency limit of 50
+        const limit = pLimit(50);
+        const pinPromises = [];
+
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
-            const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
-            const baseSignatureProps = remeda.pick(
-                unpinnedCommentRow,
-                //@ts-expect-error
-                remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
-            );
-            const commentIpfsJson = <CommentIpfsType>{
-                ...baseSignatureProps,
-                ...baseIpfsProps,
-                ...unpinnedCommentRow.extraProps
-            };
-            if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
-            const commentIpfsContent = deterministicStringify(commentIpfsJson);
-            const contentHash: string = await calculateIpfsHash(commentIpfsContent);
-            if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-            await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-            log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+            const pinPromise = limit(async () => {
+                const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
+                const baseSignatureProps = remeda.pick(
+                    unpinnedCommentRow,
+                    //@ts-expect-error
+                    remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
+                );
+                const commentIpfsJson = <CommentIpfsType>{
+                    ...baseSignatureProps,
+                    ...baseIpfsProps,
+                    ...unpinnedCommentRow.extraProps
+                };
+                if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
+                const commentIpfsContent = deterministicStringify(commentIpfsJson);
+                const contentHash: string = await calculateIpfsHash(commentIpfsContent);
+                if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+                await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
+                log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+            });
+
+            pinPromises.push(pinPromise);
         }
+
+        // Wait for all pin operations to complete
+        await Promise.all(pinPromises);
 
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // force plebbit-js to republish all comment updates
 
