@@ -1726,12 +1726,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const allCommentUpdateRows: CommentUpdateToBeUpdated[] = [];
         // TODO potential optimization here is to separate _calculateNewCommentUpdateAndWriteToDb based on postCid + depth
         // because we know the comment updates of two different posts are independent of each other
-        for (const depthKey of depthsKeySorted) {
-            const commentUpdateResults = await Promise.all(
-                commentsGroupedByDepth[depthKey].map(this._calculateNewCommentUpdateAndWriteToDb.bind(this))
-            );
-            allCommentUpdateRows.push(...commentUpdateResults.map((row) => ({ ...row, depth: Number(depthKey) })));
-        }
+        // TODO we should also parallelize the writing to db, right now it's sequential because Promise.all throws on CI
+        for (const depthKey of depthsKeySorted)
+            for (const comment of commentsGroupedByDepth[depthKey]) {
+                const result = await this._calculateNewCommentUpdateAndWriteToDb(comment);
+                allCommentUpdateRows.push({ ...result, depth: Number(depthKey) });
+            }
+
         // Return the flat array of all comment update rows
 
         return allCommentUpdateRows;
@@ -1781,21 +1782,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _unpinStaleCids() {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
 
+        // TODO need to optimize this for parallel unpinning
+        // what if we get 1000 cids to unpin, it would take a lot of time
+
         if (this._cidsToUnPin.size > 0) {
             const sizeBefore = this._cidsToUnPin.size;
+            const cidsToUnPin = Array.from(this._cidsToUnPin.values());
 
-            await Promise.all(
-                Array.from(this._cidsToUnPin.values()).map(async (cid) => {
-                    try {
-                        await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
-                        this._cidsToUnPin.delete(cid);
-                    } catch (e) {
-                        const error = <Error>e;
-                        if (error.message.startsWith("not pinned")) this._cidsToUnPin.delete(cid);
-                        else log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
-                    }
-                })
-            );
+            for (const cid of cidsToUnPin) {
+                try {
+                    await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
+                    this._cidsToUnPin.delete(cid);
+                } catch (e) {
+                    const error = <Error>e;
+                    if (error.message.startsWith("not pinned")) this._cidsToUnPin.delete(cid);
+                    else log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
+                }
+            }
 
             log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }
