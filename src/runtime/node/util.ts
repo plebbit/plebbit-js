@@ -166,7 +166,8 @@ export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pic
     } catch (e) {
         // Assume it's because of EBUSY
         log.error(
-            `Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`
+            `Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`,
+            e
         );
         // Put subAddress in storage
         const storageKey = STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
@@ -183,30 +184,27 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
     if (Array.isArray(deletedPersistentSubs)) {
         // Attempt to delete them
         const subsThatWereDeletedSuccessfully: string[] = [];
-        await Promise.all(
-            deletedPersistentSubs.map(async (subAddress) => {
-                const subPath = path.join(<string>plebbit.dataPath, "subplebbits", subAddress);
-                try {
-                    await fs.rm(subPath, { force: true });
-                    log(`Succeeded in deleting old db path (${subAddress})`);
-                    subsThatWereDeletedSuccessfully.push(subAddress);
-                } catch (e) {
-                    log.error(
-                        `Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`
-                    );
-                }
-                const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
-                if (newPersistentDeletedSubplebbits.length === 0)
-                    await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
-                else
-                    await plebbit._storage.setItem(
-                        STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS],
-                        newPersistentDeletedSubplebbits
-                    );
-            })
-        );
+        for (const subAddress of deletedPersistentSubs) {
+            const subPath = path.join(<string>plebbit.dataPath, "subplebbits", subAddress);
+            try {
+                await fs.rm(subPath, { force: true });
+                log(`Succeeded in deleting old db path (${subAddress})`);
+                subsThatWereDeletedSuccessfully.push(subAddress);
+            } catch (e) {
+                log.error(`Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`, e);
+            }
+            const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+            if (newPersistentDeletedSubplebbits.length === 0) {
+                await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+                log("Removed persistent deleted subplebbits from storage because there are none left");
+                return undefined;
+            } else {
+                await plebbit._storage.setItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits);
+                log(`Updated persistent deleted subplebbits in storage`, newPersistentDeletedSubplebbits);
+                return newPersistentDeletedSubplebbits;
+            }
+        }
     }
-    return <string[] | undefined>await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
 }
 
 export async function listSubplebbits(plebbit: Plebbit) {
@@ -217,6 +215,8 @@ export async function listSubplebbits(plebbit: Plebbit) {
     await fs.mkdir(subplebbitsPath, { recursive: true });
 
     const deletedPersistentSubs = (await _handlePersistentSubsIfNeeded(plebbit, log)) || [];
+
+    if (deletedPersistentSubs.length > 0) log(`Deleted persistent subplebbits from storage`, deletedPersistentSubs);
 
     const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter(
         (file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)
