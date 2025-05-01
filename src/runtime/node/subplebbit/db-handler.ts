@@ -221,9 +221,18 @@ export class DbHandler {
         const trx: Transaction = this._currentTrxs[transactionId];
         if (trx) {
             assert(trx.isTransaction, `Transaction (${transactionId}) needs to be stored to rollback`);
-            if (trx.isCompleted()) return;
-            await this._currentTrxs[transactionId].rollback();
-            delete this._currentTrxs[transactionId];
+            if (trx.isCompleted()) {
+                delete this._currentTrxs[transactionId];
+                return;
+            }
+
+            try {
+                await this._currentTrxs[transactionId].rollback();
+            } catch (e) {
+                log.error(`Failed to rollback transaction (${transactionId}) due to error`, e);
+            } finally {
+                delete this._currentTrxs[transactionId];
+            }
         }
 
         log.trace(
@@ -232,7 +241,7 @@ export class DbHandler {
     }
 
     async rollbackAllTransactions() {
-        return Promise.all(remeda.keys.strict(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+        for (const trxId of remeda.keys.strict(this._currentTrxs)) await this.rollbackTransaction(trxId);
     }
 
     private _baseTransaction(trx?: Transaction): Transaction | Knex {
@@ -1106,6 +1115,7 @@ export class DbHandler {
             .orderBy("id", "desc")
             .select(["cid", "timestamp"])
             .first();
+        // last reply timestamp is the timestamp of the latest child or indirect child timestamp
         const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
         return {
             lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
