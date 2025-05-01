@@ -27,6 +27,7 @@ import {
     isLinkOfMedia,
     isStringDomain,
     removeUndefinedValuesRecursively,
+    retryKuboIpfsAdd,
     throwWithErrorCode,
     timestamp
 } from "../../../util.js";
@@ -476,7 +477,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToBeUpdated[]) {
-        const log = Logger("plebbit-js:local-subplebbit:sync");
+        const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
 
         await this._calculateLatestUpdateTrigger();
 
@@ -492,7 +493,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
         const newPostUpdates = await this._calculateNewPostUpdates();
 
-        const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
+        const statsCid = (
+            await retryKuboIpfsAdd({
+                kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+                log,
+                content: deterministicStringify(stats),
+                options: { pin: true }
+            })
+        ).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
@@ -545,7 +553,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
-        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
+        const file = await retryKuboIpfsAdd({
+            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            log,
+            content: deterministicStringify(newSubplebbitRecord),
+            options: { pin: true }
+        });
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
@@ -837,7 +850,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
         };
 
-        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentIpfs));
+        const file = await retryKuboIpfsAdd({
+            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            log,
+            content: deterministicStringify(commentIpfs),
+            options: { pin: true }
+        });
 
         const commentCid = file.path;
         const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
@@ -1787,25 +1805,38 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
         const unpinnedCommentsFromDb = await this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
-        for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
-            const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
-            const baseSignatureProps = remeda.pick(
-                unpinnedCommentRow,
-                //@ts-expect-error
-                remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
-            );
-            const commentIpfsJson = <CommentIpfsType>{
-                ...baseSignatureProps,
-                ...baseIpfsProps,
-                ...unpinnedCommentRow.extraProps
-            };
-            if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
-            const commentIpfsContent = deterministicStringify(commentIpfsJson);
-            const contentHash: string = await calculateIpfsHash(commentIpfsContent);
-            if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-            await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-            log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
-        }
+        // In the _repinCommentIpfs method:
+        const limit = pLimit(50);
+        const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) =>
+            limit(async () => {
+                const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
+                const baseSignatureProps = remeda.pick(
+                    unpinnedCommentRow,
+                    //@ts-expect-error
+                    remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
+                );
+                const commentIpfsJson = <CommentIpfsType>{
+                    ...baseSignatureProps,
+                    ...baseIpfsProps,
+                    ...unpinnedCommentRow.extraProps
+                };
+                if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
+                const commentIpfsContent = deterministicStringify(commentIpfsJson);
+                const contentHash: string = await calculateIpfsHash(commentIpfsContent);
+                if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+
+                const addRes = await retryKuboIpfsAdd({
+                    kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+                    log,
+                    content: commentIpfsContent,
+                    options: { pin: true }
+                });
+                if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+                log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+            })
+        );
+
+        await Promise.all(pinningPromises);
 
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // force plebbit-js to republish all comment updates
 

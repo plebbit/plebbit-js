@@ -9,7 +9,7 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import type { AddOptions, AddResult, create as CreateKuboRpcClient } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -27,6 +27,9 @@ import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "multiformats/hashes/sha2";
 import { base32 } from "multiformats/bases/base32";
+import { Plebbit } from "./plebbit/plebbit.js";
+import Logger from "@plebbit/plebbit-logger";
+import retry from "retry";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -365,4 +368,41 @@ export async function pubsubTopicToDhtKey(pubsubTopic: string) {
     const multicodec = 0x55;
     const cid = CID.create(cidVersion, multicodec, hash);
     return cid.toString(base32);
+}
+
+export async function retryKuboIpfsAdd({
+    kuboRpcClient,
+    log,
+    content,
+    inputNumOfRetries,
+    options
+}: {
+    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"];
+    log: Logger;
+    content: string;
+    inputNumOfRetries?: number;
+    options?: AddOptions;
+}): Promise<AddResult> {
+    const numOfRetries = inputNumOfRetries ?? 3;
+
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 1000
+        });
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const addRes = await kuboRpcClient.add(content, options);
+                resolve(addRes);
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add content to IPFS:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
 }
