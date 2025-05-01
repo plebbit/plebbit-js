@@ -218,10 +218,9 @@ export async function listSubplebbits(plebbit: Plebbit) {
 
     const deletedPersistentSubs = await _handlePersistentSubsIfNeeded(plebbit, log);
 
-    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
-        .filter((file) => file.isFile()) // Filter directories out
-        .filter((file) => !/-journal$/.test(file.name)) // Filter SQLite3 journal files out
-        .map((file) => file.name);
+    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter(
+        (file) => !file.includes(".lock") && !file.endsWith("-journal")
+    ); // Filter locks and journal files out
 
     const filterResults = await Promise.all(
         files.map(async (address) => {
@@ -306,7 +305,8 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
     await mkdir(subsPath, { recursive: true });
 
     fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false }, async (eventType, filename) => {
-        if (filename?.endsWith(".lock")) return; // we only care about subplebbits
+        if (filename?.endsWith(".lock") || filename?.endsWith("-journal")) return; // we only care about subplebbits
+
         const currentSubs = await listSubplebbits(plebbit);
         if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))
             plebbit.emit("subplebbitschange", currentSubs);
