@@ -170,6 +170,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
+    private _addressRewriterDestroy?: () => void;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
@@ -309,12 +310,13 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
             // only for node
             setupKuboAddressesRewriterAndHttpRouters(this)
-                .then(() =>
+                .then((addressesRewriterProxyServer) => {
                     log(
                         "Set http router options and their proxies successfully on all connected ipfs",
                         Object.keys(this.clients.kuboRpcClients)
-                    )
-                )
+                    );
+                    this._addressRewriterDestroy = addressesRewriterProxyServer.destroy;
+                })
                 .catch((e: Error) => {
                     log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
                     this.emit("error", e);
@@ -912,6 +914,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
 
+        if (this._addressRewriterDestroy) this._addressRewriterDestroy();
         await this._domainResolver.destroy();
 
         await this._storage.destroy();
