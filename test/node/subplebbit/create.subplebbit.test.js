@@ -12,6 +12,7 @@ import {
     itSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../dist/node/util.js";
+import signers from "../../fixtures/signers.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
@@ -171,6 +172,19 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     itSkipIfRpc(`Can't create a subplebbit if it's running in another Plebbit instance`, async () => {
         const firstPlebbit = await mockPlebbit();
+
+        try {
+            await firstPlebbit.createSubplebbit({ address: signers[0].address }); // this sub is running in test-server process instance
+            expect.fail("should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS");
+        } finally {
+            await firstPlebbit.destroy();
+        }
+    });
+
+    itSkipIfRpc(`Can create a subplebbit if it's running in the same plebbit instance`, async () => {
+        const firstPlebbit = await mockPlebbit();
         const firstSub = await firstPlebbit.createSubplebbit();
         await firstSub.start();
         const differentPlebbit = await mockPlebbitV2({
@@ -178,15 +192,16 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
             stubStorage: false,
             mockResolve: true
         });
-        try {
-            await differentPlebbit.createSubplebbit({ address: firstSub.address });
-            expect.fail("should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS");
-        } finally {
-            await firstPlebbit.destroy();
-            await differentPlebbit.destroy();
-        }
+
+        const recreatedSub = await differentPlebbit.createSubplebbit({ address: firstSub.address });
+        expect(recreatedSub.startedState).to.equal("stopped");
+        expect(recreatedSub.address).to.equal(firstSub.address);
+        expect(recreatedSub.signer.address).to.equal(firstSub.signer.address);
+        expect(recreatedSub.title).to.equal(firstSub.title);
+        expect(recreatedSub.description).to.equal(firstSub.description);
+
+        await firstPlebbit.destroy();
+        await differentPlebbit.destroy();
     });
 
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
