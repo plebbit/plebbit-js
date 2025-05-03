@@ -160,6 +160,7 @@ export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>)
 export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pick<Plebbit, "_storage">) => {
     const log = Logger("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
     const subAddress = path.basename(subPath);
+    await new Promise((resolve) => setTimeout(resolve, 10000)); // give windows time to release the file
     try {
         await fs.rm(subPath);
         log(`Succeeded in deleting old subplebbit (${subAddress})`);
@@ -182,7 +183,13 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
     const deletedPersistentSubs = <string[] | undefined>(
         await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])
     );
+
     if (Array.isArray(deletedPersistentSubs)) {
+        if (deletedPersistentSubs.length === 0) {
+            await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+            log("Removed persistent deleted subplebbits from storage because there are none left");
+            return undefined;
+        }
         // Attempt to delete them
         const subsThatWereDeletedSuccessfully: string[] = [];
         for (const subAddress of deletedPersistentSubs) {

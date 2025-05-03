@@ -1363,6 +1363,7 @@ export class DbHandler {
     }
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");
+        await this.destoryConnection();
 
         const oldPathString = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
