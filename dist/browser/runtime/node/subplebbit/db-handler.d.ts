@@ -28,7 +28,7 @@ export declare class DbHandler {
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;
     rollbackTransaction(transactionId: string): Promise<void>;
-    rollbackAllTransactions(): Promise<void[]>;
+    rollbackAllTransactions(): Promise<void>;
     private _baseTransaction;
     private _createCommentsTable;
     private _createCommentUpdatesTable;
@@ -192,32 +192,25 @@ export declare class DbHandler {
     queryCommentsWithPostCidSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsOfAuthors(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<{
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        postCid: string;
-        timestamp: number;
         id: number;
         author: {
             address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -235,24 +228,32 @@ export declare class DbHandler {
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
         subplebbitAddress: string;
         protocolVersion: string;
-        cid: string;
-        depth: number;
         insertedAt: number;
         authorSignerAddress: string;
+        postCid: string;
+        depth: number;
+        cid: string;
         flair?: import("zod").objectOutputType<{
             text: import("zod").ZodString;
             backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
-        content?: string | undefined;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -263,35 +264,27 @@ export declare class DbHandler {
         thumbnailUrlWidth?: number | undefined;
         thumbnailUrlHeight?: number | undefined;
         previousCid?: string | undefined;
-        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
     }[]>;
     queryCommentBySignatureEncoded(signatureEncoded: string, trx?: Transaction): Promise<{
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        postCid: string;
-        timestamp: number;
         id: number;
         author: {
             address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -309,24 +302,32 @@ export declare class DbHandler {
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
         subplebbitAddress: string;
         protocolVersion: string;
-        cid: string;
-        depth: number;
         insertedAt: number;
         authorSignerAddress: string;
+        postCid: string;
+        depth: number;
+        cid: string;
         flair?: import("zod").objectOutputType<{
             text: import("zod").ZodString;
             backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
-        content?: string | undefined;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -337,15 +338,57 @@ export declare class DbHandler {
         thumbnailUrlWidth?: number | undefined;
         thumbnailUrlHeight?: number | undefined;
         previousCid?: string | undefined;
-        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } | undefined>;
     queryCommentModerationBySignatureEncoded(signatureEncoded: string, trx?: Transaction): Promise<{
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
+        id: number;
+        author: {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: import("zod").objectOutputType<{
+                chainTicker: import("zod").ZodString;
+                address: import("zod").ZodString;
+                id: import("zod").ZodString;
+                timestamp: import("zod").ZodNumber;
+                signature: import("zod").ZodObject<{
+                    signature: import("zod").ZodString;
+                    type: import("zod").ZodEnum<["eip191"]>;
+                }, "strip", import("zod").ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
+        };
+        subplebbitAddress: string;
+        protocolVersion: string;
+        commentCid: string;
+        insertedAt: number;
         commentModeration: {
             flair?: import("zod").objectOutputType<{
                 text: import("zod").ZodString;
@@ -353,8 +396,6 @@ export declare class DbHandler {
                 textColor: import("zod").ZodOptional<import("zod").ZodString>;
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            spoiler?: boolean | undefined;
-            nsfw?: boolean | undefined;
             author?: import("zod").objectOutputType<Pick<{
                 postScore: import("zod").ZodNumber;
                 replyScore: import("zod").ZodNumber;
@@ -378,6 +419,8 @@ export declare class DbHandler {
                 firstCommentTimestamp: import("zod").ZodNumber;
                 lastCommentCid: import("zod").ZodEffects<import("zod").ZodString, string, string>;
             }, "flair" | "banExpiresAt">, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            spoiler?: boolean | undefined;
+            nsfw?: boolean | undefined;
             reason?: string | undefined;
             pinned?: boolean | undefined;
             locked?: boolean | undefined;
@@ -386,78 +429,29 @@ export declare class DbHandler {
         } & {
             [k: string]: unknown;
         };
-        timestamp: number;
-        id: number;
-        author: {
-            address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-                timestamp: number;
-            }> | undefined;
-            avatar?: import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        } & {
-            [k: string]: unknown;
-        };
-        subplebbitAddress: string;
-        protocolVersion: string;
-        commentCid: string;
-        insertedAt: number;
         modSignerAddress: string;
         extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } | undefined>;
     queryCommentEditBySignatureEncoded(signatureEncoded: string, trx?: Transaction): Promise<{
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        timestamp: number;
         id: number;
         author: {
             address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -474,6 +468,12 @@ export declare class DbHandler {
                     type: "eip191";
                     signature: string;
                 }>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         };
         subplebbitAddress: string;
@@ -488,10 +488,10 @@ export declare class DbHandler {
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        spoiler?: boolean | undefined;
-        nsfw?: boolean | undefined;
         content?: string | undefined;
         deleted?: boolean | undefined;
+        spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } | undefined>;
@@ -516,32 +516,25 @@ export declare class DbHandler {
     queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid"> | undefined>;
     queryLatestCommentCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid"> | undefined>;
     queryAllCommentsOrderedByIdAsc(trx?: Transaction): Promise<{
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        postCid: string;
-        timestamp: number;
         id: number;
         author: {
             address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -559,24 +552,32 @@ export declare class DbHandler {
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
         subplebbitAddress: string;
         protocolVersion: string;
-        cid: string;
-        depth: number;
         insertedAt: number;
         authorSignerAddress: string;
+        postCid: string;
+        depth: number;
+        cid: string;
         flair?: import("zod").objectOutputType<{
             text: import("zod").ZodString;
             backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
-        content?: string | undefined;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -587,7 +588,6 @@ export declare class DbHandler {
         thumbnailUrlWidth?: number | undefined;
         thumbnailUrlHeight?: number | undefined;
         previousCid?: string | undefined;
-        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
     }[]>;
     queryAuthorModEdits(authorSignerAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>;
     querySubplebbitAuthor(authorSignerAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined>;
@@ -600,32 +600,25 @@ export declare class DbHandler {
     unlockSubState(): Promise<void>;
     subDbExists(): boolean;
     queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction): Promise<Pick<{
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        postCid: string;
-        timestamp: number;
         id: number;
         author: {
             address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -643,24 +636,32 @@ export declare class DbHandler {
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
         subplebbitAddress: string;
         protocolVersion: string;
-        cid: string;
-        depth: number;
         insertedAt: number;
         authorSignerAddress: string;
+        postCid: string;
+        depth: number;
+        cid: string;
         flair?: import("zod").objectOutputType<{
             text: import("zod").ZodString;
             backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
             textColor: import("zod").ZodOptional<import("zod").ZodString>;
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
-        content?: string | undefined;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -671,7 +672,6 @@ export declare class DbHandler {
         thumbnailUrlWidth?: number | undefined;
         thumbnailUrlHeight?: number | undefined;
         previousCid?: string | undefined;
-        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
     }, "cid">[]>;
     updateCommentUpdatesPublishedToPostUpdatesMFS(commentCids: string[], trx?: Transaction): Promise<number>;
     updateMfsPathOfCommentUpdates(oldAddress: string, newAddress: string, trx?: Transaction): Promise<void>;

@@ -12,8 +12,8 @@ export class AddressesRewriterProxyServer {
         this.proxyTarget = new URL(proxyTargetUrl);
         this.server = http.createServer((req, res) => this._proxyRequestRewrite(req, res));
     }
-    listen(callback) {
-        this._startUpdateAddressesLoop();
+    async listen(callback) {
+        await this._startUpdateAddressesLoop();
         this.server.on("error", (err) => debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err));
         this.server.listen(this.port, this.hostname, callback);
         debug("Addresses rewriter proxy at", this.hostname + ":" + this.port, "started listening to forward requests to", this.proxyTarget.host);
@@ -119,7 +119,7 @@ export class AddressesRewriterProxyServer {
         });
     }
     // get up to date listen addresses from kubo every x minutes
-    _startUpdateAddressesLoop() {
+    async _startUpdateAddressesLoop() {
         if (!this.kuboClients?.length)
             throw Error("should have a defined kubo rpc client option to start the address rewriter");
         const tryUpdateAddresses = async () => {
@@ -142,7 +142,7 @@ export class AddressesRewriterProxyServer {
                 }
             }
         };
-        tryUpdateAddresses();
+        await tryUpdateAddresses();
         this._updateAddressesInterval = setInterval(tryUpdateAddresses, 1000 * 60);
     }
 }

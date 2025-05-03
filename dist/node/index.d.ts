@@ -263,16 +263,16 @@ declare const Plebbit: {
         }, args_1: import("./pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("./runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         } | {
             type: string;
             challenge: string;
             verify: (args_0: string, ...args: unknown[]) => Promise<{
                 success: true;
             } | {
-                success: false;
                 error: string;
+                success: false;
             }>;
         }>;
         description?: string | undefined;
@@ -556,16 +556,16 @@ export declare const challenges: Record<string, (args_0: {
     }, args_1: import("./pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("./runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>;
     description?: string | undefined;

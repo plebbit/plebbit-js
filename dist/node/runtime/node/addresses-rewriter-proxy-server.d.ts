@@ -15,9 +15,9 @@ export declare class AddressesRewriterProxyServer {
     server: ReturnType<(typeof http)["createServer"]>;
     private _updateAddressesInterval;
     constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl }: AddressesRewriterOptions);
-    listen(callback?: () => void): void;
+    listen(callback?: () => void): Promise<void>;
     destroy(): void;
     _proxyRequestRewrite(req: Parameters<http.RequestListener>[0], res: Parameters<http.RequestListener>[1]): void;
-    _startUpdateAddressesLoop(): void;
+    _startUpdateAddressesLoop(): Promise<void>;
 }
 export {};

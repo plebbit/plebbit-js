@@ -1,5 +1,5 @@
 import type { PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
-import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
+import { BasePagesClientsManager, SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
 import { Comment } from "../publications/comment/comment.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { Plebbit } from "../plebbit/plebbit.js";
@@ -47,8 +47,8 @@ export declare class RepliesPages extends BasePages {
 export declare class PostsPages extends BasePages {
     pages: Partial<Record<PostSortName, PageTypeJson>>;
     pageCids: Record<PostSortName, string>;
-    clients: PostsPagesClientsManager["clients"];
-    _clientsManager: PostsPagesClientsManager;
+    clients: SubplebbitPostsPagesClientsManager["clients"];
+    _clientsManager: SubplebbitPostsPagesClientsManager;
     _parentComment: undefined;
     _subplebbit: RemoteSubplebbit;
     constructor(props: PostsProps);

@@ -155,7 +155,10 @@ export class Plebbit extends PlebbitTypedEmitter {
         if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
             // only for node
             setupKuboAddressesRewriterAndHttpRouters(this)
-                .then(() => log("Set http router options and their proxies successfully on all connected ipfs", Object.keys(this.clients.kuboRpcClients)))
+                .then((addressesRewriterProxyServer) => {
+                log("Set http router options and their proxies successfully on all connected ipfs", Object.keys(this.clients.kuboRpcClients));
+                this._addressRewriterDestroy = addressesRewriterProxyServer.destroy;
+            })
                 .catch((e) => {
                 log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
                 this.emit("error", e);
@@ -695,9 +698,12 @@ export class Plebbit extends PlebbitTypedEmitter {
             await subplebbit.stop();
         if (this._subplebbitFsWatchAbort)
             this._subplebbitFsWatchAbort.abort();
+        if (this._addressRewriterDestroy)
+            this._addressRewriterDestroy();
         await this._domainResolver.destroy();
         await this._storage.destroy();
-        await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
+        for (const storage of Object.values(this._storageLRUs))
+            await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))

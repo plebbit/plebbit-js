@@ -1001,13 +1001,11 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
     const curRecordSize = Buffer.byteLength(JSON.stringify(rawCommentUpdateRecord));
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+    const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedReply;
     await Promise.all(new Array(numOfCommentsToPublish).fill(null).map(async () => {
-        const content = "x".repeat(1024 * 30); //30kb
         //@ts-expect-error
-        const reply = await publishRandomReply(comment, comment._plebbit, { content });
-        lastPublishedReply = reply;
-        return reply;
+        lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
     }));
     const updatingComment = await comment._plebbit.createComment(comment);
     await updatingComment.update();
@@ -1026,9 +1024,9 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit) {
     const curRecordSize = Buffer.byteLength(JSON.stringify(rawSubplebbitRecord));
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+    const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedPost;
     await Promise.all(new Array(numOfCommentsToPublish).fill(null).map(async () => {
-        const content = "x".repeat(1024 * 30); //30kb
         const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
         lastPublishedPost = post;
     }));

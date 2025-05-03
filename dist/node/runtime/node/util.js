@@ -9,7 +9,7 @@ import { PlebbitError } from "../../plebbit-error.js";
 import probe from "probe-image-size";
 import { STORAGE_KEYS } from "../../constants.js";
 import os from "os";
-import * as fileType from "file-type";
+import { fileTypeFromFile } from "file-type";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -139,27 +139,34 @@ export const setNativeFunctions = (newNativeFunctions) => {
 export const deleteOldSubplebbitInWindows = async (subPath, plebbit) => {
     const log = Logger("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
     const subAddress = path.basename(subPath);
+    await new Promise((resolve) => setTimeout(resolve, 10000)); // give windows time to release the file
     try {
         await fs.rm(subPath);
         log(`Succeeded in deleting old subplebbit (${subAddress})`);
     }
     catch (e) {
         // Assume it's because of EBUSY
-        log.error(`Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`);
+        log.error(`Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`, e);
         // Put subAddress in storage
         const storageKey = STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
         const subsThatWeFailedToDelete = (await plebbit._storage.getItem(storageKey)) || [];
         if (!subsThatWeFailedToDelete.includes(subAddress))
             subsThatWeFailedToDelete.push(subAddress);
         await plebbit._storage.setItem(storageKey, subsThatWeFailedToDelete);
+        log(`Updated persistent deleted subplebbits in storage`, subsThatWeFailedToDelete);
     }
 };
 async function _handlePersistentSubsIfNeeded(plebbit, log) {
     const deletedPersistentSubs = (await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]));
     if (Array.isArray(deletedPersistentSubs)) {
+        if (deletedPersistentSubs.length === 0) {
+            await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+            log("Removed persistent deleted subplebbits from storage because there are none left");
+            return undefined;
+        }
         // Attempt to delete them
         const subsThatWereDeletedSuccessfully = [];
-        await Promise.all(deletedPersistentSubs.map(async (subAddress) => {
+        for (const subAddress of deletedPersistentSubs) {
             const subPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
             try {
                 await fs.rm(subPath, { force: true });
@@ -167,16 +174,21 @@ async function _handlePersistentSubsIfNeeded(plebbit, log) {
                 subsThatWereDeletedSuccessfully.push(subAddress);
             }
             catch (e) {
-                log.error(`Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`);
+                log.error(`Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`, e);
             }
-            const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
-            if (newPersistentDeletedSubplebbits.length === 0)
-                await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
-            else
-                await plebbit._storage.setItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits);
-        }));
+        }
+        const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+        if (newPersistentDeletedSubplebbits.length === 0) {
+            await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+            log("Removed persistent deleted subplebbits from storage because there are none left");
+            return undefined;
+        }
+        else {
+            await plebbit._storage.setItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits);
+            log(`Updated persistent deleted subplebbits in storage`, newPersistentDeletedSubplebbits);
+            return newPersistentDeletedSubplebbits;
+        }
     }
-    return deletedPersistentSubs;
 }
 export async function listSubplebbits(plebbit) {
     const log = Logger("plebbit-js:listSubplebbits");
@@ -184,17 +196,13 @@ export async function listSubplebbits(plebbit) {
         throw Error("plebbit.dataPath needs to be defined to listSubplebbits");
     const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
     await fs.mkdir(subplebbitsPath, { recursive: true });
-    const deletedPersistentSubs = await _handlePersistentSubsIfNeeded(plebbit, log);
-    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
-        .filter((file) => file.isFile()) // Filter directories out
-        .filter((file) => !/-journal$/.test(file.name)) // Filter SQLite3 journal files out
-        .map((file) => file.name);
+    const deletedPersistentSubs = (await _handlePersistentSubsIfNeeded(plebbit, log)) || [];
+    if (deletedPersistentSubs.length > 0)
+        log(`persistent subplebbits that refuse to be deleted`, deletedPersistentSubs);
+    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter((file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)); // Filter locks and journal files out
     const filterResults = await Promise.all(files.map(async (address) => {
-        if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address))
-            return false;
         try {
-            //@ts-expect-error
-            const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
+            const typeOfFile = await fileTypeFromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
             return typeOfFile?.mime === "application/x-sqlite3";
         }
         catch (e) {
@@ -259,7 +267,7 @@ export async function monitorSubplebbitsDirectory(plebbit) {
     const subsPath = path.join(plebbit.dataPath, "subplebbits");
     await mkdir(subsPath, { recursive: true });
     fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false }, async (eventType, filename) => {
-        if (filename?.endsWith(".lock"))
+        if (filename?.endsWith(".lock") || filename?.endsWith("-journal"))
             return; // we only care about subplebbits
         const currentSubs = await listSubplebbits(plebbit);
         if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))

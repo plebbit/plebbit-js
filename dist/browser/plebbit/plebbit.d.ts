@@ -68,6 +68,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit | RpcLocalSubplebbit>;
     private _subplebbitFsWatchAbort?;
     private _subplebbitschangeEventHasbeenEmitted;
+    private _addressRewriterDestroy?;
     private _storageLRUs;
     _memCaches: PlebbitMemCaches;
     _domainResolver: DomainResolver;

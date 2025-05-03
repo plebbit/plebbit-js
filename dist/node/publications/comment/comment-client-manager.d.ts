@@ -45,10 +45,6 @@ export declare class CommentClientsManager extends PublicationClientsManager {
         comment: CommentIpfsType;
         commentUpdate: CommentUpdateType;
     } | undefined;
-    _fetchParentCommentForCommentUpdate(parentCid: string): Promise<{
-        comment: CommentIpfsType;
-        commentUpdate: Pick<CommentUpdateType, "cid">;
-    }>;
     _calculatePathForPostCommentUpdate(folderCid: string, postCid: string): string;
     _fetchPostCommentUpdateIpfsP2P(subIpns: SubplebbitIpfsType, timestampRanges: string[], log: Logger): Promise<NewCommentUpdate>;
     _shouldWeFetchCommentUpdateFromNextTimestamp(err: PlebbitError | Error): boolean;
