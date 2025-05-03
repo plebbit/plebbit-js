@@ -1,7 +1,11 @@
 import { parsePageIpfs } from "../pages/util.js";
 import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
 import { verifyPage } from "../signer/signatures.js";
-import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
+import {
+    BasePagesClientsManager,
+    SubplebbitPostsPagesClientsManager,
+    RepliesPagesClientsManager
+} from "../clients/pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
@@ -207,9 +211,9 @@ export class PostsPages extends BasePages {
 
     override pageCids!: Record<PostSortName, string>;
 
-    override clients!: PostsPagesClientsManager["clients"];
+    override clients!: SubplebbitPostsPagesClientsManager["clients"];
 
-    override _clientsManager!: PostsPagesClientsManager;
+    override _clientsManager!: SubplebbitPostsPagesClientsManager;
     override _parentComment: undefined = undefined; // would be undefined because we don't have a parent comment for posts
     override _subplebbit!: RemoteSubplebbit;
 
@@ -222,7 +226,7 @@ export class PostsPages extends BasePages {
     }
 
     protected override _initClientsManager(plebbit: Plebbit): void {
-        this._clientsManager = new PostsPagesClientsManager({ plebbit, pages: this });
+        this._clientsManager = new SubplebbitPostsPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
 
