@@ -1388,10 +1388,12 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
 
     const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedReply: Comment;
-    for (let i = 0; i < numOfCommentsToPublish; i++) {
-        //@ts-expect-error
-        lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
-    }
+    await Promise.all(
+        new Array(numOfCommentsToPublish).fill(null).map(async () => {
+            //@ts-expect-error
+            lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+        })
+    );
 
     const updatingComment = await comment._plebbit.createComment(comment);
     await updatingComment.update();
