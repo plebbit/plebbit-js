@@ -35,40 +35,17 @@ export class BasePagesClientsManager extends BaseClientsManager {
         hideClassPrivateProps(this);
     }
 
-    protected getSortTypes(): string[] {
-        throw Error(`This method should be overridden`);
-    }
-
     // Init functions here
     protected _initIpfsGateways() {
         this.clients.ipfsGateways = {};
-        for (const sortType of this.getSortTypes()) {
-            this.clients.ipfsGateways[sortType] = {};
-            for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
-                this.clients.ipfsGateways[sortType][gatewayUrl] = new PagesIpfsGatewayClient("stopped");
-        }
     }
 
     protected _initIpfsClients() {
-        if (this._plebbit.clients.kuboRpcClients) {
-            this.clients.kuboRpcClients = {};
-            for (const sortType of this.getSortTypes()) {
-                this.clients.kuboRpcClients[sortType] = {};
-                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
-                    this.clients.kuboRpcClients[sortType][ipfsUrl] = new PagesKuboRpcClient("stopped");
-            }
-        }
+        if (this._plebbit.clients.kuboRpcClients) this.clients.kuboRpcClients = {};
     }
 
     protected _initPlebbitRpcClients() {
-        if (this._plebbit.clients.plebbitRpcClients) {
-            this.clients.plebbitRpcClients = {};
-            for (const sortType of this.getSortTypes()) {
-                this.clients.plebbitRpcClients[sortType] = {};
-                for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
-                    this.clients.plebbitRpcClients[sortType][rpcUrl] = new PagesPlebbitRpcStateClient("stopped");
-            }
-        }
+        if (this._plebbit.clients.plebbitRpcClients) this.clients.plebbitRpcClients = {};
     }
 
     // Override methods from BaseClientsManager here
@@ -129,6 +106,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
         if (!Array.isArray(sortTypes)) return;
         assert(typeof this._defaultIpfsProviderUrl === "string", "Can't update ipfs state without ipfs client");
         for (const sortType of sortTypes) {
+            if (!this.clients.kuboRpcClients[sortType]) this.clients.kuboRpcClients[sortType] = {};
+            if (!this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl])
+                this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl] = new PagesKuboRpcClient("stopped");
             if (this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state === newState) continue;
             this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state = newState;
             this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
@@ -138,6 +118,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
     updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
         for (const sortType of sortTypes) {
+            if (!this.clients.ipfsGateways[sortType]) this.clients.ipfsGateways[sortType] = {};
+            if (!this.clients.ipfsGateways[sortType][gateway])
+                this.clients.ipfsGateways[sortType][gateway] = new PagesIpfsGatewayClient("stopped");
             if (this.clients.ipfsGateways[sortType][gateway].state === newState) continue;
             this.clients.ipfsGateways[sortType][gateway].state = newState;
             this.clients.ipfsGateways[sortType][gateway].emit("statechange", newState);
@@ -147,6 +130,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
     updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
         for (const sortType of sortTypes) {
+            if (!this.clients.plebbitRpcClients[sortType]) this.clients.plebbitRpcClients[sortType] = {};
+            if (!this.clients.plebbitRpcClients[sortType][rpcUrl])
+                this.clients.plebbitRpcClients[sortType][rpcUrl] = new PagesPlebbitRpcStateClient("stopped");
             if (this.clients.plebbitRpcClients[sortType][rpcUrl].state === newState) continue;
             this.clients.plebbitRpcClients[sortType][rpcUrl].state = newState;
             this.clients.plebbitRpcClients[sortType][rpcUrl].emit("statechange", newState);
@@ -259,10 +245,6 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
         kuboRpcClients: Record<ReplySortName, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<ReplySortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
-
-    protected override getSortTypes() {
-        return remeda.keys.strict(POST_REPLIES_SORT_TYPES);
-    }
 }
 
 export class PostsPagesClientsManager extends BasePagesClientsManager {
@@ -271,8 +253,4 @@ export class PostsPagesClientsManager extends BasePagesClientsManager {
         kuboRpcClients: Record<PostSortName, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<PostSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
-
-    protected override getSortTypes() {
-        return remeda.keys.strict(POSTS_SORT_TYPES);
-    }
 }
