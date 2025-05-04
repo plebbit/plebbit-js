@@ -62,10 +62,12 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
         address: string;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
+        protocolVersion: string;
+        updatedAt: number;
         challenges: import("zod").objectOutputType<{
             exclude: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
                 subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
@@ -250,7 +252,6 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
             type: import("zod").ZodString;
             caseInsensitive: import("zod").ZodOptional<import("zod").ZodBoolean>;
         }, import("zod").ZodTypeAny, "passthrough">[];
-        protocolVersion: string;
         encryption: {
             type: "ed25519-aes-gcm";
             publicKey: string;
@@ -258,15 +259,14 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
             [k: string]: unknown;
         };
         createdAt: number;
-        updatedAt: number;
         statsCid: string;
+        lastCommentCid?: string | undefined;
+        title?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
         } | undefined;
         description?: string | undefined;
-        title?: string | undefined;
-        lastCommentCid?: string | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, import("zod").objectOutputType<{

@@ -56,18 +56,18 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -150,18 +150,18 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -244,18 +244,18 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -339,23 +339,13 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
         privateKey: string;
     };
     subplebbitAddress: string;
+    timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
-    content?: string | undefined;
-    title?: string | undefined;
-    link?: string | undefined;
-    linkWidth?: number | undefined;
-    linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
-    parentCid?: string | undefined;
-    postCid?: string | undefined;
-    timestamp?: number | undefined;
     author?: z.objectOutputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -375,18 +365,18 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -456,21 +446,9 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
-}, {
-    signer: {
-        type: "ed25519";
-        privateKey: string;
-    };
-    subplebbitAddress: string;
-    flair?: z.objectInputType<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -478,7 +456,19 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
+}, {
+    signer: {
+        type: "ed25519";
+        privateKey: string;
+    };
+    subplebbitAddress: string;
     timestamp?: number | undefined;
+    flair?: z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
     author?: z.objectInputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -498,18 +488,18 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -579,6 +569,16 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
+    content?: string | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
+    title?: string | undefined;
+    link?: string | undefined;
+    linkWidth?: number | undefined;
+    linkHeight?: number | undefined;
+    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    parentCid?: string | undefined;
+    postCid?: string | undefined;
 }>;
 export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.ZodEffects<z.ZodObject<{
     flair: z.ZodOptional<z.ZodObject<{
@@ -637,18 +637,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -731,18 +731,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -825,18 +825,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -920,23 +920,13 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
-    content?: string | undefined;
-    title?: string | undefined;
-    link?: string | undefined;
-    linkWidth?: number | undefined;
-    linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
-    parentCid?: string | undefined;
-    postCid?: string | undefined;
-    timestamp?: number | undefined;
     author?: z.objectOutputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -956,18 +946,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1037,21 +1027,9 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
-}, {
-    signer: {
-        type: "ed25519";
-        privateKey: string;
-    };
-    subplebbitAddress: string;
-    flair?: z.objectInputType<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -1059,7 +1037,19 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
+}, {
+    signer: {
+        type: "ed25519";
+        privateKey: string;
+    };
+    subplebbitAddress: string;
     timestamp?: number | undefined;
+    flair?: z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
     author?: z.objectInputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -1079,18 +1069,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1160,29 +1150,29 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
+    content?: string | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
+    title?: string | undefined;
+    link?: string | undefined;
+    linkWidth?: number | undefined;
+    linkHeight?: number | undefined;
+    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    parentCid?: string | undefined;
+    postCid?: string | undefined;
 }>, {
     signer: {
         type: "ed25519";
         privateKey: string;
     };
     subplebbitAddress: string;
+    timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
-    content?: string | undefined;
-    title?: string | undefined;
-    link?: string | undefined;
-    linkWidth?: number | undefined;
-    linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
-    parentCid?: string | undefined;
-    postCid?: string | undefined;
-    timestamp?: number | undefined;
     author?: z.objectOutputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -1202,18 +1192,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1283,21 +1273,9 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
-}, {
-    signer: {
-        type: "ed25519";
-        privateKey: string;
-    };
-    subplebbitAddress: string;
-    flair?: z.objectInputType<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -1305,7 +1283,19 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
+}, {
+    signer: {
+        type: "ed25519";
+        privateKey: string;
+    };
+    subplebbitAddress: string;
     timestamp?: number | undefined;
+    flair?: z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
     author?: z.objectInputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -1325,18 +1315,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1406,29 +1396,29 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
+    content?: string | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
+    title?: string | undefined;
+    link?: string | undefined;
+    linkWidth?: number | undefined;
+    linkHeight?: number | undefined;
+    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    parentCid?: string | undefined;
+    postCid?: string | undefined;
 }>, {
     signer: {
         type: "ed25519";
         privateKey: string;
     };
     subplebbitAddress: string;
+    timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
-    content?: string | undefined;
-    title?: string | undefined;
-    link?: string | undefined;
-    linkWidth?: number | undefined;
-    linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
-    parentCid?: string | undefined;
-    postCid?: string | undefined;
-    timestamp?: number | undefined;
     author?: z.objectOutputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -1448,18 +1438,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1529,21 +1519,9 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
-}, {
-    signer: {
-        type: "ed25519";
-        privateKey: string;
-    };
-    subplebbitAddress: string;
-    flair?: z.objectInputType<{
-        text: z.ZodString;
-        backgroundColor: z.ZodOptional<z.ZodString>;
-        textColor: z.ZodOptional<z.ZodString>;
-        expiresAt: z.ZodOptional<z.ZodNumber>;
-    }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -1551,7 +1529,19 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
+}, {
+    signer: {
+        type: "ed25519";
+        privateKey: string;
+    };
+    subplebbitAddress: string;
     timestamp?: number | undefined;
+    flair?: z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
     author?: z.objectInputType<{
         address: z.ZodOptional<z.ZodString>;
         previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -1571,18 +1561,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1652,8 +1642,18 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         challengeAnswers?: [string, ...string[]] | undefined;
         challengeCommentCids?: string[] | undefined;
     } | undefined;
+    content?: string | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
+    title?: string | undefined;
+    link?: string | undefined;
+    linkWidth?: number | undefined;
+    linkHeight?: number | undefined;
+    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    parentCid?: string | undefined;
+    postCid?: string | undefined;
 }>;
-export declare const CommentSignedPropertyNames: ("flair" | "spoiler" | "nsfw" | "content" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion")[];
+export declare const CommentSignedPropertyNames: ("timestamp" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid")[];
 export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     flair: z.ZodOptional<z.ZodObject<{
         text: z.ZodString;
@@ -1701,13 +1701,13 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         publicKey: z.ZodString;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }>;
     timestamp: z.ZodNumber;
@@ -1730,18 +1730,18 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1807,21 +1807,15 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         }, z.ZodTypeAny, "passthrough">>>;
     }, "strict", z.ZodTypeAny, {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -1839,23 +1833,23 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        address: string;
-        flair?: z.objectInputType<{
+        flair?: z.objectOutputType<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+    }, {
+        address: string;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -1872,6 +1866,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
                 type: "eip191";
                 signature: string;
             }>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     protocolVersion: z.ZodString;
@@ -1883,40 +1883,34 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
-}, "signature" | "flair" | "spoiler" | "nsfw" | "content" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion">, "strict", z.ZodTypeAny, {
+}, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -1934,6 +1928,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -1943,9 +1943,9 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -1954,30 +1954,24 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -1995,6 +1989,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -2004,9 +2004,9 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -2016,6 +2016,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     postCid?: string | undefined;
 }>;
 export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -2023,13 +2024,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -2048,9 +2049,11 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -2058,9 +2061,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -2081,18 +2081,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2175,18 +2175,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2269,18 +2269,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2346,30 +2346,24 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -2387,6 +2381,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -2398,9 +2398,9 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -2409,30 +2409,24 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -2450,6 +2444,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -2461,9 +2461,9 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -2473,6 +2473,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     postCid?: string | undefined;
 }>;
 export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.ZodEffects<z.ZodObject<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -2480,13 +2481,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -2505,9 +2506,11 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -2515,9 +2518,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -2538,18 +2538,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2632,18 +2632,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2726,18 +2726,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2803,6 +2803,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -2810,13 +2811,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -2835,9 +2836,11 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -2845,9 +2848,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -2868,18 +2868,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -2962,18 +2962,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3056,18 +3056,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3133,6 +3133,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -3140,13 +3141,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -3165,9 +3166,11 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -3175,9 +3178,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -3198,18 +3198,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3292,18 +3292,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3386,18 +3386,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3463,6 +3463,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -3470,13 +3471,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -3495,9 +3496,11 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -3505,9 +3508,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -3528,18 +3528,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3622,18 +3622,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3716,18 +3716,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3793,6 +3793,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -3800,13 +3801,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -3825,9 +3826,11 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -3835,9 +3838,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -3858,18 +3858,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -3952,18 +3952,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -4046,18 +4046,18 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -4170,13 +4170,13 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         publicKey: z.ZodString;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }>;
     timestamp: z.ZodNumber;
@@ -4199,18 +4199,18 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -4276,21 +4276,15 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         }, z.ZodTypeAny, "passthrough">>>;
     }, "strict", z.ZodTypeAny, {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -4308,23 +4302,23 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
-    }, {
-        address: string;
-        flair?: z.objectInputType<{
+        flair?: z.objectOutputType<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+    }, {
+        address: string;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -4341,6 +4335,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 type: "eip191";
                 signature: string;
             }>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
     }>;
     protocolVersion: z.ZodString;
@@ -4352,40 +4352,34 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
-}, "signature" | "flair" | "spoiler" | "nsfw" | "content" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion">, "strict", z.ZodTypeAny, {
+}, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -4403,6 +4397,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -4412,9 +4412,9 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -4423,30 +4423,24 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -4464,6 +4458,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -4473,9 +4473,9 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -4484,30 +4484,24 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -4525,6 +4519,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -4534,9 +4534,9 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -4545,30 +4545,24 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -4586,6 +4580,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -4595,9 +4595,9 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -4606,30 +4606,24 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -4647,6 +4641,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -4656,9 +4656,9 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -4667,30 +4667,24 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -4708,6 +4702,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     };
     subplebbitAddress: string;
     protocolVersion: string;
@@ -4717,9 +4717,9 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -4733,6 +4733,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
 } & {
     comment: z.ZodObject<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -4740,13 +4741,13 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -4765,9 +4766,11 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodString;
+        content: z.ZodOptional<z.ZodString>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -4775,9 +4778,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-        timestamp: z.ZodNumber;
-        subplebbitAddress: z.ZodString;
-        protocolVersion: z.ZodString;
     } & {
         author: z.ZodObject<{
             address: z.ZodString;
@@ -4798,18 +4798,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -4892,18 +4892,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -4986,18 +4986,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5063,6 +5063,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -5070,13 +5071,13 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -5095,9 +5096,11 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodString;
+        content: z.ZodOptional<z.ZodString>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -5105,9 +5108,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-        timestamp: z.ZodNumber;
-        subplebbitAddress: z.ZodString;
-        protocolVersion: z.ZodString;
     } & {
         author: z.ZodObject<{
             address: z.ZodString;
@@ -5128,18 +5128,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5222,18 +5222,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5316,18 +5316,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5393,6 +5393,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -5400,13 +5401,13 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -5425,9 +5426,11 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodString;
+        content: z.ZodOptional<z.ZodString>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -5435,9 +5438,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-        timestamp: z.ZodNumber;
-        subplebbitAddress: z.ZodString;
-        protocolVersion: z.ZodString;
     } & {
         author: z.ZodObject<{
             address: z.ZodString;
@@ -5458,18 +5458,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5552,18 +5552,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5646,18 +5646,18 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -5725,30 +5725,24 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">>;
 }, "strict", z.ZodTypeAny, {
     comment: {
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        timestamp: number;
         author: {
             address: string;
-            flair?: z.objectOutputType<{
-                text: z.ZodString;
-                backgroundColor: z.ZodOptional<z.ZodString>;
-                textColor: z.ZodOptional<z.ZodString>;
-                expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: z.objectOutputType<{
                 chainTicker: z.ZodString;
@@ -5766,6 +5760,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
@@ -5777,9 +5777,9 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
-        content?: string | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -5794,30 +5794,24 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeCommentCids?: string[] | undefined;
 }, {
     comment: {
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        timestamp: number;
         author: {
             address: string;
-            flair?: z.objectInputType<{
-                text: z.ZodString;
-                backgroundColor: z.ZodOptional<z.ZodString>;
-                textColor: z.ZodOptional<z.ZodString>;
-                expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: z.objectInputType<{
                 chainTicker: z.ZodString;
@@ -5835,6 +5829,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
@@ -5846,9 +5846,9 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
-        content?: string | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -5863,6 +5863,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeCommentCids?: string[] | undefined;
 }>;
 export declare const CommentIpfsSchema: z.ZodObject<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -5870,13 +5871,13 @@ export declare const CommentIpfsSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -5895,9 +5896,11 @@ export declare const CommentIpfsSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -5905,9 +5908,6 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -5928,18 +5928,18 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -6022,18 +6022,18 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -6116,18 +6116,18 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -6199,30 +6199,24 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -6240,6 +6234,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -6252,9 +6252,9 @@ export declare const CommentIpfsSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -6267,30 +6267,24 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     thumbnailUrlHeight?: number | undefined;
     previousCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -6308,6 +6302,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -6320,9 +6320,9 @@ export declare const CommentIpfsSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -6336,6 +6336,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     previousCid?: string | undefined;
 }>;
 export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -6343,13 +6344,13 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -6368,9 +6369,11 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -6378,9 +6381,6 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -6401,18 +6401,18 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -6495,18 +6495,18 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -6589,18 +6589,18 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -6672,30 +6672,24 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -6713,6 +6707,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -6725,9 +6725,9 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -6740,30 +6740,24 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     thumbnailUrlHeight?: number | undefined;
     previousCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -6781,6 +6775,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -6793,9 +6793,9 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -6808,30 +6808,24 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     thumbnailUrlHeight?: number | undefined;
     previousCid?: string | undefined;
 }>, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -6849,6 +6843,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -6861,9 +6861,9 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -6876,30 +6876,24 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     thumbnailUrlHeight?: number | undefined;
     previousCid?: string | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -6917,6 +6911,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -6929,9 +6929,9 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -6963,18 +6963,18 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         }>;
     }, "strip", z.ZodTypeAny, {
         address: string;
+        timestamp: number;
         signature: {
             type: "eip191";
             signature: string;
         };
-        timestamp: number;
     }, {
         address: string;
+        timestamp: number;
         signature: {
             type: "eip191";
             signature: string;
         };
-        timestamp: number;
     }>>>;
     avatar: z.ZodOptional<z.ZodObject<{
         chainTicker: z.ZodString;
@@ -7125,18 +7125,18 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         }>;
     }, "strip", z.ZodTypeAny, {
         address: string;
+        timestamp: number;
         signature: {
             type: "eip191";
             signature: string;
         };
-        timestamp: number;
     }, {
         address: string;
+        timestamp: number;
         signature: {
             type: "eip191";
             signature: string;
         };
-        timestamp: number;
     }>>>;
     avatar: z.ZodOptional<z.ZodObject<{
         chainTicker: z.ZodString;
@@ -7287,18 +7287,18 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         }>;
     }, "strip", z.ZodTypeAny, {
         address: string;
+        timestamp: number;
         signature: {
             type: "eip191";
             signature: string;
         };
-        timestamp: number;
     }, {
         address: string;
+        timestamp: number;
         signature: {
             type: "eip191";
             signature: string;
         };
-        timestamp: number;
     }>>>;
     avatar: z.ZodOptional<z.ZodObject<{
         chainTicker: z.ZodString;
@@ -7437,6 +7437,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
     edit: z.ZodOptional<z.ZodObject<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -7444,13 +7445,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -7469,14 +7470,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -7498,18 +7498,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -7592,18 +7592,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -7686,18 +7686,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -7763,6 +7763,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -7770,13 +7771,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -7795,14 +7796,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -7824,18 +7824,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -7918,18 +7918,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -8012,18 +8012,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -8089,6 +8089,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -8096,13 +8097,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -8121,14 +8122,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -8150,18 +8150,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -8244,18 +8244,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -8338,18 +8338,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -8457,18 +8457,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -8619,18 +8619,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -8781,18 +8781,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -8934,37 +8934,35 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
-    updatedAt: number;
     cid: string;
     upvoteCount: number;
     downvoteCount: number;
     replyCount: number;
+    updatedAt: number;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
     author?: z.objectOutputType<Pick<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -8984,18 +8982,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -9128,11 +9126,11 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, "subplebbit">, z.ZodTypeAny, "passthrough"> | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
-    pinned?: boolean | undefined;
-    locked?: boolean | undefined;
-    removed?: boolean | undefined;
     edit?: z.objectOutputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -9140,13 +9138,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -9165,14 +9163,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -9194,18 +9191,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -9288,18 +9285,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -9382,18 +9379,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -9459,29 +9456,30 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    pinned?: boolean | undefined;
+    locked?: boolean | undefined;
+    removed?: boolean | undefined;
     lastChildCid?: string | undefined;
     lastReplyTimestamp?: number | undefined;
 }, {
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
-    updatedAt: number;
     cid: string;
     upvoteCount: number;
     downvoteCount: number;
     replyCount: number;
+    updatedAt: number;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
     author?: z.objectInputType<Pick<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -9501,18 +9499,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -9645,11 +9643,11 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, "subplebbit">, z.ZodTypeAny, "passthrough"> | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
-    pinned?: boolean | undefined;
-    locked?: boolean | undefined;
-    removed?: boolean | undefined;
     edit?: z.objectInputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -9657,13 +9655,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -9682,14 +9680,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -9711,18 +9708,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -9805,18 +9802,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -9899,18 +9896,18 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -9976,6 +9973,9 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    pinned?: boolean | undefined;
+    locked?: boolean | undefined;
+    removed?: boolean | undefined;
     lastChildCid?: string | undefined;
     lastReplyTimestamp?: number | undefined;
 }>;
@@ -9985,6 +9985,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
     edit: z.ZodOptional<z.ZodObject<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -9992,13 +9993,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -10017,14 +10018,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -10046,18 +10046,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10140,18 +10140,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10234,18 +10234,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10311,6 +10311,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -10318,13 +10319,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -10343,14 +10344,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -10372,18 +10372,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10466,18 +10466,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10560,18 +10560,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10637,6 +10637,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -10644,13 +10645,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -10669,14 +10670,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -10698,18 +10698,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10792,18 +10792,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -10886,18 +10886,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -11005,18 +11005,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -11167,18 +11167,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -11329,18 +11329,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -11482,13 +11482,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
@@ -11506,24 +11506,22 @@ export declare const CommentUpdateSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
-    updatedAt: number;
     cid: string;
     upvoteCount: number;
     downvoteCount: number;
     replyCount: number;
+    updatedAt: number;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
     author?: z.objectOutputType<Pick<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -11543,18 +11541,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -11687,11 +11685,11 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, "subplebbit">, z.ZodTypeAny, "passthrough"> | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
-    pinned?: boolean | undefined;
-    locked?: boolean | undefined;
-    removed?: boolean | undefined;
     edit?: z.objectOutputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -11699,13 +11697,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -11724,14 +11722,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -11753,18 +11750,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -11847,18 +11844,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -11941,18 +11938,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12018,6 +12015,9 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    pinned?: boolean | undefined;
+    locked?: boolean | undefined;
+    removed?: boolean | undefined;
     lastChildCid?: string | undefined;
     lastReplyTimestamp?: number | undefined;
     replies?: {
@@ -12027,24 +12027,22 @@ export declare const CommentUpdateSchema: z.ZodObject<{
 }, {
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
-    updatedAt: number;
     cid: string;
     upvoteCount: number;
     downvoteCount: number;
     replyCount: number;
+    updatedAt: number;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
-    spoiler?: boolean | undefined;
-    nsfw?: boolean | undefined;
     author?: z.objectInputType<Pick<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -12064,18 +12062,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -12208,11 +12206,11 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, "subplebbit">, z.ZodTypeAny, "passthrough"> | undefined;
+    spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
-    pinned?: boolean | undefined;
-    locked?: boolean | undefined;
-    removed?: boolean | undefined;
     edit?: z.objectInputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -12220,13 +12218,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12245,14 +12243,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -12274,18 +12271,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12368,18 +12365,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12462,18 +12459,18 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12539,6 +12536,9 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    pinned?: boolean | undefined;
+    locked?: boolean | undefined;
+    removed?: boolean | undefined;
     lastChildCid?: string | undefined;
     lastReplyTimestamp?: number | undefined;
     replies?: {
@@ -12546,13 +12546,14 @@ export declare const CommentUpdateSchema: z.ZodObject<{
         pageCids?: Record<string, string> | undefined;
     } | undefined;
 }>;
-export declare const CommentUpdateSignedPropertyNames: ("flair" | "spoiler" | "nsfw" | "author" | "protocolVersion" | "reason" | "pinned" | "locked" | "removed" | "updatedAt" | "cid" | "upvoteCount" | "downvoteCount" | "replyCount" | "edit" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
+export declare const CommentUpdateSignedPropertyNames: ("flair" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "upvoteCount" | "downvoteCount" | "replyCount" | "edit" | "pinned" | "locked" | "removed" | "updatedAt" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
 export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pick<{
     cid: z.ZodEffects<z.ZodString, string, string>;
     upvoteCount: z.ZodNumber;
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
     edit: z.ZodOptional<z.ZodObject<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -12560,13 +12561,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12585,14 +12586,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -12614,18 +12614,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12708,18 +12708,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12802,18 +12802,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -12879,6 +12879,7 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -12886,13 +12887,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12911,14 +12912,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -12940,18 +12940,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -13034,18 +13034,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -13128,18 +13128,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -13205,6 +13205,7 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
@@ -13212,13 +13213,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -13237,14 +13238,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             textColor: z.ZodOptional<z.ZodString>;
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
-        spoiler: z.ZodOptional<z.ZodBoolean>;
-        nsfw: z.ZodOptional<z.ZodBoolean>;
-        content: z.ZodOptional<z.ZodString>;
-        timestamp: z.ZodNumber;
         subplebbitAddress: z.ZodString;
         protocolVersion: z.ZodString;
         commentCid: z.ZodEffects<z.ZodString, string, string>;
+        content: z.ZodOptional<z.ZodString>;
         deleted: z.ZodOptional<z.ZodBoolean>;
+        spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     } & {
         author: z.ZodObject<{
@@ -13266,18 +13266,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -13360,18 +13360,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -13454,18 +13454,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -13573,18 +13573,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -13735,18 +13735,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -13897,18 +13897,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -14050,13 +14050,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
@@ -14074,8 +14074,8 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
 }, "signature" | "author" | "protocolVersion" | "cid">, "strict", z.ZodTypeAny, {
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -14099,18 +14099,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -14246,8 +14246,8 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
 }, {
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -14271,18 +14271,18 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -14418,6 +14418,7 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
 }>;
 export declare const CommentUpdateForChallengeVerificationSignedPropertyNames: ("author" | "protocolVersion" | "cid")[];
 export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject<Pick<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -14425,13 +14426,13 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -14450,9 +14451,11 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
@@ -14460,9 +14463,6 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
 } & {
     author: z.ZodObject<{
         address: z.ZodString;
@@ -14483,18 +14483,18 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -14577,18 +14577,18 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -14671,18 +14671,18 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -14747,24 +14747,18 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
-}, "flair" | "spoiler" | "nsfw" | "content" | "author" | "protocolVersion">, "strip", z.ZodTypeAny, {
+}, "flair" | "author" | "protocolVersion" | "content" | "spoiler" | "nsfw">, "strip", z.ZodTypeAny, {
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -14782,6 +14776,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -14792,27 +14792,21 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
 }, {
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -14830,6 +14824,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -14840,11 +14840,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
 }>;
 export declare const CommentsTableRowSchema: z.ZodObject<{
+    timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
@@ -14852,13 +14853,13 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -14877,18 +14878,17 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
+    subplebbitAddress: z.ZodString;
+    protocolVersion: z.ZodString;
+    content: z.ZodOptional<z.ZodString>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
-    content: z.ZodOptional<z.ZodString>;
     title: z.ZodOptional<z.ZodString>;
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
-    timestamp: z.ZodNumber;
-    subplebbitAddress: z.ZodString;
-    protocolVersion: z.ZodString;
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -14908,18 +14908,18 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -15002,18 +15002,18 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -15096,18 +15096,18 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -15185,32 +15185,25 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     authorSignerAddress: z.ZodString;
     extraProps: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    postCid: string;
-    timestamp: number;
     id: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -15228,24 +15221,32 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
     subplebbitAddress: string;
     protocolVersion: string;
-    cid: string;
-    depth: number;
     insertedAt: number;
     authorSignerAddress: string;
+    postCid: string;
+    depth: number;
+    cid: string;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
+    extraProps?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -15256,34 +15257,26 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     thumbnailUrlWidth?: number | undefined;
     thumbnailUrlHeight?: number | undefined;
     previousCid?: string | undefined;
-    extraProps?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    postCid: string;
-    timestamp: number;
     id: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -15301,24 +15294,32 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
     subplebbitAddress: string;
     protocolVersion: string;
-    cid: string;
-    depth: number;
     insertedAt: number;
     authorSignerAddress: string;
+    postCid: string;
+    depth: number;
+    cid: string;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough"> | undefined;
+    content?: string | undefined;
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
-    content?: string | undefined;
+    extraProps?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -15329,7 +15330,6 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     thumbnailUrlWidth?: number | undefined;
     thumbnailUrlHeight?: number | undefined;
     previousCid?: string | undefined;
-    extraProps?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
 export declare const CommentPubsubMessageReservedFields: string[];
 export declare const CommentUpdateReservedFields: string[];

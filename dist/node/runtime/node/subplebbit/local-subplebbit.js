@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, isLinkOfMedia, isStringDomain, removeUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, isLinkOfMedia, isStringDomain, removeUndefinedValuesRecursively, retryKuboIpfsAdd, throwWithErrorCode, timestamp } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -32,6 +32,8 @@ import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publicat
 import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
+import pLimit from "p-limit";
+const _startedSubplebbits = {}; // A global record on process level to track started subplebbits
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
     constructor(plebbit) {
@@ -133,8 +135,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // if it's started in another process, we will throw an error
         // if sub is not started, load the InternalSubplebbit props from the local db
         const log = Logger("plebbit-js:local-subplebbit:_updateInstancePropsWithStartedSubOrDb");
-        if (this._plebbit._startedSubplebbits[this.address]) {
-            const startedSubplebbit = this._plebbit._startedSubplebbits[this.address];
+        if (this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address]) {
+            const startedSubplebbit = (this._plebbit._startedSubplebbits[this.address] ||
+                _startedSubplebbits[this.address]);
             log("Loading local subplebbit", this.address, "from started subplebbit instance");
             if (startedSubplebbit.updatedAt)
                 await this.initInternalSubplebbitAfterFirstUpdateNoMerge(startedSubplebbit.toJSONInternalAfterFirstUpdate());
@@ -308,7 +311,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || lastPublishTooOld;
     }
     async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs) {
-        const log = Logger("plebbit-js:local-subplebbit:sync");
+        const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
         await this._calculateLatestUpdateTrigger();
         if (!this._subplebbitUpdateTrigger)
             return; // No reason to update
@@ -319,7 +322,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const stats = await this._dbHandler.querySubplebbitStats(undefined);
         await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
         const newPostUpdates = await this._calculateNewPostUpdates();
-        const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
+        const statsCid = (await retryKuboIpfsAdd({
+            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            log,
+            content: deterministicStringify(stats),
+            options: { pin: true }
+        })).path;
         if (this.statsCid && statsCid !== this.statsCid)
             this._cidsToUnPin.add(this.statsCid);
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
@@ -362,7 +370,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = { ...newIpns, signature };
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
-        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
+        const file = await retryKuboIpfsAdd({
+            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            log,
+            content: deterministicStringify(newSubplebbitRecord),
+            options: { pin: true }
+        });
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
@@ -559,7 +572,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...(this.isPublicationPost(commentPubsub) && (await this._calculatePostProps(commentPubsub, request.challengeRequestId))),
             ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
         };
-        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentIpfs));
+        const file = await retryKuboIpfsAdd({
+            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            log,
+            content: deterministicStringify(commentIpfs),
+            options: { pin: true }
+        });
         const commentCid = file.path;
         const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
@@ -1112,7 +1130,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const pathParts = currentIpfsPath.split("/");
         return ["/" + this.address, "postUpdates", timestampRange, ...pathParts.slice(4)].join("/");
     }
-    async _calculateLocalMfsPathForCommentUpdate(postDbComment, postStoredCommentUpdate) {
+    _calculateLocalMfsPathForCommentUpdate(postDbComment, postStoredCommentUpdate) {
         // TODO Can optimize the call below by only asking for timestamp field
         if (postDbComment.depth !== 0)
             return undefined;
@@ -1135,19 +1153,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             publishedToPostUpdatesMFS: false
         };
         await this._dbHandler.upsertCommentUpdate(row);
-        log.trace("Wrote comment update of comment", newCommentUpdate.cid, "to database successfully with cid", postCommentUpdateCid);
+        log.trace("Wrote comment update of comment", newCommentUpdate.cid, "to database successfully with postCommentUpdateCid", postCommentUpdateCid);
         return row;
     }
     async _calculateNewCommentUpdateAndWriteToDb(comment) {
         const log = Logger("plebbit-js:local-subplebbit:_calculateNewCommentUpdateAndWriteToFilesystemAndDb");
         // If we're here that means we're gonna calculate the new update and publish it
-        log.trace(`Attempting to publish new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
+        log.trace(`Attempting to calculate new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
-        const [calculatedCommentUpdate, storedCommentUpdate] = await Promise.all([
-            this._dbHandler.queryCalculatedCommentUpdate(comment),
-            this._dbHandler.queryStoredCommentUpdate(comment)
-        ]);
+        const storedCommentUpdate = await this._dbHandler.queryStoredCommentUpdate(comment);
+        const calculatedCommentUpdate = await this._dbHandler.queryCalculatedCommentUpdate(comment);
+        log.trace("Calculated comment update for comment", comment.cid, "on subplebbit", this.address);
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
         const commentUpdatePriorToSigning = {
             ...cleanUpBeforePublishing({
@@ -1183,7 +1200,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const newPostCommentUpdateString = comment.depth === 0 ? deterministicStringify(newCommentUpdate) : undefined;
         const postCommentUpdateCid = newPostCommentUpdateString && (await calculateIpfsHash(newPostCommentUpdateString));
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
-        const newLocalMfsPath = await this._calculateLocalMfsPathForCommentUpdate(comment, storedCommentUpdate);
+        const newLocalMfsPath = this._calculateLocalMfsPathForCommentUpdate(comment, storedCommentUpdate);
         const newCommentUpdateRow = await this._writeCommentUpdateToDatabase(newCommentUpdate, postCommentUpdateCid, newLocalMfsPath);
         if (storedCommentUpdate?.localMfsPath && newLocalMfsPath && storedCommentUpdate.localMfsPath !== newLocalMfsPath) {
             this._mfsPathsToRemove.add(storedCommentUpdate.localMfsPath);
@@ -1246,16 +1263,37 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return [];
         this._subplebbitUpdateTrigger = true;
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
-        const commentsGroupedByDepth = remeda.groupBy.strict(commentsToUpdate, (x) => x.depth);
-        const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
+        // Create a concurrency limiter with a limit of 50
+        const limit = pLimit(50);
+        // First group comments by postCid
+        const commentsByPostCid = remeda.groupBy.strict(commentsToUpdate, (x) => x.postCid);
         const allCommentUpdateRows = [];
-        // TODO potential optimization here is to separate _calculateNewCommentUpdateAndWriteToDb based on postCid + depth
-        // because we know the comment updates of two different posts are independent of each other
-        for (const depthKey of depthsKeySorted) {
-            const commentUpdateResults = await Promise.all(commentsGroupedByDepth[depthKey].map(this._calculateNewCommentUpdateAndWriteToDb.bind(this)));
-            allCommentUpdateRows.push(...commentUpdateResults.map((row) => ({ ...row, depth: Number(depthKey) })));
+        const allUpdatePromises = [];
+        // Process each postCid group independently and in parallel
+        for (const postCid in commentsByPostCid) {
+            const commentsForPost = commentsByPostCid[postCid];
+            // For each postCid, we need to process in depth order (highest first)
+            const postPromise = (async () => {
+                // Group by depth within this postCid
+                const commentsByDepth = remeda.groupBy.strict(commentsForPost, (x) => x.depth);
+                const depthsKeySorted = remeda.keys.strict(commentsByDepth).sort((a, b) => Number(b) - Number(a)); // Sort depths from highest to lowest
+                // Process each depth level in sequence for this postCid
+                for (const depthKey of depthsKeySorted) {
+                    const commentsAtDepth = commentsByDepth[depthKey];
+                    // Process all comments at this depth in parallel
+                    const updateResults = await Promise.all(commentsAtDepth.map((comment) => limit(() => this._calculateNewCommentUpdateAndWriteToDb(comment))));
+                    // Add results with correct depth
+                    const resultsWithDepth = updateResults.map((result) => ({
+                        ...result,
+                        depth: Number(depthKey)
+                    }));
+                    allCommentUpdateRows.push(...resultsWithDepth);
+                }
+            })();
+            allUpdatePromises.push(postPromise);
         }
-        // Return the flat array of all comment update rows
+        // Wait for all postCid groups to complete
+        await Promise.all(allUpdatePromises);
         return allCommentUpdateRows;
     }
     async _repinCommentsIPFSIfNeeded() {
@@ -1274,7 +1312,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log("The latest comment is not pinned in the ipfs node, plebbit-js will repin all existing comment ipfs");
         // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
         const unpinnedCommentsFromDb = await this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
-        for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
+        // In the _repinCommentIpfs method:
+        const limit = pLimit(50);
+        const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) => limit(async () => {
             const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
             const baseSignatureProps = remeda.pick(unpinnedCommentRow, 
             //@ts-expect-error
@@ -1290,9 +1330,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const contentHash = await calculateIpfsHash(commentIpfsContent);
             if (contentHash !== unpinnedCommentRow.cid)
                 throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-            await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-            log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
-        }
+            const addRes = await retryKuboIpfsAdd({
+                kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+                log,
+                content: commentIpfsContent,
+                options: { pin: true }
+            });
+            if (addRes.path !== unpinnedCommentRow.cid)
+                throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+            log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+        }));
+        await Promise.all(pinningPromises);
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // force plebbit-js to republish all comment updates
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
@@ -1300,19 +1348,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
         if (this._cidsToUnPin.size > 0) {
             const sizeBefore = this._cidsToUnPin.size;
-            await Promise.all(Array.from(this._cidsToUnPin.values()).map(async (cid) => {
+            // Create a concurrency limiter with a limit of 50
+            const limit = pLimit(50);
+            // Process all unpinning in parallel with concurrency limit
+            await Promise.all(Array.from(this._cidsToUnPin.values()).map((cid) => limit(async () => {
                 try {
                     await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
                     this._cidsToUnPin.delete(cid);
                 }
                 catch (e) {
                     const error = e;
-                    if (error.message.startsWith("not pinned"))
+                    if (error.message.startsWith("not pinned")) {
                         this._cidsToUnPin.delete(cid);
-                    else
+                    }
+                    else {
                         log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
+                    }
                 }
-            }));
+            })));
             log(`unpinned ${sizeBefore - this._cidsToUnPin.size} stale cids from ipfs node for subplebbit (${this.address})`);
         }
     }
@@ -1353,11 +1406,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (!e.message.includes("file does not exist"))
                 throw e;
         }
-        // here we will go ahead to and rewrite all comment updates
-        const storedCommentUpdates = await this._dbHandler.queryAllStoredCommentUpdates();
-        if (storedCommentUpdates.length === 0)
+        // sub has no comment updates, we can return
+        if (!this.lastCommentCid)
             return;
-        log(`CommentUpdate directory`, this.address, `does not exist under MFS, will drop all comment updates (${storedCommentUpdates.length})`, "to force publishing of new comment updates");
+        log(`CommentUpdate directory`, this.address, "will republish all comment updates");
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // plebbit-js will recalculate and publish all comment updates
     }
     *_createCommentUpdateIterable(commentUpdateRows) {
@@ -1381,18 +1433,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const postCommentUpdateMfsPaths = commentUpdatesOfPosts.map((row) => row.localMfsPath);
         postCommentUpdateMfsPaths.forEach((path) => this._mfsPathsToRemove.add(path)); // need to make sure we don't cp to path without it not existing to begin with
         const removedMfsPaths = await this._rmUnneededMfsPaths();
-        // TODO need to do this in parallel
+        // Create a concurrency limiter with a limit of 50
+        const limit = pLimit(50);
+        const copyPromises = [];
         for (const commentUpdateFile of newCommentUpdatesAddAll) {
             const commentUpdateFilePath = commentUpdatesOfPosts.find((row) => row.postCommentUpdateCid === commentUpdateFile.cid.toV0().toString())?.localMfsPath;
             if (!commentUpdateFilePath)
                 throw Error("Failed to find the local mfs path of the post comment update");
-            await this._clientsManager
-                .getDefaultIpfs()
-                ._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
+            const copyPromise = limit(() => this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
                 parents: true,
                 flush: false
-            });
+            }));
+            copyPromises.push(copyPromise);
         }
+        // Wait for all copy operations to complete
+        await Promise.all(copyPromises);
         const postUpdatesDirectoryCid = await this._clientsManager.getDefaultIpfs()._client.files.flush(postUpdatesDirectory);
         removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
         log("Subplebbit", this.address, "Synced", commentUpdatesOfPosts.length, "post CommentUpdates", "with MFS postUpdates directory", postUpdatesDirectoryCid);
@@ -1584,6 +1639,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.start();
         if (this.address !== oldAddress) {
             this._plebbit._startedSubplebbits[this.address] = this._plebbit._startedSubplebbits[oldAddress] = this;
+            _startedSubplebbits[this.address] = _startedSubplebbits[oldAddress] = this;
         }
         return this;
     }
@@ -1619,9 +1675,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // 2 - calling edit() on a subplebbit that's started in another process (should throw)
         // 3 - calling edit() on a subplebbit that's not started (should load db and edit it)
         // 4 - calling edit() on the subplebbit that's started (should edit the started subplebbit)
-        if (this._plebbit._startedSubplebbits[this.address] && this.state !== "started") {
+        const startedSubplebbit = this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address];
+        if (startedSubplebbit && this.state !== "started") {
             // sceneario 1
-            const editRes = await this._plebbit._startedSubplebbits[this.address].edit(newSubplebbitOptions);
+            const editRes = await startedSubplebbit.edit(newSubplebbitOptions);
             this.setAddress(editRes.address); // need to force an update of the address for this instance
             await this._updateInstancePropsWithStartedSubOrDb();
             return this;
@@ -1645,7 +1702,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...remeda.omit(parsedEditOptions, ["roles"]), // we omit here to make tsc shut up
             ...newInternalProps
         };
-        if (!this.started && !this._plebbit._startedSubplebbits[this.address]) {
+        if (!this.started && !startedSubplebbit) {
             // sceneario 3
             return this._editPropsOnNotStartedSubplebbit(newProps);
         }
@@ -1664,7 +1721,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
         await this.initDbHandlerIfNeeded();
         await this._updateStartedValue();
-        if (this.started || this._plebbit._startedSubplebbits[this.address])
+        if (this.started || this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address])
             throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { address: this.address });
         try {
             await this._initBeforeStarting();
@@ -1673,6 +1730,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateStartedValue();
             await this._dbHandler.lockSubStart(); // Will throw if sub is locked already
             this._plebbit._startedSubplebbits[this.address] = this;
+            _startedSubplebbits[this.address] = this;
             await this._updateStartedValue();
             await this._dbHandler.initDbIfNeeded();
             await this._dbHandler.createOrMigrateTablesIfNeeded();
@@ -1786,11 +1844,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:_updateOnce");
         await this.initDbHandlerIfNeeded();
         await this._updateStartedValue();
+        const startedSubplebbit = (this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address]);
         if (this._mirroredStartedOrUpdatingSubplebbit)
             return; // we're already mirroring a started or updating subplebbit
-        else if (this._plebbit._startedSubplebbits[this.address]) {
+        else if (startedSubplebbit) {
             // let's mirror the started subplebbit in this process
-            await this._initMirroringStartedOrUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address]);
+            await this._initMirroringStartedOrUpdatingSubplebbit(startedSubplebbit);
             delete this._plebbit._updatingSubplebbits[this.address];
             delete this._plebbit._updatingSubplebbits[this.signer.address];
             return;
@@ -1885,6 +1944,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._setStartedState("stopped");
             delete this._plebbit._startedSubplebbits[this.address];
             delete this._plebbit._startedSubplebbits[this.signer.address]; // in case we changed address
+            delete _startedSubplebbits[this.address];
+            delete _startedSubplebbits[this.signer.address];
             await this._dbHandler.rollbackAllTransactions();
             await this._dbHandler.unlockSubState();
             await this._updateStartedValue();
@@ -1917,8 +1978,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async delete() {
         const log = Logger("plebbit-js:local-subplebbit:delete");
         log.trace(`Attempting to stop the subplebbit (${this.address}) before deleting, if needed`);
-        if (this._plebbit._startedSubplebbits[this.address] && this._plebbit._startedSubplebbits[this.address] !== this) {
-            await this._plebbit._startedSubplebbits[this.address].delete();
+        const startedSubplebbit = (this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address]);
+        if (startedSubplebbit && startedSubplebbit !== this) {
+            await startedSubplebbit.delete();
             await this.stop();
             return;
         }

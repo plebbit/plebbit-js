@@ -54,26 +54,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
         return undefined;
     }
-    async _fetchParentCommentForCommentUpdate(parentCid) {
-        if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-update-ipfs");
-            this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
-            const commentTimeoutMs = this._plebbit._timeouts["comment-ipfs"];
-            try {
-                const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid, { maxFileSizeBytes: 1024 * 1024, timeoutMs: commentTimeoutMs })));
-                return {
-                    comment: commentIpfs,
-                    commentUpdate: { cid: parentCid }
-                };
-            }
-            finally {
-                this.updateIpfsState("stopped");
-            }
-        }
-        else {
-            return { commentUpdate: { cid: parentCid }, comment: await this.fetchAndVerifyCommentCid(parentCid) };
-        }
-    }
     _calculatePathForPostCommentUpdate(folderCid, postCid) {
         return `${folderCid}/` + postCid + "/update";
     }
@@ -95,6 +75,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 log("Comment", this._comment.cid, "calculated path is part of comment._invalidCommentUpdateMfsPaths", path, "will be skipping loading CommentUpdate");
                 return undefined;
             }
+            this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
             this.updateIpfsState("fetching-update-ipfs");
             let res;
             const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update-ipfs"];
@@ -198,6 +179,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 log("Comment", this._comment.cid, "calculated path is part of comment._invalidCommentUpdateMfsPaths", path, "will be skipping loading CommentUpdate");
                 return undefined;
             }
+            this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
             try {
                 // Validate the Comment Update within the gateway fetching algo
                 // fetchFromMultipleGateways will throw if all gateways failed to load the record
@@ -265,7 +247,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         const timestampRanges = getPostUpdateTimestampRange(subIpfs.postUpdates, postTimestamp);
         if (timestampRanges.length === 0)
             throw Error("Post has no timestamp range bucket");
-        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         let newCommentUpdate;
         try {
             if (this._defaultIpfsProviderUrl)

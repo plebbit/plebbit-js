@@ -21,6 +21,7 @@ import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challen
 import KeyvSqlite from "@keyv/sqlite";
 import { exec } from "child_process";
 import { promisify } from "util";
+import pLimit from "p-limit";
 const execPromise = promisify(exec);
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -159,15 +160,25 @@ export class DbHandler {
         const trx = this._currentTrxs[transactionId];
         if (trx) {
             assert(trx.isTransaction, `Transaction (${transactionId}) needs to be stored to rollback`);
-            if (trx.isCompleted())
+            if (trx.isCompleted()) {
+                delete this._currentTrxs[transactionId];
                 return;
-            await this._currentTrxs[transactionId].rollback();
-            delete this._currentTrxs[transactionId];
+            }
+            try {
+                await this._currentTrxs[transactionId].rollback();
+            }
+            catch (e) {
+                log.error(`Failed to rollback transaction (${transactionId}) due to error`, e);
+            }
+            finally {
+                delete this._currentTrxs[transactionId];
+            }
         }
         log.trace(`Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${remeda.keys.strict(this._currentTrxs).length}`);
     }
     async rollbackAllTransactions() {
-        return Promise.all(remeda.keys.strict(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+        for (const trxId of remeda.keys.strict(this._currentTrxs))
+            await this.rollbackTransaction(trxId);
     }
     _baseTransaction(trx) {
         return trx ? trx : this._knex;
@@ -542,7 +553,12 @@ export class DbHandler {
             parentCid: commentCid
         };
         const children = await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
-        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.cid, trx))));
+        const limit = pLimit(50);
+        const replyCountPromises = children.map((comment) => limit(() => this.queryReplyCount(comment.cid, trx)));
+        // Wait for all queries to complete and sum the results
+        const replyCounts = await Promise.all(replyCountPromises);
+        const childrenReplyCount = replyCounts.reduce((sum, count) => sum + count, 0);
+        return children.length + childrenReplyCount;
     }
     async queryActiveScore(comment, trx) {
         let maxTimestamp = comment.timestamp;
@@ -614,16 +630,18 @@ export class DbHandler {
     }
     async queryFlattenedPageReplies(options, trx) {
         const firstLevelReplies = await this.queryPageComments(options, trx);
-        const nestedReplies = await Promise.all(firstLevelReplies.map(async (baseComment) => {
+        const nestedReplies = [];
+        for (const baseComment of firstLevelReplies) {
             const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
             if (commentHasReplies) {
                 // Only get the nested replies, don't include the base comment again
-                return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                const replies = await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                nestedReplies.push(replies);
             }
             else {
-                return []; // No replies to this comment
+                nestedReplies.push([]); // No replies to this comment
             }
-        }));
+        }
         // Combine first level replies with all nested replies
         return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
     }
@@ -731,10 +749,21 @@ export class DbHandler {
             .orHaving(`commentEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`modEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
-        const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
-        const parents = remeda.flattenDeep(await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx))));
-        const authorComments = await this.queryCommentsOfAuthors(remeda.unique(comments.map((comment) => comment.authorSignerAddress)), trx);
-        const uniqComments = remeda.uniqueBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+        const commentsToUpdate = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+        // not just direct parent, also grandparents, till we reach the root post
+        const limit = pLimit(50);
+        const allParentsOfCommentsToUpdate = [];
+        // Get comments that have a parentCid
+        const commentsWithParents = remeda.unique(commentsToUpdate.filter((comment) => comment.parentCid));
+        // Create parallel queries with concurrency limit
+        const parentQueries = commentsWithParents.map((commentToUpdateWithParent) => limit(() => this.queryParents(commentToUpdateWithParent, trx)));
+        // Wait for all parent queries to complete
+        const parentsResults = await Promise.all(parentQueries);
+        // Flatten the results into allParentsOfCommentsToUpdate
+        for (const parents of parentsResults)
+            allParentsOfCommentsToUpdate.push(...parents);
+        const authorComments = await this.queryCommentsOfAuthors(remeda.unique(commentsToUpdate.map((comment) => comment.authorSignerAddress)), trx);
+        const uniqComments = remeda.uniqueBy([...commentsToUpdate, ...allParentsOfCommentsToUpdate, ...authorComments], (comment) => comment.cid);
         return uniqComments;
     }
     _calcActiveUserCount(commentsRaw, votesRaw) {
@@ -857,6 +886,7 @@ export class DbHandler {
             .orderBy("id", "desc")
             .select(["cid", "timestamp"])
             .first();
+        // last reply timestamp is the timestamp of the latest child or indirect child timestamp
         const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
         return {
             lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
@@ -930,7 +960,7 @@ export class DbHandler {
             throw Error("Failed to query subplebbitAuthor.lastCommentCid");
         const firstCommentTimestamp = remeda.minBy(authorComments, (comment) => comment.id)?.timestamp;
         if (typeof firstCommentTimestamp !== "number")
-            throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
+            throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
         const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);
         return {
             postScore,
@@ -1048,6 +1078,7 @@ export class DbHandler {
     }
     async changeDbFilename(oldDbName, newDbName) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");
+        await this.destoryConnection();
         const oldPathString = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });

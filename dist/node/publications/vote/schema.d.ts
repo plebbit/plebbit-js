@@ -29,18 +29,18 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -123,18 +123,18 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -217,18 +217,18 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -310,13 +310,13 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
     commentCid: z.ZodEffects<z.ZodString, string, string>;
     vote: z.ZodUnion<[z.ZodLiteral<1>, z.ZodLiteral<0>, z.ZodLiteral<-1>]>;
 }, "strict", z.ZodTypeAny, {
-    vote: 0 | 1 | -1;
     signer: {
         type: "ed25519";
         privateKey: string;
     };
     subplebbitAddress: string;
     commentCid: string;
+    vote: 0 | 1 | -1;
     timestamp?: number | undefined;
     author?: z.objectOutputType<{
         address: z.ZodOptional<z.ZodString>;
@@ -337,18 +337,18 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -419,13 +419,13 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
         challengeCommentCids?: string[] | undefined;
     } | undefined;
 }, {
-    vote: 0 | 1 | -1;
     signer: {
         type: "ed25519";
         privateKey: string;
     };
     subplebbitAddress: string;
     commentCid: string;
+    vote: 0 | 1 | -1;
     timestamp?: number | undefined;
     author?: z.objectInputType<{
         address: z.ZodOptional<z.ZodString>;
@@ -446,18 +446,18 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -528,7 +528,7 @@ export declare const CreateVoteUserOptionsSchema: z.ZodObject<{
         challengeCommentCids?: string[] | undefined;
     } | undefined;
 }>;
-export declare const VoteSignedPropertyNames: ("vote" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid")[];
+export declare const VoteSignedPropertyNames: ("timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "vote")[];
 export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
     subplebbitAddress: z.ZodString;
     challengeRequest: z.ZodOptional<z.ZodObject<{
@@ -551,13 +551,13 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
         publicKey: z.ZodString;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }>;
     timestamp: z.ZodNumber;
@@ -570,13 +570,13 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     author: z.ZodObject<{
@@ -598,18 +598,18 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -692,18 +692,18 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -786,18 +786,18 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -862,32 +862,25 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
-}, "signature" | "vote" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid">, "strict", z.ZodTypeAny, {
+}, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "vote">, "strict", z.ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    vote: 0 | 1 | -1;
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectOutputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectOutputType<{
             chainTicker: z.ZodString;
@@ -905,38 +898,38 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectOutputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
     subplebbitAddress: string;
     protocolVersion: string;
     commentCid: string;
+    vote: 0 | 1 | -1;
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    vote: 0 | 1 | -1;
-    timestamp: number;
     author: {
         address: string;
-        flair?: z.objectInputType<{
-            text: z.ZodString;
-            backgroundColor: z.ZodOptional<z.ZodString>;
-            textColor: z.ZodOptional<z.ZodString>;
-            expiresAt: z.ZodOptional<z.ZodNumber>;
-        }, z.ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: z.objectInputType<{
             chainTicker: z.ZodString;
@@ -954,12 +947,19 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
+        flair?: z.objectInputType<{
+            text: z.ZodString;
+            backgroundColor: z.ZodOptional<z.ZodString>;
+            textColor: z.ZodOptional<z.ZodString>;
+            expiresAt: z.ZodOptional<z.ZodNumber>;
+        }, z.ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
     subplebbitAddress: string;
     protocolVersion: string;
     commentCid: string;
+    vote: 0 | 1 | -1;
 }>;
 export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
     subplebbitAddress: z.ZodString;
@@ -983,13 +983,13 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
         publicKey: z.ZodString;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }>;
     timestamp: z.ZodNumber;
@@ -1002,13 +1002,13 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     author: z.ZodObject<{
@@ -1030,18 +1030,18 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1124,18 +1124,18 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1218,18 +1218,18 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: z.ZodOptional<z.ZodObject<{
             chainTicker: z.ZodString;
@@ -1294,25 +1294,25 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
-}, "signature" | "vote" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid">, "vote" | "timestamp" | "protocolVersion" | "commentCid"> & {
+}, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "vote">, "timestamp" | "protocolVersion" | "commentCid" | "vote"> & {
     insertedAt: z.ZodNumber;
     authorSignerAddress: z.ZodString;
     extraProps: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
 }, "strict", z.ZodTypeAny, {
-    vote: 0 | 1 | -1;
     timestamp: number;
     protocolVersion: string;
     commentCid: string;
     insertedAt: number;
     authorSignerAddress: string;
+    vote: 0 | 1 | -1;
     extraProps?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
-    vote: 0 | 1 | -1;
     timestamp: number;
     protocolVersion: string;
     commentCid: string;
     insertedAt: number;
     authorSignerAddress: string;
+    vote: 0 | 1 | -1;
     extraProps?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
 export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
@@ -1341,13 +1341,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             publicKey: z.ZodString;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }>;
         timestamp: z.ZodNumber;
@@ -1360,13 +1360,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -1388,18 +1388,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -1482,18 +1482,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -1576,18 +1576,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -1652,7 +1652,7 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
-    }, "signature" | "vote" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid">, "passthrough", z.ZodTypeAny, z.objectOutputType<Pick<{
+    }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "vote">, "passthrough", z.ZodTypeAny, z.objectOutputType<Pick<{
         subplebbitAddress: z.ZodString;
         challengeRequest: z.ZodOptional<z.ZodObject<{
             challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
@@ -1674,13 +1674,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             publicKey: z.ZodString;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }>;
         timestamp: z.ZodNumber;
@@ -1693,13 +1693,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -1721,18 +1721,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -1815,18 +1815,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -1909,18 +1909,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -1985,7 +1985,7 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
-    }, "signature" | "vote" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid">, z.ZodTypeAny, "passthrough">, z.objectInputType<Pick<{
+    }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "vote">, z.ZodTypeAny, "passthrough">, z.objectInputType<Pick<{
         subplebbitAddress: z.ZodString;
         challengeRequest: z.ZodOptional<z.ZodObject<{
             challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
@@ -2007,13 +2007,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             publicKey: z.ZodString;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }>;
         timestamp: z.ZodNumber;
@@ -2026,13 +2026,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -2054,18 +2054,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -2148,18 +2148,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -2242,18 +2242,18 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: z.ZodOptional<z.ZodObject<{
                 chainTicker: z.ZodString;
@@ -2318,34 +2318,27 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
-    }, "signature" | "vote" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid">, z.ZodTypeAny, "passthrough">>;
+    }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "vote">, z.ZodTypeAny, "passthrough">>;
 }, "strip", z.ZodTypeAny, {
     vote: {
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        vote: 0 | 1 | -1;
-        timestamp: number;
         author: {
             address: string;
-            flair?: z.objectOutputType<{
-                text: z.ZodString;
-                backgroundColor: z.ZodOptional<z.ZodString>;
-                textColor: z.ZodOptional<z.ZodString>;
-                expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: z.objectOutputType<{
                 chainTicker: z.ZodString;
@@ -2363,12 +2356,19 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
         subplebbitAddress: string;
         protocolVersion: string;
         commentCid: string;
+        vote: 0 | 1 | -1;
     } & {
         [k: string]: unknown;
     };
@@ -2376,31 +2376,24 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeCommentCids?: string[] | undefined;
 }, {
     vote: {
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        vote: 0 | 1 | -1;
-        timestamp: number;
         author: {
             address: string;
-            flair?: z.objectInputType<{
-                text: z.ZodString;
-                backgroundColor: z.ZodOptional<z.ZodString>;
-                textColor: z.ZodOptional<z.ZodString>;
-                expiresAt: z.ZodOptional<z.ZodNumber>;
-            }, z.ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: z.objectInputType<{
                 chainTicker: z.ZodString;
@@ -2418,12 +2411,19 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
         subplebbitAddress: string;
         protocolVersion: string;
         commentCid: string;
+        vote: 0 | 1 | -1;
     } & {
         [k: string]: unknown;
     };

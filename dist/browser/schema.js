@@ -15,8 +15,8 @@ export const ChainProviderSchema = z.object({
     urls: z.string().url().or(LibraryChainProvider).array(),
     chainId: z.number().int()
 });
-const IpfsGatewayUrlSchema = z.string().url().startsWith("http");
-const RpcUrlSchema = z.string().url(); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
+const IpfsGatewayUrlSchema = z.string().url().startsWith("http", "IPFS gateway URL must start with http:// or https://");
+const RpcUrlSchema = z.string().url().startsWith("ws", "Plebbit RPC URL must start with ws:// or wss://"); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
 const KuboRpcCreateClientOptionSchema = z.custom(); // Kubo-rpc-client library will do the validation for us
 const DirectoryPathSchema = z.string(); // TODO add validation for path
 const defaultChainProviders = {
@@ -41,7 +41,7 @@ const ParsedKuboRpcClientOptionsSchema = z.custom();
 const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
     kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
-    httpRoutersOptions: z.string().url().array().optional(),
+    httpRoutersOptions: z.string().url().startsWith("http", "HTTP router URL must start with http:// or https://").array().optional(),
     pubsubKuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),

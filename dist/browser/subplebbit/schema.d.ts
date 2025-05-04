@@ -161,11 +161,11 @@ export declare const ChallengeResultSchema: z.ZodUnion<[z.ZodObject<{
     success: z.ZodLiteral<false>;
     error: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    success: false;
     error: string;
+    success: false;
 }, {
-    success: false;
     error: string;
+    success: false;
 }>]>;
 export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
     challenge: z.ZodString;
@@ -179,11 +179,11 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        success: false;
         error: string;
+        success: false;
     }, {
-        success: false;
         error: string;
+        success: false;
     }>]>>>;
     type: z.ZodString;
 }, "strict", z.ZodTypeAny, {
@@ -192,8 +192,8 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     }>;
 }, {
     type: string;
@@ -201,8 +201,8 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     }>;
 }>;
 export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
@@ -217,11 +217,11 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        success: false;
         error: string;
+        success: false;
     }, {
-        success: false;
         error: string;
+        success: false;
     }>]>>>;
     type: z.ZodString;
 }, "strict", z.ZodTypeAny, {
@@ -230,8 +230,8 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     }>;
 }, {
     type: string;
@@ -239,8 +239,8 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     }>;
 }>, z.ZodUnion<[z.ZodObject<{
     success: z.ZodLiteral<true>;
@@ -252,11 +252,11 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     success: z.ZodLiteral<false>;
     error: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    success: false;
     error: string;
+    success: false;
 }, {
-    success: false;
     error: string;
+    success: false;
 }>]>]>;
 export declare const ChallengeExcludeSubplebbitSchema: z.ZodObject<{
     addresses: z.ZodArray<z.ZodString, "atleastone">;
@@ -1884,11 +1884,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             success: z.ZodLiteral<false>;
             error: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            success: false;
             error: string;
+            success: false;
         }, {
-            success: false;
             error: string;
+            success: false;
         }>]>>>;
         type: z.ZodString;
     }, "strict", z.ZodTypeAny, {
@@ -1897,8 +1897,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }, {
         type: string;
@@ -1906,8 +1906,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>, z.ZodUnion<[z.ZodObject<{
         success: z.ZodLiteral<true>;
@@ -1919,11 +1919,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        success: false;
         error: string;
+        success: false;
     }, {
-        success: false;
         error: string;
+        success: false;
     }>]>]>>>;
 }, "strict", z.ZodTypeAny, {
     type: string;
@@ -2054,16 +2054,16 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>;
     description?: string | undefined;
@@ -2213,16 +2213,16 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>;
     description?: string | undefined;
@@ -4191,11 +4191,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             success: z.ZodLiteral<false>;
             error: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            success: false;
             error: string;
+            success: false;
         }, {
-            success: false;
             error: string;
+            success: false;
         }>]>>>;
         type: z.ZodString;
     }, "strict", z.ZodTypeAny, {
@@ -4204,8 +4204,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }, {
         type: string;
@@ -4213,8 +4213,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>, z.ZodUnion<[z.ZodObject<{
         success: z.ZodLiteral<true>;
@@ -4226,11 +4226,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        success: false;
         error: string;
+        success: false;
     }, {
-        success: false;
         error: string;
+        success: false;
     }>]>]>>>;
 }, "strict", z.ZodTypeAny, {
     type: string;
@@ -4361,16 +4361,16 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>;
     description?: string | undefined;
@@ -4520,16 +4520,16 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        success: false;
         error: string;
+        success: false;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            success: false;
             error: string;
+            success: false;
         }>;
     }>;
     description?: string | undefined;
@@ -5119,13 +5119,13 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
@@ -5287,10 +5287,12 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     address: string;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
+    protocolVersion: string;
+    updatedAt: number;
     challenges: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5475,7 +5477,6 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         type: z.ZodString;
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[];
-    protocolVersion: string;
     encryption: {
         type: "ed25519-aes-gcm";
         publicKey: string;
@@ -5483,15 +5484,14 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         [k: string]: unknown;
     };
     createdAt: number;
-    updatedAt: number;
     statsCid: string;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
     } | undefined;
     description?: string | undefined;
-    title?: string | undefined;
-    lastCommentCid?: string | undefined;
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
@@ -5547,10 +5547,12 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     address: string;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
+    protocolVersion: string;
+    updatedAt: number;
     challenges: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5735,7 +5737,6 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         type: z.ZodString;
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[];
-    protocolVersion: string;
     encryption: {
         type: "ed25519-aes-gcm";
         publicKey: string;
@@ -5743,15 +5744,14 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         [k: string]: unknown;
     };
     createdAt: number;
-    updatedAt: number;
     statsCid: string;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
     } | undefined;
     description?: string | undefined;
-    title?: string | undefined;
-    lastCommentCid?: string | undefined;
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
@@ -5804,7 +5804,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
 }>;
-export declare const SubplebbitSignedPropertyNames: ("address" | "posts" | "challenges" | "description" | "title" | "protocolVersion" | "lastCommentCid" | "encryption" | "createdAt" | "updatedAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
+export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "posts" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
 export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: z.ZodObject<{
         posts: z.ZodOptional<z.ZodObject<{
@@ -6374,13 +6374,13 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
@@ -7106,13 +7106,13 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
@@ -7838,13 +7838,13 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
@@ -8009,10 +8009,12 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         address: string;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
+        protocolVersion: string;
+        updatedAt: number;
         challenges: z.objectOutputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -8197,7 +8199,6 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: z.ZodString;
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
-        protocolVersion: string;
         encryption: {
             type: "ed25519-aes-gcm";
             publicKey: string;
@@ -8205,15 +8206,14 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             [k: string]: unknown;
         };
         createdAt: number;
-        updatedAt: number;
         statsCid: string;
+        lastCommentCid?: string | undefined;
+        title?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
         } | undefined;
         description?: string | undefined;
-        title?: string | undefined;
-        lastCommentCid?: string | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectOutputType<{
@@ -8274,10 +8274,12 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         address: string;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
+        protocolVersion: string;
+        updatedAt: number;
         challenges: z.objectInputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -8462,7 +8464,6 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: z.ZodString;
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
-        protocolVersion: string;
         encryption: {
             type: "ed25519-aes-gcm";
             publicKey: string;
@@ -8470,15 +8471,14 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             [k: string]: unknown;
         };
         createdAt: number;
-        updatedAt: number;
         statsCid: string;
+        lastCommentCid?: string | undefined;
+        title?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
         } | undefined;
         description?: string | undefined;
-        title?: string | undefined;
-        lastCommentCid?: string | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectInputType<{
@@ -9093,13 +9093,13 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
@@ -9280,10 +9280,14 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     address: string;
     signature?: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -9475,15 +9479,11 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
-    title?: string | undefined;
-    protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     encryption?: z.objectOutputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
-    updatedAt?: number | undefined;
     pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
@@ -9541,10 +9541,14 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     address: string;
     signature?: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -9736,15 +9740,11 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
-    title?: string | undefined;
-    protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     encryption?: z.objectInputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
-    updatedAt?: number | undefined;
     pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
@@ -10741,8 +10741,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
 }>;
 export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     address: z.ZodOptional<z.ZodString>;
-    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
@@ -11820,8 +11820,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
 }, "strict", z.ZodTypeAny, {
     address?: string | undefined;
-    description?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -12002,8 +12002,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     } | undefined;
 }, {
     address?: string | undefined;
-    description?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -12184,8 +12184,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     } | undefined;
 }>;
 export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
-    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
@@ -13273,12 +13273,12 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">>>>;
 }, "strict", z.ZodTypeAny, {
-    description?: string | undefined;
-    title?: string | undefined;
     signer?: {
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -13458,12 +13458,12 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         fetchThumbnailUrlsProxyUrl?: string | undefined;
     } | undefined;
 }, {
-    description?: string | undefined;
-    title?: string | undefined;
     signer?: {
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -13644,8 +13644,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
     } | undefined;
 }>;
 export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
-    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
@@ -14731,25 +14731,25 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         publicKey: z.ZodString;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }>;
 }, "strict", z.ZodTypeAny, {
     address: string;
     signer: {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     };
-    description?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -14932,12 +14932,12 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
     address: string;
     signer: {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     };
-    description?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -15675,13 +15675,13 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
@@ -15862,10 +15862,14 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     address: string;
     signature?: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -16057,15 +16061,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
-    title?: string | undefined;
-    protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     encryption?: z.objectOutputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
-    updatedAt?: number | undefined;
     pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
@@ -16123,10 +16123,14 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     address: string;
     signature?: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -16318,15 +16322,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
-    title?: string | undefined;
-    protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     encryption?: z.objectInputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
-    updatedAt?: number | undefined;
     pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
@@ -16948,13 +16948,13 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
@@ -17680,13 +17680,13 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
@@ -18412,13 +18412,13 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
@@ -19135,13 +19135,13 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
@@ -19265,4 +19265,9155 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         secondaryColor: z.ZodOptional<z.ZodString>;
         avatarUrl: z.ZodOptional<z.ZodString>;
         bannerUrl: z.ZodOptional<z.ZodString>;
-        backgroundUrl: z.ZodOptional<z.ZodString>
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+    address: z.ZodString;
+} & {
+    posts: z.ZodUnion<[z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>, z.ZodObject<Pick<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "pageCids">, "strip", z.ZodTypeAny, {
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pageCids?: Record<string, string> | undefined;
+    }>]>;
+    updateCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+}, "strict", z.ZodTypeAny, {
+    address: string;
+    signature?: {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    } | {
+        pageCids?: Record<string, string> | undefined;
+    } | undefined;
+    challenges?: z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    encryption?: z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
+    statsCid?: string | undefined;
+    postUpdates?: Record<string, string> | undefined;
+    roles?: Record<string, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    lastPostCid?: string | undefined;
+    features?: z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
+}, {
+    address: string;
+    signature?: {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    } | {
+        pageCids?: Record<string, string> | undefined;
+    } | undefined;
+    challenges?: z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    encryption?: z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
+    statsCid?: string | undefined;
+    postUpdates?: Record<string, string> | undefined;
+    roles?: Record<string, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    lastPostCid?: string | undefined;
+    features?: z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
+}>, z.ZodObject<{
+    posts: z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>;
+    challenges: z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
+    signature: z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>;
+    encryption: z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
+    address: z.ZodString;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    pubsubTopic: z.ZodOptional<z.ZodString>;
+    statsCid: z.ZodEffects<z.ZodString, string, string>;
+    protocolVersion: z.ZodString;
+    postUpdates: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    lastCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    features: z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    suggested: z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    flairs: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    posts: z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>;
+    challenges: z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
+    signature: z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>;
+    encryption: z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
+    address: z.ZodString;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    pubsubTopic: z.ZodOptional<z.ZodString>;
+    statsCid: z.ZodEffects<z.ZodString, string, string>;
+    protocolVersion: z.ZodString;
+    postUpdates: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    lastCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    features: z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    suggested: z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    flairs: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    posts: z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>;
+    challenges: z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
+    signature: z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>;
+    encryption: z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
+    address: z.ZodString;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    pubsubTopic: z.ZodOptional<z.ZodString>;
+    statsCid: z.ZodEffects<z.ZodString, string, string>;
+    protocolVersion: z.ZodString;
+    postUpdates: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    lastCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    features: z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    suggested: z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    flairs: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>;
+}, z.ZodTypeAny, "passthrough">>]>, z.ZodObject<{
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+    settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+        fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+            path: z.ZodOptional<z.ZodString>;
+            name: z.ZodOptional<z.ZodString>;
+            options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+            exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+            description: z.ZodOptional<z.ZodString>;
+        }, "strict", z.ZodTypeAny, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }>, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }>, "many">>;
+    }, "strict", z.ZodTypeAny, {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    }, {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    }>>>;
+} & {
+    signer: z.ZodOptional<z.ZodObject<{
+        type: z.ZodEnum<["ed25519"]>;
+        privateKey: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519";
+        privateKey: string;
+    }, {
+        type: "ed25519";
+        privateKey: string;
+    }>>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+}, "strict", z.ZodTypeAny, {
+    signer?: {
+        type: "ed25519";
+        privateKey: string;
+    } | undefined;
+    title?: string | undefined;
+    description?: string | undefined;
+    pubsubTopic?: string | undefined;
+    roles?: Record<string, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    features?: z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    settings?: {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    } | undefined;
+}, {
+    signer?: {
+        type: "ed25519";
+        privateKey: string;
+    } | undefined;
+    title?: string | undefined;
+    description?: string | undefined;
+    pubsubTopic?: string | undefined;
+    roles?: Record<string, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    features?: z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    settings?: {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    } | undefined;
+}>]>;
+export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodObject<{
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+    settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+        fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+            path: z.ZodOptional<z.ZodString>;
+            name: z.ZodOptional<z.ZodString>;
+            options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+            exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+            description: z.ZodOptional<z.ZodString>;
+        }, "strict", z.ZodTypeAny, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }>, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }, {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }>, "many">>;
+    }, "strict", z.ZodTypeAny, {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    }, {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    }>>>;
+} & {
+    signer: z.ZodOptional<z.ZodObject<{
+        type: z.ZodEnum<["ed25519"]>;
+        privateKey: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519";
+        privateKey: string;
+    }, {
+        type: "ed25519";
+        privateKey: string;
+    }>>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+}, "strict", z.ZodTypeAny, {
+    signer?: {
+        type: "ed25519";
+        privateKey: string;
+    } | undefined;
+    title?: string | undefined;
+    description?: string | undefined;
+    pubsubTopic?: string | undefined;
+    roles?: Record<string, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    features?: z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    settings?: {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    } | undefined;
+}, {
+    signer?: {
+        type: "ed25519";
+        privateKey: string;
+    } | undefined;
+    title?: string | undefined;
+    description?: string | undefined;
+    pubsubTopic?: string | undefined;
+    roles?: Record<string, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    features?: z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    settings?: {
+        challenges?: {
+            path?: string | undefined;
+            options?: Record<string, string> | undefined;
+            exclude?: [z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">, ...z.objectInputType<{
+                subplebbit: z.ZodOptional<z.ZodObject<{
+                    addresses: z.ZodArray<z.ZodString, "atleastone">;
+                    maxCommentCids: z.ZodNumber;
+                    postScore: z.ZodOptional<z.ZodNumber>;
+                    replyScore: z.ZodOptional<z.ZodNumber>;
+                    firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                }, "strict", z.ZodTypeAny, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }, {
+                    addresses: [string, ...string[]];
+                    maxCommentCids: number;
+                    postScore?: number | undefined;
+                    replyScore?: number | undefined;
+                    firstCommentTimestamp?: number | undefined;
+                }>>;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                rateLimit: z.ZodOptional<z.ZodNumber>;
+                rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                    post: z.ZodOptional<z.ZodBoolean>;
+                    reply: z.ZodOptional<z.ZodBoolean>;
+                    vote: z.ZodOptional<z.ZodBoolean>;
+                    commentEdit: z.ZodOptional<z.ZodBoolean>;
+                    commentModeration: z.ZodOptional<z.ZodBoolean>;
+                }, z.ZodTypeAny, "passthrough">>>;
+            }, z.ZodTypeAny, "passthrough">[]] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
+        }[] | undefined;
+        fetchThumbnailUrls?: boolean | undefined;
+        fetchThumbnailUrlsProxyUrl?: string | undefined;
+    } | undefined;
+}>, z.ZodUnion<[z.ZodObject<{
+    challenges: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+    signature: z.ZodOptional<z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>>;
+    encryption: z.ZodOptional<z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>>;
+    createdAt: z.ZodOptional<z.ZodNumber>;
+    updatedAt: z.ZodOptional<z.ZodNumber>;
+    pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    statsCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    protocolVersion: z.ZodOptional<z.ZodString>;
+    postUpdates: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>>;
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+    roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>>;
+    rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+    lastPostCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+    lastCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+    features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+    address: z.ZodString;
+} & {
+    posts: z.ZodUnion<[z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>, z.ZodObject<Pick<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "pageCids">, "strip", z.ZodTypeAny, {
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pageCids?: Record<string, string> | undefined;
+    }>]>;
+    updateCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+}, "strict", z.ZodTypeAny, {
+    address: string;
+    signature?: {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    } | {
+        pageCids?: Record<string, string> | undefined;
+    } | undefined;
+    challenges?: z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    encryption?: z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
+    statsCid?: string | undefined;
+    postUpdates?: Record<string, string> | undefined;
+    roles?: Record<string, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    lastPostCid?: string | undefined;
+    features?: z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
+}, {
+    address: string;
+    signature?: {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    } | undefined;
+    protocolVersion?: string | undefined;
+    lastCommentCid?: string | undefined;
+    title?: string | undefined;
+    updatedAt?: number | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    } | {
+        pageCids?: Record<string, string> | undefined;
+    } | undefined;
+    challenges?: z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    encryption?: z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
+    statsCid?: string | undefined;
+    postUpdates?: Record<string, string> | undefined;
+    roles?: Record<string, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">> | undefined;
+    rules?: string[] | undefined;
+    lastPostCid?: string | undefined;
+    features?: z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    suggested?: z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough"> | undefined;
+    flairs?: Record<string, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
+}>, z.ZodObject<{
+    posts: z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>;
+    challenges: z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
+    signature: z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>;
+    encryption: z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
+    address: z.ZodString;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    pubsubTopic: z.ZodOptional<z.ZodString>;
+    statsCid: z.ZodEffects<z.ZodString, string, string>;
+    protocolVersion: z.ZodString;
+    postUpdates: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    lastCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    features: z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    suggested: z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    flairs: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    posts: z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>;
+    challenges: z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
+    signature: z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>;
+    encryption: z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
+    address: z.ZodString;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    pubsubTopic: z.ZodOptional<z.ZodString>;
+    statsCid: z.ZodEffects<z.ZodString, string, string>;
+    protocolVersion: z.ZodString;
+    postUpdates: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    lastCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    features: z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    suggested: z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    flairs: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    posts: z.ZodOptional<z.ZodObject<{
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
+    }, "strip", z.ZodTypeAny, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }, {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids?: Record<string, string> | undefined;
+    }>>;
+    challenges: z.ZodArray<z.ZodObject<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            subplebbit: z.ZodOptional<z.ZodObject<{
+                addresses: z.ZodArray<z.ZodString, "atleastone">;
+                maxCommentCids: z.ZodNumber;
+                postScore: z.ZodOptional<z.ZodNumber>;
+                replyScore: z.ZodOptional<z.ZodNumber>;
+                firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            }, "strict", z.ZodTypeAny, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }, {
+                addresses: [string, ...string[]];
+                maxCommentCids: number;
+                postScore?: number | undefined;
+                replyScore?: number | undefined;
+                firstCommentTimestamp?: number | undefined;
+            }>>;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+            challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+            rateLimit: z.ZodOptional<z.ZodNumber>;
+            rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+            publicationType: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                post: z.ZodOptional<z.ZodBoolean>;
+                reply: z.ZodOptional<z.ZodBoolean>;
+                vote: z.ZodOptional<z.ZodBoolean>;
+                commentEdit: z.ZodOptional<z.ZodBoolean>;
+                commentModeration: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
+        description: z.ZodOptional<z.ZodString>;
+        challenge: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">;
+    signature: z.ZodObject<{
+        type: z.ZodEnum<["ed25519", "eip191"]>;
+        signature: z.ZodString;
+        publicKey: z.ZodString;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+    }, "strip", z.ZodTypeAny, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }, {
+        type: "ed25519" | "eip191";
+        publicKey: string;
+        signature: string;
+        signedPropertyNames: string[];
+    }>;
+    encryption: z.ZodObject<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        publicKey: z.ZodString;
+    }, z.ZodTypeAny, "passthrough">>;
+    address: z.ZodString;
+    createdAt: z.ZodNumber;
+    updatedAt: z.ZodNumber;
+    pubsubTopic: z.ZodOptional<z.ZodString>;
+    statsCid: z.ZodEffects<z.ZodString, string, string>;
+    protocolVersion: z.ZodString;
+    postUpdates: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodString, string, string>>>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    }, z.ZodTypeAny, "passthrough">>>>;
+    rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    lastCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    features: z.ZodOptional<z.ZodObject<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        noVideos: z.ZodOptional<z.ZodBoolean>;
+        noSpoilers: z.ZodOptional<z.ZodBoolean>;
+        noImages: z.ZodOptional<z.ZodBoolean>;
+        noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+        noImageReplies: z.ZodOptional<z.ZodBoolean>;
+        noPolls: z.ZodOptional<z.ZodBoolean>;
+        noCrossposts: z.ZodOptional<z.ZodBoolean>;
+        noAuthors: z.ZodOptional<z.ZodBoolean>;
+        anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+        noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+        safeForWork: z.ZodOptional<z.ZodBoolean>;
+        authorFlairs: z.ZodOptional<z.ZodBoolean>;
+        requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+        postFlairs: z.ZodOptional<z.ZodBoolean>;
+        requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+        noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+        markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+        markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+        noPostUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noPostDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noReplyDownvotes: z.ZodOptional<z.ZodBoolean>;
+        noUpvotes: z.ZodOptional<z.ZodBoolean>;
+        noDownvotes: z.ZodOptional<z.ZodBoolean>;
+        requirePostLink: z.ZodOptional<z.ZodBoolean>;
+        requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    suggested: z.ZodOptional<z.ZodObject<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        primaryColor: z.ZodOptional<z.ZodString>;
+        secondaryColor: z.ZodOptional<z.ZodString>;
+        avatarUrl: z.ZodOptional<z.ZodString>;
+        bannerUrl: z.ZodOptional<z.ZodString>;
+        backgroundUrl: z.ZodOptional<z.ZodString>;
+        language: z.ZodOptional<z.ZodString>;
+    }, z.ZodTypeAny, "passthrough">>>;
+    flairs: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        text: z.ZodString;
+        backgroundColor: z.ZodOptional<z.ZodString>;
+        textColor: z.ZodOptional<z.ZodString>;
+        expiresAt: z.ZodOptional<z.ZodNumber>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>>;
+}, z.ZodTypeAny, "passthrough">>]>]>;
+export declare const ListOfSubplebbitsSchema: z.ZodArray<z.ZodString, "many">;
+export declare const SubplebbitIpfsReservedFields: string[];

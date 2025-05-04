@@ -1,6 +1,6 @@
 import { parsePageIpfs } from "../pages/util.js";
 import { verifyPage } from "../signer/signatures.js";
-import { PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
+import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import * as remeda from "remeda";
 import { hideClassPrivateProps } from "../util.js";
@@ -158,7 +158,7 @@ export class PostsPages extends BasePages {
         super.updateProps(props);
     }
     _initClientsManager(plebbit) {
-        this._clientsManager = new PostsPagesClientsManager({ plebbit, pages: this });
+        this._clientsManager = new SubplebbitPostsPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
     getPage(pageCid) {

@@ -28,18 +28,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -122,18 +122,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -216,18 +216,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -308,8 +308,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
 } & {
     subplebbitEdit: import("zod").ZodObject<{
         address: import("zod").ZodOptional<import("zod").ZodString>;
-        description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+        description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
         features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -1387,8 +1387,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
     }, "strict", import("zod").ZodTypeAny, {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -1569,8 +1569,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         } | undefined;
     }, {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -1758,8 +1758,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
     subplebbitAddress: string;
     subplebbitEdit: {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -1959,18 +1959,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -2048,8 +2048,8 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
     subplebbitAddress: string;
     subplebbitEdit: {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -2249,18 +2249,18 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -2346,8 +2346,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     }>>;
     subplebbitEdit: import("zod").ZodObject<{
         address: import("zod").ZodOptional<import("zod").ZodString>;
-        description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+        description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
         rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
         features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -3425,8 +3425,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
     }, "strict", import("zod").ZodTypeAny, {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -3607,8 +3607,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         } | undefined;
     }, {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -3796,13 +3796,13 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         publicKey: import("zod").ZodString;
     }, "strip", import("zod").ZodTypeAny, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }, {
         type: "ed25519";
-        address: string;
         privateKey: string;
+        address: string;
         publicKey: string;
     }>;
     timestamp: import("zod").ZodNumber;
@@ -3815,13 +3815,13 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
     }, "strip", import("zod").ZodTypeAny, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     }>;
     author: import("zod").ZodObject<{
@@ -3843,18 +3843,18 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -3937,18 +3937,18 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -4031,18 +4031,18 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }>>>;
         avatar: import("zod").ZodOptional<import("zod").ZodObject<{
             chainTicker: import("zod").ZodString;
@@ -4107,31 +4107,25 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
         }, import("zod").ZodTypeAny, "passthrough">>>;
     }, import("zod").ZodTypeAny, "passthrough">>;
-}, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "strict", import("zod").ZodTypeAny, {
+}, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "strict", import("zod").ZodTypeAny, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: import("zod").objectOutputType<{
             chainTicker: import("zod").ZodString;
@@ -4149,6 +4143,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        flair?: import("zod").objectOutputType<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -4156,8 +4156,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     protocolVersion: string;
     subplebbitEdit: {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -4338,30 +4338,24 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         } | undefined;
     };
 }, {
+    timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
-        signature: string;
         publicKey: string;
+        signature: string;
         signedPropertyNames: string[];
     };
-    timestamp: number;
     author: {
         address: string;
-        flair?: import("zod").objectInputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         previousCommentCid?: string | undefined;
         displayName?: string | undefined;
         wallets?: Record<string, {
             address: string;
+            timestamp: number;
             signature: {
                 type: "eip191";
                 signature: string;
             };
-            timestamp: number;
         }> | undefined;
         avatar?: import("zod").objectInputType<{
             chainTicker: import("zod").ZodString;
@@ -4379,6 +4373,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        flair?: import("zod").objectInputType<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -4386,8 +4386,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     protocolVersion: string;
     subplebbitEdit: {
         address?: string | undefined;
-        description?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
             role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -4586,8 +4586,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         }>>;
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
-            description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+            description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
             features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -5665,8 +5665,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -5847,8 +5847,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             } | undefined;
         }, {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -6036,13 +6036,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             publicKey: import("zod").ZodString;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }>;
         timestamp: import("zod").ZodNumber;
@@ -6055,13 +6055,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -6083,18 +6083,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -6177,18 +6177,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -6271,18 +6271,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -6347,7 +6347,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
         }, import("zod").ZodTypeAny, "passthrough">>;
-    }, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<Pick<{
+    }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<Pick<{
         subplebbitAddress: import("zod").ZodString;
         challengeRequest: import("zod").ZodOptional<import("zod").ZodObject<{
             challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
@@ -6361,8 +6361,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         }>>;
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
-            description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+            description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
             features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -7440,8 +7440,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -7622,8 +7622,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             } | undefined;
         }, {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -7811,13 +7811,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             publicKey: import("zod").ZodString;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }>;
         timestamp: import("zod").ZodNumber;
@@ -7830,13 +7830,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -7858,18 +7858,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -7952,18 +7952,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -8046,18 +8046,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -8122,7 +8122,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
         }, import("zod").ZodTypeAny, "passthrough">>;
-    }, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<Pick<{
+    }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<Pick<{
         subplebbitAddress: import("zod").ZodString;
         challengeRequest: import("zod").ZodOptional<import("zod").ZodObject<{
             challengeAnswers: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "atleastone">>;
@@ -8136,8 +8136,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         }>>;
         subplebbitEdit: import("zod").ZodObject<{
             address: import("zod").ZodOptional<import("zod").ZodString>;
-            description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             title: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
+            description: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             pubsubTopic: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodString>>;
             rules: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>>;
             features: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodObject<{
@@ -9215,8 +9215,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -9397,8 +9397,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             } | undefined;
         }, {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -9586,13 +9586,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             publicKey: import("zod").ZodString;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }, {
             type: "ed25519";
-            address: string;
             privateKey: string;
+            address: string;
             publicKey: string;
         }>;
         timestamp: import("zod").ZodNumber;
@@ -9605,13 +9605,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -9633,18 +9633,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -9727,18 +9727,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -9821,18 +9821,18 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }>>>;
             avatar: import("zod").ZodOptional<import("zod").ZodObject<{
                 chainTicker: import("zod").ZodString;
@@ -9897,33 +9897,27 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
         }, import("zod").ZodTypeAny, "passthrough">>;
-    }, "signature" | "timestamp" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">>;
+    }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, import("zod").ZodTypeAny, "passthrough">>;
 }, "strip", import("zod").ZodTypeAny, {
     subplebbitEdit: {
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        timestamp: number;
         author: {
             address: string;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectOutputType<{
                 chainTicker: import("zod").ZodString;
@@ -9941,6 +9935,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
@@ -9948,8 +9948,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: string;
         subplebbitEdit: {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -10136,30 +10136,24 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
     challengeCommentCids?: string[] | undefined;
 }, {
     subplebbitEdit: {
+        timestamp: number;
         signature: {
             type: "ed25519" | "eip191";
-            signature: string;
             publicKey: string;
+            signature: string;
             signedPropertyNames: string[];
         };
-        timestamp: number;
         author: {
             address: string;
-            flair?: import("zod").objectInputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
             previousCommentCid?: string | undefined;
             displayName?: string | undefined;
             wallets?: Record<string, {
                 address: string;
+                timestamp: number;
                 signature: {
                     type: "eip191";
                     signature: string;
                 };
-                timestamp: number;
             }> | undefined;
             avatar?: import("zod").objectInputType<{
                 chainTicker: import("zod").ZodString;
@@ -10177,6 +10171,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectInputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         } & {
             [k: string]: unknown;
         };
@@ -10184,8 +10184,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: string;
         subplebbitEdit: {
             address?: string | undefined;
-            description?: string | undefined;
             title?: string | undefined;
+            description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
                 role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
