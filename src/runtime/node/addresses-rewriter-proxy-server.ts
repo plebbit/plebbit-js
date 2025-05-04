@@ -2,7 +2,8 @@ import http from "node:http";
 import https from "node:https";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
-import { Plebbit } from "../../plebbit/plebbit";
+import { Plebbit } from "../../plebbit/plebbit.js";
+import { hideClassPrivateProps } from "../../util.js";
 const debug = Logger("plebbit-js:addresses-rewriter");
 
 type AddressesRewriterOptions = {
@@ -10,6 +11,7 @@ type AddressesRewriterOptions = {
     port: number;
     hostname: string | undefined;
     proxyTargetUrl: string;
+    plebbit: Pick<Plebbit, "_storage">;
 };
 
 export class AddressesRewriterProxyServer {
@@ -19,9 +21,11 @@ export class AddressesRewriterProxyServer {
     hostname: string;
     proxyTarget: URL;
     server: ReturnType<(typeof http)["createServer"]>;
+    _storageKeyName: string;
+    _plebbit: Pick<Plebbit, "_storage">;
 
     private _updateAddressesInterval!: ReturnType<typeof setInterval>;
-    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl }: AddressesRewriterOptions) {
+    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit }: AddressesRewriterOptions) {
         this.addresses = {};
 
         this.kuboClients = kuboClient;
@@ -29,6 +33,9 @@ export class AddressesRewriterProxyServer {
         this.hostname = hostname || "127.0.0.1";
         this.proxyTarget = new URL(proxyTargetUrl);
         this.server = http.createServer((req, res) => this._proxyRequestRewrite(req, res));
+        this._storageKeyName = `httprouter_proxy_${proxyTargetUrl}`;
+        this._plebbit = plebbit;
+        hideClassPrivateProps(this);
     }
 
     async listen(callback?: () => void) {
@@ -43,11 +50,13 @@ export class AddressesRewriterProxyServer {
             "started listening to forward requests to",
             this.proxyTarget.host
         );
+        await this._plebbit._storage.setItem(this._storageKeyName, `http://${this.hostname}:${this.port}`);
     }
 
-    destroy() {
+    async destroy() {
         this.server.close();
         clearInterval(this._updateAddressesInterval);
+        await this._plebbit._storage.removeItem(this._storageKeyName);
     }
 
     _proxyRequestRewrite(req: Parameters<http.RequestListener>[0], res: Parameters<http.RequestListener>[1]) {
@@ -101,7 +110,7 @@ export class AddressesRewriterProxyServer {
 
             // Handle timeout
             proxyReq.setTimeout(60000, () => {
-                debug.error("Proxy request timed out");
+                debug.error("Proxy request timed out", requestOptions);
                 proxyReq.destroy();
             });
 
@@ -120,12 +129,12 @@ export class AddressesRewriterProxyServer {
             proxyReq.on("response", (proxyRes) => {
                 // Handle proxy response errors
                 proxyRes.on("error", (err) => {
-                    debug.error("Proxy response error:", err);
+                    debug.error("Proxy response error:", err, "Proxy response", proxyRes);
                     if (!res.headersSent) {
                         res.writeHead(500);
                         res.end("Proxy Response Error");
                     }
-                    proxyRes.destroy();
+                    proxyRes.destroy(err);
                 });
 
                 // Pipe the response with proper error handling
@@ -145,13 +154,14 @@ export class AddressesRewriterProxyServer {
 
         // Handle client disconnect
         req.on("close", () => {
-            debug("Client connection closed");
+            debug.trace("Client connection closed", req.url, req.method, req.headers, reqBody);
         });
 
         // Handle request errors
         req.on("error", (err) => {
-            debug.error("Request error:", err);
+            debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
             if (!res.headersSent) {
+                debug.error("Request error:", req.url, req.method, req.headers, reqBody, err);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             }
@@ -170,9 +180,12 @@ export class AddressesRewriterProxyServer {
 
                     const peerId: string = idRes.id.toString();
                     if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
+
+                    const swarmListeningAddresses = swarmAddrsRes.filter((swarmAddr) => swarmAddr.id.toString() === peerId);
+
                     const addresses: string[] = remeda.unique([
                         ...idRes.addresses.map((addr) => addr.toString()),
-                        ...remeda.flatten(swarmAddrsRes.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
+                        ...remeda.flatten(swarmListeningAddresses.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
                     ]);
 
                     this.addresses[peerId] = addresses;

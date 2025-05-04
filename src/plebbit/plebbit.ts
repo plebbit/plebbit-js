@@ -170,7 +170,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
-    private _addressRewriterDestroy?: () => void;
+    private _addressRewriterDestroy?: () => Promise<void>;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
@@ -914,7 +914,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
 
-        if (this._addressRewriterDestroy) this._addressRewriterDestroy();
+        if (this._addressRewriterDestroy) await this._addressRewriterDestroy();
         await this._domainResolver.destroy();
 
         await this._storage.destroy();

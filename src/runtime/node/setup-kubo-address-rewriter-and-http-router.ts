@@ -76,7 +76,7 @@ async function _getStartedProxyUrl(plebbit: Plebbit, httpRouterUrl: string) {
     return undefined;
 }
 
-export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit): Promise<{ destroy: () => void }> {
+export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit): Promise<{ destroy: () => Promise<void> }> {
     if (!Array.isArray(plebbit.kuboRpcClientsOptions) || plebbit.kuboRpcClientsOptions.length <= 0)
         throw Error("need ipfs http client to be defined");
     if (!Array.isArray(plebbit.httpRoutersOptions) || plebbit.httpRoutersOptions.length <= 0)
@@ -106,7 +106,8 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit)
             kuboClients: Object.values(plebbit.clients.kuboRpcClients).map((kubo) => kubo._client),
             port,
             hostname,
-            proxyTargetUrl: httpRouter
+            proxyTargetUrl: httpRouter,
+            plebbit
         });
         await addressesRewriterProxyServer.listen();
         proxyServers.push(addressesRewriterProxyServer);
@@ -115,9 +116,6 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit)
 
         const httpRouterProxyUrl = `http://${hostname}:${port}`;
         httpRouterProxyUrls.push(httpRouterProxyUrl);
-
-        const mappingKeyName = `httprouter_proxy_${httpRouter}`;
-        await plebbit._storage.setItem(mappingKeyName, httpRouterProxyUrl);
     }
     httpRouterProxyUrls.sort(); // make sure it's always the same order
 
@@ -176,9 +174,9 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit)
     await setHttpRouterOnAllNodes;
     settingOptionRetryOption.stop();
     return {
-        destroy: () => {
+        destroy: async () => {
             for (const proxyServer of proxyServers) {
-                proxyServer.destroy();
+                await proxyServer.destroy();
             }
         }
     };
