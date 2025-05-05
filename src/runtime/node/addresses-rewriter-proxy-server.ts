@@ -83,7 +83,7 @@ export class AddressesRewriterProxyServer {
                     rewrittenBody = JSON.stringify(json);
                 } catch (e) {
                     const error = <Error>e;
-                    debug("proxy body rewrite error:", error.message);
+                    debug("proxy body rewrite error:", error, "body", rewrittenBody, req.url, req.method);
                 }
             }
 
@@ -110,7 +110,7 @@ export class AddressesRewriterProxyServer {
 
             // Handle timeout
             proxyReq.setTimeout(60000, () => {
-                debug.error("Proxy request timed out", requestOptions);
+                debug.error("Proxy request timed out", requestOptions, reqBody);
                 proxyReq.destroy();
             });
 
