@@ -2,6 +2,7 @@ import {
     binaryKeyToPubsubTopic,
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
+    ipnsNameToIpnsOverPubsubTopic,
     isIpns,
     pubsubTopicToDhtKey,
     shortifyAddress,
@@ -182,13 +183,15 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.createdAt = newProps.createdAt;
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
-        this.signature = newProps.signature;
-        if (this.signature?.publicKey && !this.ipnsName) {
-            const signaturePeerId = await getPeerIdFromPublicKey(this.signature.publicKey);
+        if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
+            // The signature public key has changed, we need to update the ipns name and pubsub topic
+            const signaturePeerId = await getPeerIdFromPublicKey(newProps.signature.publicKey);
             this.ipnsName = signaturePeerId.toB58String();
-            this.ipnsPubsubTopic = binaryKeyToPubsubTopic(signaturePeerId.toBytes());
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
             this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
+        this.signature = newProps.signature;
+
         this.setAddress(newProps.address);
         await this._updateLocalPostsInstance(newProps.posts);
 
