@@ -24,8 +24,10 @@ import {
     doesDomainAddressHaveCapitalLetter,
     genToArray,
     hideClassPrivateProps,
+    ipnsNameToIpnsOverPubsubTopic,
     isLinkOfMedia,
     isStringDomain,
+    pubsubTopicToDhtKey,
     removeUndefinedValuesRecursively,
     retryKuboIpfsAdd,
     throwWithErrorCode,
@@ -279,12 +281,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._internalStateUpdateId = newProps._internalStateUpdateId;
         if (Array.isArray(newProps._cidsToUnPin)) newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
         if (Array.isArray(newProps._mfsPathsToRemove)) newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
         this._internalStateUpdateId = newProps._internalStateUpdateId;
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this.ipnsName = newProps.signer.address;
+        this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+        this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
     }
 
     private async initDbHandlerIfNeeded() {
@@ -460,6 +467,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._updateStartedValue();
 
         await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        await this._updateIpnsPubsubPropsIfNeeded({
+            ...this.toJSONInternalBeforeFirstUpdate(), //@ts-expect-error
+            signature: { publicKey: this.signer.publicKey }
+        });
     }
 
     private async _calculateNewPostUpdates(): Promise<SubplebbitIpfsType["postUpdates"]> {
@@ -544,7 +555,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...cleanUpBeforePublishing({
                 ...remeda.omit(this._toJSONIpfsBaseNoPosts(), ["signature"]),
-                ...pendingEditProps,
+                ...pendingSubplebbitIpfsEditProps,
                 lastPostCid: latestPost?.cid,
                 lastCommentCid: latestComment?.cid,
                 statsCid,

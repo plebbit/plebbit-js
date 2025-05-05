@@ -164,6 +164,24 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
     }
 
+    protected async _updateIpnsPubsubPropsIfNeeded(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions) {
+        if ("ipnsName" in newProps && newProps.ipnsName) {
+            this.ipnsName = newProps.ipnsName;
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        } else if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
+            // The signature public key has changed, we need to update the ipns name and pubsub topic
+            const signaturePeerId = await getPeerIdFromPublicKey(newProps.signature.publicKey);
+            this.ipnsName = signaturePeerId.toB58String();
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
+        if (!this.pubsubTopicPeersCid) {
+            if ("pubsubTopicPeersCid" in newProps) this.pubsubTopicPeersCid = newProps.pubsubTopicPeersCid;
+            else this.pubsubTopicPeersCid = await pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+        }
+    }
+
     async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions) {
         // This function is not strict, and will assume all props can be undefined, except address
         this.title = newProps.title;
@@ -183,16 +201,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.createdAt = newProps.createdAt;
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
-        if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
-            // The signature public key has changed, we need to update the ipns name and pubsub topic
-            const signaturePeerId = await getPeerIdFromPublicKey(newProps.signature.publicKey);
-            this.ipnsName = signaturePeerId.toB58String();
-            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
-        }
-        if (newProps.pubsubTopic && newProps.pubsubTopic !== this.pubsubTopic) {
-            this.pubsubTopicPeersCid = await pubsubTopicToDhtKey(newProps.pubsubTopic);
-        }
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
         this.pubsubTopic = newProps.pubsubTopic;
 
         this.signature = newProps.signature;
