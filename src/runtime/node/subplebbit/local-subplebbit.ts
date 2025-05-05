@@ -154,6 +154,7 @@ import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/sub
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
+import { sha256 } from "js-sha256";
 
 type CommentUpdateToBeUpdated = CommentUpdatesRow &
     Pick<CommentsTableRow, "depth"> & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined };
@@ -227,7 +228,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
             _internalStateUpdateId: this._internalStateUpdateId,
             _cidsToUnPin: [...this._cidsToUnPin],
-            _mfsPathsToRemove: [...this._mfsPathsToRemove]
+            _mfsPathsToRemove: [...this._mfsPathsToRemove],
+            _pendingEditProps: this._pendingEditProps
         };
     }
 
@@ -235,7 +237,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return {
             ...remeda.omit(this.toJSONInternalRpcBeforeFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
-            _internalStateUpdateId: this._internalStateUpdateId
+            _internalStateUpdateId: this._internalStateUpdateId,
+            _pendingEditProps: this._pendingEditProps
         };
     }
 
@@ -534,6 +537,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const editIdsToIncludeInNextUpdate = this._pendingEditProps.map((editProps) => editProps.editId);
         const pendingEditProps = Object.assign({}, ...this._pendingEditProps.map((editProps) => remeda.omit(editProps, ["editId"])));
+        if (this._pendingEditProps.length > 0) log("Including edit props in next IPNS update", this._pendingEditProps);
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...cleanUpBeforePublishing({
                 ...remeda.omit(this._toJSONIpfsBaseNoPosts(), ["signature"]),
@@ -2230,19 +2234,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._movePostUpdatesFolderToNewAddress(oldAddress, parsedEditOptions.address);
         }
 
-        this._pendingEditProps.push({ ...parsedEditOptions, editId: uuidV4() });
+        const uniqueEditId = sha256(deterministicStringify(parsedEditOptions));
+        this._pendingEditProps.push({ ...parsedEditOptions, editId: uniqueEditId });
 
         if (this.updateCid)
             await this.initInternalSubplebbitAfterFirstUpdateNoMerge({
                 ...this.toJSONInternalAfterFirstUpdate(),
                 ...parsedEditOptions,
-                _internalStateUpdateId: uuidV4()
+                _internalStateUpdateId: uniqueEditId
             });
         else
             await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({
                 ...this.toJSONInternalBeforeFirstUpdate(),
                 ...parsedEditOptions,
-                _internalStateUpdateId: uuidV4()
+                _internalStateUpdateId: uniqueEditId
             });
         this._subplebbitUpdateTrigger = true;
         log(
