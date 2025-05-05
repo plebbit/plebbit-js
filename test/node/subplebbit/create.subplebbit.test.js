@@ -78,6 +78,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(subplebbitInstance)))`, async () => {
         const props = { title: Math.random() + "123" };
         const firstSub = await plebbit.createSubplebbit(props);
+        expect(firstSub.title).to.equal(props.title);
         const secondSub = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(firstSub)));
         expect(secondSub.title).to.equal(props.title);
 
