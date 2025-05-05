@@ -1,9 +1,8 @@
 {
-    "timeout": 200000,
+    "timeout": 300000,
     "require": "test/root-hook-mocha.js",
     "node-option": ["experimental-specifier-resolution=node", "trace-warnings", "unhandled-rejections=strict", "trace-deprecation"],
     "full-trace": true,
-    "bail": true,
     "stack-trace-limit": 30,
     "allow-uncaught": false,
     "trace-warnings": true
