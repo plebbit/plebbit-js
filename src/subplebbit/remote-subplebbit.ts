@@ -74,8 +74,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     clients: SubplebbitClientsManager["clients"];
     updateCid?: string;
     ipnsName?: string;
-    ipnsPubsubTopic?: string;
-    ipnsPubsubTopicDhtKey?: string;
+    ipnsPubsubTopic?: string; // ipns over pubsub topic
+    ipnsPubsubTopicDhtKey?: string; // peers of subplebbit.ipnsPubsubTopic, use this cid with http routers to find peers of ipns-over-pubsub
+    pubsubTopicPeersCid?: string; // peers of subplebbit.pubsubTopic, use this cid with http routers to find peers of subplebbit.pubsubTopic
 
     // should be used internally
     _plebbit: Plebbit;
@@ -169,7 +170,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
-        this.pubsubTopic = newProps.pubsubTopic;
         this.protocolVersion = newProps.protocolVersion;
 
         this.roles = newProps.roles;
@@ -190,6 +190,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
             this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
+        if (newProps.pubsubTopic && newProps.pubsubTopic !== this.pubsubTopic) {
+            this.pubsubTopicPeersCid = await pubsubTopicToDhtKey(newProps.pubsubTopic);
+        }
+        this.pubsubTopic = newProps.pubsubTopic;
+
         this.signature = newProps.signature;
 
         this.setAddress(newProps.address);
