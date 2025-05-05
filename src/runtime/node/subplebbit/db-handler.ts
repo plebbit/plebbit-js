@@ -150,58 +150,6 @@ export class DbHandler {
         log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
 
-    // Check if SQLite3 CLI is available
-    async _isSqlite3Available(): Promise<boolean> {
-        try {
-            await execPromise("sqlite3 --version");
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    async recoverUsingCliIfAvailable(dbPath: string): Promise<string> {
-        const log = Logger("plebbit-js:local-subplebbit:db-handler:recoverUsingCliIfAvailable");
-
-        const isCliAvailable = await this._isSqlite3Available();
-        if (!isCliAvailable) {
-            const errorMsg =
-                "SQLite3 CLI not found. Please install it to recover from database corruption:\n" +
-                "- Ubuntu/Debian: sudo apt install sqlite3\n" +
-                "- macOS: brew install sqlite3\n" +
-                "- Windows: Download from https://www.sqlite.org/download.html";
-
-            log.error(errorMsg);
-            throw new Error(errorMsg);
-        }
-
-        // Create paths for recovery
-        const dbDir = path.dirname(dbPath);
-        const dbName = path.basename(dbPath);
-        const recoveryDir = path.join(dbDir, ".recovery");
-        await fs.promises.mkdir(recoveryDir, { recursive: true });
-
-        const recoveredDbPath = path.join(recoveryDir, `recovered_${dbName}_${Date.now()}`);
-
-        try {
-            // Run the SQLite recovery command
-            log.trace(`Attempting to recover database using sqlite3 CLI: ${dbPath}`);
-
-            // Use sqlite3's .recover command and pipe to new database
-            const command = `sqlite3 "${dbPath}" ".recover" | sqlite3 "${recoveredDbPath}"`;
-            await execPromise(command);
-
-            // Verify the new database has basic integrity
-            await execPromise(`sqlite3 "${recoveredDbPath}" "PRAGMA integrity_check;"`);
-
-            log.trace(`Database successfully recovered to: ${recoveredDbPath}`);
-            return recoveredDbPath;
-        } catch (error) {
-            log.error(`Database recovery failed: ${error}`);
-            throw error;
-        }
-    }
-
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
         const trx = await this._knex.transaction();
