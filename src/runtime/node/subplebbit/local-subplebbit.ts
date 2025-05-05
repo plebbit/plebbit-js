@@ -192,6 +192,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _publishLoopPromise?: Promise<void> = undefined;
     private _updateLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
+    private _firstTimePublishingIpns: boolean = false;
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
     private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
         SubplebbitEvents,
@@ -473,7 +474,31 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return postUpdates;
     }
 
-    private async _calculateLatestUpdateTrigger() {
+    async _resolveIpnsAndLogIfPotentialProblematicSequence() {
+        const log = Logger("plebbit-js:local-subplebbit:_resolveIpnsAndLogIfPotentialProblematicSequence");
+        if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
+        if (!this.updateCid) return;
+        try {
+            const ipnsCid = await this._clientsManager.resolveIpnsToCidP2P(this.signer.ipnsKeyName, { timeoutMs: 120000 });
+            log("Resolved sub", this.address, "IPNS key", this.signer.ipnsKeyName, "to", ipnsCid);
+            if (ipnsCid && this.updateCid && ipnsCid !== this.updateCid) {
+                log.error(
+                    "subplebbit",
+                    this.address,
+                    "IPNS key",
+                    this.signer.ipnsKeyName,
+                    "points to",
+                    ipnsCid,
+                    "but we expected it to point to",
+                    this.updateCid,
+                    "This could result an IPNS record with invalid sequence number"
+                );
+            }
+        } catch (e) {
+            log.error("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
+        }
+    }
+
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
         this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || lastPublishTooOld;
@@ -562,10 +587,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             content: deterministicStringify(newSubplebbitRecord),
             options: { pin: true }
         });
+
+        if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
+        if (this._firstTimePublishingIpns) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
+            resolve: true,
             ttl
         });
         log(
@@ -573,7 +602,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
         await this._unpinStaleCids();
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
-
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
 
@@ -2051,6 +2079,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
+            this._firstTimePublishingIpns = false;
         } catch (e) {
             //@ts-expect-error
             e.details = { ...e.details, subplebbitAddress: this.address };
@@ -2312,7 +2341,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
 
             this._subplebbitUpdateTrigger = true;
-
+            this._firstTimePublishingIpns = true;
             this._setStartedState("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();

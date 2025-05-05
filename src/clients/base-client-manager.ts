@@ -480,7 +480,9 @@ export class BaseClientsManager {
         const ipfsClient = this.getDefaultIpfs();
 
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns: string | undefined = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true }));
+            const resolvedCidOfIpns: string | undefined = await last(
+                ipfsClient._client.name.resolve(ipnsName, { nocache: true, recursive: true })
+            );
 
             if (!resolvedCidOfIpns)
                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", { resolvedCidOfIpns, ipnsName, ipfsClient, loadOpts });
