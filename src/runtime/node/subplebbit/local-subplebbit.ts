@@ -536,7 +536,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const editIdsToIncludeInNextUpdate = this._pendingEditProps.map((editProps) => editProps.editId);
-        const pendingEditProps = Object.assign({}, ...this._pendingEditProps.map((editProps) => remeda.omit(editProps, ["editId"])));
+        const pendingSubplebbitIpfsEditProps = Object.assign(
+            {}, //@ts-expect-error
+            ...this._pendingEditProps.map((editProps) => remeda.pick(editProps, remeda.keys.strict(SubplebbitIpfsSchema.shape)))
+        );
         if (this._pendingEditProps.length > 0) log("Including edit props in next IPNS update", this._pendingEditProps);
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...cleanUpBeforePublishing({
