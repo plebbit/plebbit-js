@@ -20,10 +20,11 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _stopHasBeenCalled;
     private _publishLoopPromise?;
     private _updateLoopPromise?;
-    private _publishInterval?;
+    private _firstTimePublishingIpns;
     private _internalStateUpdateId;
     private _mirroredStartedOrUpdatingSubplebbit?;
     private _updateLocalSubTimeout?;
+    private _pendingEditProps;
     constructor(plebbit: Plebbit);
     toJSONInternalAfterFirstUpdate(): InternalSubplebbitRecordAfterFirstUpdateType;
     toJSONInternalBeforeFirstUpdate(): InternalSubplebbitRecordBeforeFirstUpdateType;
@@ -42,6 +43,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     _setChallengesToDefaultIfNotDefined(log: Logger): Promise<void>;
     _createNewLocalSubDb(): Promise<void>;
     private _calculateNewPostUpdates;
+    _resolveIpnsAndLogIfPotentialProblematicSequence(): Promise<void>;
     private _calculateLatestUpdateTrigger;
     private updateSubplebbitIpnsIfNeeded;
     private shouldResolveDomainForVerification;

@@ -40,6 +40,7 @@ export declare function calculateIpfsCidV0(content: string): Promise<string>;
  * converts a binary record key to a pubsub topic key
  */
 export declare function binaryKeyToPubsubTopic(key: Uint8Array): string;
+export declare function ipnsNameToIpnsOverPubsubTopic(ipnsName: string): string;
 export declare function pubsubTopicToDhtKey(pubsubTopic: string): Promise<string>;
 export declare function retryKuboIpfsAdd({ kuboRpcClient, log, content, inputNumOfRetries, options }: {
     kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"];

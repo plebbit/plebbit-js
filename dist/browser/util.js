@@ -14,6 +14,7 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "multiformats/hashes/sha2";
 import { base32 } from "multiformats/bases/base32";
 import retry from "retry";
+import PeerId from "peer-id";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -321,6 +322,17 @@ export function calculateIpfsCidV0(content) {
 export function binaryKeyToPubsubTopic(key) {
     const b64url = uint8ArrayToString(key, "base64url");
     return `/record/${b64url}`;
+}
+export function ipnsNameToIpnsOverPubsubTopic(ipnsName) {
+    // for ipns over pubsub, the topic is '/record/' + Base64Url(Uint8Array('/ipns/') + Uint8Array('12D...'))
+    // https://github.com/ipfs/helia/blob/1561e4a106074b94e421a77b0b8776b065e48bc5/packages/ipns/src/routing/pubsub.ts#L169
+    const ipnsNamespaceBytes = new TextEncoder().encode("/ipns/");
+    const ipnsNameBytes = PeerId.parse(ipnsName).toBytes(); // accepts base58 (12D...) and base36 (k51...)
+    const ipnsNameBytesWithNamespace = new Uint8Array(ipnsNamespaceBytes.length + ipnsNameBytes.length);
+    ipnsNameBytesWithNamespace.set(ipnsNamespaceBytes, 0);
+    ipnsNameBytesWithNamespace.set(ipnsNameBytes, ipnsNamespaceBytes.length);
+    const pubsubTopic = "/record/" + uint8ArrayToString(ipnsNameBytesWithNamespace, "base64url");
+    return pubsubTopic;
 }
 export async function pubsubTopicToDhtKey(pubsubTopic) {
     // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328

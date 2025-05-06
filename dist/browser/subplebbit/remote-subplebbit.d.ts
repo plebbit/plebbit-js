@@ -40,6 +40,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     ipnsName?: string;
     ipnsPubsubTopic?: string;
     ipnsPubsubTopicDhtKey?: string;
+    pubsubTopicPeersCid?: string;
     _plebbit: Plebbit;
     _clientsManager: SubplebbitClientsManager;
     raw: {
@@ -52,6 +53,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     constructor(plebbit: Plebbit);
     _updateLocalPostsInstance(newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">): Promise<void>;
     initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType): Promise<void>;
+    protected _updateIpnsPubsubPropsIfNeeded(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): Promise<void>;
     initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): Promise<void>;
     setAddress(newAddress: string): void;
     protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;

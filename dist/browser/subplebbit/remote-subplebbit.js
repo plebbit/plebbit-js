@@ -1,4 +1,4 @@
-import { binaryKeyToPubsubTopic, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, pubsubTopicToDhtKey, shortifyAddress, timestamp } from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isIpns, pubsubTopicToDhtKey, shortifyAddress, timestamp } from "../util.js";
 import Logger from "@plebbit/plebbit-logger";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
@@ -82,13 +82,32 @@ export class RemoteSubplebbit extends TypedEmitter {
             Object.assign(this, remeda.pick(this.raw.subplebbitIpfs, unknownProps));
         }
     }
+    async _updateIpnsPubsubPropsIfNeeded(newProps) {
+        if ("ipnsName" in newProps && newProps.ipnsName) {
+            this.ipnsName = newProps.ipnsName;
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
+        else if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
+            // The signature public key has changed, we need to update the ipns name and pubsub topic
+            const signaturePeerId = await getPeerIdFromPublicKey(newProps.signature.publicKey);
+            this.ipnsName = signaturePeerId.toB58String();
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
+        if (!this.pubsubTopicPeersCid) {
+            if ("pubsubTopicPeersCid" in newProps)
+                this.pubsubTopicPeersCid = newProps.pubsubTopicPeersCid;
+            else
+                this.pubsubTopicPeersCid = await pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+        }
+    }
     async initRemoteSubplebbitPropsNoMerge(newProps) {
         // This function is not strict, and will assume all props can be undefined, except address
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
-        this.pubsubTopic = newProps.pubsubTopic;
         this.protocolVersion = newProps.protocolVersion;
         this.roles = newProps.roles;
         this.features = newProps.features;
@@ -101,13 +120,9 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.createdAt = newProps.createdAt;
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this.pubsubTopic = newProps.pubsubTopic;
         this.signature = newProps.signature;
-        if (this.signature?.publicKey && !this.ipnsName) {
-            const signaturePeerId = await getPeerIdFromPublicKey(this.signature.publicKey);
-            this.ipnsName = signaturePeerId.toB58String();
-            this.ipnsPubsubTopic = binaryKeyToPubsubTopic(signaturePeerId.toBytes());
-            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
-        }
         this.setAddress(newProps.address);
         await this._updateLocalPostsInstance(newProps.posts);
         // Exclusive Instance props

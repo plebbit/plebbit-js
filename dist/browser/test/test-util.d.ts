@@ -462,6 +462,7 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     editable: Pick<RpcLocalSubplebbit, keyof import("../subplebbit/types.js").SubplebbitEditOptions>;
     ipnsPubsubTopic?: string | undefined;
     ipnsPubsubTopicDhtKey?: string | undefined;
+    pubsubTopicPeersCid?: string | undefined;
 }, "state" | "clients" | "started" | "updatingState" | "startedState">;
 export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): Omit<any, "state" | "publishingState" | "clients" | "updatingState" | "raw">;
 export declare function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string): Promise<void>;

@@ -23,8 +23,6 @@ export declare class DbHandler {
     keyvDelete(key: string | string[]): Promise<boolean>;
     keyvHas(key: string): Promise<boolean>;
     destoryConnection(): Promise<void>;
-    _isSqlite3Available(): Promise<boolean>;
-    recoverUsingCliIfAvailable(dbPath: string): Promise<string>;
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;
     rollbackTransaction(transactionId: string): Promise<void>;

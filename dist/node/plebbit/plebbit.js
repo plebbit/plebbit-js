@@ -662,7 +662,9 @@ export class Plebbit extends PlebbitTypedEmitter {
                 commentIpfsVerificationOpts,
                 commentIpfsValidity
             });
-        const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
+        const subplebbit = this._updatingSubplebbits[comment.subplebbitAddress]?.raw?.subplebbitIpfs || {
+            address: comment.subplebbitAddress
+        };
         const commentUpdateVerificationOpts = {
             update: commentUpdate,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
@@ -699,7 +701,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         if (this._subplebbitFsWatchAbort)
             this._subplebbitFsWatchAbort.abort();
         if (this._addressRewriterDestroy)
-            this._addressRewriterDestroy();
+            await this._addressRewriterDestroy();
         await this._domainResolver.destroy();
         await this._storage.destroy();
         for (const storage of Object.values(this._storageLRUs))

@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, isLinkOfMedia, isStringDomain, removeUndefinedValuesRecursively, retryKuboIpfsAdd, throwWithErrorCode, timestamp } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, removeUndefinedValuesRecursively, retryKuboIpfsAdd, throwWithErrorCode, timestamp } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -33,6 +33,7 @@ import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the
 import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/subplebbit-client-manager.js";
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 import pLimit from "p-limit";
+import { sha256 } from "js-sha256";
 const _startedSubplebbits = {}; // A global record on process level to track started subplebbits
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -50,10 +51,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._subplebbitUpdateTrigger = false;
         this._publishLoopPromise = undefined;
         this._updateLoopPromise = undefined;
-        this._publishInterval = undefined;
+        this._firstTimePublishingIpns = false;
         this._internalStateUpdateId = "";
         this._mirroredStartedOrUpdatingSubplebbit = undefined; // The plebbit._startedSubplebbits we're subscribed to
         this._updateLocalSubTimeout = undefined;
+        this._pendingEditProps = [];
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.started = false;
         this._stopHasBeenCalled = false;
@@ -72,14 +74,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
             _internalStateUpdateId: this._internalStateUpdateId,
             _cidsToUnPin: [...this._cidsToUnPin],
-            _mfsPathsToRemove: [...this._mfsPathsToRemove]
+            _mfsPathsToRemove: [...this._mfsPathsToRemove],
+            _pendingEditProps: this._pendingEditProps
         };
     }
     toJSONInternalBeforeFirstUpdate() {
         return {
             ...remeda.omit(this.toJSONInternalRpcBeforeFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
-            _internalStateUpdateId: this._internalStateUpdateId
+            _internalStateUpdateId: this._internalStateUpdateId,
+            _pendingEditProps: this._pendingEditProps
         };
     }
     toJSONInternalRpcAfterFirstUpdate() {
@@ -117,11 +121,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
         if (Array.isArray(newProps._mfsPathsToRemove))
             newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
     }
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps) {
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
         this._internalStateUpdateId = newProps._internalStateUpdateId;
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this.ipnsName = newProps.signer.address;
+        this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+        this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
     }
     async initDbHandlerIfNeeded() {
         if (!this._dbHandler) {
@@ -135,9 +144,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // if it's started in another process, we will throw an error
         // if sub is not started, load the InternalSubplebbit props from the local db
         const log = Logger("plebbit-js:local-subplebbit:_updateInstancePropsWithStartedSubOrDb");
-        if (this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address]) {
-            const startedSubplebbit = (this._plebbit._startedSubplebbits[this.address] ||
-                _startedSubplebbits[this.address]);
+        const startedSubplebbit = (this._plebbit._startedSubplebbits[this.address] || _startedSubplebbits[this.address]);
+        if (startedSubplebbit) {
             log("Loading local subplebbit", this.address, "from started subplebbit instance");
             if (startedSubplebbit.updatedAt)
                 await this.initInternalSubplebbitAfterFirstUpdateNoMerge(startedSubplebbit.toJSONInternalAfterFirstUpdate());
@@ -289,6 +297,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
         await this._updateStartedValue();
         await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        await this._updateIpnsPubsubPropsIfNeeded({
+            ...this.toJSONInternalBeforeFirstUpdate(), //@ts-expect-error
+            signature: { publicKey: this.signer.publicKey }
+        });
     }
     async _calculateNewPostUpdates() {
         const postUpdates = {};
@@ -306,13 +318,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return undefined;
         return postUpdates;
     }
-    async _calculateLatestUpdateTrigger() {
+    async _resolveIpnsAndLogIfPotentialProblematicSequence() {
+        const log = Logger("plebbit-js:local-subplebbit:_resolveIpnsAndLogIfPotentialProblematicSequence");
+        if (!this.signer.ipnsKeyName)
+            throw Error("IPNS key name is not defined");
+        if (!this.updateCid)
+            return;
+        try {
+            const ipnsCid = await this._clientsManager.resolveIpnsToCidP2P(this.signer.ipnsKeyName, { timeoutMs: 120000 });
+            log.trace("Resolved sub", this.address, "IPNS key", this.signer.ipnsKeyName, "to", ipnsCid);
+            if (ipnsCid && this.updateCid && ipnsCid !== this.updateCid) {
+                log.error("subplebbit", this.address, "IPNS key", this.signer.ipnsKeyName, "points to", ipnsCid, "but we expected it to point to", this.updateCid, "This could result an IPNS record with invalid sequence number");
+            }
+        }
+        catch (e) {
+            log.error("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
+        }
+    }
+    _calculateLatestUpdateTrigger() {
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
-        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || lastPublishTooOld;
+        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0;
     }
     async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs) {
         const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
-        await this._calculateLatestUpdateTrigger();
+        this._calculateLatestUpdateTrigger();
         if (!this._subplebbitUpdateTrigger)
             return; // No reason to update
         const trx = await this._dbHandler.createTransaction("subplebbit");
@@ -331,9 +360,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this.statsCid && statsCid !== this.statsCid)
             this._cidsToUnPin.add(this.statsCid);
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
+        const editIdsToIncludeInNextUpdate = this._pendingEditProps.map((editProps) => editProps.editId);
+        const pendingSubplebbitIpfsEditProps = Object.assign({}, //@ts-expect-error
+        ...this._pendingEditProps.map((editProps) => remeda.pick(editProps, remeda.keys.strict(SubplebbitIpfsSchema.shape))));
+        if (this._pendingEditProps.length > 0)
+            log("Including edit props in next IPNS update", this._pendingEditProps);
         const newIpns = {
             ...cleanUpBeforePublishing({
                 ...remeda.omit(this._toJSONIpfsBaseNoPosts(), ["signature"]),
+                ...pendingSubplebbitIpfsEditProps,
                 lastPostCid: latestPost?.cid,
                 lastCommentCid: latestComment?.cid,
                 statsCid,
@@ -376,10 +411,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             content: deterministicStringify(newSubplebbitRecord),
             options: { pin: true }
         });
+        if (!this.signer.ipnsKeyName)
+            throw Error("IPNS key name is not defined");
+        if (this._firstTimePublishingIpns)
+            await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
+            resolve: true,
             ttl
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`);
@@ -388,6 +428,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
+        this._pendingEditProps = this._pendingEditProps.filter((editProps) => !editIdsToIncludeInNextUpdate.includes(editProps.editId));
         this._subplebbitUpdateTrigger = false;
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
         this._setStartedState("succeeded");
@@ -472,6 +513,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             editTableRow.extraProps = remeda.pick(commentEditRaw, extraPropsInEdit);
         }
         await this._dbHandler.insertCommentEdit(editTableRow);
+        this._subplebbitUpdateTrigger = true;
         log(`Inserted new Comment Edit in DB`, remeda.omit(commentEditRaw, ["signature"]));
     }
     async storeCommentModeration(commentModRaw, challengeRequestId) {
@@ -502,8 +544,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._unpinStaleCids();
             await this._cleanUpIpfsRepoRarely(true);
             log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", cidsToPurgeOffIpfsNode.length, "out of DB and IPFS");
-            this._subplebbitUpdateTrigger = true; // force plebbit-js to produce a new subplebbit.posts and an IPNS with no purged comments
         }
+        this._subplebbitUpdateTrigger = true; // force plebbit-js to produce a new subplebbit.posts and an IPNS with no purged comments
     }
     async storeVote(newVoteProps, challengeRequestId) {
         const log = Logger("plebbit-js:local-subplebbit:storeVote");
@@ -519,6 +561,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             voteTableRow.extraProps = remeda.pick(newVoteProps, extraPropsInVote);
         }
         await this._dbHandler.insertVote(voteTableRow);
+        this._subplebbitUpdateTrigger = true;
         log(`inserted new vote in DB`, voteTableRow);
         return undefined;
     }
@@ -624,6 +667,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         await this._dbHandler.commitTransaction(request.challengeRequestId.toString());
         log(`New comment has been inserted into DB`, remeda.omit(commentRow, ["signature"]));
+        this._subplebbitUpdateTrigger = true;
         return { comment: commentIpfs, cid: commentCid };
     }
     async storePublication(request) {
@@ -1338,7 +1382,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             });
             if (addRes.path !== unpinnedCommentRow.cid)
                 throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-            log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+            log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
         }));
         await Promise.all(pinningPromises);
         await this._dbHandler.resetPublishedToPostUpdatesMFS(); // force plebbit-js to republish all comment updates
@@ -1515,6 +1559,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
+            this._firstTimePublishingIpns = false;
         }
         catch (e) {
             //@ts-expect-error
@@ -1553,18 +1598,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
     }
     async _publishLoop(syncIntervalMs) {
-        if (this.state !== "started" || this._stopHasBeenCalled)
-            return;
-        const loop = async () => {
+        const log = Logger("plebbit-js:local-subplebbit:_publishLoop");
+        // we need to continue the loop if there's at least one pending edit
+        const calculateSyncIntervalMs = () => {
+            this._calculateLatestUpdateTrigger(); // will update this._subplebbitUpdateTrigger
+            return this._subplebbitUpdateTrigger ? 0 : syncIntervalMs;
+        };
+        const shouldStopPublishLoop = () => {
+            return this.state !== "started" || (this._stopHasBeenCalled && this._pendingEditProps.length === 0);
+        };
+        while (!shouldStopPublishLoop()) {
             try {
-                this._publishLoopPromise = this.syncIpnsWithDb();
-                await this._publishLoopPromise.catch((err) => this.emit("error", err));
+                await this.syncIpnsWithDb();
+            }
+            catch (e) {
+                this.emit("error", e);
             }
             finally {
-                await this._publishLoop(syncIntervalMs);
+                await new Promise((resolve) => setTimeout(resolve, calculateSyncIntervalMs()));
             }
-        };
-        this._publishInterval = setTimeout(loop.bind(this), syncIntervalMs);
+        }
+        log("Stopping the publishing loop of subplebbit", this.address);
     }
     async _initBeforeStarting() {
         this.protocolVersion = env.PROTOCOL_VERSION;
@@ -1618,25 +1672,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (typeof parsedEditOptions.address === "string" && this.address !== parsedEditOptions.address) {
             await this._validateNewAddressBeforeEditing(parsedEditOptions.address, log);
             log(`Attempting to edit subplebbit.address from ${oldAddress} to ${parsedEditOptions.address}. We will stop sub first`);
-            await this._movePostUpdatesFolderToNewAddress(oldAddress, parsedEditOptions.address);
             await this.stop();
             await this._dbHandler.changeDbFilename(oldAddress, parsedEditOptions.address);
             this.setAddress(parsedEditOptions.address);
+            await this._dbHandler.initDbIfNeeded();
+            await this.start();
+            await this._movePostUpdatesFolderToNewAddress(oldAddress, parsedEditOptions.address);
         }
-        else {
-            await this.stop();
-        }
+        const uniqueEditId = sha256(deterministicStringify(parsedEditOptions));
+        this._pendingEditProps.push({ ...parsedEditOptions, editId: uniqueEditId });
         if (this.updateCid)
             await this.initInternalSubplebbitAfterFirstUpdateNoMerge({
                 ...this.toJSONInternalAfterFirstUpdate(),
-                ...parsedEditOptions
+                ...parsedEditOptions,
+                _internalStateUpdateId: uniqueEditId
             });
         else
-            await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({ ...this.toJSONInternalBeforeFirstUpdate(), ...parsedEditOptions });
+            await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({
+                ...this.toJSONInternalBeforeFirstUpdate(),
+                ...parsedEditOptions,
+                _internalStateUpdateId: uniqueEditId
+            });
         this._subplebbitUpdateTrigger = true;
         log(`Subplebbit (${this.address}) props (${remeda.keys.strict(parsedEditOptions)}) has been edited. Will be including edited props in next update: `, remeda.pick(this, remeda.keys.strict(parsedEditOptions)));
         this.emit("update", this);
-        await this.start();
         if (this.address !== oldAddress) {
             this._plebbit._startedSubplebbits[this.address] = this._plebbit._startedSubplebbits[oldAddress] = this;
             _startedSubplebbits[this.address] = _startedSubplebbits[oldAddress] = this;
@@ -1738,6 +1797,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             // Import subplebbit keys onto ipfs node
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
             this._subplebbitUpdateTrigger = true;
+            this._firstTimePublishingIpns = true;
             this._setStartedState("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
@@ -1750,12 +1810,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             e.details = { ...e.details, subAddress: this.address };
             throw e;
         }
-        this._publishLoopPromise = this.syncIpnsWithDb()
-            .catch((reason) => {
-            log.error(reason);
-            this.emit("error", reason);
-        })
-            .finally(() => this._publishLoop(this._plebbit.publishInterval));
+        this._publishLoopPromise = this._publishLoop(this._plebbit.publishInterval).catch((err) => {
+            log.error(err);
+            this.emit("error", err);
+        });
     }
     async _initMirroringStartedOrUpdatingSubplebbit(startedSubplebbit) {
         const updatingStateChangeListener = (newState) => {
@@ -1914,7 +1972,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 log.error("Failed to unsubscribe from challenge exchange pubsub when stopping subplebbit", e);
             }
             if (this._publishLoopPromise) {
-                clearInterval(this._publishInterval);
                 try {
                     await this._publishLoopPromise;
                 }

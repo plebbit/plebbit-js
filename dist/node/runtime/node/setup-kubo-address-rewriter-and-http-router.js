@@ -96,15 +96,14 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit) {
             kuboClients: Object.values(plebbit.clients.kuboRpcClients).map((kubo) => kubo._client),
             port,
             hostname,
-            proxyTargetUrl: httpRouter
+            proxyTargetUrl: httpRouter,
+            plebbit
         });
         await addressesRewriterProxyServer.listen();
         proxyServers.push(addressesRewriterProxyServer);
         // save the proxy urls to use them later
         const httpRouterProxyUrl = `http://${hostname}:${port}`;
         httpRouterProxyUrls.push(httpRouterProxyUrl);
-        const mappingKeyName = `httprouter_proxy_${httpRouter}`;
-        await plebbit._storage.setItem(mappingKeyName, httpRouterProxyUrl);
     }
     httpRouterProxyUrls.sort(); // make sure it's always the same order
     // Set up http routers to use proxies
@@ -158,9 +157,9 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit) {
     await setHttpRouterOnAllNodes;
     settingOptionRetryOption.stop();
     return {
-        destroy: () => {
+        destroy: async () => {
             for (const proxyServer of proxyServers) {
-                proxyServer.destroy();
+                await proxyServer.destroy();
             }
         }
     };
