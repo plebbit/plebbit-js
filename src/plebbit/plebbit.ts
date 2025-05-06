@@ -875,7 +875,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 commentIpfsValidity
             });
 
-        const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
+        const subplebbit = this._updatingSubplebbits[comment.subplebbitAddress]?.raw?.subplebbitIpfs || {
+            address: comment.subplebbitAddress
+        };
         const commentUpdateVerificationOpts = {
             update: commentUpdate,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
