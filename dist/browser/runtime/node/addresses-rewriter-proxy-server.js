@@ -75,7 +75,7 @@ export class AddressesRewriterProxyServer {
             const proxyReq = httpRequest(requestOptions);
             // Handle timeout
             proxyReq.setTimeout(60000, () => {
-                debug.error("Proxy request timed out", requestOptions, reqBody);
+                debug.trace("Proxy request timed out", requestOptions, reqBody);
                 proxyReq.destroy();
             });
             // Handle proxy request errors - make sure to close connections
