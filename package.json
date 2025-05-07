@@ -78,7 +78,7 @@
         "cbor": "9.0.1",
         "debounce": "1.2.1",
         "err-code": "3.0.1",
-        "ethers": "6.13.5",
+        "ethers": "6.14.0",
         "ext-name": "5.0.0",
         "file-type": "20.5.0",
         "helia": "5.2.0",
@@ -112,8 +112,8 @@
         "ts-custom-error": "3.3.1",
         "typestub-ipfs-only-hash": "4.0.0",
         "uuid": "11.1.0",
-        "viem": "2.23.5",
-        "zod": "3.24.3"
+        "viem": "2.29.0",
+        "zod": "3.24.4"
     },
     "devDependencies": {
         "@babel/core": "7.23.7",
