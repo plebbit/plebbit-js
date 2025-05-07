@@ -1919,7 +1919,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                             if (error.message.startsWith("not pinned")) {
                                 this._cidsToUnPin.delete(cid);
                             } else {
-                                log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
+                                log.trace("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
                             }
                         }
                     })
