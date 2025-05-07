@@ -753,16 +753,14 @@ class PlebbitWsServer extends EventEmitter {
         return true;
     }
     async destroy() {
-        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
-            const startedSub = await getStartedSubplebbit(subplebbitAddress);
-            await startedSub.stop();
-            delete startedSubplebbits[subplebbitAddress];
-        }
         for (const connectionId of remeda.keys.strict(this.subscriptionCleanups))
             for (const subscriptionId of remeda.keys.strict(this.subscriptionCleanups[connectionId]))
                 await this.unsubscribe([Number(subscriptionId)], connectionId);
         this.ws.close();
-        await this.plebbit.destroy();
+        await this.plebbit.destroy(); // this will stop all started subplebbits
+        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
+            delete startedSubplebbits[subplebbitAddress];
+        }
         this._onSettingsChange = {};
     }
 }

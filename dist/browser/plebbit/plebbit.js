@@ -696,8 +696,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             await comment.stop();
         for (const subplebbit of Object.values(this._updatingSubplebbits))
             await subplebbit.stop();
-        for (const subplebbit of Object.values(this._startedSubplebbits))
-            await subplebbit.stop();
+        await Promise.all(Object.values(this._startedSubplebbits).map((sub) => sub.stop()));
         if (this._subplebbitFsWatchAbort)
             this._subplebbitFsWatchAbort.abort();
         if (this._addressRewriterDestroy)

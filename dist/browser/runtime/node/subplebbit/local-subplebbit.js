@@ -1406,7 +1406,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                         this._cidsToUnPin.delete(cid);
                     }
                     else {
-                        log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
+                        log.trace("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
                     }
                 }
             })));
