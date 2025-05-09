@@ -689,6 +689,7 @@ export async function waitTillReplyInParentPagesInstance(
     parentComment: Comment
 ) {
     const isReplyInParentPages = async () => {
+        console.log("waitTillReplyInParentPagesInstance", parentComment.replies.pageCids, parentComment.replies.pages);
         if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
@@ -1400,13 +1401,13 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
     const content = "x".repeat(1024 * 30); //30kb
-    let lastPublishedReply: Comment;
-    await Promise.all(
+    const replies = await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
             //@ts-expect-error
-            lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+            return await publishRandomReply(comment, comment._plebbit, { content });
         })
     );
+    const lastPublishedReply = replies[replies.length - 1];
     console.log(
         "Published",
         numOfCommentsToPublish,
