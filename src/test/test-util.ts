@@ -1386,6 +1386,9 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
 
     if (comment._plebbit._plebbitRpcClient)
         throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
+
+    delete updatingComment.raw.commentUpdate;
+    delete updatingComment.updatedAt;
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 
@@ -1401,12 +1404,13 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
     const content = "x".repeat(1024 * 30); //30kb
-    const replies = await Promise.all(
-        new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            //@ts-expect-error
-            return await publishRandomReply(comment, comment._plebbit, { content });
-        })
-    );
+    const replies = [];
+    for (let i = 0; i < numOfCommentsToPublish; i++) {
+        //@ts-expect-error
+        const reply = await publishRandomReply(comment, comment._plebbit, { content });
+        replies.push(reply);
+    }
+
     const lastPublishedReply = replies[replies.length - 1];
     console.log(
         "Published",
@@ -1420,7 +1424,7 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
 
     const updatingComment = await comment._plebbit.createComment({ cid: comment.cid! });
     updatingComment.on("updatingstatechange", (state) =>
-        console.log("forceSubplebbitToGenerateAllRepliesPages", "updatingstate of updating comment", state)
+        console.log("forceSubplebbitToGenerateAllRepliesPages", "updatingstate of updating comment", comment.cid, state)
     );
     await updatingComment.update();
     //@ts-expect-error
@@ -1480,7 +1484,7 @@ export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: 
     if (replyInPage) return replyInPage;
 
     //@ts-expect-error
-    const reply = await publishRandomReply(post, subplebbit._plebbit, {});
+    const reply = await publishRandomReply(post, subplebbit._plebbit);
     return reply;
 }
 
