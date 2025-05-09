@@ -230,18 +230,23 @@ export async function listSubplebbits(plebbit: Plebbit) {
         (file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)
     ); // Filter locks and journal files out
 
+    const subplebbitFilesWeDontNeedToCheck = plebbit.subplebbits ? files.filter((address) => plebbit.subplebbits.includes(address)) : [];
+    const filesToCheckIfSqlite = files.filter((address) => !subplebbitFilesWeDontNeedToCheck.includes(address));
     const filterResults = await Promise.all(
-        files.map(async (address) => {
+        filesToCheckIfSqlite.map(async (address) => {
             try {
                 const typeOfFile = await fileTypeFromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
-                return typeOfFile?.mime === "application/x-sqlite3";
+                if (typeOfFile?.mime === "application/x-sqlite3") {
+                    log("Detected new sqlite db file in plebbit.datapath", address);
+                    return true;
+                } else return false;
             } catch (e) {
                 return false;
             }
         })
     );
 
-    const filtered_results = files.filter((_, i) => filterResults[i]).sort(); // make sure it's sorted, so the order is always the same
+    const filtered_results = [...subplebbitFilesWeDontNeedToCheck, ...filesToCheckIfSqlite.filter((_, i) => filterResults[i])].sort(); // make sure it's sorted, so the order is always the same
 
     return filtered_results;
 }
@@ -310,7 +315,7 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
     const subsPath = path.join(plebbit.dataPath!, "subplebbits");
     await mkdir(subsPath, { recursive: true });
 
-    fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false }, async (eventType, filename) => {
+    fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false, recursive: false }, async (eventType, filename) => {
         if (filename?.endsWith(".lock") || filename?.endsWith("-journal")) return; // we only care about subplebbits
 
         const currentSubs = await listSubplebbits(plebbit);
