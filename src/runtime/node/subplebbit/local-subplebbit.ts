@@ -2158,7 +2158,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // we need to continue the loop if there's at least one pending edit
         const calculateSyncIntervalMs = () => {
             this._calculateLatestUpdateTrigger(); // will update this._subplebbitUpdateTrigger
-            return this._subplebbitUpdateTrigger ? 0 : syncIntervalMs;
+            // if stop has been called, we need to stop the loop
+            return this._subplebbitUpdateTrigger || this._stopHasBeenCalled ? 0 : syncIntervalMs;
         };
 
         const shouldStopPublishLoop = () => {
