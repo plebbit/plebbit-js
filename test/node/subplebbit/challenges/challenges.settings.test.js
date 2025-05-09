@@ -53,7 +53,8 @@ describe(`subplebbit.settings.challenges`, async () => {
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
 
         const challengePromise = new Promise((resolve) => subplebbit.once("challenge", resolve));
-        publishRandomPost(subplebbit.address, plebbit);
+        const post = await generateMockPost(subplebbit.address, plebbit);
+        await post.publish();
         const challengePubsubMsg = await challengePromise;
         expect(challengePubsubMsg.challenges).to.be.a("array");
         expect(challengePubsubMsg.challenges.length).to.equal(1);
