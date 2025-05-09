@@ -1407,12 +1407,22 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
             lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
         })
     );
+    console.log(
+        "Published",
+        numOfCommentsToPublish,
+        "replies under comment",
+        comment.cid,
+        "to force subplebbit",
+        comment.subplebbitAddress,
+        "to generate all pages"
+    );
 
     const updatingComment = await comment._plebbit.createComment(comment);
     await updatingComment.update();
     //@ts-expect-error
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
     if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
+    console.log("Successfully forced the subplebbit", updatingComment.subplebbitAddress, "to load all pages of comment", comment.cid);
 }
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
@@ -1474,6 +1484,8 @@ export function mockReplyToUseParentPagesForUpdates(reply: Comment) {
     const updatingComment = reply._plebbit._updatingComments[reply.cid!];
     if (!updatingComment) throw Error("Reply should be updating before starting to mock");
     if (updatingComment.depth === 0) throw Error("Should not call this function on a post");
+    delete updatingComment.raw.commentUpdate;
+    delete updatingComment.updatedAt;
 
     mockCommentToNotUsePagesForUpdates(reply);
 
