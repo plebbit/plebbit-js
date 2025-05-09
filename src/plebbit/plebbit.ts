@@ -135,6 +135,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
+    libp2pJsClientsOptions?: ParsedPlebbitOptions["libp2pJsClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders!: ParsedPlebbitOptions["chainProviders"];
@@ -153,6 +154,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
+        libp2pJsClient: { [libp2pJsClientUrl: string]: Libp2pJsClient };
     };
     subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
 

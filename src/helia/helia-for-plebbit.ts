@@ -43,10 +43,10 @@ export async function createHeliaNode(
 
     if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
 
-    const peerId = await createEd25519PeerId();
+    // const peerId = await createEd25519PeerId();
     const helia = <HeliaWithLibp2pPubsub>await createHelia({
         libp2p: {
-            //   peerId: peerId, // TODO use indexed db here
+            peerId: peerId, // TODO use indexed db here
             addresses: {
                 listen: [] // Empty for browser environment
             },
