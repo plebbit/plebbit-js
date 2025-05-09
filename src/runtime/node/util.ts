@@ -237,7 +237,7 @@ export async function listSubplebbits(plebbit: Plebbit) {
             try {
                 const typeOfFile = await fileTypeFromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
                 if (typeOfFile?.mime === "application/x-sqlite3") {
-                    log("Detected new sqlite db file in plebbit.datapath", address);
+                    log.trace("Detected new sqlite db file in plebbit.datapath", address);
                     return true;
                 } else return false;
             } catch (e) {
