@@ -104,11 +104,14 @@ export class DomainResolver {
             return recordValue;
         } catch (e: any) {
             e.details = { ...e.details, address, txtRecordName, chainProviderUrl, addressWithSubdomain };
-            log.error(
-                `Failed to resolve solana address (${address}) text-record (${txtRecordName}) with chainProviderUrl (${chainProviderUrl})`,
-                e
-            );
-            if (e?.type !== "AccountDoesNotExist") throw e;
+
+            if (e?.type !== "AccountDoesNotExist") {
+                log.error(
+                    `Failed to resolve solana address (${address}) text-record (${txtRecordName}) with chainProviderUrl (${chainProviderUrl})`,
+                    e
+                );
+                throw e;
+            }
         }
 
         return null;
@@ -149,7 +152,7 @@ export class DomainResolver {
             txtRecordResult = await this._resolveViaViem(chain, address, txtRecordName, chainProviderUrl);
         } else if (chain === "sol") {
             txtRecordResult = await this._resolveViaSolana(address, txtRecordName, chainProviderUrl);
-        } else throw Error(`Failed to resolve address (${address}) text record (${txtRecordName}) on chain ${chain}`);
+        } else throw Error(`plebbit-js doesn't support resolving text records on chain ${chain}`);
 
         // Should add a check if result is IPNS address
         log(
