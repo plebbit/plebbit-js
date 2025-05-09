@@ -79,19 +79,25 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
         await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till it's propgated on the http router
 
         for (const httpRouterUrl of httpRouterUrls) {
-            const providersUrl = `${httpRouterUrl}/routing/v1/providers/${sub.updateCid}`;
-            const res = await fetch(providersUrl, { method: "GET" });
-            expect(res.status).to.equal(200);
-            const resJson = await res.json();
-            expect(resJson["Providers"]).to.be.a("array");
-            expect(resJson["Providers"].length).to.be.at.least(1);
-            for (const provider of resJson["Providers"]) {
-                for (const providerAddr of provider.Addrs) {
-                    expect(providerAddr).to.be.a.string;
-                    expect(providerAddr).to.not.include("0.0.0.0");
+            // why does subplebbit.ipnsPubsubDhtKey fails here?
+            const provideToTestAgainst = [sub.updateCid, sub.pubsubTopicPeersCid];
+            for (const resourceToProvide of provideToTestAgainst) {
+                const providersUrl = `${httpRouterUrl}/routing/v1/providers/${resourceToProvide}`;
+                const res = await fetch(providersUrl, { method: "GET" });
+                expect(res.status).to.equal(200);
+                const resJson = await res.json();
+                expect(resJson["Providers"]).to.be.a("array");
+                expect(resJson["Providers"].length).to.be.at.least(1);
+                for (const provider of resJson["Providers"]) {
+                    for (const providerAddr of provider.Addrs) {
+                        expect(providerAddr).to.be.a.string;
+                        expect(providerAddr).to.not.include("0.0.0.0");
+                    }
                 }
             }
         }
+
+        await sub.delete();
     });
 
     it(`Calling plebbit.destroy() frees up the proxy`);
