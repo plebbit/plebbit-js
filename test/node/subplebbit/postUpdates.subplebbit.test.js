@@ -16,7 +16,7 @@ import {
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit, remotePlebbit;
-    let replyCidByDepth = {};
+    const replyCidByDepth = {};
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
@@ -73,8 +73,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             expect(reply.depth).to.equal(depth);
             replyCidByDepth[depth] = reply.cid;
 
-            const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-            const replyRecreated = await differentPlebbit.createComment({ cid: reply.cid });
+            const replyRecreated = await remotePlebbit.createComment({ cid: reply.cid });
             await replyRecreated.update();
             mockReplyToUseParentPagesForUpdates(replyRecreated);
 
