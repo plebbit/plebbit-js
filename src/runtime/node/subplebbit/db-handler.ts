@@ -42,6 +42,7 @@ import KeyvSqlite from "@keyv/sqlite";
 
 import { exec } from "child_process";
 import { promisify } from "util";
+import pLimit from "p-limit";
 
 const execPromise = promisify(exec);
 
@@ -149,58 +150,6 @@ export class DbHandler {
         log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
 
-    // Check if SQLite3 CLI is available
-    async _isSqlite3Available(): Promise<boolean> {
-        try {
-            await execPromise("sqlite3 --version");
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    async recoverUsingCliIfAvailable(dbPath: string): Promise<string> {
-        const log = Logger("plebbit-js:local-subplebbit:db-handler:recoverUsingCliIfAvailable");
-
-        const isCliAvailable = await this._isSqlite3Available();
-        if (!isCliAvailable) {
-            const errorMsg =
-                "SQLite3 CLI not found. Please install it to recover from database corruption:\n" +
-                "- Ubuntu/Debian: sudo apt install sqlite3\n" +
-                "- macOS: brew install sqlite3\n" +
-                "- Windows: Download from https://www.sqlite.org/download.html";
-
-            log.error(errorMsg);
-            throw new Error(errorMsg);
-        }
-
-        // Create paths for recovery
-        const dbDir = path.dirname(dbPath);
-        const dbName = path.basename(dbPath);
-        const recoveryDir = path.join(dbDir, ".recovery");
-        await fs.promises.mkdir(recoveryDir, { recursive: true });
-
-        const recoveredDbPath = path.join(recoveryDir, `recovered_${dbName}_${Date.now()}`);
-
-        try {
-            // Run the SQLite recovery command
-            log.trace(`Attempting to recover database using sqlite3 CLI: ${dbPath}`);
-
-            // Use sqlite3's .recover command and pipe to new database
-            const command = `sqlite3 "${dbPath}" ".recover" | sqlite3 "${recoveredDbPath}"`;
-            await execPromise(command);
-
-            // Verify the new database has basic integrity
-            await execPromise(`sqlite3 "${recoveredDbPath}" "PRAGMA integrity_check;"`);
-
-            log.trace(`Database successfully recovered to: ${recoveredDbPath}`);
-            return recoveredDbPath;
-        } catch (error) {
-            log.error(`Database recovery failed: ${error}`);
-            throw error;
-        }
-    }
-
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
         const trx = await this._knex.transaction();
@@ -221,9 +170,18 @@ export class DbHandler {
         const trx: Transaction = this._currentTrxs[transactionId];
         if (trx) {
             assert(trx.isTransaction, `Transaction (${transactionId}) needs to be stored to rollback`);
-            if (trx.isCompleted()) return;
-            await this._currentTrxs[transactionId].rollback();
-            delete this._currentTrxs[transactionId];
+            if (trx.isCompleted()) {
+                delete this._currentTrxs[transactionId];
+                return;
+            }
+
+            try {
+                await this._currentTrxs[transactionId].rollback();
+            } catch (e) {
+                log.error(`Failed to rollback transaction (${transactionId}) due to error`, e);
+            } finally {
+                delete this._currentTrxs[transactionId];
+            }
         }
 
         log.trace(
@@ -232,7 +190,7 @@ export class DbHandler {
     }
 
     async rollbackAllTransactions() {
-        return Promise.all(remeda.keys.strict(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+        for (const trxId of remeda.keys.strict(this._currentTrxs)) await this.rollbackTransaction(trxId);
     }
 
     private _baseTransaction(trx?: Transaction): Transaction | Knex {
@@ -682,9 +640,16 @@ export class DbHandler {
             excludeRemovedComments: true,
             parentCid: commentCid
         };
-        const children = await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
+        const children = <Pick<CommentsTableRow, "cid">[]>await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
 
-        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.cid, trx))));
+        const limit = pLimit(50);
+        const replyCountPromises = children.map((comment) => limit(() => this.queryReplyCount(comment.cid, trx)));
+
+        // Wait for all queries to complete and sum the results
+        const replyCounts = await Promise.all(replyCountPromises);
+        const childrenReplyCount = replyCounts.reduce((sum, count) => sum + count, 0);
+
+        return children.length + childrenReplyCount;
     }
 
     async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
@@ -778,17 +743,17 @@ export class DbHandler {
     ): Promise<PageIpfs["comments"]> {
         const firstLevelReplies = await this.queryPageComments(options, trx);
 
-        const nestedReplies = await Promise.all(
-            firstLevelReplies.map(async (baseComment) => {
-                const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
-                if (commentHasReplies) {
-                    // Only get the nested replies, don't include the base comment again
-                    return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
-                } else {
-                    return []; // No replies to this comment
-                }
-            })
-        );
+        const nestedReplies = [];
+        for (const baseComment of firstLevelReplies) {
+            const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
+            if (commentHasReplies) {
+                // Only get the nested replies, don't include the base comment again
+                const replies = await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                nestedReplies.push(replies);
+            } else {
+                nestedReplies.push([]); // No replies to this comment
+            }
+        }
 
         // Combine first level replies with all nested replies
         return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
@@ -917,16 +882,34 @@ export class DbHandler {
             .orHaving(`modEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
 
-        const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+        const commentsToUpdate = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
 
-        const parents = remeda.flattenDeep(
-            await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx)))
+        // not just direct parent, also grandparents, till we reach the root post
+        const limit = pLimit(50);
+        const allParentsOfCommentsToUpdate = [];
+
+        // Get comments that have a parentCid
+        const commentsWithParents = remeda.unique(commentsToUpdate.filter((comment) => comment.parentCid));
+
+        // Create parallel queries with concurrency limit
+        const parentQueries = commentsWithParents.map((commentToUpdateWithParent) =>
+            limit(() => this.queryParents(commentToUpdateWithParent, trx))
         );
+
+        // Wait for all parent queries to complete
+        const parentsResults = await Promise.all(parentQueries);
+
+        // Flatten the results into allParentsOfCommentsToUpdate
+        for (const parents of parentsResults) allParentsOfCommentsToUpdate.push(...parents);
+
         const authorComments = await this.queryCommentsOfAuthors(
-            remeda.unique(comments.map((comment) => comment.authorSignerAddress)),
+            remeda.unique(commentsToUpdate.map((comment) => comment.authorSignerAddress)),
             trx
         );
-        const uniqComments = remeda.uniqueBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+        const uniqComments = remeda.uniqueBy(
+            [...commentsToUpdate, ...allParentsOfCommentsToUpdate, ...authorComments],
+            (comment) => comment.cid
+        );
 
         return uniqComments;
     }
@@ -1096,6 +1079,7 @@ export class DbHandler {
             .orderBy("id", "desc")
             .select(["cid", "timestamp"])
             .first();
+        // last reply timestamp is the timestamp of the latest child or indirect child timestamp
         const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
         return {
             lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
@@ -1124,6 +1108,7 @@ export class DbHandler {
             this._queryModCommentFlair(comment, trx),
             this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
         ]);
+
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             cid: comment.cid,
@@ -1206,7 +1191,7 @@ export class DbHandler {
         const lastCommentCid = remeda.maxBy(authorComments, (comment) => comment.id)?.cid;
         if (!lastCommentCid) throw Error("Failed to query subplebbitAuthor.lastCommentCid");
         const firstCommentTimestamp = remeda.minBy(authorComments, (comment) => comment.id)?.timestamp;
-        if (typeof firstCommentTimestamp !== "number") throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
+        if (typeof firstCommentTimestamp !== "number") throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
 
         const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);
 
@@ -1326,6 +1311,7 @@ export class DbHandler {
     }
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");
+        await this.destoryConnection();
 
         const oldPathString = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });

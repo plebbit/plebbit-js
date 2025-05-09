@@ -6,9 +6,9 @@ import {
     mockViemClient,
     describeSkipIfRpc,
     resolveWhenConditionIsTrue
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 
-import signers from "../../../fixtures/signers";
+import signers from "../../../fixtures/signers.js";
 import Sinon from "sinon";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains

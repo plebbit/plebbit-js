@@ -15,8 +15,8 @@ export const ChainProviderSchema = z.object({
     urls: z.string().url().or(LibraryChainProvider).array(),
     chainId: z.number().int()
 });
-const IpfsGatewayUrlSchema = z.string().url().startsWith("http");
-const RpcUrlSchema = z.string().url(); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
+const IpfsGatewayUrlSchema = z.string().url().startsWith("http", "IPFS gateway URL must start with http:// or https://");
+const RpcUrlSchema = z.string().url().startsWith("ws", "Plebbit RPC URL must start with ws:// or wss://"); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
 const KuboRpcCreateClientOptionSchema = z.custom(); // Kubo-rpc-client library will do the validation for us
 const DirectoryPathSchema = z.string(); // TODO add validation for path
 const defaultChainProviders = {
@@ -41,7 +41,7 @@ const ParsedKuboRpcClientOptionsSchema = z.custom();
 const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
     kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
-    httpRoutersOptions: z.string().url().array().optional(),
+    httpRoutersOptions: z.string().url().startsWith("http", "HTTP router URL must start with http:// or https://").array().optional(),
     pubsubKuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),
@@ -54,21 +54,18 @@ const PlebbitUserOptionBaseSchema = z.object({
     validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
     userAgent: UserAgentSchema
 });
-const defaultIpfsGatewayUrls = [
-    "https://ipfsgateway.xyz",
-    "https://ipfs.io",
-    "https://dweb.link",
-    "https://flk-ipfs.xyz",
-    "https://4everland.io",
-    "https://gateway.pinata.cloud"
+const defaultPubsubKuboRpcClientsOptions = [
+    { url: "https://pubsubprovider.xyz/api/v0" },
+    { url: "https://plebpubsub.xyz/api/v0" }
 ];
+const defaultIpfsGatewayUrls = ["https://ipfsgateway.xyz", "https://gateway.plebpubsub.xyz", "https://gateway.forumindex.com"];
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
     ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls
         .default([...defaultIpfsGatewayUrls])
         .transform((val) => (val === undefined ? [...defaultIpfsGatewayUrls] : val)),
     pubsubKuboRpcClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubKuboRpcClientsOptions.default([
-        { url: "https://pubsubprovider.xyz/api/v0" }
+        ...defaultPubsubKuboRpcClientsOptions
     ]),
     httpRoutersOptions: PlebbitUserOptionBaseSchema.shape.httpRoutersOptions.default([
         "https://peers.pleb.bot",

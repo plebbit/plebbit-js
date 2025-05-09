@@ -142,6 +142,7 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
     encryption: SubplebbitIpfsType["encryption"];
     _usingDefaultChallenge: boolean;
     _internalStateUpdateId: string; // uuid v4, everytime we update the internal state of db we will change this id
+    _pendingEditProps: Partial<ParsedSubplebbitEditOptions & { editId: string }>[];
 }
 
 export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
@@ -153,13 +154,16 @@ export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSu
 // RPC server transmitting Internal Subplebbit records to clients
 
 export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType
-    extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_internalStateUpdateId"> {
+    extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_internalStateUpdateId" | "_pendingEditProps"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
     started: boolean;
 }
 
 export interface RpcInternalSubplebbitRecordAfterFirstUpdateType
-    extends Omit<InternalSubplebbitRecordAfterFirstUpdateType, "signer" | "_internalStateUpdateId" | "_cidsToUnPin" | "_mfsPathsToRemove"> {
+    extends Omit<
+        InternalSubplebbitRecordAfterFirstUpdateType,
+        "signer" | "_internalStateUpdateId" | "_cidsToUnPin" | "_mfsPathsToRemove" | "_pendingEditProps"
+    > {
     started: RpcInternalSubplebbitRecordBeforeFirstUpdateType["started"];
     signer: RpcInternalSubplebbitRecordBeforeFirstUpdateType["signer"];
 }

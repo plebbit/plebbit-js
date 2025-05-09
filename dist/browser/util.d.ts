@@ -1,10 +1,12 @@
 import { messages } from "./errors.js";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import type { KuboRpcClient } from "./types.js";
-import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import type { AddOptions, AddResult, create as CreateKuboRpcClient } from "kubo-rpc-client";
 import type { DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeRequestMessageWithPostSubplebbitAuthor, DecryptedChallengeRequestMessageWithReplySubplebbitAuthor, DecryptedChallengeRequestPublication, PublicationFromDecryptedChallengeRequest, PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest } from "./pubsub-messages/types.js";
 import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import { Plebbit } from "./plebbit/plebbit.js";
+import Logger from "@plebbit/plebbit-logger";
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Record<string, any>, x: any, y: any): any;
 export declare function removeNullUndefinedValues<T extends Object>(obj: T): T extends Record<keyof T, T[keyof T]> ? T : Partial<T>;
@@ -31,11 +33,19 @@ export declare function hideClassPrivateProps(_this: any): void;
 export declare function derivePublicationFromChallengeRequest<T extends Pick<DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeRequestMessageType, keyof DecryptedChallengeRequestPublication>>(request: T): T extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor ? PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest : PublicationFromDecryptedChallengeRequest;
 export declare function isRequestPubsubPublicationOfReply(request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): request is DecryptedChallengeRequestMessageWithReplySubplebbitAuthor;
 export declare function isRequestPubsubPublicationOfPost(request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor): request is DecryptedChallengeRequestMessageWithPostSubplebbitAuthor;
-export declare function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName?: string): Promise<void>;
+export declare function resolveWhenPredicateIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean> | boolean, eventName?: string): Promise<void>;
 export declare function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number): Promise<void>;
 export declare function calculateIpfsCidV0(content: string): Promise<string>;
 /**
  * converts a binary record key to a pubsub topic key
  */
 export declare function binaryKeyToPubsubTopic(key: Uint8Array): string;
+export declare function ipnsNameToIpnsOverPubsubTopic(ipnsName: string): string;
 export declare function pubsubTopicToDhtKey(pubsubTopic: string): Promise<string>;
+export declare function retryKuboIpfsAdd({ kuboRpcClient, log, content, inputNumOfRetries, options }: {
+    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"];
+    log: Logger;
+    content: string;
+    inputNumOfRetries?: number;
+    options?: AddOptions;
+}): Promise<AddResult>;

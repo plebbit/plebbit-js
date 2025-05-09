@@ -214,7 +214,7 @@ export class Subplebbit extends EventEmitter {
         this.posts.pages.hot = getCommentsPage(hotPageCid, this);
         this.posts.pageCids = {
             hot: hotPageCid,
-            topAll: this.address + " page cid topAll",
+            best: this.address + " page cid best",
             new: this.address + " page cid new",
             active: this.address + " page cid active"
         };
@@ -371,13 +371,15 @@ export class Comment extends Publication {
             this.author.shortAddress = `short ${createCommentOptions.author.address}`;
         }
         //@ts-expect-error
-        this._rawCommentIpfs = {
-            ipnsName: this.ipnsName,
-            content: this.content,
-            author: this.author,
-            timestamp: this.timestamp,
-            parentCid: this.parentCid,
-            subplebbitAddress: this.subplebbitAddress
+        this.raw = {
+            comment: {
+                ipnsName: this.ipnsName,
+                content: this.content,
+                author: this.author,
+                timestamp: this.timestamp,
+                parentCid: this.parentCid,
+                subplebbitAddress: this.subplebbitAddress
+            }
         };
     }
     async update() {

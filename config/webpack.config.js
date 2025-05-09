@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs-extra";
-import glob from "glob";
+import { glob } from "glob";
 import chokidar from "chokidar";
 import WatchExternalFilesPlugin from "webpack-watch-files-plugin";
 const webpackIsWatchMode = process.argv.includes("watch");

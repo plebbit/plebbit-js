@@ -4,7 +4,7 @@ import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util
 export class CommentEdit extends Publication {
     constructor(plebbit) {
         super(plebbit);
-        this._pubsubMsgToPublish = undefined;
+        this.raw = {};
         // public method should be bound
         this.publish = this.publish.bind(this);
         hideClassPrivateProps(this);
@@ -15,7 +15,7 @@ export class CommentEdit extends Publication {
         this.signer = props.signer;
     }
     _initPubsubPublicationProps(props) {
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.content = props.content;
@@ -26,9 +26,9 @@ export class CommentEdit extends Publication {
         this.nsfw = props.nsfw;
     }
     toJSONPubsubMessagePublication() {
-        if (!this._pubsubMsgToPublish)
+        if (!this.raw.pubsubMessageToPublish)
             throw Error("Need to define local CommentEditPubsubMessage first");
-        return this._pubsubMsgToPublish;
+        return this.raw.pubsubMessageToPublish;
     }
     getType() {
         return "commentEdit";

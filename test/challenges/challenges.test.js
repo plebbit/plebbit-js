@@ -5,9 +5,9 @@ import {
     getChallengeVerification,
     plebbitJsChallenges,
     getSubplebbitChallengeFromSubplebbitChallengeSettings
-} from "../../dist/node/runtime/node/subplebbit/challenges/index";
+} from "../../dist/node/runtime/node/subplebbit/challenges/index.js";
 import * as remeda from "remeda";
-import { Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results } from "./fixtures/fixtures";
+import { Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results } from "./fixtures/fixtures.js";
 
 import validChallengeRequestFixture from "../fixtures/signatures/challenges/valid_challenge_request.json" with { type: "json" };
 import validCommentIpfsFixture from "../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" with { type: "json" };

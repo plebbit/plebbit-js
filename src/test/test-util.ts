@@ -25,6 +25,8 @@ import type {
     CommentWithinPageJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
+import pTimeout from "p-timeout";
+
 import {
     signComment,
     _signJson,
@@ -578,12 +580,8 @@ export async function publishVote(
 }
 
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
-    let receivedResponse: boolean = false;
-
-    const validateResponsePromise = new Promise((resolve, reject) => {
-        setTimeout(() => !receivedResponse && reject(new Error(`Publication did not receive any response`)), 90000); // throw after 20 seconds if we haven't received a response
+    const challengeVerificationPromise = new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
-            receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${
                     verificationMsg.challengeSuccess
@@ -598,18 +596,33 @@ export async function publishWithExpectedResult(publication: Publication, expect
         });
     });
 
+    const validateResponsePromise = pTimeout(challengeVerificationPromise, {
+        milliseconds: 90000,
+        message: new PlebbitError("ERR_PUBLICATION_DID_NOT_RECEIVE_RESPONSE", {
+            publication,
+            expectedChallengeSuccess,
+            expectedReason,
+            waitTime: 90000
+        })
+    });
+
     publication.once(
         "challenge",
         (challenge) =>
-            publication.listenerCount("challenge") > 1 &&
-            console.log(
+            publication.listenerCount("challenge") === 0 &&
+            console.error(
                 "Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?",
                 challenge
             )
     );
 
     await publication.publish();
-    await validateResponsePromise;
+    try {
+        await validateResponsePromise;
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
 }
 
 export async function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: BasePages) {
@@ -1386,16 +1399,12 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
+    const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedReply: Comment;
     await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            const content = "x".repeat(1024 * 30); //30kb
-
             //@ts-expect-error
-            const reply = await publishRandomReply(comment, comment._plebbit, { content });
-
-            lastPublishedReply = reply;
-            return reply;
+            lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
         })
     );
 
@@ -1417,10 +1426,10 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
+    const content = "x".repeat(1024 * 30); //30kb
     let lastPublishedPost: Comment;
     await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            const content = "x".repeat(1024 * 30); //30kb
             const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
             lastPublishedPost = post;
         })

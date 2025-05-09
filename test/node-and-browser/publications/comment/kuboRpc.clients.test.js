@@ -228,22 +228,61 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         const expectedKuboClientStates = [
             "fetching-ipfs", // fetching comment-ipfs
             "stopped",
-            "fetching-subplebbit-ipns", // fetching subplebbit + comment update
+            "fetching-subplebbit-ipns", // fetching subplebbit
             "fetching-subplebbit-ipfs",
             "stopped",
-            "fetching-update-ipfs",
+            "fetching-update-ipfs", // fetching comment update
             "stopped"
         ];
 
         expect(kuboClientStates.slice(0, expectedKuboClientStates.length)).to.deep.equal(expectedKuboClientStates);
 
-        const restOfIpfsStates = kuboClientStates.slice(expectedKuboClientStates.length, kuboClientStates.length);
-        for (let i = 0; i < restOfIpfsStates.length; i += 2) {
-            if (restOfIpfsStates[i] === "fetching-subplebbit-ipns" && restOfIpfsStates[i + 1] === "fetching-subplebbit-ipfs") {
-                expect(restOfIpfsStates[i + 2]).to.equal("fetching-update-ipfs"); // this should be the second attempt to load invalid CommentUpdate
-                expect(restOfIpfsStates[i + 3]).to.equal("stopped");
+        const restOfIpfsStates = kuboClientStates.slice(expectedKuboClientStates.length);
+
+        // Check the remaining states follow valid patterns
+        let i = 0;
+        while (i < restOfIpfsStates.length) {
+            // Check for the first state in any valid pattern
+            expect(restOfIpfsStates[i]).to.equal("fetching-subplebbit-ipns", `State at position ${i} should be 'fetching-subplebbit-ipns'`);
+
+            i++;
+            if (i >= restOfIpfsStates.length) break;
+
+            // Check for two possible patterns:
+            // 1. No new subplebbit record: fetching-subplebbit-ipns -> stopped
+            // 2. New subplebbit record: fetching-subplebbit-ipns -> fetching-subplebbit-ipfs -> stopped -> fetching-update-ipfs -> stopped
+
+            if (restOfIpfsStates[i] === "stopped") {
+                // Pattern 1: No new subplebbit record found
+                i++;
+            } else if (restOfIpfsStates[i] === "fetching-subplebbit-ipfs") {
+                // Pattern 2: Found new subplebbit record
+                expect(restOfIpfsStates[i]).to.equal(
+                    "fetching-subplebbit-ipfs",
+                    `State at position ${i} should be 'fetching-subplebbit-ipfs'`
+                );
+                i++;
+
+                if (i < restOfIpfsStates.length) {
+                    expect(restOfIpfsStates[i]).to.equal("stopped", `State at position ${i} should be 'stopped'`);
+                    i++;
+                }
+
+                if (i < restOfIpfsStates.length) {
+                    expect(restOfIpfsStates[i]).to.equal("fetching-update-ipfs", `State at position ${i} should be 'fetching-update-ipfs'`);
+                    i++;
+                }
+
+                if (i < restOfIpfsStates.length) {
+                    expect(restOfIpfsStates[i]).to.equal("stopped", `State at position ${i} should be 'stopped'`);
+                    i++;
+                }
+            } else {
+                throw new Error(`Unexpected state '${restOfIpfsStates[i]}' at position ${i}`);
             }
         }
-        expect(kuboClientStates[kuboClientStates.length - 1]).to.equal("stopped");
+
+        // Ensure the very last state is "stopped"
+        expect(kuboClientStates[kuboClientStates.length - 1]).to.equal("stopped", "The last state should be 'stopped'");
     });
 });

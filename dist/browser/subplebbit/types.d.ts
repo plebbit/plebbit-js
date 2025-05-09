@@ -70,20 +70,24 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
     protocolVersion: SubplebbitIpfsType["protocolVersion"];
     encryption: SubplebbitIpfsType["encryption"];
     _usingDefaultChallenge: boolean;
-    _subplebbitUpdateTrigger: boolean;
     _internalStateUpdateId: string;
+    _pendingEditProps: Partial<ParsedSubplebbitEditOptions & {
+        editId: string;
+    }>[];
 }
 export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
     updateCid: string;
+    _cidsToUnPin: string[];
+    _mfsPathsToRemove: string[];
 }
-export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_subplebbitUpdateTrigger" | "_internalStateUpdateId"> {
+export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_internalStateUpdateId" | "_pendingEditProps"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
     started: boolean;
 }
-export interface RpcInternalSubplebbitRecordAfterFirstUpdateType extends Omit<InternalSubplebbitRecordAfterFirstUpdateType, "_subplebbitUpdateTrigger" | "signer" | "_internalStateUpdateId"> {
+export interface RpcInternalSubplebbitRecordAfterFirstUpdateType extends Omit<InternalSubplebbitRecordAfterFirstUpdateType, "signer" | "_internalStateUpdateId" | "_cidsToUnPin" | "_mfsPathsToRemove" | "_pendingEditProps"> {
     started: RpcInternalSubplebbitRecordBeforeFirstUpdateType["started"];
     signer: RpcInternalSubplebbitRecordBeforeFirstUpdateType["signer"];
 }
 export type RpcLocalSubplebbitUpdateResultType = RpcInternalSubplebbitRecordBeforeFirstUpdateType | RpcInternalSubplebbitRecordAfterFirstUpdateType;
-export interface ParsedSubplebbitEditOptions extends Omit<SubplebbitEditOptions, "roles">, Pick<InternalSubplebbitRecordBeforeFirstUpdateType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {
+export interface ParsedSubplebbitEditOptions extends Omit<SubplebbitEditOptions, "roles">, Pick<InternalSubplebbitRecordBeforeFirstUpdateType, "_usingDefaultChallenge" | "challenges" | "roles"> {
 }

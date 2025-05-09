@@ -2,25 +2,31 @@ import http from "node:http";
 import https from "node:https";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { hideClassPrivateProps } from "../../util.js";
 const debug = Logger("plebbit-js:addresses-rewriter");
 export class AddressesRewriterProxyServer {
-    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl }) {
+    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit }) {
         this.addresses = {};
         this.kuboClients = kuboClient;
         this.port = port;
         this.hostname = hostname || "127.0.0.1";
         this.proxyTarget = new URL(proxyTargetUrl);
         this.server = http.createServer((req, res) => this._proxyRequestRewrite(req, res));
+        this._storageKeyName = `httprouter_proxy_${proxyTargetUrl}`;
+        this._plebbit = plebbit;
+        hideClassPrivateProps(this);
     }
-    listen(callback) {
-        this._startUpdateAddressesLoop();
+    async listen(callback) {
+        await this._startUpdateAddressesLoop();
         this.server.on("error", (err) => debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err));
         this.server.listen(this.port, this.hostname, callback);
         debug("Addresses rewriter proxy at", this.hostname + ":" + this.port, "started listening to forward requests to", this.proxyTarget.host);
+        await this._plebbit._storage.setItem(this._storageKeyName, `http://${this.hostname}:${this.port}`);
     }
-    destroy() {
+    async destroy() {
         this.server.close();
         clearInterval(this._updateAddressesInterval);
+        await this._plebbit._storage.removeItem(this._storageKeyName);
     }
     _proxyRequestRewrite(req, res) {
         // get post body
@@ -45,7 +51,7 @@ export class AddressesRewriterProxyServer {
                 }
                 catch (e) {
                     const error = e;
-                    debug("proxy body rewrite error:", error.message);
+                    debug("proxy body rewrite error:", error, "body", rewrittenBody, req.url, req.method);
                 }
             }
             // proxy the request
@@ -61,23 +67,66 @@ export class AddressesRewriterProxyServer {
                     "Content-Length": Buffer.byteLength(rewrittenBody),
                     "content-length": Buffer.byteLength(rewrittenBody),
                     host: this.proxyTarget.host // Add the host header
-                }
+                },
+                // Add a reasonable timeout
+                timeout: 60000 // 1 minute timeout
             };
-            const proxyReq = httpRequest(requestOptions, (proxyRes) => {
-                res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
-                proxyRes.pipe(res, { end: true });
+            // Create proxy request with proper error handling
+            const proxyReq = httpRequest(requestOptions);
+            // Handle timeout
+            proxyReq.setTimeout(60000, () => {
+                debug.trace("Proxy request timed out", requestOptions, reqBody);
+                proxyReq.destroy();
             });
+            // Handle proxy request errors - make sure to close connections
             proxyReq.on("error", (e) => {
                 debug.error("proxy error:", e, "Request options", requestOptions, "request.body", rewrittenBody);
-                res.writeHead(500);
-                res.end("Internal Server Error");
+                if (!res.headersSent) {
+                    res.writeHead(500);
+                    res.end("Internal Server Error");
+                }
+                // Make sure to destroy the request to free up file handles
+                proxyReq.destroy();
             });
+            // Handle the proxy response
+            proxyReq.on("response", (proxyRes) => {
+                // Handle proxy response errors
+                proxyRes.on("error", (err) => {
+                    debug.error("Proxy response error:", err, "Proxy response", proxyRes);
+                    if (!res.headersSent) {
+                        res.writeHead(500);
+                        res.end("Proxy Response Error");
+                    }
+                    proxyRes.destroy(err);
+                });
+                // Pipe the response with proper error handling
+                res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+                proxyRes.pipe(res);
+                // Ensure cleanup when response ends
+                res.on("finish", () => {
+                    proxyRes.resume(); // Make sure to consume any remaining data
+                });
+            });
+            // Write the request body and end
             proxyReq.write(rewrittenBody);
             proxyReq.end();
         });
+        // Handle client disconnect
+        req.on("close", () => {
+            debug.trace("Client connection closed", req.url, req.method, req.headers, reqBody);
+        });
+        // Handle request errors
+        req.on("error", (err) => {
+            debug.trace("Request error:", req.url, req.method, req.headers, reqBody, err);
+            if (!res.headersSent) {
+                debug.error("Request error:", req.url, req.method, req.headers, reqBody, err);
+                res.writeHead(500);
+                res.end("Internal Server Error");
+            }
+        });
     }
     // get up to date listen addresses from kubo every x minutes
-    _startUpdateAddressesLoop() {
+    async _startUpdateAddressesLoop() {
         if (!this.kuboClients?.length)
             throw Error("should have a defined kubo rpc client option to start the address rewriter");
         const tryUpdateAddresses = async () => {
@@ -88,9 +137,10 @@ export class AddressesRewriterProxyServer {
                     const peerId = idRes.id.toString();
                     if (typeof peerId !== "string")
                         throw Error("Failed to get Peer ID of kubo node");
+                    const swarmListeningAddresses = swarmAddrsRes.filter((swarmAddr) => swarmAddr.id.toString() === peerId);
                     const addresses = remeda.unique([
                         ...idRes.addresses.map((addr) => addr.toString()),
-                        ...remeda.flatten(swarmAddrsRes.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
+                        ...remeda.flatten(swarmListeningAddresses.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
                     ]);
                     this.addresses[peerId] = addresses;
                 }
@@ -100,7 +150,7 @@ export class AddressesRewriterProxyServer {
                 }
             }
         };
-        tryUpdateAddresses();
+        await tryUpdateAddresses();
         this._updateAddressesInterval = setInterval(tryUpdateAddresses, 1000 * 60);
     }
 }

@@ -4,7 +4,7 @@ import {
     generateMockPost,
     generatePostToAnswerMathQuestion,
     resolveWhenConditionIsTrue
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 describe("Validate props of subplebbit Pubsub messages", async () => {
     let plebbit, subplebbit, commentSigner;

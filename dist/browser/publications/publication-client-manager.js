@@ -1,4 +1,3 @@
-import Logger from "@plebbit/plebbit-logger";
 import { ClientsManager } from "../clients/client-manager.js";
 import { PublicationKuboRpcClient } from "../clients/ipfs-client.js";
 import { PublicationKuboPubsubClient } from "../clients/pubsub-client.js";
@@ -55,57 +54,49 @@ export class PublicationClientsManager extends ClientsManager {
         };
         const translatedState = mapper[newUpdatingState];
         if (translatedState)
-            this._publication._updatePublishingState(translatedState);
-    }
-    _translateSubUpdatingStateToKuboClientState(newUpdatingState) {
-        if (!this._defaultIpfsProviderUrl)
-            return;
-        const mapper = {
-            failed: "stopped",
-            stopped: "stopped",
-            succeeded: "stopped",
-            "fetching-ipfs": "fetching-subplebbit-ipfs",
-            "fetching-ipns": "fetching-subplebbit-ipns"
-        };
-        const translatedState = mapper[newUpdatingState];
-        if (translatedState)
-            this.updateIpfsState(translatedState);
+            this._publication._updatePublishingStateWithEmission(translatedState);
     }
     handleUpdatingStateChangeEventFromSub(newUpdatingState) {
         // will be overridden in comment-client-manager to provide a specific states relevant to comment updating
         // below is for handling translation to publishingState
         this._translateSubUpdatingStateToPublishingState(newUpdatingState);
-        this._translateSubUpdatingStateToKuboClientState(newUpdatingState);
     }
-    handleUpdateEventFromSub() {
+    handleUpdateEventFromSub(sub) {
         // a new update has been emitted by sub
         // should be handled in comment-client-manager
     }
-    handleErrorEventFromSub(err) {
-        // a non retriable error of the sub
-        const log = Logger("plebbit-js:publication:publish");
-        log.error("Publication received a non retriable error from its subplebbit instance. Will stop publishing", err);
-        this._publication._updatePublishingState("failed");
-        this._publication.emit("error", err);
-    }
+    handleErrorEventFromSub(err) { }
     handleIpfsGatewaySubplebbitState(subplebbitNewGatewayState, gatewayUrl) {
         this.updateGatewayState(subplebbitNewGatewayState === "fetching-ipns" ? "fetching-subplebbit-ipns" : subplebbitNewGatewayState, gatewayUrl);
     }
     handleChainProviderSubplebbitState(subplebbitNewChainState, chainTicker, providerUrl) {
         this.updateChainProviderState(subplebbitNewChainState, chainTicker, providerUrl);
     }
+    handleKuboRpcSubplebbitState(subplebbitNewKuboRpcState, kuboRpcUrl) {
+        const stateMapper = {
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            stopped: "stopped",
+            "publishing-ipns": undefined
+        };
+        const translatedState = stateMapper[subplebbitNewKuboRpcState];
+        if (translatedState)
+            this.updateIpfsState(translatedState);
+    }
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
         const sub = this._plebbit._updatingSubplebbits[this._publication.subplebbitAddress] ||
+            this._plebbit._startedSubplebbits[this._publication.subplebbitAddress] ||
             (await this._plebbit.createSubplebbit({ address: this._publication.subplebbitAddress }));
         this._subplebbitForUpdating = {
             subplebbit: sub,
-            error: this.handleErrorEventFromSub,
-            update: this.handleUpdateEventFromSub,
-            updatingstatechange: this.handleUpdatingStateChangeEventFromSub
+            error: this.handleErrorEventFromSub.bind(this),
+            update: this.handleUpdateEventFromSub.bind(this),
+            updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this)
         };
-        if (!this._defaultIpfsProviderUrl) {
+        if (this._subplebbitForUpdating.subplebbit.clients.ipfsGateways &&
+            Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways).length > 0) {
             // we're using gateways
             const ipfsGatewayListeners = {};
             for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways)) {
@@ -114,6 +105,17 @@ export class PublicationClientsManager extends ClientsManager {
                 ipfsGatewayListeners[gatewayUrl] = ipfsStateListener;
             }
             this._subplebbitForUpdating.ipfsGatewayListeners = ipfsGatewayListeners;
+        }
+        // Add Kubo RPC client state listeners
+        if (this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients &&
+            Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients).length > 0) {
+            const kuboRpcListeners = {};
+            for (const kuboRpcUrl of Object.keys(this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients)) {
+                const kuboRpcStateListener = (subplebbitNewKuboRpcState) => this.handleKuboRpcSubplebbitState(subplebbitNewKuboRpcState, kuboRpcUrl);
+                this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients[kuboRpcUrl].on("statechange", kuboRpcStateListener);
+                kuboRpcListeners[kuboRpcUrl] = kuboRpcStateListener;
+            }
+            this._subplebbitForUpdating.kuboRpcListeners = kuboRpcListeners;
         }
         // Add chain provider state listeners
         const chainProviderListeners = {};
@@ -134,20 +136,33 @@ export class PublicationClientsManager extends ClientsManager {
     async cleanUpUpdatingSubInstance() {
         if (!this._subplebbitForUpdating)
             throw Error("Need to define subplebbitForUpdating first");
-        this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
-        this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
-        this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
-        if (this._subplebbitForUpdating.ipfsGatewayListeners)
-            for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners))
+        // Clean up IPFS Gateway listeners
+        if (this._subplebbitForUpdating.ipfsGatewayListeners) {
+            for (const gatewayUrl of Object.keys(this._subplebbitForUpdating.ipfsGatewayListeners)) {
                 this._subplebbitForUpdating.subplebbit.clients.ipfsGateways[gatewayUrl].removeListener("statechange", this._subplebbitForUpdating.ipfsGatewayListeners[gatewayUrl]);
+                this.updateGatewayState("stopped", gatewayUrl); // need to reset all gateway states
+            }
+        }
+        // Clean up Kubo RPC listeners
+        if (this._subplebbitForUpdating.kuboRpcListeners) {
+            for (const kuboRpcUrl of Object.keys(this._subplebbitForUpdating.kuboRpcListeners)) {
+                this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients[kuboRpcUrl].removeListener("statechange", this._subplebbitForUpdating.kuboRpcListeners[kuboRpcUrl]);
+                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+            }
+        }
         // Clean up chain provider listeners
         if (this._subplebbitForUpdating.chainProviderListeners) {
             for (const chainTicker of Object.keys(this._subplebbitForUpdating.chainProviderListeners)) {
                 for (const providerUrl of Object.keys(this._subplebbitForUpdating.chainProviderListeners[chainTicker])) {
                     this._subplebbitForUpdating.subplebbit.clients.chainProviders[chainTicker][providerUrl].removeListener("statechange", this._subplebbitForUpdating.chainProviderListeners[chainTicker][providerUrl]);
+                    this.updateChainProviderState("stopped", chainTicker, providerUrl); // need to reset all chain provider states
                 }
             }
         }
+        // Remove update event at the end
+        this._subplebbitForUpdating.subplebbit.removeListener("updatingstatechange", this._subplebbitForUpdating.updatingstatechange);
+        this._subplebbitForUpdating.subplebbit.removeListener("error", this._subplebbitForUpdating.error);
+        this._subplebbitForUpdating.subplebbit.removeListener("update", this._subplebbitForUpdating.update);
         if (this._subplebbitForUpdating.subplebbit._updatingSubInstanceWithListeners)
             // should only stop when _subplebbitForUpdating is not plebbit._updatingSubplebbits
             await this._subplebbitForUpdating.subplebbit.stop();

@@ -18,10 +18,10 @@ describeSkipIfRpc("plebbit.validateComment", async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
 
-        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.lastPostCid === "string");
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.posts.pages.hot);
 
         // Get a post instance
-        postCommentInstance = await plebbit.getComment(subplebbit.lastPostCid);
+        postCommentInstance = await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
         await postCommentInstance.update();
         await resolveWhenConditionIsTrue(postCommentInstance, () => typeof postCommentInstance.updatedAt === "number");
 

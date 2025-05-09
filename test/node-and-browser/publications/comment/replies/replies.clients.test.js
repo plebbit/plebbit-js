@@ -19,9 +19,15 @@ describe(`comment.replies.clients`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
 
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-        commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies).cid;
+        commentCid = subplebbit.posts.pages.hot.comments[0].cid;
         expect(commentCid).to.be.a("string");
     });
+
+    after(async () => {
+        await plebbit.destroy();
+        await gatewayPlebbit.destroy();
+    });
+
     describeSkipIfRpc(`comment.replies.clients.kuboRpcClients`, async () => {
         it(`comment.replies.clients.kuboRpcClients is {} for gateway plebbit`, async () => {
             const comment = await gatewayPlebbit.getComment(commentCid);
@@ -104,7 +110,7 @@ describe(`comment.replies.clients`, async () => {
             const comment = await multipleGatewayPlebbit.getComment(commentCid);
             await comment.update();
             await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
-            const mockedPageIpfs = await addStringToIpfs(JSON.stringify({ comments: [comment.replies.pages.best.comments[0].raw] }));
+            const mockedPageIpfs = await addStringToIpfs(JSON.stringify({ comments: [comment.raw] })); // wrong schema, but goal is to test for states
             comment.replies.pageCids.new = mockedPageIpfs; // random cid
 
             const expectedStates = {

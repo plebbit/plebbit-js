@@ -1,37 +1,49 @@
 import { expect } from "chai";
 import Plebbit from "../../dist/node/index.js";
-import { createSubWithNoChallenge, describeSkipIfRpc } from "../../dist/node/test/test-util.js";
+import { createSubWithNoChallenge, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../dist/node/test/test-util.js";
 
 import tcpPortUsed from "tcp-port-used";
 
 // TODO calling plebbit.destroy() should stop the address rewriter proxy
 describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () => {
-    const nodeForHttpRouter = "http://localhost:15006/api/v0";
+    const kuboNodeForHttpRouter = "http://localhost:15006/api/v0";
     // default list of http routers to use
     const httpRouterUrls = ["https://routing.lol", "https://peers.pleb.bot"];
 
+    const startPort = 19575;
+
+    let plebbit;
+
+    after(async () => {
+        try {
+            await plebbit.destroy();
+        } catch {}
+    });
+
     it(`Plebbit({kuboRpcClientsOptions}) sets correct default http routers`, async () => {
-        const plebbit = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter] });
-        expect(plebbit.httpRoutersOptions).to.deep.equal([
+        const anotherPlebbit = await Plebbit({ kuboRpcClientsOptions: [kuboNodeForHttpRouter], dataPath: undefined });
+        expect(anotherPlebbit.httpRoutersOptions).to.deep.equal([
             "https://peers.pleb.bot",
             "https://routing.lol",
             "https://peers.forumindex.com",
             "https://peers.plebpubsub.xyz"
         ]);
-        await plebbit.destroy();
-        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
+        expect(anotherPlebbit.dataPath).to.be.undefined;
+        await anotherPlebbit.destroy();
+    });
+
+    it(`address rewriter proxy should not be taken before we start plebbit`, async () => {
+        for (let i = 0; i < httpRouterUrls.length; i++) expect(await tcpPortUsed.check(startPort + i)).to.be.false;
     });
 
     it(`Plebbit({kuboRpcClientsOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        const plebbit = await Plebbit({
-            kuboRpcClientsOptions: [nodeForHttpRouter],
-            httpRoutersOptions: httpRouterUrls
+        plebbit = await Plebbit({ kuboRpcClientsOptions: [kuboNodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+        plebbit.on("error", (err) => {
+            console.log("Received an error on Plebbit instance", err);
         });
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
-
         expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
-
-        const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const kuboRpcClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
         const configValueType = await kuboRpcClient.config.get("Routing.Type");
         expect(configValueType).to.equal("custom");
 
@@ -43,39 +55,42 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
     });
 
     it(`Should start up address rewriter proxy`, async () => {
-        const port = 19575; // should start a proxy at this port
-        expect(await tcpPortUsed.check(port)).to.be.true;
-        expect(await tcpPortUsed.check(port + 1)).to.be.true;
+        for (let i = 0; i < httpRouterUrls.length; i++) expect(await tcpPortUsed.check(startPort + i)).to.be.true;
     });
 
     it(`Routing.Routers should be set to proxy`, async () => {
-        const plebbit = await Plebbit({
-            kuboRpcClientsOptions: [nodeForHttpRouter],
-            httpRoutersOptions: httpRouterUrls
-        });
-        const kuboRpcClient = plebbit.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const kuboRpcClient = plebbit.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
         const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
-        expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
-        expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
+        for (let i = 0; i < httpRouterUrls.length; i++) {
+            const endpoint = configValueRouters[`HttpRouter${i + 1}`].Parameters.Endpoint;
+            expect(endpoint).to.equal(`http://127.0.0.1:${startPort + i}`);
+        }
     });
 
     it(`Can create another plebbit instance with same configs with no problem`, async () => {
-        const anotherInstance = await Plebbit({ kuboRpcClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
-        const kuboRpcClient = anotherInstance.clients.kuboRpcClients[nodeForHttpRouter]._client;
+        const anotherInstance = await Plebbit({
+            kuboRpcClientsOptions: [kuboNodeForHttpRouter],
+            httpRoutersOptions: httpRouterUrls,
+            dataPath: plebbit.dataPath
+        });
+        anotherInstance.on("error", (err) => {
+            console.log("Received an error on Plebbit instance", err);
+        });
+        const kuboRpcClient = anotherInstance.clients.kuboRpcClients[kuboNodeForHttpRouter]._client;
         const configValueRouters = await kuboRpcClient.config.get("Routing.Routers");
-        expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
-        expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
+        for (let i = 0; i < httpRouterUrls.length; i++) {
+            const endpoint = configValueRouters[`HttpRouter${i + 1}`].Parameters.Endpoint;
+            expect(endpoint).to.equal(`http://127.0.0.1:${startPort + i}`);
+        }
+
+        await anotherInstance.destroy();
     });
 
     it(`The proxy proxies requests to http router properly`, async () => {
-        const plebbit = await Plebbit({
-            kuboRpcClientsOptions: [nodeForHttpRouter],
-            httpRoutersOptions: httpRouterUrls
-        });
         const sub = await createSubWithNoChallenge({}, plebbit); // an online sub
 
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till it's propgated on the http router
 
         for (const httpRouterUrl of httpRouterUrls) {
@@ -100,5 +115,23 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
         await sub.delete();
     });
 
-    it(`Calling plebbit.destroy() frees up the proxy`);
+    it(`Calling plebbit.destroy() on original plebbit instance that started address rewriter proxy frees up the proxy server`, async () => {
+        await plebbit.destroy();
+        for (let i = 0; i < httpRouterUrls.length; i++) expect(await tcpPortUsed.check(startPort + i)).to.be.false;
+    });
+
+    it(`Creating a new plebbit instance will start a new proxy server after destroying the previous one`, async () => {
+        const anotherInstance = await Plebbit({
+            kuboRpcClientsOptions: [kuboNodeForHttpRouter],
+            httpRoutersOptions: httpRouterUrls,
+            dataPath: plebbit.dataPath
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
+        for (let i = 0; i < httpRouterUrls.length; i++) expect(await tcpPortUsed.check(startPort + i)).to.be.true;
+
+        await anotherInstance.destroy();
+
+        for (let i = 0; i < httpRouterUrls.length; i++) expect(await tcpPortUsed.check(startPort + i)).to.be.false;
+    });
 });

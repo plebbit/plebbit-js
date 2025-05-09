@@ -5,7 +5,7 @@ import { hideClassPrivateProps, throwWithErrorCode } from "../../util.js";
 class Vote extends Publication {
     constructor(plebbit) {
         super(plebbit);
-        this._pubsubMsgToPublish = undefined;
+        this.raw = {};
         // public method should be bound
         this.publish = this.publish.bind(this);
         hideClassPrivateProps(this);
@@ -19,12 +19,12 @@ class Vote extends Publication {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
     }
     toJSONPubsubMessagePublication() {
-        if (!this._pubsubMsgToPublish)
+        if (!this.raw.pubsubMessageToPublish)
             throw Error("Should define local props before calling toJSONPubsubMessagePublication");
-        return this._pubsubMsgToPublish;
+        return this.raw.pubsubMessageToPublish;
     }
     getType() {
         return "vote";

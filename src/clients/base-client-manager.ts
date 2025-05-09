@@ -176,7 +176,12 @@ export class BaseClientsManager {
         for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients)) {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
-            } catch {}
+            } catch (e) {
+                await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-unsubscribe");
+                //@ts-expect-error
+                e.details = { ...e.details, pubsubProviderUrl, pubsubTopic };
+                this.emitError(<PlebbitError>e);
+            }
         }
     }
 
@@ -279,7 +284,7 @@ export class BaseClientsManager {
             }
             const sizeHeader = <string | null>res.headers.get("Content-Length");
             if (sizeHeader && Number(sizeHeader) > options.maxFileSizeBytes)
-                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
+                throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
 
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
@@ -303,7 +308,7 @@ export class BaseClientsManager {
                     if (value) resText += decoder.decode(value);
                     if (done || !value) break;
                     if (value.length + totalBytesRead > options.maxFileSizeBytes)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
+                        throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
                     totalBytesRead += value.length;
                 }
                 return { resText, res };
@@ -475,7 +480,9 @@ export class BaseClientsManager {
         const ipfsClient = this.getDefaultIpfs();
 
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns: string | undefined = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true }));
+            const resolvedCidOfIpns: string | undefined = await last(
+                ipfsClient._client.name.resolve(ipnsName, { nocache: true, recursive: true })
+            );
 
             if (!resolvedCidOfIpns)
                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", { resolvedCidOfIpns, ipnsName, ipfsClient, loadOpts });
@@ -622,7 +629,7 @@ export class BaseClientsManager {
         chainproviderUrl: string,
         chainId: number | undefined,
         staleCache?: CachedTextRecordResolve
-    ): Promise<string | null | { error: PlebbitError }> {
+    ): Promise<string | null | { error: PlebbitError | Error }> {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
         try {
@@ -647,20 +654,11 @@ export class BaseClientsManager {
             await this._plebbit._stats.recordGatewaySuccess(chainproviderUrl, chain, timeAfter - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
-            const parsedError =
-                e instanceof PlebbitError
-                    ? e
-                    : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", {
-                          error: e,
-                          address,
-                          txtRecordName,
-                          chain,
-                          chainproviderUrl,
-                          chainId
-                      });
-            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError, staleCache);
+            //@ts-expect-error
+            e.details = { ...e.details, address, txtRecordName, chain, chainproviderUrl, chainId };
+            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e as Error, staleCache);
             await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
-            return { error: parsedError };
+            return { error: e as Error };
         }
     }
 
@@ -673,7 +671,7 @@ export class BaseClientsManager {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");
         const timeouts = [0, 0, 100, 1000];
 
-        const _firstResolve = (promises: Promise<string | null | { error: PlebbitError }>[]) => {
+        const _firstResolve = (promises: Promise<string | null | { error: PlebbitError | Error }>[]) => {
             return new Promise<string | null>((resolve) =>
                 promises.forEach((promise) =>
                     promise.then((res) => {
@@ -709,13 +707,13 @@ export class BaseClientsManager {
                 );
 
                 //@ts-expect-error
-                const resolvedTextRecord: string | null | { value: { error: PlebbitError } }[] = await Promise.race([
+                const resolvedTextRecord: string | null | { value: { error: PlebbitError | Error } }[] = await Promise.race([
                     _firstResolve(providerPromises),
                     Promise.allSettled(providerPromises)
                 ]);
                 if (Array.isArray(resolvedTextRecord)) {
                     // It means none of the promises settled with string or null, they all failed
-                    const errorsCombined: Record<string, PlebbitError> = {};
+                    const errorsCombined: Record<string, PlebbitError | Error> = {};
                     for (let i = 0; i < providersSorted.length; i++) errorsCombined[providersSorted[i]] = resolvedTextRecord[i].value.error;
 
                     throwWithErrorCode("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { errors: errorsCombined, address, txtRecordName, chain });

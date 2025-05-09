@@ -1,5 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, removeUndefinedValuesRecursively, retryKuboIpfsAdd, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
 import type { AuthorWithOptionalCommentUpdateJson, PublicationEvents, PublicationTypeName, SubplebbitEvents } from "../../types.js";
@@ -356,8 +356,14 @@ export class Comment
         // only if we're connected to kubo
 
         if (!this.raw.comment) throw Error("comment.raw.commentIpfs should be defined after challenge verification");
-        const ipfsClient = this._clientsManager.getDefaultIpfs();
-        const addRes = await ipfsClient._client.add(JSON.stringify(this.raw.comment), { pin: true });
+        const kuboRpcClient = this._clientsManager.getDefaultIpfs()._client;
+        // use p-retry here, 3 times maybe?
+        const addRes = await retryKuboIpfsAdd({
+            kuboRpcClient,
+            log: Logger("plebbit-js:comment:publish:_addOwnCommentToIpfsIfConnectedToIpfsClient"),
+            content: JSON.stringify(this.raw.comment),
+            options: { pin: true }
+        });
         if (addRes.path !== decryptedVerification.commentUpdate.cid)
             throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
     }

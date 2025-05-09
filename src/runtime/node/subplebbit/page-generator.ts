@@ -1,4 +1,4 @@
-import { hideClassPrivateProps, timestamp } from "../../../util.js";
+import { hideClassPrivateProps, retryKuboIpfsAdd, timestamp } from "../../../util.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import type {
@@ -63,7 +63,11 @@ export class PageGenerator {
         for (let i = chunks.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
-            const addRes = await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs));
+            const addRes = await retryKuboIpfsAdd({
+                kuboRpcClient: this._subplebbit._clientsManager.getDefaultIpfs()._client,
+                log: Logger("plebbit-js:page-generator:addCommentChunksToIpfs"),
+                content: deterministicStringify(pageIpfs)
+            });
             if (addRes.size > expectedSize)
                 throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
                     addRes,
@@ -88,7 +92,12 @@ export class PageGenerator {
         for (let i = chunks.length - 1; i >= 1; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
-            cids[i] = (await this._subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+            const addRes = await retryKuboIpfsAdd({
+                kuboRpcClient: this._subplebbit._clientsManager.getDefaultIpfs()._client,
+                log: Logger("plebbit-js:page-generator:addPreloadedCommentChunksToIpfs"),
+                content: deterministicStringify(pageIpfs)
+            });
+            cids[i] = addRes.path;
             listOfPage[i] = pageIpfs;
         }
         const firstPage = <PageIpfs>{ comments: chunks[0], nextCid: cids[1] };
@@ -305,8 +314,11 @@ export class PageGenerator {
         sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedPageSortName));
 
         const nonPreloadedSorts = remeda.keys.strict(POSTS_SORT_TYPES).filter((sortName) => sortName !== preloadedPageSortName);
-        for (const sortName of nonPreloadedSorts)
-            sortResults.push(await this.sortChunkAddIpfsNonPreloaded(rawPosts, sortName, pageOptions));
+        await Promise.all(
+            nonPreloadedSorts.map(async (sortName) => {
+                sortResults.push(await this.sortChunkAddIpfsNonPreloaded(rawPosts, sortName, pageOptions));
+            })
+        );
 
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
@@ -345,12 +357,14 @@ export class PageGenerator {
             commentUpdateFieldsToExclude: ["replies"]
         });
 
-        for (const sortName of nonPreloadedSorts) {
-            const replies = POST_REPLIES_SORT_TYPES[sortName].flat ? flattenedReplies : hierarchalReplies;
-            sortResults.push(
-                await this.sortChunkAddIpfsNonPreloaded(replies, sortName, { ...pageOptions, firstPageSizeBytes: 1024 * 1024 })
-            );
-        }
+        await Promise.all(
+            nonPreloadedSorts.map(async (sortName) => {
+                const replies = POST_REPLIES_SORT_TYPES[sortName].flat ? flattenedReplies : hierarchalReplies;
+                sortResults.push(
+                    await this.sortChunkAddIpfsNonPreloaded(replies, sortName, { ...pageOptions, firstPageSizeBytes: 1024 * 1024 })
+                );
+            })
+        );
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }
@@ -386,13 +400,16 @@ export class PageGenerator {
 
         sortResults.push(await this.addPreloadedCommentChunksToIpfs(preloadedChunk, preloadedReplyPageSortName));
 
-        for (const hierarchalSortName of nonPreloadedSorts)
-            sortResults.push(
-                await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, {
-                    ...pageOptions,
-                    firstPageSizeBytes: 1024 * 1024
-                })
-            );
+        await Promise.all(
+            nonPreloadedSorts.map(async (hierarchalSortName) => {
+                sortResults.push(
+                    await this.sortChunkAddIpfsNonPreloaded(hierarchalReplies, hierarchalSortName, {
+                        ...pageOptions,
+                        firstPageSizeBytes: 1024 * 1024
+                    })
+                );
+            })
+        );
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }

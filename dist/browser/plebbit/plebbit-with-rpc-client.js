@@ -9,6 +9,8 @@ import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 export class PlebbitWithRpcClient extends Plebbit {
     constructor(options) {
         super(options);
+        this._startedSubplebbits = {}; // storing subplebbit instance that are started rn
+        this._updatingSubplebbits = {};
         this._plebbitRpcClient = this.clients.plebbitRpcClients[Object.keys(this.clients.plebbitRpcClients)[0]]; // will change later once we start supporting multiple RPCs
     }
     async _init() {
@@ -39,6 +41,9 @@ export class PlebbitWithRpcClient extends Plebbit {
         return this._plebbitRpcClient.resolveAuthorAddress(parsedAddress);
     }
     async destroy() {
+        for (const startedSubplebbit of Object.values(this._startedSubplebbits)) {
+            await startedSubplebbit.stopWithoutRpcCall();
+        }
         await super.destroy();
         await this._plebbitRpcClient.destroy();
     }
@@ -66,6 +71,7 @@ export class PlebbitWithRpcClient extends Plebbit {
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
                 let error;
                 const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
+                await sub._createAndSubscribeToNewUpdatingSubplebbit(sub);
                 await sub.update();
                 await Promise.race([updatePromise, errorPromise]);
                 await sub.stop();

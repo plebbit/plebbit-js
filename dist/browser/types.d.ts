@@ -44,7 +44,9 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "i
 }
 export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
-    ipfsPath: string;
+    localMfsPath: string | undefined;
+    publishedToPostUpdatesMFS: boolean;
+    postCommentUpdateCid: string | undefined;
 }
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {
 }
@@ -59,7 +61,7 @@ export interface CommentModerationsTableRowInsert extends Omit<CommentModeration
 declare module "knex/types/tables" {
     interface Tables {
         comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;
-        commentUpdates: Knex.CompositeTableType<CommentUpdatesRow, CommentUpdatesTableRowInsert, Omit<CommentUpdatesTableRowInsert, "cid">, Omit<CommentUpdatesTableRowInsert, "cid">>;
+        commentUpdates: Knex.CompositeTableType<CommentUpdatesRow, CommentUpdatesTableRowInsert, Partial<Omit<CommentUpdatesTableRowInsert, "cid">>, Omit<CommentUpdatesTableRowInsert, "cid">>;
         votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
         commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
         commentModerations: Knex.CompositeTableType<CommentModerationTableRow, CommentModerationsTableRowInsert>;
@@ -70,8 +72,7 @@ export interface SubplebbitEvents {
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
-    error: (error: PlebbitError | PlebbitError) => void;
-    "waiting-retry": (err: Error | PlebbitError) => void;
+    error: (error: PlebbitError | Error) => void;
     statechange: (newState: RemoteSubplebbit["state"]) => void;
     updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
     startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
@@ -84,7 +85,6 @@ export interface PublicationEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void;
     error: (error: PlebbitError | Error) => void;
-    "waiting-retry": (err: PlebbitError | Error) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
     update: (updatedInstance: Comment) => void;

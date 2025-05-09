@@ -31,6 +31,7 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         await subplebbit.update();
         await updatePromise;
         await subplebbit.stop();
+        await plebbit.destroy();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
     });
@@ -38,17 +39,16 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS) and plebbit.getSubplebbit()`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        const oldUpdatedAt = Number(subplebbit.updatedAt);
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
+        await publishRandomPost(subplebbit.address, plebbit);
         await subplebbit.update();
-
-        const updatePromiseAfterPublishing = new Promise((resolve) => subplebbit.once("update", resolve));
-        await publishRandomPost(subplebbit.address, plebbit); // To force trigger an update
-        await updatePromiseAfterPublishing;
+        await resolveWhenConditionIsTrue(subplebbit, () => Number(subplebbit.updatedAt) > oldUpdatedAt);
         await subplebbit.stop();
-
+        await plebbit.destroy();
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
     });
 
@@ -59,32 +59,33 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.update();
         expect(subplebbit.state).to.equal("updating");
 
-        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        await publishRandomPost(subplebbit.address, kuboPlebbit); // To force trigger an update
+        await updatePromise;
         await updatePromise;
         await subplebbit.stop();
-
+        await kuboPlebbit.destroy();
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
     });
 
     itSkipIfRpc(`updating states is in correct order upon updating with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
 
-        const subplebbit = await gatewayPlebbit.getSubplebbit(signers[0].address);
+        const subplebbit = await gatewayPlebbit.createSubplebbit({ address: signers[0].address });
 
         const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+
         await subplebbit.update();
 
-        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        await publishRandomPost(subplebbit.address, gatewayPlebbit); // To force trigger an update
         await updatePromise;
         await subplebbit.stop();
+        await gatewayPlebbit.destroy();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
     });
@@ -99,13 +100,13 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-        await subplebbit.update();
-
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.update();
 
         await updatePromise;
         await new Promise((resolve) => setTimeout(resolve, gatewayPlebbit.updateInterval * 5));
         await subplebbit.stop();
+        await gatewayPlebbit.destroy();
 
         const expectedFirstUpdateStates = ["fetching-ipns", "succeeded"];
 
@@ -131,13 +132,13 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-        await subplebbit.update();
-
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.update();
 
         await updatePromise;
         await new Promise((resolve) => setTimeout(resolve, kuboPlebbit.updateInterval * 5));
         await subplebbit.stop();
+        await kuboPlebbit.destroy();
 
         const expectedFirstUpdateStates = ["fetching-ipns", "fetching-ipfs", "succeeded"];
 

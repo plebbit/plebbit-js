@@ -134,7 +134,7 @@ declare const Plebbit: {
         }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
         description?: string | undefined;
         name?: string | undefined;
-    }, ...args_1: unknown[]) => {
+    }, ...args: unknown[]) => {
         type: string;
         getChallenge: (args_0: {
             path?: string | undefined;
@@ -260,7 +260,7 @@ declare const Plebbit: {
             }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
             description?: string | undefined;
             name?: string | undefined;
-        }, args_1: import("./pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("./runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args_4: unknown[]) => Promise<{
+        }, args_1: import("./pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("./runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args: unknown[]) => Promise<{
             success: true;
         } | {
             error: string;
@@ -268,7 +268,7 @@ declare const Plebbit: {
         } | {
             type: string;
             challenge: string;
-            verify: (args_0: string, ...args_1: unknown[]) => Promise<{
+            verify: (args_0: string, ...args: unknown[]) => Promise<{
                 success: true;
             } | {
                 error: string;
@@ -427,7 +427,7 @@ export declare const challenges: Record<string, (args_0: {
     }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
     description?: string | undefined;
     name?: string | undefined;
-}, ...args_1: unknown[]) => {
+}, ...args: unknown[]) => {
     type: string;
     getChallenge: (args_0: {
         path?: string | undefined;
@@ -553,7 +553,7 @@ export declare const challenges: Record<string, (args_0: {
         }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
         description?: string | undefined;
         name?: string | undefined;
-    }, args_1: import("./pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("./runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args_4: unknown[]) => Promise<{
+    }, args_1: import("./pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("./runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
         error: string;
@@ -561,7 +561,7 @@ export declare const challenges: Record<string, (args_0: {
     } | {
         type: string;
         challenge: string;
-        verify: (args_0: string, ...args_1: unknown[]) => Promise<{
+        verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
             error: string;

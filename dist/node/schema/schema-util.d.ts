@@ -233,7 +233,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
         title?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-            pageCids: Record<string, string>;
+            pageCids?: Record<string, string> | undefined;
         } | undefined;
         description?: string | undefined;
         pubsubTopic?: string | undefined;
@@ -1405,14 +1405,14 @@ export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbi
 };
 export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema>): z.objectOutputType<{
     posts: z.ZodOptional<z.ZodObject<{
-        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
-        pageCids: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>;
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
     }, "strip", z.ZodTypeAny, {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     }, {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     }>>;
     challenges: z.ZodArray<z.ZodObject<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -2334,9 +2334,9 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     } | {
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     } | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -2585,31 +2585,31 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
 export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any): {
     userAgent: string;
     ipfsGatewayUrls: string[];
-    httpRoutersOptions: string[];
     pubsubKuboRpcClientsOptions: import("kubo-rpc-client").Options[];
+    resolveAuthorAddresses: boolean;
     chainProviders: Record<string, {
         urls: string[];
         chainId: number;
     }>;
-    resolveAuthorAddresses: boolean;
     publishInterval: number;
     updateInterval: number;
     noData: boolean;
     validatePages: boolean;
+    httpRoutersOptions: string[];
     kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
 };
 export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>): z.objectOutputType<{
     posts: z.ZodOptional<z.ZodObject<{
-        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
-        pageCids: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>;
+        pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
+        pageCids: z.ZodOptional<z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodEffects<z.ZodString, string, string>>>;
     }, "strip", z.ZodTypeAny, {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     }, {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     }>>;
     challenges: z.ZodArray<z.ZodObject<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -3531,9 +3531,9 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
     updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     } | {
-        pageCids: Record<string, string>;
+        pageCids?: Record<string, string> | undefined;
     } | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{

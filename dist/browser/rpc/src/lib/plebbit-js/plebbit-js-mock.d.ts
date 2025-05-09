@@ -73,7 +73,7 @@ declare class Publication extends EventEmitter {
     timestamp: number | undefined;
     content: string | undefined;
     cid: string | undefined;
-    challengeRequestId: Uint8Array;
+    challengeRequestId: Uint8Array<ArrayBufferLike>;
     state: string | undefined;
     publishingState: string | undefined;
     publish(): Promise<void>;

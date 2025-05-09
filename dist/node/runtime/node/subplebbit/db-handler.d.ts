@@ -26,7 +26,7 @@ export declare class DbHandler {
     createTransaction(transactionId: string): Promise<Transaction>;
     commitTransaction(transactionId: string): Promise<void>;
     rollbackTransaction(transactionId: string): Promise<void>;
-    rollbackAllTransactions(): Promise<void[]>;
+    rollbackAllTransactions(): Promise<void>;
     private _baseTransaction;
     private _createCommentsTable;
     private _createCommentUpdatesTable;
@@ -177,16 +177,17 @@ export declare class DbHandler {
     private _basePageQuery;
     queryReplyCount(commentCid: string, trx?: Transaction): Promise<number>;
     queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number>;
-    queryPageComments(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]>;
+    queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">, trx?: Transaction): Promise<PageIpfs["comments"]>;
     commentHasReplies(commentCid: string, trx?: Transaction): Promise<boolean>;
-    queryFlattenedPageReplies(options: PageOptions & {
+    queryFlattenedPageReplies(options: Omit<PageOptions, "firstPageSizeBytes"> & {
         parentCid: string;
     }, trx?: Transaction): Promise<PageIpfs["comments"]>;
     queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined>;
     queryAllStoredCommentUpdates(trx?: Transaction): Promise<CommentUpdatesRow[]>;
-    queryCommentUpdatesOfPostsForBucketAdjustment(trx?: Transaction): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]>;
+    queryCommentUpdatesOfPostsForBucketAdjustment(trx?: Transaction): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "localMfsPath">)[]>;
     deleteAllCommentUpdateRows(trx?: Transaction): Promise<number>;
     queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]>;
+    queryCommentsWithPostCidSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsOfAuthors(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<{
         timestamp: number;
@@ -336,6 +337,163 @@ export declare class DbHandler {
         thumbnailUrlHeight?: number | undefined;
         previousCid?: string | undefined;
     } | undefined>;
+    queryCommentModerationBySignatureEncoded(signatureEncoded: string, trx?: Transaction): Promise<{
+        timestamp: number;
+        signature: {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        };
+        id: number;
+        author: {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: import("zod").objectOutputType<{
+                chainTicker: import("zod").ZodString;
+                address: import("zod").ZodString;
+                id: import("zod").ZodString;
+                timestamp: import("zod").ZodNumber;
+                signature: import("zod").ZodObject<{
+                    signature: import("zod").ZodString;
+                    type: import("zod").ZodEnum<["eip191"]>;
+                }, "strip", import("zod").ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
+        };
+        subplebbitAddress: string;
+        protocolVersion: string;
+        commentCid: string;
+        insertedAt: number;
+        commentModeration: {
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            author?: import("zod").objectOutputType<Pick<{
+                postScore: import("zod").ZodNumber;
+                replyScore: import("zod").ZodNumber;
+                banExpiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+                flair: import("zod").ZodOptional<import("zod").ZodObject<{
+                    text: import("zod").ZodString;
+                    backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                    textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                    expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+                }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
+                    text: import("zod").ZodString;
+                    backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                    textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                    expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+                }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
+                    text: import("zod").ZodString;
+                    backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                    textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                    expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+                }, import("zod").ZodTypeAny, "passthrough">>>;
+                firstCommentTimestamp: import("zod").ZodNumber;
+                lastCommentCid: import("zod").ZodEffects<import("zod").ZodString, string, string>;
+            }, "flair" | "banExpiresAt">, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            spoiler?: boolean | undefined;
+            nsfw?: boolean | undefined;
+            reason?: string | undefined;
+            pinned?: boolean | undefined;
+            locked?: boolean | undefined;
+            removed?: boolean | undefined;
+            purged?: boolean | undefined;
+        } & {
+            [k: string]: unknown;
+        };
+        modSignerAddress: string;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
+    } | undefined>;
+    queryCommentEditBySignatureEncoded(signatureEncoded: string, trx?: Transaction): Promise<{
+        timestamp: number;
+        signature: {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        };
+        id: number;
+        author: {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: import("zod").objectOutputType<{
+                chainTicker: import("zod").ZodString;
+                address: import("zod").ZodString;
+                id: import("zod").ZodString;
+                timestamp: import("zod").ZodNumber;
+                signature: import("zod").ZodObject<{
+                    signature: import("zod").ZodString;
+                    type: import("zod").ZodEnum<["eip191"]>;
+                }, "strip", import("zod").ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        };
+        subplebbitAddress: string;
+        protocolVersion: string;
+        commentCid: string;
+        insertedAt: number;
+        authorSignerAddress: string;
+        isAuthorEdit: boolean;
+        flair?: import("zod").objectOutputType<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
+        deleted?: boolean | undefined;
+        spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
+        reason?: string | undefined;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
+    } | undefined>;
+    queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">[]>;
     queryParents(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]>;
     private _calcActiveUserCount;
@@ -431,13 +589,91 @@ export declare class DbHandler {
     }[]>;
     queryAuthorModEdits(authorSignerAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>;
     querySubplebbitAuthor(authorSignerAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined>;
-    purgeComment(cid: string, trx?: Transaction): Promise<string[]>;
+    purgeComment(cid: string, isNestedCall?: boolean): Promise<string[]>;
     changeDbFilename(oldDbName: string, newDbName: string): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
     isSubStartLocked(subAddress?: string): Promise<boolean>;
-    lockSubState(subAddress?: string): Promise<void>;
-    unlockSubState(subAddress?: string): Promise<void>;
-    subDbExists(subAddress?: string): boolean;
-    subAddress(): string;
+    lockSubState(): Promise<void>;
+    unlockSubState(): Promise<void>;
+    subDbExists(): boolean;
+    queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction): Promise<Pick<{
+        timestamp: number;
+        signature: {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        };
+        id: number;
+        author: {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: import("zod").objectOutputType<{
+                chainTicker: import("zod").ZodString;
+                address: import("zod").ZodString;
+                id: import("zod").ZodString;
+                timestamp: import("zod").ZodNumber;
+                signature: import("zod").ZodObject<{
+                    signature: import("zod").ZodString;
+                    type: import("zod").ZodEnum<["eip191"]>;
+                }, "strip", import("zod").ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+            flair?: import("zod").objectOutputType<{
+                text: import("zod").ZodString;
+                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+                textColor: import("zod").ZodOptional<import("zod").ZodString>;
+                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        } & {
+            [k: string]: unknown;
+        };
+        subplebbitAddress: string;
+        protocolVersion: string;
+        insertedAt: number;
+        authorSignerAddress: string;
+        postCid: string;
+        depth: number;
+        cid: string;
+        flair?: import("zod").objectOutputType<{
+            text: import("zod").ZodString;
+            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
+            textColor: import("zod").ZodOptional<import("zod").ZodString>;
+            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
+        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        content?: string | undefined;
+        spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
+        extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
+        title?: string | undefined;
+        link?: string | undefined;
+        linkWidth?: number | undefined;
+        linkHeight?: number | undefined;
+        linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+        parentCid?: string | undefined;
+        thumbnailUrl?: string | undefined;
+        thumbnailUrlWidth?: number | undefined;
+        thumbnailUrlHeight?: number | undefined;
+        previousCid?: string | undefined;
+    }, "cid">[]>;
+    updateCommentUpdatesPublishedToPostUpdatesMFS(commentCids: string[], trx?: Transaction): Promise<number>;
+    updateMfsPathOfCommentUpdates(oldAddress: string, newAddress: string, trx?: Transaction): Promise<void>;
+    resetPublishedToPostUpdatesMFS(trx?: Transaction): Promise<void>;
+    resetPublishedToPostUpdatesMFSWithPostCid(postCid: CommentsTableRow["postCid"], trx?: Transaction): Promise<void>;
+    queryAllCidsUnderThisSubplebbit(trx?: Transaction): Promise<Set<string>>;
 }

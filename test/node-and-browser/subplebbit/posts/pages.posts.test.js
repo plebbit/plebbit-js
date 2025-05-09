@@ -20,6 +20,7 @@ import { testCommentFieldsInPageJson, testPageCommentsIfSortedCorrectly } from "
 import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { Buffer } from "buffer";
 import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;

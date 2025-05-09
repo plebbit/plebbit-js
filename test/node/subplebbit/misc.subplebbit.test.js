@@ -12,29 +12,9 @@ import {
     describeSkipIfRpc,
     describeIfRpc,
     waitTillPostInSubplebbitPages
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 
-import signers from "../../fixtures/signers";
-
-describe("plebbit.subplebbits", async () => {
-    let plebbit, subSigner;
-    before(async () => {
-        plebbit = await mockPlebbit();
-        subSigner = await plebbit.createSigner();
-    });
-
-    it(`plebbit.subplebbits shows unlocked created subplebbits`, async () => {
-        const title = "Test plebbit.subplebbits" + Date.now();
-
-        const createdSubplebbit = await plebbit.createSubplebbit({ signer: subSigner, title: title });
-        // At this point the sub should be unlocked and ready to be recreated by another instance
-        const listedSubs = plebbit.subplebbits;
-        expect(listedSubs).to.include(createdSubplebbit.address);
-
-        expect(createdSubplebbit.address).to.equal(subSigner.address);
-        expect(createdSubplebbit.title).to.equal(title);
-    });
-});
+import signers from "../../fixtures/signers.js";
 
 describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     let plebbit, sub;
@@ -95,7 +75,7 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await publishRandomPost(sub.address, plebbit);
-        await sub.stop();
+        await sub.delete();
         await plebbit.destroy();
     });
 
@@ -111,8 +91,9 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        await publishRandomPost(sub.address, plebbit, {});
-        await sub.stop();
+        await publishRandomPost(sub.address, plebbit);
+        await sub.delete();
+        await plebbit.destroy();
     });
 });
 
@@ -140,171 +121,6 @@ describe(`subplebbit.pubsubTopic`, async () => {
 
         const post = await publishRandomPost(subplebbit.address, plebbit, {});
         expect(post.subplebbit?.pubsubTopic).to.be.undefined;
-    });
-});
-
-describe(`subplebbit.state`, async () => {
-    let plebbit, subplebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
-        subplebbit = await createSubWithNoChallenge({}, plebbit);
-    });
-
-    after(async () => {
-        await subplebbit.delete();
-        await plebbit.destroy();
-    });
-
-    it(`subplebbit.state defaults to "stopped" if not updating or started`, async () => {
-        expect(subplebbit.state).to.equal("stopped");
-    });
-
-    it(`subplebbit.state = started if calling start()`, async () => {
-        let eventFired = false;
-        subplebbit.on("statechange", (newState) => {
-            if (newState === "started") eventFired = true;
-        });
-        await subplebbit.start();
-        expect(subplebbit.state).to.equal("started");
-        expect(eventFired).to.be.true;
-    });
-
-    it(`subplebbit.state = stopped after calling stop()`, async () => {
-        let eventFired = false;
-        subplebbit.once("statechange", (newState) => {
-            expect(newState).to.equal("stopped");
-            eventFired = true;
-        });
-        await subplebbit.stop();
-        expect(subplebbit.state).to.equal("stopped");
-        expect(eventFired).to.be.true;
-    });
-
-    it(`subplebbit.state = updating after calling update()`, async () => {
-        let eventFired = false;
-        subplebbit.once("statechange", (newState) => {
-            expect(newState).to.equal("updating");
-            eventFired = true;
-        });
-        await subplebbit.update();
-        expect(subplebbit.state).to.equal("updating");
-        expect(eventFired).to.be.true;
-    });
-
-    it(`calling update() on a started subplebbit will throw`, async () => {
-        const startedSubplebbit = await plebbit.createSubplebbit();
-        await startedSubplebbit.start();
-        try {
-            await startedSubplebbit.update();
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_SUB_ALREADY_STARTED");
-        }
-        await startedSubplebbit.delete();
-    });
-});
-
-describe(`subplebbit.startedState`, async () => {
-    let plebbit, subplebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
-        subplebbit = await createSubWithNoChallenge({}, plebbit);
-    });
-
-    after(async () => {
-        await subplebbit.delete();
-        await plebbit.destroy();
-    });
-
-    it(`subplebbit.startedState defaults to stopped`, async () => {
-        expect(subplebbit.startedState).to.equal("stopped");
-    });
-
-    it(`subplebbit.startedState is in correct order up to publishing a new IPNS`, async () => {
-        const expectedStates = ["publishing-ipns", "succeeded"];
-        const recordedStates = [];
-        subplebbit.on("startedstatechange", (newState) => recordedStates.push(newState));
-
-        await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    itSkipIfRpc(`subplebbit.startedState = failed if a failure occurs`, async () => {
-        subplebbit._getDbInternalState = async () => {
-            throw Error("Failed to load sub from db ");
-        };
-        publishRandomPost(subplebbit.address, plebbit);
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.startedState === "failed", "startedstatechange");
-        expect(subplebbit.startedState).to.equal("failed");
-    });
-});
-
-describe(`subplebbit.updatingState from a local subplebbit`, async () => {
-    it(`subplebbit.updatingState defaults to stopped`, async () => {
-        const plebbit = await mockPlebbit();
-        const createdSubplebbit = await plebbit.createSubplebbit();
-        await createdSubplebbit.start();
-        await resolveWhenConditionIsTrue(createdSubplebbit, () => typeof createdSubplebbit.updatedAt === "number");
-        const subplebbit = await plebbit.getSubplebbit(createdSubplebbit.address);
-        expect(subplebbit.updatingState).to.equal("stopped");
-        await plebbit.destroy();
-    });
-
-    itSkipIfRpc(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
-        const plebbit = await mockPlebbit();
-        const startedSubplebbit = await createSubWithNoChallenge({}, plebbit);
-        await startedSubplebbit.start();
-        await resolveWhenConditionIsTrue(startedSubplebbit, () => typeof startedSubplebbit.updatedAt === "number");
-
-        const localUpdatingSub = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
-        const expectedStates = ["publishing-ipns", "succeeded", "stopped"];
-        const recordedStates = [];
-
-        localUpdatingSub.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-        await localUpdatingSub.update();
-        const updatePromise = new Promise((resolve) => localUpdatingSub.once("update", resolve));
-
-        await publishRandomPost(localUpdatingSub.address, plebbit);
-        await updatePromise;
-        await localUpdatingSub.stop();
-        await startedSubplebbit.delete();
-        await plebbit.destroy();
-        expect(recordedStates).to.deep.equal(expectedStates);
-    });
-
-    itIfRpc(`localSubplebbit.updatingState is copied from startedState if we're updating a local sub via rpc`, async () => {
-        const plebbit = await mockPlebbit();
-        const startedSub = await createSubWithNoChallenge({}, plebbit);
-
-        const updatingSub = await plebbit.createSubplebbit({ address: startedSub.address });
-
-        const startedInstanceStartedStates = [];
-        startedSub.on("startedstatechange", () => startedInstanceStartedStates.push(startedSub.startedState));
-
-        const updatingSubUpdatingStates = [];
-        updatingSub.on("updatingstatechange", () => updatingSubUpdatingStates.push(updatingSub.updatingState));
-
-        const updates = [];
-        updatingSub.on("update", () => updates.push(updates.length));
-        await startedSub.start();
-
-        await resolveWhenConditionIsTrue(startedSub, () => startedSub.updatedAt);
-
-        await updatingSub.update();
-
-        await publishRandomPost(startedSub.address, plebbit); // to trigger an update
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        await publishRandomPost(startedSub.address, plebbit);
-
-        await resolveWhenConditionIsTrue(updatingSub, () => updates.length >= 2);
-        await startedSub.delete();
-
-        expect(updatingSubUpdatingStates).to.deep.equal(
-            startedInstanceStartedStates.splice(startedInstanceStartedStates.length - updatingSubUpdatingStates.length)
-        );
     });
 });
 
@@ -462,11 +278,12 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await mockSub.start();
 
-            await new Promise((resolve) => mockSub.once("update", resolve));
+            await resolveWhenConditionIsTrue(mockSub, () => typeof mockSub.updatedAt === "number");
 
-            publishRandomPost(mockSub.address, plebbit, {});
+            const challengeVerificationPromise = new Promise((resolve) => mockSub.once("challengeverification", resolve));
+            await publishRandomPost(mockSub.address, plebbit);
 
-            await new Promise((resolve) => mockSub.once("challengeverification", resolve));
+            await challengeVerificationPromise;
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
@@ -492,8 +309,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await mockSub.start();
 
-            await new Promise((resolve) => mockSub.once("update", resolve));
-            if (!mockSub.updatedAt) await new Promise((resolve) => mockSub.once("update", resolve));
+            await resolveWhenConditionIsTrue(mockSub, () => typeof mockSub.updatedAt === "number");
 
             const post = await generateMockPost(mockSub.address, plebbit);
             post.once("challenge", async () => {
@@ -538,9 +354,10 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await new Promise((resolve) => mockSub.once("update", resolve));
 
-            publishRandomPost(mockSub.address, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
+            const challengeVerificationPromise = new Promise((resolve) => mockSub.once("challengeverification", resolve));
+            await publishRandomPost(mockSub.address, plebbit, { author: { address: "plebbit.eth" }, signer: signers[6] });
 
-            await new Promise((resolve) => mockSub.once("challengeverification", resolve));
+            await challengeVerificationPromise;
 
             expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
         });

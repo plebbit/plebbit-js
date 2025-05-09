@@ -1,14 +1,12 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
-    loadAllPages,
     getRemotePlebbitConfigs,
     addStringToIpfs,
     itSkipIfRpc,
     isPlebbitFetchingUsingGateways
 } from "../../../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-const fixtureSigner = signers[0];
 const subplebbitSigner = signers[0];
 
 getRemotePlebbitConfigs().map((config) => {
@@ -25,9 +23,13 @@ getRemotePlebbitConfigs().map((config) => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
             const expectedPostProps = JSON.parse(await plebbit.fetchCid(subplebbit.lastPostCid));
-            expectedPostProps.cid = subplebbit.lastPostCid;
             const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
-            expectedPostProps.author.shortAddress = expectedPostProps.author.address.slice(8).slice(0, 12);
+            expect(loadedPost.author.subplebbit).to.be.undefined;
+
+            // make sure these generated props are the same as the instance one
+            expectedPostProps.author.shortAddress = loadedPost.author.shortAddress;
+            expectedPostProps.cid = loadedPost.cid;
+
             for (const key of Object.keys(expectedPostProps))
                 expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
         });

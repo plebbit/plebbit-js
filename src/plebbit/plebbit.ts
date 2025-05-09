@@ -172,6 +172,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _subplebbitschangeEventHasbeenEmitted: boolean = false;
+    private _addressRewriterDestroy?: () => Promise<void>;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
@@ -311,12 +312,13 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
             // only for node
             setupKuboAddressesRewriterAndHttpRouters(this)
-                .then(() =>
+                .then((addressesRewriterProxyServer) => {
                     log(
                         "Set http router options and their proxies successfully on all connected ipfs",
                         Object.keys(this.clients.kuboRpcClients)
-                    )
-                )
+                    );
+                    this._addressRewriterDestroy = addressesRewriterProxyServer.destroy;
+                })
                 .catch((e: Error) => {
                     log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
                     this.emit("error", e);
@@ -875,7 +877,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 commentIpfsValidity
             });
 
-        const subplebbit = await this.getSubplebbit(commentIpfs.subplebbitAddress); // will await until we have first update with signature
+        const subplebbit = this._updatingSubplebbits[comment.subplebbitAddress]?.raw?.subplebbitIpfs || {
+            address: comment.subplebbitAddress
+        };
         const commentUpdateVerificationOpts = {
             update: commentUpdate,
             resolveAuthorAddresses: this.resolveAuthorAddresses,
@@ -910,14 +914,15 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         for (const subplebbit of Object.values(this._updatingSubplebbits)) await subplebbit.stop();
 
-        for (const subplebbit of Object.values(this._startedSubplebbits)) await subplebbit.stop();
+        await Promise.all(Object.values(this._startedSubplebbits).map((sub) => sub.stop()));
 
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
 
+        if (this._addressRewriterDestroy) await this._addressRewriterDestroy();
         await this._domainResolver.destroy();
 
         await this._storage.destroy();
-        await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
+        for (const storage of Object.values(this._storageLRUs)) await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
 
         // Get all methods on the instance and override them to throw errors if used after destruction

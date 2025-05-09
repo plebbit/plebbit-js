@@ -9,13 +9,13 @@ export declare const CreateSignerSchema: z.ZodObject<{
     type: "ed25519";
     privateKey: string;
 }>;
-export declare const SignerWithAddressPublicKeySchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const SignerWithAddressPublicKeySchema: z.ZodObject<{
     type: z.ZodEnum<["ed25519"]>;
     privateKey: z.ZodString;
-}, {
+} & {
     address: z.ZodString;
     publicKey: z.ZodString;
-}>, "strip", z.ZodTypeAny, {
+}, "strip", z.ZodTypeAny, {
     type: "ed25519";
     privateKey: string;
     address: string;
@@ -26,15 +26,15 @@ export declare const SignerWithAddressPublicKeySchema: z.ZodObject<z.objectUtil.
     address: string;
     publicKey: string;
 }>;
-export declare const SignerWithAddressPublicKeyShortAddressSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+export declare const SignerWithAddressPublicKeyShortAddressSchema: z.ZodObject<{
     type: z.ZodEnum<["ed25519"]>;
     privateKey: z.ZodString;
-}, {
+} & {
     address: z.ZodString;
     publicKey: z.ZodString;
-}>, {
+} & {
     shortAddress: z.ZodString;
-}>, "strip", z.ZodTypeAny, {
+}, "strip", z.ZodTypeAny, {
     type: "ed25519";
     privateKey: string;
     address: string;
@@ -820,13 +820,13 @@ export declare const JsonSignatureSchema: z.ZodObject<{
     signedPropertyNames: string[];
 }>;
 export declare const PublicationBaseBeforeSigning: z.ZodObject<{
-    signer: z.ZodObject<z.objectUtil.extendShape<{
+    signer: z.ZodObject<{
         type: z.ZodEnum<["ed25519"]>;
         privateKey: z.ZodString;
-    }, {
+    } & {
         address: z.ZodString;
         publicKey: z.ZodString;
-    }>, "strip", z.ZodTypeAny, {
+    }, "strip", z.ZodTypeAny, {
         type: "ed25519";
         privateKey: string;
         address: string;
@@ -1225,7 +1225,7 @@ export declare const CommentAuthorSchema: z.ZodObject<Pick<{
     firstCommentTimestamp: z.ZodNumber;
     lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
 }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough">>;
-export declare const AuthorWithOptionalCommentUpdateSchema: z.ZodObject<z.objectUtil.extendShape<{
+export declare const AuthorWithOptionalCommentUpdateSchema: z.ZodObject<{
     address: z.ZodString;
     previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     displayName: z.ZodOptional<z.ZodString>;
@@ -1319,7 +1319,7 @@ export declare const AuthorWithOptionalCommentUpdateSchema: z.ZodObject<z.object
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
-}, {
+} & {
     subplebbit: z.ZodOptional<z.ZodObject<{
         postScore: z.ZodNumber;
         replyScore: z.ZodNumber;
@@ -1387,7 +1387,7 @@ export declare const AuthorWithOptionalCommentUpdateSchema: z.ZodObject<z.object
         firstCommentTimestamp: z.ZodNumber;
         lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
     }, z.ZodTypeAny, "passthrough">>>;
-}>, "strict", z.ZodTypeAny, {
+}, "strict", z.ZodTypeAny, {
     address: string;
     previousCommentCid?: string | undefined;
     displayName?: string | undefined;

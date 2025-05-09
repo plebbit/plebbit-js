@@ -9,7 +9,7 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import type { AddOptions, AddResult, create as CreateKuboRpcClient } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -27,6 +27,10 @@ import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "multiformats/hashes/sha2";
 import { base32 } from "multiformats/bases/base32";
+import { Plebbit } from "./plebbit/plebbit.js";
+import Logger from "@plebbit/plebbit-logger";
+import retry from "retry";
+import PeerId from "peer-id";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -354,6 +358,18 @@ export function binaryKeyToPubsubTopic(key: Uint8Array) {
     return `/record/${b64url}`;
 }
 
+export function ipnsNameToIpnsOverPubsubTopic(ipnsName: string) {
+    // for ipns over pubsub, the topic is '/record/' + Base64Url(Uint8Array('/ipns/') + Uint8Array('12D...'))
+    // https://github.com/ipfs/helia/blob/1561e4a106074b94e421a77b0b8776b065e48bc5/packages/ipns/src/routing/pubsub.ts#L169
+    const ipnsNamespaceBytes = new TextEncoder().encode("/ipns/");
+    const ipnsNameBytes = PeerId.parse(ipnsName).toBytes(); // accepts base58 (12D...) and base36 (k51...)
+    const ipnsNameBytesWithNamespace = new Uint8Array(ipnsNamespaceBytes.length + ipnsNameBytes.length);
+    ipnsNameBytesWithNamespace.set(ipnsNamespaceBytes, 0);
+    ipnsNameBytesWithNamespace.set(ipnsNameBytes, ipnsNamespaceBytes.length);
+    const pubsubTopic = "/record/" + uint8ArrayToString(ipnsNameBytesWithNamespace, "base64url");
+    return pubsubTopic;
+}
+
 export async function pubsubTopicToDhtKey(pubsubTopic: string) {
     // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
     const string = `floodsub:${pubsubTopic}`;
@@ -365,4 +381,41 @@ export async function pubsubTopicToDhtKey(pubsubTopic: string) {
     const multicodec = 0x55;
     const cid = CID.create(cidVersion, multicodec, hash);
     return cid.toString(base32);
+}
+
+export async function retryKuboIpfsAdd({
+    kuboRpcClient,
+    log,
+    content,
+    inputNumOfRetries,
+    options
+}: {
+    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"];
+    log: Logger;
+    content: string;
+    inputNumOfRetries?: number;
+    options?: AddOptions;
+}): Promise<AddResult> {
+    const numOfRetries = inputNumOfRetries ?? 3;
+
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 1000
+        });
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const addRes = await kuboRpcClient.add(content, options);
+                resolve(addRes);
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add content to IPFS:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
 }

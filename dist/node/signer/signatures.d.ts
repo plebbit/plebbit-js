@@ -18,7 +18,7 @@ export type ValidationResult = {
     valid: false;
     reason: string;
 };
-export declare const signBufferEd25519: (bufferToSign: Uint8Array, privateKeyBase64: string) => Promise<Uint8Array>;
+export declare const signBufferEd25519: (bufferToSign: Uint8Array, privateKeyBase64: string) => Promise<Uint8Array<ArrayBufferLike>>;
 export declare const verifyBufferEd25519: (bufferToSign: Uint8Array, bufferSignature: Uint8Array, publicKeyBase64: string) => Promise<boolean>;
 export declare function _signJson(signedPropertyNames: JsonSignature["signedPropertyNames"], cleanedPublication: Object, // should call cleanUpBeforePublish before calling _signJson
 signer: SignerType, log: Logger): Promise<JsonSignature>;
@@ -100,8 +100,9 @@ export declare function verifyPageComment({ pageComment, subplebbit, parentComme
     validatePages: boolean;
     validateUpdateSignature: boolean;
 }): Promise<ValidationResult>;
-export declare function verifyPage({ pageCid, page, resolveAuthorAddresses, clientsManager, subplebbit, parentComment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }: {
+export declare function verifyPage({ pageCid, pageSortName, page, resolveAuthorAddresses, clientsManager, subplebbit, parentComment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }: {
     pageCid: string | undefined;
+    pageSortName: string | undefined;
     page: PageIpfs;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;

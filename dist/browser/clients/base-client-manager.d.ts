@@ -11,6 +11,7 @@ export type CachedTextRecordResolve = {
 export type OptionsToLoadFromGateway = {
     recordIpfsType: "ipfs" | "ipns";
     maxFileSizeBytes: number;
+    requestHeaders?: Record<string, string>;
     root: string;
     path?: string;
     recordPlebbitType: LoadType;
@@ -44,7 +45,7 @@ export declare class BaseClientsManager {
     _fetchWithLimit(url: string, options: {
         cache: RequestCache;
         signal: AbortSignal;
-    } & Pick<OptionsToLoadFromGateway, "shouldAbortRequestFunc" | "maxFileSizeBytes">): Promise<{
+    } & Pick<OptionsToLoadFromGateway, "shouldAbortRequestFunc" | "maxFileSizeBytes" | "requestHeaders">): Promise<{
         resText: string | undefined;
         res: Response;
         abortError?: PlebbitError;

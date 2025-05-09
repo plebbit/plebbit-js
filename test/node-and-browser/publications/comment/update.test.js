@@ -14,7 +14,8 @@ import {
     mockPostToReturnSpecificCommentUpdate,
     describeSkipIfRpc,
     isPlebbitFetchingUsingGateways,
-    itSkipIfRpc
+    itSkipIfRpc,
+    waitTillReplyInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
 
@@ -103,20 +104,20 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`comment.update() is working as expected after calling comment.stop()`, async () => {
+            const plebbit = await config.plebbitInstancePromise();
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
+            const postToStop = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
-            await comment.update();
-            await new Promise((resolve) => comment.once("update", resolve)); // CommentIpfs Update
-            await new Promise((resolve) => comment.once("update", resolve)); // CommentUpdate update
+            await postToStop.update();
+            await resolveWhenConditionIsTrue(postToStop, () => typeof postToStop.updatedAt === "number"); // CommentIpfs and CommentUpdate should be defined now
+            await postToStop.stop();
 
-            await comment.stop();
+            await postToStop.update();
 
-            await comment.update();
-
-            await publishRandomReply(comment, plebbit);
-            await new Promise((resolve) => comment.once("update", resolve));
-            await comment.stop();
+            const reply = await publishRandomReply(postToStop, plebbit);
+            await waitTillReplyInParentPagesInstance(reply, postToStop);
+            await postToStop.stop();
+            await plebbit.destroy();
         });
 
         it(`comment.update() is working as expected after comment.publish()`, async () => {
@@ -195,15 +196,18 @@ getRemotePlebbitConfigs().map((config) => {
             const createdComment = await plebbit.createComment({ cid: invalidCommentIpfsCid });
             expect(createdComment.content).to.be.undefined; // Make sure it didn't use the props sub pages
 
+            const errors = [];
             const updatingStates = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            createdComment.on("error", (err) => errors.push(err));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
             expect(createdComment.content).to.be.undefined; // Make sure it didn't use the props sub pages
 
-            const err = await new Promise((resolve) => createdComment.once("error", resolve));
-            expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+            await resolveWhenConditionIsTrue(createdComment, () => errors.length >= 1, "error");
+            expect(errors.length).to.equal(1);
+            expect(errors[0].code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
 
             // should stop updating by itself because of the critical error
 
@@ -219,12 +223,15 @@ getRemotePlebbitConfigs().map((config) => {
 
             const updatingStates = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            const errors = [];
+            createdComment.on("error", (err) => errors.push(err));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
 
-            const error = await new Promise((resolve) => createdComment.once("error", resolve));
-            expect(error.code).to.equal("ERR_INVALID_JSON");
+            await resolveWhenConditionIsTrue(createdComment, () => errors.length >= 1, "error");
+            expect(errors.length).to.equal(1);
+            expect(errors[0].code).to.equal("ERR_INVALID_JSON");
 
             await new Promise((resolve) => setTimeout(resolve, 500)); // wait until RPC transmits other states
             // should stop updating by itself because of the critical error
@@ -243,10 +250,13 @@ getRemotePlebbitConfigs().map((config) => {
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
+            const errors = [];
+            createdComment.on("error", (err) => errors.push(err));
             await createdComment.update();
 
-            const err = await new Promise((resolve) => createdComment.once("error", resolve));
-            expect(err.code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
+            await resolveWhenConditionIsTrue(createdComment, () => errors.length >= 1, "error");
+            expect(errors.length).to.equal(1);
+            expect(errors[0].code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
 
             // should stop updating by itself because of the critical error
 

@@ -132,7 +132,7 @@ declare const PlebbitJs: {
             }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
             description?: string | undefined;
             name?: string | undefined;
-        }, ...args_1: unknown[]) => {
+        }, ...args: unknown[]) => {
             type: string;
             getChallenge: (args_0: {
                 path?: string | undefined;
@@ -258,7 +258,7 @@ declare const PlebbitJs: {
                 }, import("zod").ZodTypeAny, "passthrough">[]] | undefined;
                 description?: string | undefined;
                 name?: string | undefined;
-            }, args_1: import("../../../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("../../../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args_4: unknown[]) => Promise<{
+            }, args_1: import("../../../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("../../../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args: unknown[]) => Promise<{
                 success: true;
             } | {
                 error: string;
@@ -266,7 +266,7 @@ declare const PlebbitJs: {
             } | {
                 type: string;
                 challenge: string;
-                verify: (args_0: string, ...args_1: unknown[]) => Promise<{
+                verify: (args_0: string, ...args: unknown[]) => Promise<{
                     success: true;
                 } | {
                     error: string;

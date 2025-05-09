@@ -12,6 +12,7 @@ import {
     itSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../dist/node/util.js";
+import signers from "../../fixtures/signers.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
@@ -77,6 +78,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(subplebbitInstance)))`, async () => {
         const props = { title: Math.random() + "123" };
         const firstSub = await plebbit.createSubplebbit(props);
+        expect(firstSub.title).to.equal(props.title);
         const secondSub = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(firstSub)));
         expect(secondSub.title).to.equal(props.title);
 
@@ -171,6 +173,19 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     itSkipIfRpc(`Can't create a subplebbit if it's running in another Plebbit instance`, async () => {
         const firstPlebbit = await mockPlebbit();
+
+        try {
+            await firstPlebbit.createSubplebbit({ address: signers[0].address }); // this sub is running in test-server process instance
+            expect.fail("should have thrown");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS");
+        } finally {
+            await firstPlebbit.destroy();
+        }
+    });
+
+    itSkipIfRpc(`Can create a subplebbit if it's running in the same plebbit instance`, async () => {
+        const firstPlebbit = await mockPlebbit();
         const firstSub = await firstPlebbit.createSubplebbit();
         await firstSub.start();
         const differentPlebbit = await mockPlebbitV2({
@@ -178,15 +193,16 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
             stubStorage: false,
             mockResolve: true
         });
-        try {
-            await differentPlebbit.createSubplebbit({ address: firstSub.address });
-            expect.fail("should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_CAN_NOT_LOAD_DB_IF_LOCAL_SUB_ALREADY_STARTED_IN_ANOTHER_PROCESS");
-        } finally {
-            await firstPlebbit.destroy();
-            await differentPlebbit.destroy();
-        }
+
+        const recreatedSub = await differentPlebbit.createSubplebbit({ address: firstSub.address });
+        expect(recreatedSub.startedState).to.equal("stopped");
+        expect(recreatedSub.address).to.equal(firstSub.address);
+        expect(recreatedSub.signer.address).to.equal(firstSub.signer.address);
+        expect(recreatedSub.title).to.equal(firstSub.title);
+        expect(recreatedSub.description).to.equal(firstSub.description);
+
+        await firstPlebbit.destroy();
+        await differentPlebbit.destroy();
     });
 
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
@@ -208,5 +224,18 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
                 "ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA"
             ]);
         }
+    });
+
+    it(`plebbit.subplebbits shows unlocked created subplebbits`, async () => {
+        const title = "Test plebbit.subplebbits" + Date.now();
+        const subSigner = await plebbit.createSigner();
+
+        const createdSubplebbit = await plebbit.createSubplebbit({ signer: subSigner, title: title });
+        // At this point the sub should be unlocked and ready to be recreated by another instance
+        const listedSubs = plebbit.subplebbits;
+        expect(listedSubs).to.include(createdSubplebbit.address);
+
+        expect(createdSubplebbit.address).to.equal(subSigner.address);
+        expect(createdSubplebbit.title).to.equal(title);
     });
 });

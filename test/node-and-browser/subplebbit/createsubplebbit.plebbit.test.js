@@ -78,7 +78,15 @@ getRemotePlebbitConfigs().map((config) =>
 
             expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids).and.to.be.a("object");
 
-            expect(jsonifySubplebbitAndRemoveInternalProps(subJson)).to.deep.equal(jsonifySubplebbitAndRemoveInternalProps(subObj));
+            const noInternalPropsSubObj = jsonifySubplebbitAndRemoveInternalProps(subObj);
+            const noInternalPropsSubJson = jsonifySubplebbitAndRemoveInternalProps(subJson);
+            for (const key of Object.keys(noInternalPropsSubJson)) {
+                expect(noInternalPropsSubJson[key]).to.deep.equal(noInternalPropsSubObj[key], `Mismatch for key: ${key}`);
+            }
+
+            for (const key of Object.keys(noInternalPropsSubObj)) {
+                expect(noInternalPropsSubJson[key]).to.deep.equal(noInternalPropsSubObj[key], `Mismatch for key: ${key}`);
+            }
         });
 
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {

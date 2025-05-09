@@ -110,7 +110,12 @@ export class BaseClientsManager {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
             }
-            catch { }
+            catch (e) {
+                await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-unsubscribe");
+                //@ts-expect-error
+                e.details = { ...e.details, pubsubProviderUrl, pubsubTopic };
+                this.emitError(e);
+            }
         }
     }
     prePubsubPublishProvider(pubsubTopic, pubsubProvider) { }
@@ -183,10 +188,11 @@ export class BaseClientsManager {
                 cache: options.cache,
                 signal: options.signal,
                 //@ts-expect-error, this option is for node-fetch
-                size: options.maxFileSizeBytes
+                size: options.maxFileSizeBytes,
+                headers: options.requestHeaders
             });
             if (res.status !== 200)
-                throw Error("Failed to fetch due to status code: " + res.status + " And res.statusText" + res.statusText);
+                throw Error(`Failed to fetch due to status code: ${res.status} + ", res.statusText" + (${res.statusText})`);
             if (options.shouldAbortRequestFunc) {
                 const abortError = await options.shouldAbortRequestFunc(res);
                 if (abortError) {
@@ -195,7 +201,7 @@ export class BaseClientsManager {
             }
             const sizeHeader = res.headers.get("Content-Length");
             if (sizeHeader && Number(sizeHeader) > options.maxFileSizeBytes)
-                throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
+                throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options, res, sizeHeader });
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined)
                 return { resText: await res.text(), res };
@@ -218,7 +224,7 @@ export class BaseClientsManager {
                     if (done || !value)
                         break;
                     if (value.length + totalBytesRead > options.maxFileSizeBytes)
-                        throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
+                        throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
                     totalBytesRead += value.length;
                 }
                 return { resText, res };
@@ -356,7 +362,7 @@ export class BaseClientsManager {
     async resolveIpnsToCidP2P(ipnsName, loadOpts) {
         const ipfsClient = this.getDefaultIpfs();
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true }));
+            const resolvedCidOfIpns = await last(ipfsClient._client.name.resolve(ipnsName, { nocache: true, recursive: true }));
             if (!resolvedCidOfIpns)
                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", { resolvedCidOfIpns, ipnsName, ipfsClient, loadOpts });
             return CidPathSchema.parse(resolvedCidOfIpns);
@@ -392,9 +398,8 @@ export class BaseClientsManager {
                     throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", {
                         cid: cidV0,
                         loadOpts,
-                        fileContentLength: data.byteLength,
-                        calculatedCid,
-                        ipfsClient
+                        endedDownloadAtFileContentLength: data.byteLength,
+                        ipfsClient: ipfsClient._clientOptions
                     });
             }
             return fileContent;
@@ -410,6 +415,8 @@ export class BaseClientsManager {
         catch (e) {
             if (e instanceof PlebbitError)
                 throw e;
+            else if (e instanceof Error && e.name === "TimeoutError")
+                throw new PlebbitError("ERR_FETCH_CID_P2P_TIMEOUT", { cid: cidV0, error: e, loadOpts, ipfsClient });
             else
                 throw new PlebbitError("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, error: e, loadOpts, ipfsClient });
         }

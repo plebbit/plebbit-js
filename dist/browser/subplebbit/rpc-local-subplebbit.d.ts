@@ -18,7 +18,6 @@ export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements R
     toJSONInternalRpcBeforeFirstUpdate(): RpcInternalSubplebbitRecordBeforeFirstUpdateType;
     initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType): Promise<void>;
     initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType): Promise<void>;
-    protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]): void;
     protected _updateRpcClientStateFromStartedState(startedState: RpcLocalSubplebbit["startedState"]): void;
     protected _processUpdateEventFromRpcUpdate(args: any): Promise<void>;
     private _handleRpcUpdateEventFromStart;
@@ -29,8 +28,9 @@ export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements R
     private _handleRpcChallengeVerificationEvent;
     start(): Promise<void>;
     private _cleanUpRpcConnection;
+    stopWithoutRpcCall(): Promise<void>;
     stop(): Promise<void>;
-    edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this>;
+    edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<typeof this>;
     update(): Promise<void>;
     delete(): Promise<void>;
 }

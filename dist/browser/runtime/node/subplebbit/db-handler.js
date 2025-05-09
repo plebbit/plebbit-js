@@ -19,6 +19,10 @@ import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import KeyvSqlite from "@keyv/sqlite";
+import { exec } from "child_process";
+import { promisify } from "util";
+import pLimit from "p-limit";
+const execPromise = promisify(exec);
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -31,6 +35,7 @@ export class DbHandler {
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
+        hideClassPrivateProps(this);
     }
     async initDbConfigIfNeeded() {
         if (!this._dbConfig)
@@ -87,11 +92,13 @@ export class DbHandler {
     }
     async destoryConnection() {
         const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
-        await this._knex.destroy();
-        await this._keyv.disconnect();
+        if (this._knex)
+            await this._knex.destroy();
+        if (this._keyv)
+            await this._keyv.disconnect();
         //@ts-expect-error
         this._knex = this._keyv = undefined;
-        log.trace("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
+        log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
     async createTransaction(transactionId) {
         assert(!this._currentTrxs[transactionId]);
@@ -110,15 +117,25 @@ export class DbHandler {
         const trx = this._currentTrxs[transactionId];
         if (trx) {
             assert(trx.isTransaction, `Transaction (${transactionId}) needs to be stored to rollback`);
-            if (trx.isCompleted())
+            if (trx.isCompleted()) {
+                delete this._currentTrxs[transactionId];
                 return;
-            await this._currentTrxs[transactionId].rollback();
-            delete this._currentTrxs[transactionId];
+            }
+            try {
+                await this._currentTrxs[transactionId].rollback();
+            }
+            catch (e) {
+                log.error(`Failed to rollback transaction (${transactionId}) due to error`, e);
+            }
+            finally {
+                delete this._currentTrxs[transactionId];
+            }
         }
         log.trace(`Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${remeda.keys.strict(this._currentTrxs).length}`);
     }
     async rollbackAllTransactions() {
-        return Promise.all(remeda.keys.strict(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+        for (const trxId of remeda.keys.strict(this._currentTrxs))
+            await this.rollbackTransaction(trxId);
     }
     _baseTransaction(trx) {
         return trx ? trx : this._knex;
@@ -136,7 +153,7 @@ export class DbHandler {
             table.integer("thumbnailUrlHeight").nullable();
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
-            table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+            table.text("previousCid").nullable(); // it's not a foreign key because it's possible to purge the comment pointed to by previousCid. It's optimisc
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable();
@@ -155,7 +172,7 @@ export class DbHandler {
     }
     async _createCommentUpdatesTable(tableName) {
         await this._knex.schema.createTable(tableName, (table) => {
-            table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
+            table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS); // this refers to the cid of CommentIpfs, in tables comments
             table.json("edit").nullable();
             table.integer("upvoteCount").notNullable();
             table.integer("downvoteCount").notNullable();
@@ -172,10 +189,12 @@ export class DbHandler {
             table.json("signature").notNullable(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable(); // TODO we should not be storing replies here, it takes too much storage
-            table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+            table.text("lastChildCid").nullable();
             table.timestamp("lastReplyTimestamp").nullable();
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
-            table.text("ipfsPath").notNullable().unique();
+            table.text("localMfsPath").nullable(); // the mfs path of post CommentUpdate, not applicable to replies
+            table.text("postCommentUpdateCid").nullable(); // the cid of CommentUpdate, cidv0, not applicable to replies
+            table.boolean("publishedToPostUpdatesMFS").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
@@ -491,7 +510,12 @@ export class DbHandler {
             parentCid: commentCid
         };
         const children = await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
-        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.cid, trx))));
+        const limit = pLimit(50);
+        const replyCountPromises = children.map((comment) => limit(() => this.queryReplyCount(comment.cid, trx)));
+        // Wait for all queries to complete and sum the results
+        const replyCounts = await Promise.all(replyCountPromises);
+        const childrenReplyCount = replyCounts.reduce((sum, count) => sum + count, 0);
+        return children.length + childrenReplyCount;
     }
     async queryActiveScore(comment, trx) {
         let maxTimestamp = comment.timestamp;
@@ -563,16 +587,18 @@ export class DbHandler {
     }
     async queryFlattenedPageReplies(options, trx) {
         const firstLevelReplies = await this.queryPageComments(options, trx);
-        const nestedReplies = await Promise.all(firstLevelReplies.map(async (baseComment) => {
+        const nestedReplies = [];
+        for (const baseComment of firstLevelReplies) {
             const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
             if (commentHasReplies) {
                 // Only get the nested replies, don't include the base comment again
-                return await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                const replies = await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
+                nestedReplies.push(replies);
             }
             else {
-                return []; // No replies to this comment
+                nestedReplies.push([]); // No replies to this comment
             }
-        }));
+        }
         // Combine first level replies with all nested replies
         return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
     }
@@ -585,7 +611,7 @@ export class DbHandler {
     async queryCommentUpdatesOfPostsForBucketAdjustment(trx) {
         return this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .select(`${TABLES.COMMENT_UPDATES}.ipfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
+            .select(`${TABLES.COMMENT_UPDATES}.localMfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
             .where("depth", 0);
     }
     async deleteAllCommentUpdateRows(trx) {
@@ -596,6 +622,9 @@ export class DbHandler {
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .where(`${TABLES.COMMENTS}.postCid`, postCid)
             .select(`${TABLES.COMMENT_UPDATES}.*`);
+    }
+    async queryCommentsWithPostCidSortedByDepth(postCid, trx) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where(`${TABLES.COMMENTS}.postCid`, postCid).orderBy("depth", "DESC");
     }
     async queryCommentsOfAuthors(authorSignerAddresses, trx) {
         if (!Array.isArray(authorSignerAddresses))
@@ -611,6 +640,28 @@ export class DbHandler {
             .first();
         return comment;
     }
+    async queryCommentModerationBySignatureEncoded(signatureEncoded, trx) {
+        const commentMod = await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+            .whereJsonPath("signature", "$.signature", "=", signatureEncoded)
+            .first();
+        return commentMod;
+    }
+    async queryCommentEditBySignatureEncoded(signatureEncoded, trx) {
+        const commentEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+            .whereJsonPath("signature", "$.signature", "=", signatureEncoded)
+            .first();
+        return commentEdit;
+    }
+    async queryParentsCids(rootComment, trx) {
+        const parents = [];
+        let curParentCid = rootComment.parentCid;
+        while (curParentCid) {
+            parents.push({ cid: curParentCid });
+            curParentCid = (await this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", curParentCid).select("parentCid").first())
+                ?.parentCid;
+        }
+        return parents;
+    }
     async queryParents(rootComment, trx) {
         const parents = [];
         let curParentCid = rootComment.parentCid;
@@ -624,7 +675,7 @@ export class DbHandler {
     }
     async queryCommentsToBeUpdated(trx) {
         // Criteria:
-        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
+        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) or commentUpdate.publishedToPostUpdatesMFS is false OR
         // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit or CommentModeration OR
         // 3 - Comments that new votes, CommentEdit, commentModeration or other comments were published under them
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
@@ -632,7 +683,8 @@ export class DbHandler {
         const criteriaOne = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`);
+            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
+            .orWhere(`${TABLES.COMMENT_UPDATES}.publishedToPostUpdatesMFS`, false);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         // @ts-expect-error
         const criteriaTwoThree = await this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -654,10 +706,21 @@ export class DbHandler {
             .orHaving(`commentEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`modEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
-        const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
-        const parents = remeda.flattenDeep(await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx))));
-        const authorComments = await this.queryCommentsOfAuthors(remeda.unique(comments.map((comment) => comment.authorSignerAddress)), trx);
-        const uniqComments = remeda.uniqueBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+        const commentsToUpdate = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+        // not just direct parent, also grandparents, till we reach the root post
+        const limit = pLimit(50);
+        const allParentsOfCommentsToUpdate = [];
+        // Get comments that have a parentCid
+        const commentsWithParents = remeda.unique(commentsToUpdate.filter((comment) => comment.parentCid));
+        // Create parallel queries with concurrency limit
+        const parentQueries = commentsWithParents.map((commentToUpdateWithParent) => limit(() => this.queryParents(commentToUpdateWithParent, trx)));
+        // Wait for all parent queries to complete
+        const parentsResults = await Promise.all(parentQueries);
+        // Flatten the results into allParentsOfCommentsToUpdate
+        for (const parents of parentsResults)
+            allParentsOfCommentsToUpdate.push(...parents);
+        const authorComments = await this.queryCommentsOfAuthors(remeda.unique(commentsToUpdate.map((comment) => comment.authorSignerAddress)), trx);
+        const uniqComments = remeda.uniqueBy([...commentsToUpdate, ...allParentsOfCommentsToUpdate, ...authorComments], (comment) => comment.cid);
         return uniqComments;
     }
     _calcActiveUserCount(commentsRaw, votesRaw) {
@@ -780,6 +843,7 @@ export class DbHandler {
             .orderBy("id", "desc")
             .select(["cid", "timestamp"])
             .first();
+        // last reply timestamp is the timestamp of the latest child or indirect child timestamp
         const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
         return {
             lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
@@ -853,7 +917,7 @@ export class DbHandler {
             throw Error("Failed to query subplebbitAuthor.lastCommentCid");
         const firstCommentTimestamp = remeda.minBy(authorComments, (comment) => comment.id)?.timestamp;
         if (typeof firstCommentTimestamp !== "number")
-            throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
+            throw Error("Failed to query subbplebbitAuthor.firstCommentTimestamp");
         const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);
         return {
             postScore,
@@ -864,47 +928,114 @@ export class DbHandler {
         };
     }
     // will return a list of comment cids + comment updates + their pages that got purged
-    async purgeComment(cid, trx) {
-        // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
-        const purgedCids = [];
+    async purgeComment(cid, isNestedCall = false) {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeComment");
+        let transactionStarted = false;
         try {
-            await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid }).del();
-        }
-        catch { }
-        try {
-            await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        }
-        catch { }
-        if (await this._baseTransaction(trx).schema.hasTable(TABLES.COMMENT_UPDATES)) {
-            // delete the comment update of the upstream tree as well to force plebbit-js to generate a new comment update without the purged comment
-            let curCid = cid;
-            while (curCid) {
-                const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid }, trx);
-                if (commentUpdate?.ipfsPath)
-                    purgedCids.push(commentUpdate.ipfsPath);
-                if (commentUpdate?.replies?.pageCids)
-                    purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
-                try {
-                    await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
-                }
-                catch { }
-                const comment = await this.queryComment(curCid, trx);
-                curCid = comment?.parentCid;
+            // Only start a transaction if this is not a nested call
+            if (!isNestedCall) {
+                log(`Starting EXCLUSIVE transaction for purging comment ${cid}`);
+                await this._knex.raw("BEGIN EXCLUSIVE TRANSACTION");
+                transactionStarted = true;
             }
+            const purgedCids = [];
+            // Next, delete direct child comments
+            try {
+                const directChildren = await this._knex(TABLES.COMMENTS).where({ parentCid: cid });
+                for (const child of directChildren) {
+                    purgedCids.push(...(await this.purgeComment(child.cid, true)));
+                }
+            }
+            catch (error) {
+                log.error(`Error finding direct children of ${cid}: ${error}`);
+            }
+            // Now delete related data for this comment
+            try {
+                await this._knex(TABLES.VOTES).where({ commentCid: cid }).del();
+            }
+            catch (error) {
+                log.error(`Error deleting votes for comment ${cid}: ${error}`);
+            }
+            try {
+                await this._knex(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+            }
+            catch (error) {
+                log.error(`Error deleting comment edits for comment ${cid}: ${error}`);
+            }
+            // Handle comment updates
+            if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES)) {
+                try {
+                    const commentUpdate = await this.queryStoredCommentUpdate({ cid });
+                    if (commentUpdate?.localMfsPath)
+                        purgedCids.push(commentUpdate.localMfsPath);
+                    if (commentUpdate?.postCommentUpdateCid)
+                        purgedCids.push(commentUpdate.postCommentUpdateCid);
+                    if (commentUpdate?.replies?.pageCids)
+                        purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
+                    await this._knex(TABLES.COMMENT_UPDATES).where({ cid }).del();
+                }
+                catch (error) {
+                    log.error(`Error deleting comment update for comment ${cid}: ${error}`);
+                }
+                // If this is the top-level call, also update parent comment updates
+                if (!isNestedCall) {
+                    try {
+                        let curCid = (await this._knex(TABLES.COMMENTS).where({ cid }).first())?.parentCid;
+                        while (curCid) {
+                            const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid });
+                            if (commentUpdate?.localMfsPath)
+                                purgedCids.push(commentUpdate.localMfsPath);
+                            if (commentUpdate?.postCommentUpdateCid)
+                                purgedCids.push(commentUpdate.postCommentUpdateCid);
+                            if (commentUpdate?.replies?.pageCids)
+                                purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
+                            await this._knex(TABLES.COMMENT_UPDATES).where({ cid: curCid }).del();
+                            const comment = await this.queryComment(curCid);
+                            curCid = comment?.parentCid;
+                        }
+                    }
+                    catch (error) {
+                        log.error(`Error updating parent comment updates for comment ${cid}: ${error}`);
+                    }
+                }
+            }
+            // Finally delete the comment itself
+            try {
+                await this._knex(TABLES.COMMENTS).where({ cid }).del();
+            }
+            catch (error) {
+                log.error(`Error deleting comment ${cid}: ${error}`);
+                throw error;
+            }
+            purgedCids.push(cid);
+            // Only commit if we started the transaction
+            if (transactionStarted) {
+                log(`Committing EXCLUSIVE transaction for purging comment ${cid}`);
+                await this._knex.raw("COMMIT");
+            }
+            return remeda.unique(purgedCids);
         }
-        // delete the replies tree of this comment (going down the tree here)
-        const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: cid });
-        for (const child of children)
-            purgedCids.push(...(await this.purgeComment(child.cid, trx)));
-        try {
-            await this._baseTransaction(trx)(TABLES.COMMENTS).where({ cid }).del();
+        catch (error) {
+            // Only rollback if we started the transaction
+            if (transactionStarted) {
+                log.error(`Error during comment purge, rolling back transaction: ${error}`);
+                try {
+                    await this._knex.raw("ROLLBACK");
+                }
+                catch (rollbackError) {
+                    log.error(`Error during rollback: ${rollbackError}`);
+                }
+            }
+            else {
+                // Just log the error for nested calls
+                log.error(`Error during nested comment purge: ${error}`);
+            }
+            throw error;
         }
-        catch { }
-        purgedCids.push(cid);
-        return remeda.unique(purgedCids);
     }
     async changeDbFilename(oldDbName, newDbName) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");
+        await this.destoryConnection();
         const oldPathString = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
@@ -941,7 +1072,7 @@ export class DbHandler {
         }
         catch (e) {
             if (e instanceof Error && e.message === "Lock file is already being held")
-                throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress });
+                throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress, error: e });
             else {
                 log(`Error while trying to lock start of sub (${subAddress}): ${e}`);
                 throw e;
@@ -967,14 +1098,14 @@ export class DbHandler {
     async isSubStartLocked(subAddress = this._subplebbit.address) {
         const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
-        const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
+        const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 10000 });
         return isLocked;
     }
     // Subplebbit state lock
-    async lockSubState(subAddress = this._subplebbit.address) {
+    async lockSubState() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:lockSubState");
-        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${this._subplebbit.address}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", this._subplebbit.address);
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
@@ -983,34 +1114,75 @@ export class DbHandler {
             });
         }
         catch (e) {
-            log.error(`Error when attempting to lock sub state`, subAddress, e);
+            log.error(`Error when attempting to lock sub state`, this._subplebbit.address, e);
             if (e instanceof Error && e.message === "Lock file is already being held")
-                throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
+                throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: this._subplebbit.address, error: e });
             // Not sure, do we need to throw error here
         }
     }
-    async unlockSubState(subAddress = this._subplebbit.address) {
+    async unlockSubState() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:unlockSubState");
-        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${this._subplebbit.address}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", this._subplebbit.address);
         if (!fs.existsSync(lockfilePath))
             return;
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
         }
         catch (e) {
-            log.error(`Error when attempting to unlock sub state`, subAddress, e);
+            log.error(`Error when attempting to unlock sub state`, this._subplebbit.address, e);
             if (e instanceof Error && "code" in e && e.code !== "ENOTACQUIRED")
                 throw e;
         }
     }
-    // Misc functions
-    subDbExists(subAddress = this._subplebbit.address) {
-        const dbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
-        return fs.existsSync(dbPath);
+    subDbExists() {
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", this._subplebbit.address);
+        return fs.existsSync(subDbPath);
     }
-    subAddress() {
-        return this._subplebbit.address;
+    async queryCommentsUnderPostSortedByDepth(postCid, trx) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC").select("cid");
+    }
+    async updateCommentUpdatesPublishedToPostUpdatesMFS(commentCids, trx) {
+        return await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+            .whereIn("cid", commentCids)
+            .update({ publishedToPostUpdatesMFS: true });
+    }
+    async updateMfsPathOfCommentUpdates(oldAddress, newAddress, trx) {
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({
+            //@ts-expect-error
+            localMfsPath: this._knex.raw("REPLACE(localMfsPath, ?, ?)", [oldAddress, newAddress])
+        });
+    }
+    async resetPublishedToPostUpdatesMFS(trx) {
+        // force a new production of CommentUpdate of all Comments
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({ publishedToPostUpdatesMFS: false });
+    }
+    async resetPublishedToPostUpdatesMFSWithPostCid(postCid, trx) {
+        // Update the publishedToPostUpdatesMFS field for CommentUpdate rows where the postCid matches
+        // First, get all the comment cids that match the postCid
+        const commentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).select("cid");
+        // Then update the comment updates table using those cids
+        if (commentCids.length > 0) {
+            await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+                .whereIn("cid", commentCids.map((record) => record.cid))
+                .update({ publishedToPostUpdatesMFS: false });
+        }
+    }
+    async queryAllCidsUnderThisSubplebbit(trx) {
+        const allCids = new Set();
+        const commentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
+        commentCids.forEach((comment) => allCids.add(comment.cid));
+        const commentUpdateCids = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
+            .select("postCommentUpdateCid")
+            .whereNotNull("postCommentUpdateCid");
+        commentUpdateCids.forEach((cid) => cid.postCommentUpdateCid && allCids.add(cid.postCommentUpdateCid));
+        const replies = await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).select("replies").whereNotNull("replies");
+        replies.forEach((reply) => {
+            if (reply?.replies?.pageCids) {
+                Object.values(reply.replies.pageCids).forEach((cid) => allCids.add(cid));
+            }
+        });
+        return allCids;
     }
 }
 //# sourceMappingURL=db-handler.js.map

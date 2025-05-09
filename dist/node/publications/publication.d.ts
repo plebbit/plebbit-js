@@ -19,6 +19,9 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     challengeRequest?: CreatePublicationOptions["challengeRequest"];
     state: PublicationState | Comment["state"];
     publishingState: PublicationPublishingState;
+    raw: {
+        pubsubMessageToPublish?: PublicationFromDecryptedChallengeRequest;
+    };
     private _subplebbit?;
     private _challengeAnswer?;
     private _publishedChallengeRequests?;
@@ -49,7 +52,8 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     publishChallengeAnswers(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): Promise<true | undefined>;
     private _validatePublicationFields;
     private _validateSubFields;
-    _updatePublishingState(newState: Publication["publishingState"]): void;
+    _updatePublishingStateNoEmission(newState: Publication["publishingState"]): void;
+    _updatePublishingStateWithEmission(newState: Publication["publishingState"]): void;
     private _updateRpcClientStateFromPublishingState;
     protected _updateState(newState: Publication["state"]): void;
     protected _setRpcClientState(newState: Publication["clients"]["plebbitRpcClients"][""]["state"]): void;
@@ -260,7 +264,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
         title?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-            pageCids: Record<string, string>;
+            pageCids?: Record<string, string> | undefined;
         } | undefined;
         description?: string | undefined;
         pubsubTopic?: string | undefined;

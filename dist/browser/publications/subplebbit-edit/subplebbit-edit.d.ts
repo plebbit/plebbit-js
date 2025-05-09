@@ -6,7 +6,9 @@ import type { SignerType } from "../../signer/types.js";
 declare class SubplebbitEdit extends Publication implements SubplebbitEditPubsubMessagePublication {
     subplebbitEdit: SubplebbitEditPubsubMessagePublication["subplebbitEdit"];
     signature: SubplebbitEditPubsubMessagePublication["signature"];
-    _pubsubMsgToPublish?: SubplebbitEditPubsubMessagePublication;
+    raw: {
+        pubsubMessageToPublish?: SubplebbitEditPubsubMessagePublication;
+    };
     challengeRequest?: CreateSubplebbitEditPublicationOptions["challengeRequest"];
     constructor(plebbit: Plebbit);
     _initLocalProps(props: {

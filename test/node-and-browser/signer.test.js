@@ -3,6 +3,7 @@ import { mockPlebbitNoDataPathWithOnlyKuboClient } from "../../dist/node/test/te
 import fixtureSigners from "../fixtures/signers.js";
 import { signBufferEd25519, verifyBufferEd25519 } from "../../dist/node/signer/signatures.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import { Buffer } from "buffer";
 const authorSignerFixture = fixtureSigners[1];
 
 describe("signer (node and browser)", async () => {

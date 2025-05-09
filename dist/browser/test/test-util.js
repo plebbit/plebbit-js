@@ -8,13 +8,14 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { v4 as uuidV4 } from "uuid";
 import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, _signPubsubMsg, signChallengeVerification, signSubplebbit } from "../signer/signatures.js";
-import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
+import { findCommentInPageInstance, findCommentInPageInstanceRecursively, mapPageIpfsCommentToPageJsonComment, TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/browser/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import { Buffer } from "buffer";
 import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
 import env from "../version.js";
 import { createHeliaNode } from "../helia/helia-for-plebbit.js";
+import { PlebbitError } from "../plebbit-error.js";
 function generateRandomTimestamp(parentTimestamp) {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
     let randomTimestamp = -1;
@@ -75,6 +76,8 @@ export async function generateMockVote(parentPostOrComment, vote, plebbit, signe
     return voteObj;
 }
 export async function loadAllPages(pageCid, pagesInstance) {
+    if (!pageCid)
+        throw Error("Can't load all pages with undefined pageCid");
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
@@ -82,6 +85,49 @@ export async function loadAllPages(pageCid, pagesInstance) {
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     return sortedComments;
+}
+export async function loadAllPagesBySortName(pageSortName, pagesInstance) {
+    if (!pageSortName)
+        throw Error("Can't load all pages with undefined pageSortName");
+    if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages[pageSortName])
+        return pagesInstance.pages[pageSortName].comments;
+    let sortedCommentsPage = pagesInstance.pages[pageSortName] || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
+    let sortedComments = sortedCommentsPage.comments;
+    while (sortedCommentsPage.nextCid) {
+        sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        sortedComments = sortedComments.concat(sortedCommentsPage.comments);
+    }
+    return sortedComments;
+}
+export async function loadAllUniquePostsUnderSubplebbit(subplebbit) {
+    if (Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length === 0)
+        throw Error("Page instance has no comments under it");
+    const allCommentsInPreloadedPages = Object.keys(subplebbit.posts.pageCids).length === 0 && Object.keys(subplebbit.posts.pages).length > 0;
+    if (allCommentsInPreloadedPages) {
+        const allComments = subplebbit.posts.pages.hot?.comments;
+        if (!allComments)
+            throw Error("No comments found under subplebbit.posts.pages.hot");
+        return allComments;
+    }
+    else {
+        // we have multiple pages, need to load all pages and merge them
+        return loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+    }
+}
+export async function loadAllUniqueCommentsUnderCommentInstance(comment) {
+    if (Object.keys(comment.replies.pageCids).length === 0 && Object.keys(comment.replies.pages).length === 0)
+        throw Error("Comment replies instance has no comments under it");
+    const allCommentsInPreloadedPages = Object.keys(comment.replies.pageCids).length === 0 && Object.keys(comment.replies.pages).length > 0;
+    if (allCommentsInPreloadedPages) {
+        const allComments = comment.replies.pages.best?.comments;
+        if (!allComments)
+            throw Error("No comments found under comment.replies.pages.best");
+        return allComments;
+    }
+    else {
+        // we have multiple pages, need to load all pages and merge them
+        return loadAllPages(comment.replies.pageCids.new, comment.replies);
+    }
 }
 async function _mockSubplebbitPlebbit(signer, plebbitOptions) {
     const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubKuboRpcClientsOptions: ["http://localhost:15002/api/v0"] }, true);
@@ -157,8 +203,8 @@ export async function startOnlineSubplebbit() {
 export async function startSubplebbits(props) {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, {
         ...remeda.pick(props, ["noData", "dataPath"]),
-        publishInterval: 3000,
-        updateInterval: 3000
+        publishInterval: 1000,
+        updateInterval: 1000
     });
     const mainSub = await createSubWithNoChallenge({ signer: props.signers[0] }, plebbit); // most publications will be on this sub
     await mainSub.start();
@@ -255,7 +301,7 @@ export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubS
         for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
             plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
     plebbit.on("error", (e) => {
-        console.error("Error emitted to plebbit instance", e);
+        log.error("Plebbit error", e);
     });
     return plebbit;
 }
@@ -289,14 +335,22 @@ export async function mockRpcServerPlebbit(plebbitOptions) {
         mockResolve: true,
         forceMockPubsub: true,
         remotePlebbit: false,
-        stubStorage: false
+        stubStorage: true // we want storage to force new resolve-subplebbit-address states
     });
     return plebbit;
 }
 export async function mockRpcRemotePlebbit(plebbitOptions) {
+    if (!isRpcFlagOn())
+        throw Error("This function should only be used when the rpc flag is on");
     // This instance will connect to an rpc server that has no local subs
     const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
     return plebbit;
+}
+export async function mockRPCLocalPlebbit(plebbitOptions) {
+    if (!isRpcFlagOn())
+        throw Error("This function should only be used when the rpc flag is on");
+    // This instance will connect to an rpc server that local subs
+    return mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
 }
 export async function mockGatewayPlebbit(plebbitOptions) {
     // Keep only pubsub and gateway
@@ -363,7 +417,11 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
     await publication.publish();
     await validateResponsePromise;
 }
-export async function findCommentInPage(commentCid, pageCid, pages) {
+export async function iterateThroughPageCidToFindComment(commentCid, pageCid, pages) {
+    if (!commentCid)
+        throw Error("Can't find comment with undefined commentCid");
+    if (!pageCid)
+        throw Error("Can't find comment with undefined pageCid");
     let currentPageCid = remeda.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);
@@ -374,30 +432,62 @@ export async function findCommentInPage(commentCid, pageCid, pages) {
     }
     return undefined;
 }
-export async function waitTillPostInSubplebbitPages(post, plebbit) {
-    const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+export async function waitTillPostInSubplebbitInstancePages(post, sub) {
     const isPostInSubPages = async () => {
-        if (!("new" in sub.posts.pageCids))
+        if (Object.keys(sub.posts.pageCids).length === 0 && Object.keys(sub.posts.pages).length > 0) {
+            // it's a single preloaded page
+            const postInPage = findCommentInPageInstanceRecursively(sub.posts, post.cid);
+            return Boolean(postInPage);
+        }
+        else if (Object.keys(sub.posts.pageCids).length > 0) {
+            const postsNewPageCid = sub.posts.pageCids.new;
+            const postInPage = await iterateThroughPageCidToFindComment(post.cid, postsNewPageCid, sub.posts);
+            return Boolean(postInPage);
+        }
+        else
             return false;
-        const postsNewPageCid = sub.posts.pageCids.new;
-        const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
-        return Boolean(postInPage);
     };
     await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
+}
+export async function waitTillPostInSubplebbitPages(post, plebbit) {
+    const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+    await sub.update();
+    await waitTillPostInSubplebbitInstancePages(post, sub);
     await sub.stop();
+}
+export async function iterateThroughPagesToFindCommentInParentPagesInstance(commentCid, pages) {
+    const preloadedPage = Object.keys(pages.pages)[0];
+    const commentInPage = findCommentInPageInstance(pages, commentCid);
+    if (commentInPage)
+        return mapPageIpfsCommentToPageJsonComment(commentInPage);
+    if (pages.pages[preloadedPage]?.nextCid) {
+        // means we have multiple pages
+        return iterateThroughPageCidToFindComment(commentCid, pages.pageCids.new, pages);
+    }
+    return undefined;
+}
+export async function waitTillReplyInParentPagesInstance(reply, parentComment) {
+    const isReplyInParentPages = async () => {
+        if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
+            // it's a single preloaded page
+            const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
+            return Boolean(postInPage);
+        }
+        else {
+            if (!("new" in parentComment.replies.pageCids))
+                return false;
+            const commentNewPageCid = parentComment.replies.pageCids.new;
+            const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
+            return Boolean(replyInPage);
+        }
+    };
+    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
 }
 export async function waitTillReplyInParentPages(reply, plebbit) {
     const parentComment = await plebbit.createComment({ cid: reply.parentCid });
-    const isReplyInParentPages = async () => {
-        if (!("new" in parentComment.replies.pageCids))
-            return false;
-        const commentNewPageCid = parentComment.replies.pageCids.new;
-        const replyInPage = await findCommentInPage(reply.cid, commentNewPageCid, parentComment.replies);
-        return Boolean(replyInPage);
-    };
     await parentComment.update();
-    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
+    await waitTillReplyInParentPagesInstance(reply, parentComment);
     await parentComment.stop();
 }
 export async function createSubWithNoChallenge(props, plebbit) {
@@ -407,7 +497,7 @@ export async function createSubWithNoChallenge(props, plebbit) {
 }
 export async function generatePostToAnswerMathQuestion(props, plebbit) {
     const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
-    mockPost.removeAllListeners();
+    mockPost.removeAllListeners("challenge");
     mockPost.once("challenge", (challengeMessage) => {
         mockPost.publishChallengeAnswers(["2"]);
     });
@@ -416,8 +506,7 @@ export async function generatePostToAnswerMathQuestion(props, plebbit) {
 export function isRpcFlagOn() {
     const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
     // const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
-    const isRpcFlagOn = isPartOfProcessEnv;
-    return isRpcFlagOn;
+    return isPartOfProcessEnv;
 }
 export function isRunningInBrowser() {
     return Boolean(globalThis["window"]);
@@ -456,7 +545,7 @@ export async function overrideCommentInstancePropsAndSign(comment, props) {
         comment[optionKey] = pubsubPublication[optionKey] = props[optionKey];
     }
     comment.signature = pubsubPublication.signature = await signComment(removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }), comment._plebbit);
-    comment._pubsubMsgToPublish = pubsubPublication;
+    comment.raw.pubsubMessageToPublish = pubsubPublication;
     disableValidationOfSignatureBeforePublishing(comment);
 }
 export async function overrideCommentEditInstancePropsAndSign(commentEdit, props) {
@@ -473,7 +562,7 @@ export async function setExtraPropOnCommentAndSign(comment, extraProps, includeE
     const publicationWithExtraProp = { ...comment.toJSONPubsubMessagePublication(), ...extraProps };
     if (includeExtraPropInSignedPropertyNames)
         publicationWithExtraProp.signature = await _signJson([...comment.signature.signedPropertyNames, ...remeda.keys.strict(extraProps)], cleanUpBeforePublishing(publicationWithExtraProp), comment.signer, log);
-    comment._pubsubMsgToPublish = publicationWithExtraProp;
+    comment.raw.pubsubMessageToPublish = publicationWithExtraProp;
     disableValidationOfSignatureBeforePublishing(comment);
     Object.assign(comment, publicationWithExtraProp);
 }
@@ -482,7 +571,7 @@ export async function setExtraPropOnVoteAndSign(vote, extraProps, includeExtraPr
     const publicationWithExtraProp = { ...vote.toJSONPubsubMessagePublication(), ...extraProps };
     if (includeExtraPropInSignedPropertyNames)
         publicationWithExtraProp.signature = await _signJson([...vote.signature.signedPropertyNames, ...Object.keys(extraProps)], cleanUpBeforePublishing(publicationWithExtraProp), vote.signer, log);
-    vote._pubsubMsgToPublish = publicationWithExtraProp;
+    vote.raw.pubsubMessageToPublish = publicationWithExtraProp;
     disableValidationOfSignatureBeforePublishing(vote);
     Object.assign(vote, publicationWithExtraProp);
 }
@@ -491,7 +580,7 @@ export async function setExtraPropOnCommentEditAndSign(commentEdit, extraProps, 
     const publicationWithExtraProp = { ...commentEdit.toJSONPubsubMessagePublication(), ...extraProps };
     if (includeExtraPropInSignedPropertyNames)
         publicationWithExtraProp.signature = await _signJson([...commentEdit.signature.signedPropertyNames, ...Object.keys(extraProps)], cleanUpBeforePublishing(publicationWithExtraProp), commentEdit.signer, log);
-    commentEdit._pubsubMsgToPublish = publicationWithExtraProp;
+    commentEdit.raw.pubsubMessageToPublish = publicationWithExtraProp;
     disableValidationOfSignatureBeforePublishing(commentEdit);
     Object.assign(commentEdit, publicationWithExtraProp);
 }
@@ -500,7 +589,7 @@ export async function setExtraPropOnCommentModerationAndSign(commentModeration, 
     const newPubsubPublicationWithExtraProp = (remeda.mergeDeep(commentModeration.toJSONPubsubMessagePublication(), extraProps));
     if (includeExtraPropInSignedPropertyNames)
         newPubsubPublicationWithExtraProp.signature = await _signJson([...commentModeration.signature.signedPropertyNames, ...Object.keys(extraProps)], cleanUpBeforePublishing(newPubsubPublicationWithExtraProp), commentModeration.signer, log);
-    commentModeration._pubsubMsgToPublish = newPubsubPublicationWithExtraProp;
+    commentModeration.raw.pubsubMessageToPublish = newPubsubPublicationWithExtraProp;
     disableValidationOfSignatureBeforePublishing(commentModeration);
     Object.assign(commentModeration, newPubsubPublicationWithExtraProp);
 }
@@ -638,12 +727,13 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
     }
     return heliaPlebbit;
 }
-let remotePlebbitConfigs = [];
-export function setRemotePlebbitConfigs(configs) {
+let plebbitConfigs = [];
+export function setPlebbitConfigs(configs) {
     const mapper = {
-        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "IPFS P2P" },
+        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
         "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
-        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" }
+        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" },
+        "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" }
     };
     if (configs.length === 0)
         throw Error("No configs were provided");
@@ -651,25 +741,42 @@ export function setRemotePlebbitConfigs(configs) {
     for (const config of configs)
         if (!mapper[config])
             throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(mapper)}`);
-    remotePlebbitConfigs = configs.map((config) => mapper[config]);
+    plebbitConfigs = configs.map((config) => mapper[config]);
+    if (globalThis.window) {
+        window.addEventListener("uncaughtException", (err) => {
+            console.error("uncaughtException", JSON.stringify(err, ["message", "arguments", "type", "name"]));
+        });
+        window.addEventListener("unhandledrejection", (err) => {
+            console.error("unhandledRejection", JSON.stringify(err, ["message", "arguments", "type", "name"]));
+        });
+    }
+    else if (process) {
+        process.on("uncaughtException", (...err) => {
+            console.error("uncaughtException", ...err);
+        });
+        process.on("unhandledRejection", (...err) => {
+            console.error("unhandledRejection", ...err);
+        });
+    }
 }
 export function getRemotePlebbitConfigs() {
     // Check if configs are passed via environment variable
-    if (process?.env?.PLEBBIT_CONFIGS) {
-        const configs = process.env.PLEBBIT_CONFIGS.split(",");
+    const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
+    if (plebbitConfigsFromEnv) {
+        const configs = plebbitConfigsFromEnv.split(",");
         // Set the configs if they're coming from the environment variable
-        setRemotePlebbitConfigs(configs);
+        setPlebbitConfigs(configs);
     }
     //@ts-expect-error
     const plebbitConfigsFromWindow = globalThis["window"]?.["PLEBBIT_CONFIGS"];
     if (plebbitConfigsFromWindow) {
         const configs = plebbitConfigsFromWindow.split(",");
         // Set the configs if they're coming from the environment variable
-        setRemotePlebbitConfigs(configs);
+        setPlebbitConfigs(configs);
     }
-    if (remotePlebbitConfigs.length === 0)
-        throw Error("No remote plebbit configs set");
-    return remotePlebbitConfigs;
+    if (plebbitConfigs.length === 0)
+        throw Error("No remote plebbit configs set, " + plebbitConfigsFromEnv + " " + plebbitConfigsFromWindow);
+    return plebbitConfigs;
 }
 export async function createNewIpns() {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
@@ -710,7 +817,7 @@ export async function publishSubplebbitRecordWithExtraProp(opts) {
 export async function createMockedSubplebbitIpns(subplebbitOpts) {
     const ipnsObj = await createNewIpns();
     const subplebbitRecord = {
-        ...(await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z"))._rawSubplebbitIpfs,
+        ...(await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z")).toJSONIpfs(),
         posts: undefined,
         address: ipnsObj.signer.address,
         pubsubTopic: ipnsObj.signer.address,
@@ -739,7 +846,7 @@ export function jsonifyCommentAndRemoveInstanceProps(comment) {
         delete jsonfied["replies"]["clients"];
     if ("replies" in jsonfied && remeda.isEmpty(jsonfied.replies))
         delete jsonfied["replies"];
-    return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
+    return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState", "raw"]);
 }
 export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit, subAddress) {
     return plebbit._awaitSubplebbitsToIncludeSub(subAddress);
@@ -763,24 +870,24 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs) {
         };
     }
 }
-export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked, commentUpdateRecordString) {
-    const updatingComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid];
-    if (!updatingComment)
-        throw Error("Comment should be updating before starting to mock");
+export function mockPostToReturnSpecificCommentUpdate(commentToBeMocked, commentUpdateRecordString) {
+    const updatingPostComment = commentToBeMocked._plebbit._updatingComments[commentToBeMocked.cid];
+    if (!updatingPostComment)
+        throw Error("Post should be updating before starting to mock");
     if (commentToBeMocked._plebbit._plebbitRpcClient)
-        throw Error("Can't mock sub to return specific record when plebbit is using RPC");
-    delete updatingComment.updatedAt;
-    delete updatingComment._rawCommentUpdate;
+        throw Error("Can't mock Post to return specific CommentUpdate record when plebbit is using RPC");
+    delete updatingPostComment.updatedAt;
+    delete updatingPostComment.raw.commentUpdate;
     //@ts-expect-error
-    delete updatingComment._subplebbitForUpdating?.subplebbit?.updateCid;
+    delete updatingPostComment._subplebbitForUpdating?.subplebbit?.updateCid;
     //@ts-expect-error
-    if (updatingComment._subplebbitForUpdating?.subplebbit?._clientsManager?._updateCidsAlreadyLoaded)
+    if (updatingPostComment._subplebbitForUpdating?.subplebbit?._clientsManager?._updateCidsAlreadyLoaded)
         //@ts-expect-error
-        updatingComment._subplebbitForUpdating.subplebbit._clientsManager._updateCidsAlreadyLoaded = new Set();
-    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
-    if (isPlebbitFetchingUsingGateways(updatingComment._plebbit)) {
-        const originalFetch = updatingComment._clientsManager.fetchFromMultipleGateways.bind(updatingComment._clientsManager);
-        updatingComment._clientsManager.fetchFromMultipleGateways = async (...args) => {
+        updatingPostComment._subplebbitForUpdating.subplebbit._clientsManager._updateCidsAlreadyLoaded = new Set();
+    mockCommentToNotUsePagesForUpdates(commentToBeMocked);
+    if (isPlebbitFetchingUsingGateways(updatingPostComment._plebbit)) {
+        const originalFetch = updatingPostComment._clientsManager.fetchFromMultipleGateways.bind(updatingPostComment._clientsManager);
+        updatingPostComment._clientsManager.fetchFromMultipleGateways = async (...args) => {
             const commentUpdateCid = await addStringToIpfs(commentUpdateRecordString);
             if (args[0].recordPlebbitType === "comment-update")
                 return originalFetch({
@@ -794,9 +901,9 @@ export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked
     }
     else {
         // we're using kubo/helia
-        const originalFetch = updatingComment._clientsManager._fetchCidP2P.bind(updatingComment._clientsManager);
+        const originalFetch = updatingPostComment._clientsManager._fetchCidP2P.bind(updatingPostComment._clientsManager);
         //@ts-expect-error
-        updatingComment._clientsManager._fetchCidP2P = (...args) => {
+        updatingPostComment._clientsManager._fetchCidP2P = (...args) => {
             if (args[0].endsWith("/update")) {
                 return commentUpdateRecordString;
             }
@@ -805,12 +912,38 @@ export async function mockCommentToReturnSpecificCommentUpdate(commentToBeMocked
         };
     }
 }
+export function mockPostToFailToLoadFromPostUpdates(postToBeMocked) {
+    const updatingPostComment = postToBeMocked._plebbit._updatingComments[postToBeMocked.cid];
+    if (!updatingPostComment)
+        throw Error("Post should be updating before starting to mock");
+    if (postToBeMocked._plebbit._plebbitRpcClient)
+        throw Error("Can't mock Post to to fail loading post from postUpdates when plebbit is using RPC");
+    mockCommentToNotUsePagesForUpdates(postToBeMocked);
+    updatingPostComment._clientsManager._fetchPostCommentUpdateIpfsP2P =
+        updatingPostComment._clientsManager._fetchPostCommentUpdateFromGateways = async () => {
+            throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES");
+        };
+}
+export function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked) {
+    const updatingPostComment = postToBeMocked._plebbit._updatingComments[postToBeMocked.cid];
+    if (!updatingPostComment)
+        throw Error("Post should be updating before starting to mock");
+    if (postToBeMocked._plebbit._plebbitRpcClient)
+        throw Error("Can't mock Post to to fail loading post from postUpdates when plebbit is using RPC");
+    mockCommentToNotUsePagesForUpdates(postToBeMocked);
+    const originalSubplebbitUpdateHandle = updatingPostComment._clientsManager.handleUpdateEventFromSub.bind(updatingPostComment._clientsManager);
+    updatingPostComment._clientsManager.handleUpdateEventFromSub = (subplebbit) => {
+        delete subplebbit.postUpdates;
+        delete subplebbit.raw.subplebbitIpfs.postUpdates;
+        return originalSubplebbitUpdateHandle(subplebbit);
+    };
+}
 export async function createCommentUpdateWithInvalidSignature(commentCid) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const comment = await plebbit.getComment(commentCid);
     await comment.update();
     await resolveWhenConditionIsTrue(comment, async () => typeof comment.updatedAt === "number");
-    const invalidCommentUpdateJson = comment._rawCommentUpdate;
+    const invalidCommentUpdateJson = comment.raw.commentUpdate;
     await comment.stop();
     invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
     return invalidCommentUpdateJson;
@@ -821,10 +954,14 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit, subAddress,
         throw Error("Can't mock sub when it's not being updated");
     if (plebbit._plebbitRpcClient)
         throw Error("Can't mock sub to return specific record when plebbit is using RPC");
-    delete sub._rawSubplebbitIpfs;
-    delete sub.updatedAt;
-    sub._clientsManager._updateCidsAlreadyLoaded.clear();
-    delete sub.updateCid;
+    const clearOut = () => {
+        delete sub.raw.subplebbitIpfs;
+        delete sub.updatedAt;
+        sub._clientsManager._updateCidsAlreadyLoaded.clear();
+        delete sub.updateCid;
+    };
+    clearOut();
+    sub.once("update", () => clearOut());
     const subplebbitRecordCid = await addStringToIpfs(JSON.stringify(subplebbitRecord));
     if (isPlebbitFetchingUsingGateways(sub._plebbit)) {
         const originalFetch = sub._clientsManager._fetchWithLimit.bind(sub._clientsManager);
@@ -834,8 +971,7 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit, subAddress,
             if (url.includes("ipns")) {
                 return {
                     ...args,
-                    resText: JSON.stringify(subplebbitRecord),
-                    res: { headers: { get: (headerName) => (headerName === "x-ipfs-roots" ? subplebbitRecordCid : undefined) } }
+                    resText: JSON.stringify(subplebbitRecord)
                 };
             }
             else
@@ -853,7 +989,101 @@ export function mockCommentToNotUsePagesForUpdates(comment) {
         throw Error("Comment should be updating before starting to mock");
     if (comment._plebbit._plebbitRpcClient)
         throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
-    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsSubplebbit = () => undefined;
+    updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
+}
+export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
+    // max comment size is 40kb = 40000
+    const rawCommentUpdateRecord = comment.raw.commentUpdate;
+    if (!rawCommentUpdateRecord)
+        throw Error("Comment should be updating before forcing to generate all pages");
+    if (Object.keys(comment.replies.pageCids).length > 0)
+        return;
+    const curRecordSize = Buffer.byteLength(JSON.stringify(rawCommentUpdateRecord));
+    const maxCommentSize = 30000;
+    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+    const content = "x".repeat(1024 * 30); //30kb
+    let lastPublishedReply;
+    await Promise.all(new Array(numOfCommentsToPublish).fill(null).map(async () => {
+        //@ts-expect-error
+        lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+    }));
+    const updatingComment = await comment._plebbit.createComment(comment);
+    await updatingComment.update();
+    //@ts-expect-error
+    await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
+    if (Object.keys(updatingComment.replies.pageCids).length === 0)
+        throw Error("Failed to force the subplebbit to load all pages");
+}
+export async function forceSubplebbitToGenerateAllPostsPages(subplebbit) {
+    // max comment size is 40kb = 40000
+    const rawSubplebbitRecord = subplebbit.toJSONIpfs();
+    if (!rawSubplebbitRecord)
+        throw Error("Subplebbit should be updating before forcing to generate all pages");
+    if (Object.keys(subplebbit.posts.pageCids).length > 0)
+        return;
+    const curRecordSize = Buffer.byteLength(JSON.stringify(rawSubplebbitRecord));
+    const maxCommentSize = 30000;
+    const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
+    const content = "x".repeat(1024 * 30); //30kb
+    let lastPublishedPost;
+    await Promise.all(new Array(numOfCommentsToPublish).fill(null).map(async () => {
+        const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
+        lastPublishedPost = post;
+    }));
+    //@ts-expect-error
+    await waitTillPostInSubplebbitPages(lastPublishedPost, subplebbit._plebbit);
+    const newSubplebbit = await subplebbit._plebbit.getSubplebbit(subplebbit.address);
+    if (Object.keys(newSubplebbit.posts.pageCids).length === 0)
+        throw Error("Failed to force the subplebbit to load all pages");
+}
+export async function findOrGeneratePostWithMultiplePages(subplebbit) {
+    let postInPage = subplebbit.posts?.pages?.hot?.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
+    if (!postInPage) {
+        let pageCid = subplebbit.posts?.pageCids.new;
+        while (pageCid && !postInPage) {
+            const loadedPage = await subplebbit.posts.getPage(pageCid);
+            postInPage = loadedPage.comments.find((comment) => comment.replies?.pages?.best?.nextCid);
+            pageCid = loadedPage.nextCid;
+        }
+        if (postInPage)
+            return postInPage;
+    }
+    // didn't find any post with multiple pages, so we'll publish a new one
+    const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
+    await post.update();
+    await resolveWhenConditionIsTrue(post, async () => typeof post.updatedAt === "number");
+    await forceSubplebbitToGenerateAllRepliesPages(post);
+    return post;
+}
+export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit) {
+    const post = await findOrGeneratePostWithMultiplePages(subplebbit);
+    const replyInPage = post.replies?.pages?.best?.comments[0];
+    if (replyInPage)
+        return replyInPage;
+    //@ts-expect-error
+    const reply = await publishRandomReply(post, subplebbit._plebbit, {});
+    return reply;
+}
+export function mockReplyToUseParentPagesForUpdates(reply) {
+    const updatingComment = reply._plebbit._updatingComments[reply.cid];
+    if (!updatingComment)
+        throw Error("Reply should be updating before starting to mock");
+    if (updatingComment.depth === 0)
+        throw Error("Should not call this function on a post");
+    mockCommentToNotUsePagesForUpdates(reply);
+    const originalFunc = updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate.bind(updatingComment._clientsManager);
+    updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate = (postInstance) => {
+        // this should stop plebbit-js from assuming the post replies is a single preloaded page
+        const updatingSubInstance = reply._plebbit._updatingSubplebbits[postInstance.subplebbitAddress];
+        const updatingParentInstance = reply._plebbit._updatingComments[reply.parentCid];
+        if (postInstance.replies.pages.best)
+            postInstance.replies.pages.best.comments = [];
+        if (updatingSubInstance?.posts.pages.hot)
+            updatingSubInstance.posts.pages.hot.comments = [];
+        if (updatingParentInstance?.replies?.pages?.best)
+            updatingParentInstance.replies.pages.best.comments = [];
+        return originalFunc(postInstance);
+    };
 }
 export function mockUpdatingCommentResolvingAuthor(comment, mockFunction) {
     const updatingComment = comment._plebbit._updatingComments[comment.cid];
@@ -897,7 +1127,7 @@ export function processAllCommentsRecursively(comments, processor) {
         return;
     comments.forEach((comment) => processor(comment));
     for (const comment of comments)
-        if (comment.replies?.pages?.topAll?.comments)
-            processAllCommentsRecursively(comment.replies.pages.topAll.comments, processor);
+        if (comment.replies?.pages?.best?.comments)
+            processAllCommentsRecursively(comment.replies.pages.best.comments, processor);
 }
 //# sourceMappingURL=test-util.js.map

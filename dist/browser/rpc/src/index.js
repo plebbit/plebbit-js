@@ -422,13 +422,13 @@ class PlebbitWsServer extends EventEmitter {
         let sentCommentIpfsUpdateEvent = false;
         const comment = await this.plebbit.createComment({ cid });
         const sendUpdate = () => {
-            if (!sentCommentIpfsUpdateEvent && comment._rawCommentIpfs) {
+            if (!sentCommentIpfsUpdateEvent && comment.raw.comment) {
                 const commentIpfsRecord = comment.toJSONIpfs();
                 sendEvent("update", commentIpfsRecord);
                 sentCommentIpfsUpdateEvent = true;
             }
-            if (comment._rawCommentUpdate) {
-                sendEvent("update", comment._rawCommentUpdate);
+            if (comment.raw.commentUpdate) {
+                sendEvent("update", comment.raw.commentUpdate);
             }
         };
         const updateListener = () => sendUpdate();
@@ -439,15 +439,12 @@ class PlebbitWsServer extends EventEmitter {
         comment.on("statechange", stateListener);
         const errorListener = (error) => sendEvent("error", error);
         comment.on("error", errorListener);
-        const waitingRetryListener = (error) => sendEvent("waiting-retry", error);
-        comment.on("waiting-retry", waitingRetryListener);
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             comment.removeListener("update", updateListener);
             comment.removeListener("updatingstatechange", updatingStateListener);
             comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
-            comment.removeListener("waiting-retry", waitingRetryListener);
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
         // if fail, cleanup
@@ -496,15 +493,12 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.on("startedstatechange", startedStateListener);
         const errorListener = (error) => sendEvent("error", error);
         subplebbit.on("error", errorListener);
-        const waitingRetryListener = (error) => sendEvent("waiting-retry", error);
-        subplebbit.on("waiting-retry", waitingRetryListener);
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             subplebbit.removeListener("update", updateListener);
             subplebbit.removeListener("updatingstatechange", updatingStateListener);
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
-            subplebbit.removeListener("waiting-retry", waitingRetryListener);
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
             if (!isSubStarted && subplebbit.state !== "stopped")
                 subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, params }));
@@ -512,7 +506,7 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             // need to send an update with first subplebbitUpdate if it's a local sub
-            if ("signer" in subplebbit || subplebbit._rawSubplebbitIpfs)
+            if ("signer" in subplebbit || subplebbit.raw.subplebbitIpfs)
                 sendSubJson();
             // No need to call .update() if it's already running locally because we're listening to update event
             if (!isSubStarted)
@@ -759,16 +753,14 @@ class PlebbitWsServer extends EventEmitter {
         return true;
     }
     async destroy() {
-        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
-            const startedSub = await getStartedSubplebbit(subplebbitAddress);
-            await startedSub.stop();
-            delete startedSubplebbits[subplebbitAddress];
-        }
         for (const connectionId of remeda.keys.strict(this.subscriptionCleanups))
             for (const subscriptionId of remeda.keys.strict(this.subscriptionCleanups[connectionId]))
                 await this.unsubscribe([Number(subscriptionId)], connectionId);
         this.ws.close();
-        await this.plebbit.destroy();
+        await this.plebbit.destroy(); // this will stop all started subplebbits
+        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
+            delete startedSubplebbits[subplebbitAddress];
+        }
         this._onSettingsChange = {};
     }
 }

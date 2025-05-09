@@ -2,6 +2,7 @@ import {
     binaryKeyToPubsubTopic,
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
+    ipnsNameToIpnsOverPubsubTopic,
     isIpns,
     pubsubTopicToDhtKey,
     shortifyAddress,
@@ -73,8 +74,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     clients: SubplebbitClientsManager["clients"];
     updateCid?: string;
     ipnsName?: string;
-    ipnsPubsubTopic?: string;
-    ipnsPubsubTopicDhtKey?: string;
+    ipnsPubsubTopic?: string; // ipns over pubsub topic
+    ipnsPubsubTopicDhtKey?: string; // peers of subplebbit.ipnsPubsubTopic, use this cid with http routers to find peers of ipns-over-pubsub
+    pubsubTopicPeersCid?: string; // peers of subplebbit.pubsubTopic, use this cid with http routers to find peers of subplebbit.pubsubTopic
 
     // should be used internally
     _plebbit: Plebbit;
@@ -162,13 +164,30 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
     }
 
+    protected async _updateIpnsPubsubPropsIfNeeded(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions) {
+        if ("ipnsName" in newProps && newProps.ipnsName) {
+            this.ipnsName = newProps.ipnsName;
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        } else if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
+            // The signature public key has changed, we need to update the ipns name and pubsub topic
+            const signaturePeerId = await getPeerIdFromPublicKey(newProps.signature.publicKey);
+            this.ipnsName = signaturePeerId.toB58String();
+            this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
+            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        }
+        if (!this.pubsubTopicPeersCid) {
+            if ("pubsubTopicPeersCid" in newProps) this.pubsubTopicPeersCid = newProps.pubsubTopicPeersCid;
+            else this.pubsubTopicPeersCid = await pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+        }
+    }
+
     async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions) {
         // This function is not strict, and will assume all props can be undefined, except address
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
-        this.pubsubTopic = newProps.pubsubTopic;
         this.protocolVersion = newProps.protocolVersion;
 
         this.roles = newProps.roles;
@@ -182,13 +201,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.createdAt = newProps.createdAt;
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
+        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this.pubsubTopic = newProps.pubsubTopic;
+
         this.signature = newProps.signature;
-        if (this.signature?.publicKey && !this.ipnsName) {
-            const signaturePeerId = await getPeerIdFromPublicKey(this.signature.publicKey);
-            this.ipnsName = signaturePeerId.toB58String();
-            this.ipnsPubsubTopic = binaryKeyToPubsubTopic(signaturePeerId.toBytes());
-            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
-        }
+
         this.setAddress(newProps.address);
         await this._updateLocalPostsInstance(newProps.posts);
 

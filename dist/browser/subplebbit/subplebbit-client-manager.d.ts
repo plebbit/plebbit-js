@@ -9,6 +9,7 @@ import { ChainTicker } from "../types.js";
 import { SubplebbitIpfsType } from "./types.js";
 import { SubplebbitKuboRpcClient } from "../clients/ipfs-client.js";
 import { SubplebbitKuboPubsubClient } from "../clients/pubsub-client.js";
+import { LimitedSet } from "../general-util/limited-set.js";
 export declare const MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS: number;
 export declare class SubplebbitClientsManager extends ClientsManager {
     clients: {
@@ -29,7 +30,7 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     private _subplebbit;
     _ipnsLoadingOperation?: RetryOperation;
     _updateTimeout?: NodeJS.Timeout;
-    _updateCidsAlreadyLoaded: Set<string>;
+    _updateCidsAlreadyLoaded: LimitedSet<string>;
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]);
     protected _initKuboRpcClients(): void;
     protected _initPubsubKuboRpcClients(): void;
@@ -43,7 +44,6 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedTextRecordResolve): void;
     protected _getSubplebbitAddressFromInstance(): string;
     private _retryLoadingSubplebbitAddress;
-    private _findInvalidCidInNonRetriableError;
     updateOnce(): Promise<void>;
     startUpdatingLoop(): Promise<void>;
     stopUpdatingLoop(): Promise<void>;

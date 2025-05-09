@@ -1,6 +1,6 @@
 {
     "name": "@plebbit/plebbit-js",
-    "version": "0.0.5",
+    "version": "0.0.7",
     "type": "module",
     "scripts": {
         "build": "npm run clean && run-s build:node build:browser",
@@ -9,7 +9,7 @@
         "build:node:watch": "tsc --project config/tsconfig.json --watch",
         "build:browser": "node config/build-browser",
         "build:browser:watch": "node config/build-browser --watch --debug",
-        "webpack": "webpack --mode development --config config/webpack.config.js --stats-error-details",
+        "webpack": "webpack --mode development --config config/webpack.config.js --stats-error-details --bail",
         "webpack:watch": "while true; do webpack watch --mode development --config config/webpack.config.js; sleep 1; done",
         "test": "run-s test:node test:browser:chrome test:browser:firefox",
         "test:node": "mocha --forbid-only --bail --recursive --config config/.mocharc.json test/",
@@ -18,12 +18,12 @@
         "test:mocked:challenges": "mocha --forbid-only --bail --recursive --config config/.mocharc.json  test/challenges",
         "test:node:parallel:all": "mocha --forbid-only --bail --parallel --recursive --config config/.mocharc.json test/node test/node-and-browser",
         "test:node:parallel:local": "PLEBBIT_CONFIGS=local-kubo-rpc mocha --forbid-only --parallel --recursive --config config/.mocharc.json test/node",
-        "test:node:local": "PLEBBIT_CONFIGS=local-kubo-rpc mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node",
+        "test:node:local": "mocha --forbid-only --exit --recursive --bail --config config/.mocharc.json test/node",
         "test:node:parallel:remote": "PLEBBIT_CONFIGS=remote-kubo-rpc,remote-ipfs-gateway mocha --forbid-only --parallel --recursive --config config/.mocharc.json test/node-and-browser",
         "test:node:remote": "node test/run-test-config.js --plebbit-config remote-kubo-rpc,remote-ipfs-gateway --environment node",
         "test:browser:chrome": "PLEBBIT_CONFIGS=remote-kubo-rpc,remote-ipfs-gateway CHROME_BIN=$(which chrome || which chromium) FIREFOX_BIN='' karma start config/karma.conf.cjs",
         "test:browser:firefox": "PLEBBIT_CONFIGS=remote-kubo-rpc,remote-ipfs-gateway FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.cjs",
-        "test:server:node": "PLEBBIT_CONFIGS=remote-kubo-rpc node --es-module-specifier-resolution=node test/server/test-server.js",
+        "test:server:node": "node --es-module-specifier-resolution=node test/server/test-server.js",
         "test:server:node:rpc": "START_RPC_SERVER=1 PLEBBIT_CONFIGS=remote-kubo-rpc node --es-module-specifier-resolution=node test/server/test-server.js",
         "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",
@@ -38,6 +38,20 @@
     "files": [
         "dist/"
     ],
+    "exports": {
+        ".": {
+            "types": "./dist/node/index.d.ts",
+            "browser": "./dist/browser/index.js",
+            "import": "./dist/node/index.js",
+            "require": "./dist/node/index.js"
+        },
+        "./rpc": {
+            "types": "./dist/node/rpc/src/index.d.ts",
+            "browser": null,
+            "import": "./dist/node/rpc/src/index.js",
+            "require": "./dist/node/rpc/src/index.js"
+        }
+    },
     "dependencies": {
         "@bonfida/spl-name-service": "3.0.10",
         "@chainsafe/libp2p-gossipsub": "14.1.1",
@@ -54,7 +68,6 @@
         "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger#355a96d7659ed820047980049dfa627d30d83a69",
         "@plebbit/proper-lockfile": "github:plebbit/node-proper-lockfile#7fd6332117340c1d3d98dd0afee2d31cc06f72b8",
         "@types/proper-lockfile": "4.1.2",
-        "@types/uuid": "8.3.4",
         "assert": "2.1.0",
         "better-sqlite3": "11.9.1",
         "blockstore-core": "5.0.2",
@@ -65,14 +78,14 @@
         "cbor": "9.0.1",
         "debounce": "1.2.1",
         "err-code": "3.0.1",
-        "ethers": "6.13.5",
+        "ethers": "6.14.0",
         "ext-name": "5.0.0",
         "file-type": "20.5.0",
         "helia": "5.3.0",
         "hpagent": "1.2.0",
         "it-all": "3.0.6",
         "jose": "4.11.0",
-        "js-sha256": "0.9.0",
+        "js-sha256": "0.11.0",
         "js-sha512": "0.9.0",
         "keyv": "5.3.2",
         "knex": "3.1.0",
@@ -98,9 +111,9 @@
         "tinycache": "1.1.2",
         "ts-custom-error": "3.3.1",
         "typestub-ipfs-only-hash": "4.0.0",
-        "uuid": "9.0.1",
-        "viem": "2.23.5",
-        "zod": "3.24.3"
+        "uuid": "11.1.0",
+        "viem": "2.29.0",
+        "zod": "3.24.4"
     },
     "devDependencies": {
         "@babel/core": "7.23.7",
@@ -122,6 +135,7 @@
         "chai": "4.3.7",
         "chokidar": "3.5.3",
         "concurrently": "7.5.0",
+        "glob": "11.0.2",
         "karma": "6.4.2",
         "karma-chai": "0.1.0",
         "karma-chrome-launcher": "3.1.1",
@@ -183,6 +197,6 @@
     },
     "homepage": "https://github.com/plebbit/plebbit-js#readme",
     "engines": {
-        "node": ">=18.20.0"
+        "node": ">=20.18.0"
     }
 }

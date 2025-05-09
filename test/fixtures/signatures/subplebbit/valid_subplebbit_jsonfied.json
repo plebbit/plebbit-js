@@ -1,5 +1,8 @@
 {
     "startedState": "stopped",
+    "ipnsPubsubTopic": "/record/L2lwbnMvACQIARIgtkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+    "ipnsPubsubTopicDhtKey": "bafkreiftvi7wgbdhbxnenslhu5sytlid73siolkd2syhdnjhnvn3mksggi",
+    "pubsubTopicPeersCid": "bafkreidwoelrflsx5dgll7s6jfkhsj6ffkfplde2j5dyino6t7m4ijutem",
     "raw": {
         "subplebbitIpfs": {
             "address": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
@@ -24658,7 +24661,5 @@
     "address": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
     "shortAddress": "N5rLmRJ8fWMw",
     "ipnsName": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-    "ipnsPubsubTopic": "/record/ACQIARIgtkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
-    "ipnsPubsubTopicDhtKey": "bafkreicurr7dwkxk676pkzybt4ntctjsvgdewon522wbzklg2pqntozpee",
     "updateCid": "QmcsnF6176EzHt4PPT3TA3ysiYwE3T6qfhfiRDJg9rTjKC"
 }

@@ -1,11 +1,13 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import * as remeda from "remeda";
+import { PlebbitError } from "../plebbit-error.js";
 import { parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     constructor() {
         super(...arguments);
         this._updateRpcSubscriptionId = undefined;
+        this._updatingRpcSubInstanceWithListeners = undefined; // The plebbit._updatingSubplebbits we're subscribed to
     }
     _setRpcClientState(newState) {
         const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
@@ -14,6 +16,12 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
+    }
+    _setStartedState(newState) {
+        if (newState === this.startedState)
+            return;
+        this.startedState = newState;
+        this.emit("startedstatechange", this.startedState);
     }
     _updateRpcClientStateFromUpdatingState(updatingState) {
         // We're deriving the the rpc state from updating state
@@ -49,47 +57,166 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     }
     _handleUpdatingStateChangeFromRpcUpdate(args) {
         const newUpdatingState = args.params.result; // we're being optimistic that RPC server sent an appropiate updating state string
-        this._setUpdatingState(newUpdatingState);
+        this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
         this._updateRpcClientStateFromUpdatingState(newUpdatingState);
     }
-    _handleWaitingRetryEventFromRpcUpdate(args) {
-        const err = args.params.result;
-        this.emit("waiting-retry", err);
+    async _initMirroringUpdatingSubplebbit(updatingSubplebbit) {
+        this._updatingRpcSubInstanceWithListeners = {
+            subplebbit: updatingSubplebbit,
+            error: (err) => this.emit("error", err),
+            updatingstatechange: (updatingState) => this._setUpdatingStateWithEventEmissionIfNewState.bind(this)(updatingState),
+            update: async (updatingSubplebbit) => {
+                if (updatingSubplebbit.raw.subplebbitIpfs) {
+                    await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit.raw.subplebbitIpfs);
+                    this.updateCid = updatingSubplebbit.updateCid;
+                    this.emit("update", this);
+                }
+            },
+            statechange: async (newState) => {
+                if (newState === "stopped" && this.state !== "stopped")
+                    // plebbit._updatingSubplebbits[address].stop() has been called, we need to clean up the subscription
+                    // or plebbit._startedSubplebbits[address].stop has been called
+                    await this.stop();
+            },
+            challengerequest: (challengeRequest) => this.emit("challengerequest", challengeRequest),
+            challengeverification: (challengeVerification) => this.emit("challengeverification", challengeVerification),
+            challengeanswer: (challengeAnswer) => this.emit("challengeanswer", challengeAnswer),
+            challenge: (challenge) => this.emit("challenge", challenge),
+            startedstatechange: (startedState) => this._setStartedState.bind(this)(startedState)
+        };
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("update", this._updatingRpcSubInstanceWithListeners.update);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("updatingstatechange", this._updatingRpcSubInstanceWithListeners.updatingstatechange);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("error", this._updatingRpcSubInstanceWithListeners.error);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("statechange", this._updatingRpcSubInstanceWithListeners.statechange);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("challengerequest", this._updatingRpcSubInstanceWithListeners.challengerequest);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("challengeverification", this._updatingRpcSubInstanceWithListeners.challengeverification);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("challengeanswer", this._updatingRpcSubInstanceWithListeners.challengeanswer);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("challenge", this._updatingRpcSubInstanceWithListeners.challenge);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.on("startedstatechange", this._updatingRpcSubInstanceWithListeners.startedstatechange);
+        const clientKeys = remeda.keys.strict(this.clients);
+        for (const clientType of clientKeys)
+            if (updatingSubplebbit.clients[clientType])
+                for (const clientUrl of Object.keys(updatingSubplebbit.clients[clientType]))
+                    if (clientType !== "chainProviders")
+                        this.clients[clientType][clientUrl].mirror(updatingSubplebbit.clients[clientType][clientUrl]);
+                    else {
+                        for (const clientDeeperUrl of remeda.keys.strict(updatingSubplebbit.clients[clientType]))
+                            this.clients[clientType][clientUrl][clientDeeperUrl].mirror(updatingSubplebbit.clients[clientType][clientUrl][clientDeeperUrl]);
+                    }
+        this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
+        if (updatingSubplebbit.raw.subplebbitIpfs) {
+            await this.initSubplebbitIpfsPropsNoMerge(updatingSubplebbit.raw.subplebbitIpfs);
+            this.updateCid = updatingSubplebbit.updateCid;
+            this.emit("update", this);
+        }
     }
-    async update() {
-        const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
-        if (this.state !== "stopped" || this._updateRpcSubscriptionId)
-            return; // No need to do anything if subplebbit is already updating
+    async _initRpcUpdateSubscription() {
+        const log = Logger("plebbit-js:rpc-remote-subplebbit:_initRpcUpdateSubscription");
+        this._setState("updating");
         try {
             this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient.subplebbitUpdateSubscribe(this.address);
-            this._setState("updating");
         }
         catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
             this._setState("stopped");
-            this._setUpdatingState("failed");
+            this._setUpdatingStateWithEventEmissionIfNewState("failed");
             throw e;
         }
         this._plebbit
             ._plebbitRpcClient.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
-            .on("waiting-retry", this._handleWaitingRetryEventFromRpcUpdate.bind(this))
-            .on("error", (args) => this.emit("error", args.params.result)); // zod here
+            .on("error", (args) => this.emit("error", args.params.result));
         this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+    }
+    async _createAndSubscribeToNewUpdatingSubplebbit(updatingSubplebbit) {
+        const log = Logger("plebbit-js:rpc-remote-subplebbit:_createNewUpdatingSubplebbit");
+        const updatingSub = updatingSubplebbit || (await this._plebbit.createSubplebbit({ address: this.address }));
+        this._plebbit._updatingSubplebbits[this.address] = updatingSub;
+        log("Creating a new entry for this._plebbit._updatingSubplebbits", this.address);
+        if (updatingSub !== this)
+            // in plebbit.createSubplebbit() this function is called with the subplebbit instance itself
+            await this._initMirroringUpdatingSubplebbit(updatingSub);
+        await updatingSub._initRpcUpdateSubscription();
+    }
+    async update() {
+        const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
+        if (this.state === "started")
+            throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { address: this.address });
+        if (this.state !== "stopped")
+            return; // No need to do anything if subplebbit is already updating
+        this._setState("updating");
+        try {
+            if (this._plebbit._updatingSubplebbits[this.address]) {
+                await this._initMirroringUpdatingSubplebbit(this._plebbit._updatingSubplebbits[this.address]);
+            }
+            else if (this._plebbit._startedSubplebbits[this.address]) {
+                await this._initMirroringUpdatingSubplebbit(this._plebbit._startedSubplebbits[this.address]);
+            }
+            else {
+                // creating a new entry in plebbit._updatingSubplebbits
+                // poll updates from RPC
+                await this._createAndSubscribeToNewUpdatingSubplebbit();
+            }
+        }
+        catch (e) {
+            await this.stop();
+            throw e;
+        }
+    }
+    async _cleanupMirroringUpdatingSubplebbit() {
+        if (!this._updatingRpcSubInstanceWithListeners)
+            throw Error("rpcRemoteSubplebbit.state is updating but no mirroring updating subplebbit");
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("update", this._updatingRpcSubInstanceWithListeners.update);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("updatingstatechange", this._updatingRpcSubInstanceWithListeners.updatingstatechange);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("error", this._updatingRpcSubInstanceWithListeners.error);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("statechange", this._updatingRpcSubInstanceWithListeners.statechange);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("challengerequest", this._updatingRpcSubInstanceWithListeners.challengerequest);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("challengeverification", this._updatingRpcSubInstanceWithListeners.challengeverification);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("challengeanswer", this._updatingRpcSubInstanceWithListeners.challengeanswer);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("challenge", this._updatingRpcSubInstanceWithListeners.challenge);
+        this._updatingRpcSubInstanceWithListeners.subplebbit.removeListener("startedstatechange", this._updatingRpcSubInstanceWithListeners.startedstatechange);
+        const clientKeys = remeda.keys.strict(this.clients);
+        for (const clientType of clientKeys)
+            if (this.clients[clientType])
+                for (const clientUrl of Object.keys(this.clients[clientType]))
+                    if (clientType !== "chainProviders")
+                        this.clients[clientType][clientUrl].unmirror();
+                    else
+                        for (const clientDeeperUrl of remeda.keys.strict(this.clients[clientType]))
+                            this.clients[clientType][clientUrl][clientDeeperUrl].unmirror();
+        this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance--;
+        if (this._updatingRpcSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance === 0 &&
+            this._updatingRpcSubInstanceWithListeners.subplebbit.state === "updating") {
+            const log = Logger("plebbit-js:rpc-remote-subplebbit:_cleanupMirroringUpdatingSubplebbit");
+            log("Cleaning up plebbit._updatingSubplebbits", this.address, "There are no subplebbits using it for updates");
+            await this._updatingRpcSubInstanceWithListeners.subplebbit.stop();
+        }
+        this._updatingRpcSubInstanceWithListeners = undefined;
     }
     async stop() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:stop");
-        if (this.state !== "updating")
-            throw Error("User call rpcRemoteSubplebbit.stop() without updating first");
-        if (!this._updateRpcSubscriptionId)
-            throw Error("rpcRemoteSub.state is updating but no subscription id");
-        await this._plebbit._plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+        if (this.state === "stopped")
+            return;
+        if (this._updatingRpcSubInstanceWithListeners) {
+            await this._cleanupMirroringUpdatingSubplebbit();
+        }
+        else if (this._updateRpcSubscriptionId) {
+            try {
+                await this._plebbit._plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            }
+            catch (e) {
+                log.error("Failed to unsubscribe from subplebbitUpdate", e);
+            }
+            this._updateRpcSubscriptionId = undefined;
+            log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);
+            delete this._plebbit._updatingSubplebbits[this.address];
+        }
         this._setRpcClientState("stopped");
-        this._updateRpcSubscriptionId = undefined;
-        log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);
-        this._setUpdatingState("stopped");
+        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
+        this._setStartedState("stopped");
+        this.posts._stop();
     }
 }
 //# sourceMappingURL=rpc-remote-subplebbit.js.map

@@ -14,7 +14,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import path from "path";
 import fs from "fs";
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 import { v4 as uuidV4 } from "uuid";
 
 describe(`subplebbit.start`, async () => {

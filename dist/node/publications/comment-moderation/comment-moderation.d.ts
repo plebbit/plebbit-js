@@ -7,7 +7,9 @@ export declare class CommentModeration extends Publication implements CommentMod
     commentCid: CommentModerationPubsubMessagePublication["commentCid"];
     commentModeration: CommentModerationPubsubMessagePublication["commentModeration"];
     signature: CommentModerationPubsubMessagePublication["signature"];
-    _pubsubMsgToPublish?: CommentModerationPubsubMessagePublication;
+    raw: {
+        pubsubMessageToPublish?: CommentModerationPubsubMessagePublication;
+    };
     challengeRequest?: CreateCommentModerationOptions["challengeRequest"];
     constructor(plebbit: Plebbit);
     _initLocalProps(props: {

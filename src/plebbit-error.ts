@@ -5,7 +5,7 @@ export class PlebbitError extends CustomError {
     code: keyof typeof messages;
     override message: messages;
     override stack?: string;
-    details: Record<string, any>; // Used to hold key-value of related props. Could be cid of a comment that failed to update
+    details: Record<string, any> = {}; // Used to hold key-value of related props. Could be cid of a comment that failed to update
     constructor(code: keyof typeof messages, details?: any) {
         super(messages[code]);
         this.code = code;
@@ -14,7 +14,7 @@ export class PlebbitError extends CustomError {
     }
 
     override toString() {
-        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(remeda.omit(this.details, ["stack"]))}`;
+        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(this.details)}\nStack: ${this.stack}`;
     }
 
     toJSON() {

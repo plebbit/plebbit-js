@@ -11,13 +11,15 @@ import {
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
 
-import PlebbitWsServer from "../../rpc";
+import PlebbitWsServer from "../../dist/node/rpc/src/index.js";
 import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import fs from "fs";
+
+process.env["PLEBBIT_CONFIGS"] = process.env["PLEBBIT_CONFIGS"] || "local-kubo-rpc";
 
 const ipfsPath = getIpfsPath();
 
@@ -47,7 +49,7 @@ const pubsubNodeArgs = {
     gatewayPort: 18081,
     swarmPort: 4002,
     daemonArgs: "--enable-pubsub-experiment --enable-namesys-pubsub",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const onlineNodeArgs = {
@@ -73,7 +75,7 @@ const anotherPubsubNodeArgs = {
     gatewayPort: 18084,
     swarmPort: 4005,
     daemonArgs: "--enable-pubsub-experiment",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const httpRouterNodeArgs = {
@@ -82,7 +84,7 @@ const httpRouterNodeArgs = {
     gatewayPort: 18085,
     swarmPort: 4006,
     daemonArgs: "--enable-pubsub-experiment",
-    extraCommands: ["bootstrap rm --all"]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, httpRouterNodeArgs];
@@ -106,6 +108,7 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
     ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
     ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+    ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
     ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map((swarmAddr) => swarmAddr.replace("/4001", "/" + nodeArgs.swarmPort));
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
@@ -352,7 +355,7 @@ const setupMockDelegatedRouter = async () => {
 
     await setupMockDelegatedRouter();
 
-    await import("./pubsub-mock-server");
+    await import("./pubsub-mock-server.js");
 
     if (process.env["START_RPC_SERVER"] === "1") {
         // run RPC server here

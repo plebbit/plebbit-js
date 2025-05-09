@@ -5,7 +5,7 @@ import { verifySubplebbitEdit } from "../../signer/signatures.js";
 class SubplebbitEdit extends Publication {
     constructor(plebbit) {
         super(plebbit);
-        this._pubsubMsgToPublish = undefined;
+        this.raw = {};
         // public method should be bound
         this.publish = this.publish.bind(this);
         hideClassPrivateProps(this);
@@ -18,12 +18,12 @@ class SubplebbitEdit extends Publication {
     _initRemoteProps(props) {
         super._initBaseRemoteProps(props);
         this.subplebbitEdit = props.subplebbitEdit;
-        this._pubsubMsgToPublish = props;
+        this.raw.pubsubMessageToPublish = props;
     }
     toJSONPubsubMessagePublication() {
-        if (!this._pubsubMsgToPublish)
+        if (!this.raw.pubsubMessageToPublish)
             throw Error("Should define local props before calling toJSONPubsubMessagePublication");
-        return this._pubsubMsgToPublish;
+        return this.raw.pubsubMessageToPublish;
     }
     getType() {
         return "subplebbitEdit";

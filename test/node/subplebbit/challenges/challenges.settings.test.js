@@ -8,7 +8,7 @@ import {
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
     waitTillPostInSubplebbitPages
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 
 describe(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
@@ -44,6 +44,23 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(_subplebbit.challenges[0].caseInsensitive).to.be.true;
         }
         // clean up
+        await subplebbit.delete();
+    });
+
+    it(`Default challenge will send a challenge with the correct properties`, async () => {
+        const subplebbit = await plebbit.createSubplebbit({});
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        const challengePromise = new Promise((resolve) => subplebbit.once("challenge", resolve));
+        const post = await generateMockPost(subplebbit.address, plebbit);
+        await post.publish();
+        const challengePubsubMsg = await challengePromise;
+        expect(challengePubsubMsg.challenges).to.be.a("array");
+        expect(challengePubsubMsg.challenges.length).to.equal(1);
+        expect(challengePubsubMsg.challenges[0].type).to.equal("image/png");
+        expect(challengePubsubMsg.challenges[0].challenge).to.be.be.a("string"); // base64 string
+        expect(challengePubsubMsg.challenges[0].caseInsensitive).to.be.true;
         await subplebbit.delete();
     });
 

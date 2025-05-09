@@ -12,7 +12,9 @@ export declare class CommentEdit extends Publication implements CommentEditPubsu
     spoiler?: CommentEditPubsubMessagePublication["spoiler"];
     nsfw?: CommentEditPubsubMessagePublication["nsfw"];
     signature: CommentEditPubsubMessagePublication["signature"];
-    _pubsubMsgToPublish?: CommentEditPubsubMessagePublication;
+    raw: {
+        pubsubMessageToPublish?: CommentEditPubsubMessagePublication;
+    };
     challengeRequest?: CreateCommentEditOptions["challengeRequest"];
     constructor(plebbit: Plebbit);
     _initLocalProps(props: {

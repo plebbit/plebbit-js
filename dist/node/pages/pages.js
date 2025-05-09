@@ -1,26 +1,31 @@
 import { parsePageIpfs } from "../pages/util.js";
 import { verifyPage } from "../signer/signatures.js";
-import { PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
+import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
-import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { hideClassPrivateProps } from "../util.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 export class BasePages {
     constructor(props) {
         this._parentComment = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
-        this._pagesIpfs = undefined; // when we create a new page from an existing subplebbit
+        this._loadedUniqueCommentFromGetPage = {}; // comment cid => CommentInPageIpfs. Will be reset on stop or when we update the record of pages cause of new subplebbit update or CommentUpdate
         this._initClientsManager(props.plebbit);
         this.updateProps(props);
         hideClassPrivateProps(this);
     }
     updateProps(props) {
         this.pages = props.pages;
+        if (!remeda.isDeepEqual(this.pageCids, props.pageCids))
+            this._loadedUniqueCommentFromGetPage = {};
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
-        this._pagesIpfs = props.pagesIpfs;
-        if (this.pageCids)
+        if (this.pageCids) {
             this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
+            this._clientsManager.updatePagesMaxSizeCache(Object.values(this.pageCids), 1024 * 1024);
+        }
+        for (const preloadedPage of Object.values(this.pages))
+            if (preloadedPage?.nextCid)
+                this._clientsManager.updatePagesMaxSizeCache([preloadedPage.nextCid], 1024 * 1024);
     }
     _initClientsManager(plebbit) {
         throw Error(`This function should be overridden`);
@@ -29,7 +34,7 @@ export class BasePages {
         // Called when the sub changes address and needs to remove all the comments with the old subplebbit address
         this.pageCids = {};
         this.pages = {};
-        this._pagesIpfs = undefined;
+        this._loadedUniqueCommentFromGetPage = {};
     }
     async _validatePage(pageIpfs, pageCid) {
         throw Error("should be implemented");
@@ -40,33 +45,37 @@ export class BasePages {
             await this._validatePage(pageIpfs, pageCid);
         return pageIpfs;
     }
+    _updateLoadedUniqueCommentFromGetPage(pageIpfs) {
+        pageIpfs.comments.forEach((comment) => {
+            this._loadedUniqueCommentFromGetPage[comment.commentUpdate.cid] = comment;
+            if (comment.commentUpdate.replies)
+                for (const preloadedPage of Object.values(comment.commentUpdate.replies.pages)) {
+                    return this._updateLoadedUniqueCommentFromGetPage(preloadedPage);
+                }
+        });
+    }
     async getPage(pageCid) {
         if (!this._subplebbit?.address)
             throw Error("Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        return parsePageIpfs(await this._fetchAndVerifyPage(parsedCid));
+        const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
+        this._updateLoadedUniqueCommentFromGetPage(pageIpfs);
+        return parsePageIpfs(pageIpfs);
     }
     // method below will be present in both subplebbit.posts and comment.replies
     async validatePage(page) {
         if (this._clientsManager._plebbit.validatePages)
             throw Error("This function is used for manual verification and you need to have plebbit.validatePages=false");
-        const pageIpfs = { comments: page.comments.map((comment) => ("comment" in comment ? comment : comment.pageComment)) };
+        const pageIpfs = { comments: page.comments.map((comment) => ("comment" in comment ? comment : comment.raw)) };
         await this._validatePage(pageIpfs);
     }
-    toJSONIpfs() {
-        if (remeda.isEmpty(this.pages))
-            return undefined; // I forgot why this line is here
-        if (!this._pagesIpfs && !remeda.isEmpty(this.pages)) {
-            Logger("plebbit-js:pages:toJSONIpfs").error(`toJSONIpfs() is called on sub(${this._subplebbit}) and parentCid (${this._parentComment}) even though _pagesIpfs is undefined. This error should not persist`);
-            return;
-        }
-        return this._pagesIpfs;
+    _stop() {
+        this._loadedUniqueCommentFromGetPage = {};
     }
 }
 export class RepliesPages extends BasePages {
     constructor(props) {
         super(props);
-        this._pagesIpfs = undefined; // when we create a new page from an existing subplebbit
         this._parentComment = props.parentComment;
         hideClassPrivateProps(this);
     }
@@ -77,8 +86,24 @@ export class RepliesPages extends BasePages {
         this._clientsManager = new RepliesPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
-    toJSONIpfs() {
-        return super.toJSONIpfs();
+    async getPage(pageCid) {
+        if (!this._parentComment?.cid)
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID", {
+                pageCid,
+                parentComment: this._parentComment
+            });
+        if (typeof this._parentComment?.depth !== "number")
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH", {
+                parentComment: this._parentComment,
+                pageCid
+            });
+        if (!this._parentComment?.postCid)
+            throw new PlebbitError("ERR_USER_ATTEMPTS_TO_GET_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID", {
+                pageCid,
+                parentComment: this._parentComment
+            });
+        // we need to make all updating comment instances do the getPage call to cache _loadedUniqueCommentFromGetPage in a centralized instance
+        return super.getPage(pageCid);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (!this._parentComment?.cid)
@@ -103,8 +128,10 @@ export class RepliesPages extends BasePages {
             return;
         const baseDepth = pageIpfs.comments[0].comment?.depth;
         const isUniformDepth = pageIpfs.comments.every((comment) => comment.comment.depth === baseDepth);
+        const pageSortName = Object.entries(this.pageCids).find(([_, pageCid]) => pageCid === pageCid)?.[0];
         const verificationOpts = {
             pageCid,
+            pageSortName,
             page: pageIpfs,
             resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,
@@ -125,24 +152,26 @@ export class RepliesPages extends BasePages {
 export class PostsPages extends BasePages {
     constructor(props) {
         super(props);
-        this._pagesIpfs = undefined;
         this._parentComment = undefined; // would be undefined because we don't have a parent comment for posts
     }
     updateProps(props) {
         super.updateProps(props);
     }
     _initClientsManager(plebbit) {
-        this._clientsManager = new PostsPagesClientsManager({ plebbit, pages: this });
+        this._clientsManager = new SubplebbitPostsPagesClientsManager({ plebbit, pages: this });
         this.clients = this._clientsManager.clients;
     }
-    toJSONIpfs() {
-        return super.toJSONIpfs();
+    getPage(pageCid) {
+        // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
+        return super.getPage(pageCid);
     }
     async _validatePage(pageIpfs, pageCid) {
         if (pageIpfs.comments.length === 0)
             return;
+        const pageSortName = Object.entries(this.pageCids).find(([_, pageCid]) => pageCid === pageCid)?.[0];
         const verificationOpts = {
             pageCid,
+            pageSortName,
             page: pageIpfs,
             resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
             clientsManager: this._clientsManager,

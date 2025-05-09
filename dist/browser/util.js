@@ -13,6 +13,8 @@ import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "multiformats/hashes/sha2";
 import { base32 } from "multiformats/bases/base32";
+import retry from "retry";
+import PeerId from "peer-id";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -116,7 +118,8 @@ export const parseDbResponses = (obj) => {
         "commentUpdate_locked",
         "commentUpdate_removed",
         "commentUpdate_nsfw",
-        "isAuthorEdit"
+        "isAuthorEdit",
+        "publishedToPostUpdatesIpfs"
     ]; // TODO use zod here
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]")
@@ -283,6 +286,7 @@ export async function resolveWhenPredicateIsTrue(toUpdate, predicate, eventName 
         });
 }
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs) {
+    const wasUpdating = subplebbit.state === "updating";
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
     let updateError;
     const errorListener = (err) => (updateError = err);
@@ -291,7 +295,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
+            message: updateError || new TimeoutError(`Subplebbit ${subplebbit.address} update timed out after ${timeoutMs}ms`)
         });
         if (updateError)
             throw updateError;
@@ -305,7 +309,8 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
     }
     finally {
         subplebbit.removeListener("error", errorListener);
-        await subplebbit.stop();
+        if (!wasUpdating)
+            await subplebbit.stop();
     }
 }
 export function calculateIpfsCidV0(content) {
@@ -318,6 +323,17 @@ export function binaryKeyToPubsubTopic(key) {
     const b64url = uint8ArrayToString(key, "base64url");
     return `/record/${b64url}`;
 }
+export function ipnsNameToIpnsOverPubsubTopic(ipnsName) {
+    // for ipns over pubsub, the topic is '/record/' + Base64Url(Uint8Array('/ipns/') + Uint8Array('12D...'))
+    // https://github.com/ipfs/helia/blob/1561e4a106074b94e421a77b0b8776b065e48bc5/packages/ipns/src/routing/pubsub.ts#L169
+    const ipnsNamespaceBytes = new TextEncoder().encode("/ipns/");
+    const ipnsNameBytes = PeerId.parse(ipnsName).toBytes(); // accepts base58 (12D...) and base36 (k51...)
+    const ipnsNameBytesWithNamespace = new Uint8Array(ipnsNamespaceBytes.length + ipnsNameBytes.length);
+    ipnsNameBytesWithNamespace.set(ipnsNamespaceBytes, 0);
+    ipnsNameBytesWithNamespace.set(ipnsNameBytes, ipnsNamespaceBytes.length);
+    const pubsubTopic = "/record/" + uint8ArrayToString(ipnsNameBytesWithNamespace, "base64url");
+    return pubsubTopic;
+}
 export async function pubsubTopicToDhtKey(pubsubTopic) {
     // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
     const string = `floodsub:${pubsubTopic}`;
@@ -328,5 +344,27 @@ export async function pubsubTopicToDhtKey(pubsubTopic) {
     const multicodec = 0x55;
     const cid = CID.create(cidVersion, multicodec, hash);
     return cid.toString(base32);
+}
+export async function retryKuboIpfsAdd({ kuboRpcClient, log, content, inputNumOfRetries, options }) {
+    const numOfRetries = inputNumOfRetries ?? 3;
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 1000
+        });
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const addRes = await kuboRpcClient.add(content, options);
+                resolve(addRes);
+            }
+            catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add content to IPFS:`, error);
+                if (operation.retry(error))
+                    return;
+                reject(operation.mainError() || error);
+            }
+        });
+    });
 }
 //# sourceMappingURL=util.js.map

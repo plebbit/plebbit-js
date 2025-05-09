@@ -1,7 +1,7 @@
 import { ProtocolVersionSchema, UserAgentSchema } from "./schema/schema.js";
 
 const protocolVersion = ProtocolVersionSchema.parse("1.0.0");
-const plebbitJsVersion = "0.0.5"; // TODO should be imported from package.json
+const plebbitJsVersion = "0.0.7"; // TODO should be imported from package.json
 
 const userAgent = UserAgentSchema.parse(`/plebbit-js:${plebbitJsVersion}/`);
 

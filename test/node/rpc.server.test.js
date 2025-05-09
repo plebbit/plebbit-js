@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import PlebbitWsServer from "../../dist/node/rpc/src/index";
-import { describeSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util";
+import PlebbitWsServer from "../../dist/node/rpc/src/index.js";
+import { describeSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util.js";
 import os from "os";
-import Plebbit from "../../dist/node";
+import Plebbit from "../../dist/node/index.js";
 const getLanIpV4Address = () => {
     const allInterfaces = os.networkInterfaces();
     for (const k in allInterfaces) {

@@ -54,6 +54,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     });
     after(async () => {
         await subplebbit.stop();
+        await plebbit.destroy();
     });
 
     [{ title: `Test subplebbit title edit ${Date.now()}` }, { description: `Test subplebbit description edit ${Date.now()}` }].map(
@@ -67,9 +68,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
                 await resolveWhenConditionIsTrue(updatingRemoteSubplebbit, () => updatingRemoteSubplebbit[keyToEdit] === newValue);
                 await updatingRemoteSubplebbit.stop();
                 expect(updatingRemoteSubplebbit[keyToEdit]).to.equal(newValue);
-                expect(jsonifySubplebbitAndRemoveInternalProps(updatingRemoteSubplebbit)).to.deep.equal(
-                    jsonifySubplebbitAndRemoveInternalProps(subplebbit)
-                );
+                expect(updatingRemoteSubplebbit.raw.subplebbitIpfs).to.deep.equal(subplebbit.raw.subplebbitIpfs);
             })
     );
 
@@ -101,7 +100,11 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     });
 
     it(`plebbit.subplebbits includes the new ENS address, and not the old address`, async () => {
-        await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2)); // wait until db has been renamed
+        await resolveWhenConditionIsTrue(
+            plebbit,
+            () => plebbit.subplebbits.includes(ethAddress) && !plebbit.subplebbits.includes(subplebbit.signer.address),
+            "subplebbitschange"
+        );
         const subs = plebbit.subplebbits;
         expect(subs).to.include(ethAddress);
         expect(subs).to.not.include(subplebbit.signer.address);
@@ -122,9 +125,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     it(`Can load a subplebbit with ENS domain as address`, async () => {
         const loadedSubplebbit = await remotePlebbit.getSubplebbit(ethAddress);
         expect(loadedSubplebbit.address).to.equal(ethAddress);
-        expect(jsonifySubplebbitAndRemoveInternalProps(loadedSubplebbit)).to.deep.equal(
-            jsonifySubplebbitAndRemoveInternalProps(subplebbit)
-        );
+        expect(loadedSubplebbit.raw.subplebbitIpfs).to.deep.equal(subplebbit.raw.subplebbitIpfs);
     });
 
     it(`remote subplebbit.posts is reset after changing address`, async () => {
@@ -161,8 +162,13 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
 
 describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
     let plebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
+    beforeEach(async () => {
+        if (plebbit) await plebbit.destroy();
+        plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
+    });
+
+    after(async () => {
+        await plebbit.destroy();
     });
 
     it("Two unstarted local sub instances can receive each other updates with subplebbit.update and edit", async () => {
@@ -178,48 +184,53 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         await new Promise((resolve) => subTwo.once("update", resolve));
 
         expect(subTwo.title).to.equal(newTitle);
-        expect(jsonifyLocalSubWithNoInternalProps(subTwo)).to.deep.equal(jsonifyLocalSubWithNoInternalProps(subOne));
+        expect(subTwo.raw.subplebbitIpfs).to.deep.equal(subOne.raw.subplebbitIpfs);
 
         await subTwo.stop();
     });
 
-    it(`Calling startedSubplebbit.stop() after edit while updating another subplebbit should not reset the edit`, async () => {
-        const startedSub = await plebbit.createSubplebbit();
+    [
+        { address: `address-eth-${uuidV4()}-1.eth` },
+        { rules: ["rule 1", "rule 2"] },
+        { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
+    ].map((editArgs) =>
+        it(`Calling startedSubplebbit.stop() after edit while updating another subplebbit should not reset the edit (${Object.keys(editArgs)})`, async () => {
+            const startedSub = await plebbit.createSubplebbit();
 
-        const editArgs = {
-            address: `address-eth-${uuidV4()}-2.eth`,
-            rules: ["rule 1", "rule 2"]
-        };
+            const hasLatestEditProps = (sub) => {
+                return remeda.isDeepEqual(remeda.pick(sub, Object.keys(editArgs)), editArgs);
+            };
 
-        const hasLatestEditProps = (sub) => {
-            return remeda.isDeepEqual(remeda.pick(sub, Object.keys(editArgs)), editArgs);
-        };
+            const expectSubToHaveLatestEditProps = (sub) => {
+                expect(remeda.pick(sub, Object.keys(editArgs))).to.deep.equal(editArgs);
+            };
 
-        const expectSubToHaveLatestEditProps = (sub) => {
-            expect(remeda.pick(sub, Object.keys(editArgs))).to.deep.equal(editArgs);
-        };
+            const updatingSubplebbit = await plebbit.createSubplebbit({ address: startedSub.address });
+            await updatingSubplebbit.update();
 
-        const updatingSubplebbit = await plebbit.createSubplebbit({ address: startedSub.address });
-        await updatingSubplebbit.update();
+            await startedSub.start();
 
-        await startedSub.start();
+            const subToEdit = await plebbit.createSubplebbit({ address: startedSub.address });
+            await subToEdit.edit(editArgs);
+            expectSubToHaveLatestEditProps(subToEdit);
+            expectSubToHaveLatestEditProps(startedSub);
 
-        const subToEdit = await plebbit.createSubplebbit({ address: startedSub.address });
-        await subToEdit.edit(editArgs);
-        expectSubToHaveLatestEditProps(subToEdit);
-        expectSubToHaveLatestEditProps(startedSub);
+            await resolveWhenConditionIsTrue(updatingSubplebbit, () => hasLatestEditProps(updatingSubplebbit));
+            expectSubToHaveLatestEditProps(startedSub);
+            expectSubToHaveLatestEditProps(subToEdit);
+            expectSubToHaveLatestEditProps(updatingSubplebbit);
 
-        if (!hasLatestEditProps(updatingSubplebbit)) await new Promise((resolve) => updatingSubplebbit.once("update", resolve));
-        expectSubToHaveLatestEditProps(updatingSubplebbit);
+            await startedSub.stop();
+            expectSubToHaveLatestEditProps(startedSub);
+            expectSubToHaveLatestEditProps(updatingSubplebbit);
+            expectSubToHaveLatestEditProps(subToEdit);
 
-        await startedSub.stop();
-        expectSubToHaveLatestEditProps(startedSub);
-        expectSubToHaveLatestEditProps(updatingSubplebbit);
-
-        await updatingSubplebbit.stop();
-        expectSubToHaveLatestEditProps(startedSub);
-        expectSubToHaveLatestEditProps(updatingSubplebbit);
-    });
+            await updatingSubplebbit.stop();
+            expectSubToHaveLatestEditProps(startedSub);
+            expectSubToHaveLatestEditProps(updatingSubplebbit);
+            expectSubToHaveLatestEditProps(subToEdit);
+        })
+    );
 
     [
         { address: `address-eth-${uuidV4()}-1.eth` },
@@ -228,8 +239,6 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
             // TODO investigate why this test gets slower the more times it's run
-            const plebbit = await mockPlebbitV2({ stubStorage: false, mockResolve: true });
-            // create subplebbit
             const subplebbitTitle = "subplebbit title" + timestamp();
             const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
             if (editArgs.address) {
@@ -271,6 +280,10 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
                 updatingSubplebbit.on("update", (updatedSubplebbit) => editIsFinished && resolve(updatedSubplebbit))
             );
 
+            updatingSubplebbit.on("update", (updatedSubplebbit) => {
+                console.log("updatingSubplebbit update", updatedSubplebbit.rules);
+            });
+
             const updateStartedSubEventPromise = new Promise((resolve) =>
                 startedSubplebbit.on("update", (updatedSubplebbit) => editIsFinished && resolve(updatedSubplebbit))
             );
@@ -291,6 +304,9 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
             // both started and updating subplebbit should now have the subplebbit edit
             console.log("wait for subplebbit update");
             await updateEventPromise;
+
+            expect(remeda.pick(editedSubplebbit, Object.keys(editArgs))).to.deep.equal(editArgs);
+            expect(remeda.pick(startedSubplebbit, Object.keys(editArgs))).to.deep.equal(editArgs); // this fails
 
             expect(updatingSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs))
