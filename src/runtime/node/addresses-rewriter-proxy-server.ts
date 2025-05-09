@@ -102,14 +102,14 @@ export class AddressesRewriterProxyServer {
                     host: this.proxyTarget.host // Add the host header
                 },
                 // Add a reasonable timeout
-                timeout: 60000 // 1 minute timeout
+                timeout: 10000 // 10 second timeout
             };
 
             // Create proxy request with proper error handling
             const proxyReq = httpRequest(requestOptions);
 
             // Handle timeout
-            proxyReq.setTimeout(60000, () => {
+            proxyReq.setTimeout(10000, () => {
                 debug.trace("Proxy request timed out", requestOptions, reqBody);
                 proxyReq.destroy();
             });
