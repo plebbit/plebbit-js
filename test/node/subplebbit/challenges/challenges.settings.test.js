@@ -47,6 +47,22 @@ describe(`subplebbit.settings.challenges`, async () => {
         await subplebbit.delete();
     });
 
+    it(`Default challenge will send a challenge with the correct properties`, async () => {
+        const subplebbit = await plebbit.createSubplebbit({});
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        const challengePromise = new Promise((resolve) => subplebbit.once("challenge", resolve));
+        publishRandomPost(subplebbit.address, plebbit);
+        const challengePubsubMsg = await challengePromise;
+        expect(challengePubsubMsg.challenges).to.be.a("array");
+        expect(challengePubsubMsg.challenges.length).to.equal(1);
+        expect(challengePubsubMsg.challenges[0].type).to.equal("image/png");
+        expect(challengePubsubMsg.challenges[0].challenge).to.be.be.a("string"); // base64 string
+        expect(challengePubsubMsg.challenges[0].caseInsensitive).to.be.true;
+        await subplebbit.delete();
+    });
+
     it(`settings.challenges=[] means sub won't send a challenge`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.edit({ settings: { challenges: [] } });
