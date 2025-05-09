@@ -332,7 +332,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
         }
         catch (e) {
-            log.error("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
+            log.trace("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
         }
     }
     _calculateLatestUpdateTrigger() {
