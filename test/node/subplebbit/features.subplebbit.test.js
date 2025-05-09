@@ -208,6 +208,8 @@ describe(`subplebbit.features.noPostDownvotes`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Not allowed to publish downvotes to posts if subplebbit.features.noPostDownvotes=true`, async () => {
@@ -249,6 +251,8 @@ describe(`subplebbit.features.noPostUpvotes`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Not allowed to publish upvotes to posts if subplebbit.features.noPostUpvotes=true`, async () => {
@@ -293,6 +297,8 @@ describe(`subplebbit.features.noReplyDownvotes`, async () => {
 
     after(async () => {
         await subplebbit.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Not allowed to publish downvotes to replies if subplebbit.features.noReplyDownvotes=true`, async () => {

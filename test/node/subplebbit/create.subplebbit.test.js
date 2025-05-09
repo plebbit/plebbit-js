@@ -225,4 +225,17 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
             ]);
         }
     });
+
+    it(`plebbit.subplebbits shows unlocked created subplebbits`, async () => {
+        const title = "Test plebbit.subplebbits" + Date.now();
+        const subSigner = await plebbit.createSigner();
+
+        const createdSubplebbit = await plebbit.createSubplebbit({ signer: subSigner, title: title });
+        // At this point the sub should be unlocked and ready to be recreated by another instance
+        const listedSubs = plebbit.subplebbits;
+        expect(listedSubs).to.include(createdSubplebbit.address);
+
+        expect(createdSubplebbit.address).to.equal(subSigner.address);
+        expect(createdSubplebbit.title).to.equal(title);
+    });
 });
