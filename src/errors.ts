@@ -279,6 +279,7 @@ export enum messages {
     ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST = "Did not receive response to challenge request in the specified time",
     ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS = "All pubsub providers throw an error and unable to publish or subscribe",
     ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER = "The challenge request has been published over the pubsub topic but no response was received",
+    ERR_PUBLICATION_DID_NOT_RECEIVE_RESPONSE = "Publication did not receive any response to challenge request",
 
     // RPC errors
     ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC",
