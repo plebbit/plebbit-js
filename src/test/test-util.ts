@@ -1418,7 +1418,10 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
         "to generate all pages"
     );
 
-    const updatingComment = await comment._plebbit.createComment(comment);
+    const updatingComment = await comment._plebbit.createComment({ cid: comment.cid! });
+    updatingComment.on("updatingstatechange", (state) =>
+        console.log("forceSubplebbitToGenerateAllRepliesPages", "updatingstate of updating comment", state)
+    );
     await updatingComment.update();
     //@ts-expect-error
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
