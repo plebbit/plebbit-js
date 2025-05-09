@@ -22,7 +22,6 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
-        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
     beforeEach(async () => {
