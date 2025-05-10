@@ -859,26 +859,6 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first();
     }
 
-    async queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENTS)
-            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .where(`${TABLES.COMMENTS}.postCid`, postCid)
-            .select(`${TABLES.COMMENT_UPDATES}.*`);
-    }
-
-    async queryCommentsWithPostCidSortedByDepth(postCid: string, trx?: Transaction): Promise<CommentsTableRow[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where(`${TABLES.COMMENTS}.postCid`, postCid).orderBy("depth", "DESC");
-    }
-
-    async queryCommentsOfAuthors(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]> {
-        if (!Array.isArray(authorSignerAddresses)) authorSignerAddresses = [authorSignerAddresses];
-        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);
-    }
-
-    async queryCommentsByCids(cids: string[], trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
-    }
-
     async queryCommentBySignatureEncoded(signatureEncoded: string, trx?: Transaction) {
         const comment = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .whereJsonPath("signature", "$.signature", "=", signatureEncoded)
@@ -904,25 +884,39 @@ export class DbHandler {
     }
 
     async queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">[]> {
-        const parents: Pick<CommentsTableRow, "cid">[] = [];
-        let curParentCid = rootComment.parentCid;
-        while (curParentCid) {
-            parents.push({ cid: curParentCid });
-            curParentCid = (await this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", curParentCid).select("parentCid").first())
-                ?.parentCid;
-        }
-        return parents;
-    }
+        // If there's no parent CID, return an empty array
+        if (!rootComment.parentCid) return [];
 
-    async queryParents(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
-        const parents: CommentsTableRow[] = [];
-        let curParentCid = rootComment.parentCid;
-        while (curParentCid) {
-            const parent = await this.queryComment(curParentCid, trx);
-            if (parent) parents.push(parent);
-            curParentCid = parent?.parentCid;
-        }
-        return parents;
+        // Define the type for the query result
+        type ParentChainRow = {
+            cid: string;
+        };
+
+        // Use a recursive CTE to get the entire parent chain up to the root post
+        const query = `
+            WITH RECURSIVE parent_chain AS (
+                -- Base case: start with the immediate parent
+                SELECT cid, parentCid, 0 AS level
+                FROM ${TABLES.COMMENTS}
+                WHERE cid = ?
+                
+                UNION ALL
+                
+                -- Recursive case: traverse up to parent until we reach the root
+                SELECT c.cid, c.parentCid, pc.level + 1
+                FROM ${TABLES.COMMENTS} c
+                JOIN parent_chain pc ON c.cid = pc.parentCid
+            )
+            -- Select all parents in the chain from immediate parent to root
+            SELECT cid FROM parent_chain
+            ORDER BY level
+        `;
+
+        // Execute the query with the parent CID as parameter and specify the result type
+        const result = await this._baseTransaction(trx).raw<ParentChainRow[]>(query, [rootComment.parentCid]);
+
+        // Map the results to the expected format with proper typing
+        return result.map((row: ParentChainRow) => ({ cid: row.cid }));
     }
 
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
