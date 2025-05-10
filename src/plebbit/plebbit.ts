@@ -169,8 +169,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit | RpcLocalSubplebbit> = {}; // storing subplebbit instance that are started rn
     private _subplebbitFsWatchAbort?: AbortController;
 
-    private _subplebbitschangeEventHasbeenEmitted: boolean = false;
     private _addressRewriterDestroy?: () => Promise<void>;
+    private _promiseToWaitForFirstSubplebbitschangeEvent: Promise<string[]>;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
     _memCaches!: PlebbitMemCaches;
@@ -222,8 +222,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         this._domainResolver = new DomainResolver(this);
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
-            this._subplebbitschangeEventHasbeenEmitted = true;
         });
+
+        this._promiseToWaitForFirstSubplebbitschangeEvent = new Promise((resolve) => this.once("subplebbitschange", resolve));
 
         //@ts-expect-error
         this.clients = {};
@@ -535,7 +536,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     protected async _waitForSubplebbitsToBeDefined() {
         // we're just wait until this.subplebbits is either defined, or subplebbitschange is emitted
 
-        if (!this._subplebbitschangeEventHasbeenEmitted) await new Promise((resolve) => this.once("subplebbitschange", resolve));
+        await this._promiseToWaitForFirstSubplebbitschangeEvent;
         if (!Array.isArray(this.subplebbits)) throw Error("plebbit.subplebbits should be defined after subplebbitschange event");
     }
 
