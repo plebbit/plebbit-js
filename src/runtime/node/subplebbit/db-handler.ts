@@ -54,6 +54,19 @@ const TABLES = Object.freeze({
     COMMENT_EDITS: "commentEdits"
 });
 
+// Add these type definitions at the top of the file, after the imports but before the DbHandler class
+// Types for query results with prefixed columns
+type CommentIpfsPrefixedColumns = {
+    [K in keyof CommentsTableRow as `commentIpfs_${string & K}`]?: CommentsTableRow[K];
+};
+
+type CommentUpdatePrefixedColumns = {
+    [K in keyof CommentUpdatesRow as `commentUpdate_${string & K}`]?: CommentUpdatesRow[K];
+};
+
+// Basic prefixed row type that can be extended as needed
+type PrefixedCommentRow = CommentIpfsPrefixedColumns & CommentUpdatePrefixedColumns;
+
 export class DbHandler {
     private _knex!: Knex;
     private _subplebbit!: LocalSubplebbit;
@@ -679,34 +692,33 @@ export class DbHandler {
                     ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
                     : CommentUpdateSchema.shape
             )
-        ); // TODO query extra props here as well
+        );
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
         const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
 
-        const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([
+        // Now use this type for the query result
+        const commentsRaw = (await this._basePageQuery(options, trx).select([
             ...commentIpfsColumnSelects,
             ...commentUpdateColumnSelects
-        ]);
+        ])) as PrefixedCommentRow[];
 
         // this one liner below is a hack to make sure pageIpfs.comments.comment always correspond to commentUpdate.cid
         // postCid is not part of CommentIpfs when depth = 0, because it is the post
-        //@ts-expect-error
         for (const commentRaw of commentsRaw) if (commentRaw["commentIpfs_depth"] === 0) delete commentRaw["commentIpfs_postCid"];
 
-        //@ts-expect-error
         const comments: PageIpfs["comments"] = commentsRaw.map((commentRaw) => ({
             comment: remeda.mapKeys(
                 // we need to exclude extraProps from pageIpfs.comments[0].comment
                 // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
                 remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
                 (key, value) => key.replace("commentIpfs_", "")
-            ),
+            ) as CommentIpfsType,
             commentUpdate: remeda.mapKeys(
                 remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
                 (key, value) => key.replace("commentUpdate_", "")
-            )
+            ) as CommentUpdateType
         }));
 
         return comments;
@@ -809,13 +821,6 @@ export class DbHandler {
         }
 
         // Execute the query
-        type CommentIpfsPrefixedColumns = {
-            [K in keyof CommentsTableRow as `commentIpfs_${string & K}`]?: CommentsTableRow[K];
-        };
-
-        type CommentUpdatePrefixedColumns = {
-            [K in keyof CommentUpdatesRow as `commentUpdate_${string & K}`]?: CommentUpdatesRow[K];
-        };
 
         type FlattenedCommentRow = CommentIpfsPrefixedColumns &
             CommentUpdatePrefixedColumns & {
@@ -1666,15 +1671,6 @@ export class DbHandler {
         if (pageOptions.excludeDeletedComments) {
             postsQuery = postsQuery.whereRaw(`json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') is not 1`);
         }
-
-        // Create types for prefixed columns that match our actual column names
-        type CommentIpfsPrefixedColumns = {
-            [K in keyof CommentsTableRow as `commentIpfs_${string & K}`]?: CommentsTableRow[K];
-        };
-
-        type CommentUpdatePrefixedColumns = {
-            [K in keyof CommentUpdatesRow as `commentUpdate_${string & K}`]?: CommentUpdatesRow[K];
-        };
 
         // Combined type with additional fields from the query
         type PostRowWithActiveScore = CommentIpfsPrefixedColumns &
