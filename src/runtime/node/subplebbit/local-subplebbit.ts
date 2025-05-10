@@ -158,9 +158,17 @@ import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
 
-type CommentUpdateToBeUpdated = CommentUpdatesRow &
-    Pick<CommentsTableRow, "depth"> & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined };
+type CommentUpdateToBeUpdated = CommentUpdatesRow & {
+    postCommentUpdateRecordString: string | undefined;
+    postCommentUpdateCid: string | undefined;
+};
 
+type CommentUpdateToWriteToDb = {
+    newCommentUpdate: CommentUpdateType;
+    postCommentUpdateCid: string | undefined;
+    mfsPath: string | undefined;
+    newPostCommentUpdateString: string | undefined;
+};
 const _startedSubplebbits: Record<string, LocalSubplebbit> = {}; // A global record on process level to track started subplebbits
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
@@ -1637,33 +1645,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         else return ["/" + this.address, "postUpdates", timestampRange, postDbComment.cid, "update"].join("/");
     }
 
-    private async _writeCommentUpdateToDatabase(
-        newCommentUpdate: CommentUpdatesRow | CommentUpdateType,
-        postCommentUpdateCid: string | undefined,
-        mfsPath: string | undefined
-    ) {
+    private async _writeCommentUpdatesToDatabase(commentUpdatesToWrite: CommentUpdateToWriteToDb[]) {
         const log = Logger("plebbit-js:local-subplebibt:_writeCommentUpdateToDatabase");
-        // TODO need to exclude reply.replies here
-        const row = <CommentUpdatesRow>{
-            ...newCommentUpdate,
-            localMfsPath: mfsPath,
-            postCommentUpdateCid,
-            publishedToPostUpdatesMFS: false
-        };
-        await this._dbHandler.upsertCommentUpdate(row);
-        log.trace(
-            "Wrote comment update of comment",
-            newCommentUpdate.cid,
-            "to database successfully with postCommentUpdateCid",
-            postCommentUpdateCid
+        const rows = commentUpdatesToWrite.map(
+            (commentUpdateToWrite) =>
+                <CommentUpdatesRow>{
+                    ...commentUpdateToWrite.newCommentUpdate,
+                    localMfsPath: commentUpdateToWrite.mfsPath,
+                    postCommentUpdateCid: commentUpdateToWrite.postCommentUpdateCid,
+                    publishedToPostUpdatesMFS: false
+                }
         );
-        return row;
+        await this._dbHandler.upsertCommentUpdates(rows);
+        log.trace("Wrote", commentUpdatesToWrite.length, "comment updates to database successfully");
+        return rows;
     }
 
-    private async _calculateNewCommentUpdateAndWriteToDb(
-        comment: CommentsTableRow
-    ): Promise<CommentUpdatesRow & { postCommentUpdateRecordString: string | undefined; postCommentUpdateCid: string | undefined }> {
-        const log = Logger("plebbit-js:local-subplebbit:_calculateNewCommentUpdateAndWriteToFilesystemAndDb");
+    private async _calculateNewCommentUpdate(comment: CommentsTableRow): Promise<CommentUpdateToWriteToDb> {
+        const log = Logger("plebbit-js:local-subplebbit:_calculateNewCommentUpdate");
 
         // If we're here that means we're gonna calculate the new update and publish it
         log.trace(`Attempting to calculate new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
@@ -1724,8 +1723,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const newLocalMfsPath = this._calculateLocalMfsPathForCommentUpdate(comment, storedCommentUpdate);
 
-        const newCommentUpdateRow = await this._writeCommentUpdateToDatabase(newCommentUpdate, postCommentUpdateCid, newLocalMfsPath);
-
         if (storedCommentUpdate?.localMfsPath && newLocalMfsPath && storedCommentUpdate.localMfsPath !== newLocalMfsPath) {
             this._mfsPathsToRemove.add(storedCommentUpdate.localMfsPath);
         }
@@ -1736,7 +1733,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         )
             this._cidsToUnPin.add(storedCommentUpdate.postCommentUpdateCid);
 
-        return { ...newCommentUpdateRow, postCommentUpdateRecordString: newPostCommentUpdateString, postCommentUpdateCid };
+        return { newCommentUpdate, postCommentUpdateCid, mfsPath: newLocalMfsPath, newPostCommentUpdateString };
     }
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
@@ -1803,7 +1800,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // First group comments by postCid
         const commentsByPostCid = remeda.groupBy.strict(commentsToUpdate, (x) => x.postCid);
 
-        const allCommentUpdateRows: CommentUpdateToBeUpdated[] = [];
+        const allCommentUpdateRows: CommentUpdateToWriteToDb[] = [];
         const allUpdatePromises: Promise<void>[] = [];
 
         // Process each postCid group independently and in parallel
@@ -1822,7 +1819,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
                     // Process all comments at this depth in parallel
                     const updateResults = await Promise.all(
-                        commentsAtDepth.map((comment) => limit(() => this._calculateNewCommentUpdateAndWriteToDb(comment)))
+                        commentsAtDepth.map((comment) => limit(() => this._calculateNewCommentUpdate(comment)))
                     );
 
                     // Add results with correct depth
@@ -1841,7 +1838,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // Wait for all postCid groups to complete
         await Promise.all(allUpdatePromises);
 
-        return allCommentUpdateRows;
+        // allCommentUpdateRows is an array of CommentUpdateToWriteToDb
+        const rowsWrittenToDb = await this._writeCommentUpdatesToDatabase(allCommentUpdateRows);
+
+        const commentUpdateToPublishToIpfs: CommentUpdateToBeUpdated[] = rowsWrittenToDb.map((row, i) => ({
+            ...row,
+            postCommentUpdateRecordString: allCommentUpdateRows[i].newPostCommentUpdateString,
+            postCommentUpdateCid: row.postCommentUpdateCid
+        }));
+
+        return commentUpdateToPublishToIpfs;
     }
 
     private async _repinCommentsIPFSIfNeeded() {
@@ -1893,7 +1899,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await Promise.all(pinningPromises);
 
-        await this._dbHandler.resetPublishedToPostUpdatesMFS(); // force plebbit-js to republish all comment updates
+        await this._dbHandler.forceUpdateOnAllComments(); // force plebbit-js to republish all comment updates
 
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
@@ -1969,7 +1975,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         log(`CommentUpdate directory`, this.address, "will republish all comment updates");
 
-        await this._dbHandler.resetPublishedToPostUpdatesMFS(); // plebbit-js will recalculate and publish all comment updates
+        await this._dbHandler.forceUpdateOnAllComments(); // plebbit-js will recalculate and publish all comment updates
     }
 
     private *_createCommentUpdateIterable(commentUpdateRows: CommentUpdateToBeUpdated[]) {
@@ -1986,7 +1992,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const commentUpdatesOfPosts = <
             (CommentUpdateToBeUpdated & { postCommentUpdateRecordString: string; postCommentUpdateCid: string })[]
-        >commentUpdateRowsToPublishToIpfs.filter((row) => row.depth === 0);
+        >commentUpdateRowsToPublishToIpfs.filter((row) => row.localMfsPath);
 
         if (commentUpdatesOfPosts.length === 0) {
             log("No comment updates of posts to publish to postUpdates directory");
