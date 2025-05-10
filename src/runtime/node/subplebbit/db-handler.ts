@@ -30,7 +30,7 @@ import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { CommentEditPubsubMessagePublicationSchema, CommentEditsTableRowSchema } from "../../../publications/comment-edit/schema.js";
 import type { CommentEditPubsubMessagePublication } from "../../../publications/comment-edit/types.js";
-import type { CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import type { CommentIpfsType, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
@@ -87,8 +87,7 @@ export class DbHandler {
         const dbFilePath = <string>(<any>this._dbConfig.connection).filename;
         if (!this._knex) {
             this._knex = knex(this._dbConfig);
-
-            log.trace("initialized a new connection to db", dbFilePath);
+            log("initialized a new connection to db", dbFilePath);
         }
         if (!this._keyv) this._keyv = new Keyv(new KeyvSqlite(`sqlite://${dbFilePath}`));
     }
@@ -633,60 +632,42 @@ export class DbHandler {
         return query;
     }
 
-    async queryReplyCount(commentCid: string, trx?: Transaction): Promise<number> {
-        const options = {
-            excludeCommentsWithDifferentSubAddress: true,
-            excludeDeletedComments: true,
-            excludeRemovedComments: true,
-            parentCid: commentCid
-        };
-        const children = <Pick<CommentsTableRow, "cid">[]>await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
+    async queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
+        // Using a recursive CTE to find the maximum timestamp among the comment and all its descendants
+        // This excludes comments that:
+        // 1. Have a different subplebbitAddress than the current subplebbit
+        // 2. Are marked as removed in the comment updates table
+        // 3. Are marked as deleted in the edit field
+        const query = `
+            WITH RECURSIVE descendants AS (
+                -- Base case: the comment itself
+                SELECT cid, timestamp 
+                FROM ${TABLES.COMMENTS}
+                WHERE cid = ?
+                
+                UNION ALL
+                
+                -- Recursive case: all descendants (replies and replies to replies)
+                SELECT c.cid, c.timestamp
+                FROM ${TABLES.COMMENTS} c
+                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                LEFT JOIN (
+                    SELECT cid, json_extract(edit, '$.deleted') AS deleted 
+                    FROM ${TABLES.COMMENT_UPDATES}
+                ) AS d ON c.cid = d.cid
+                JOIN descendants desc ON c.parentCid = desc.cid
+                WHERE c.subplebbitAddress = ?
+                AND cu.removed IS NOT 1
+                AND d.deleted IS NOT 1
+            )
+            SELECT MAX(timestamp) AS max_timestamp FROM descendants
+        `;
 
-        const limit = pLimit(50);
-        const replyCountPromises = children.map((comment) => limit(() => this.queryReplyCount(comment.cid, trx)));
+        type QueryResult = { max_timestamp: number }[];
+        const result = await this._baseTransaction(trx).raw<QueryResult>(query, [comment.cid, this._subplebbit.address]);
 
-        // Wait for all queries to complete and sum the results
-        const replyCounts = await Promise.all(replyCountPromises);
-        const childrenReplyCount = replyCounts.reduce((sum, count) => sum + count, 0);
-
-        return children.length + childrenReplyCount;
-    }
-
-    async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
-        let maxTimestamp = comment.timestamp;
-        // Note: active score should not include include deleted and removed comments
-
-        const updateMaxTimestamp = async (localComments: (typeof comment)[]) => {
-            for (const commentChild of localComments) {
-                if (commentChild.timestamp > maxTimestamp) maxTimestamp = commentChild.timestamp;
-                const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes"> = {
-                    excludeCommentsWithDifferentSubAddress: true,
-                    excludeDeletedComments: true,
-                    excludeRemovedComments: true,
-                    parentCid: commentChild.cid
-                };
-                const children: Pick<CommentsTableRow, "cid" | "timestamp">[] = await this._basePageQuery(activeScoreOptions, trx).select([
-                    `${TABLES.COMMENTS}.cid`,
-                    `${TABLES.COMMENTS}.timestamp`
-                ]);
-                if (children.length > 0) await updateMaxTimestamp(children);
-            }
-        };
-
-        const activeScoreOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes"> = {
-            excludeCommentsWithDifferentSubAddress: true,
-            excludeDeletedComments: true,
-            excludeRemovedComments: true,
-            parentCid: comment.cid
-        };
-
-        const children: Pick<CommentsTableRow, "cid" | "timestamp">[] = await this._basePageQuery(activeScoreOptions, trx).select([
-            `${TABLES.COMMENTS}.cid`,
-            `${TABLES.COMMENTS}.timestamp`
-        ]);
-        if (children.length > 0) await updateMaxTimestamp(children);
-
-        return maxTimestamp;
+        // Return the max timestamp or the comment's timestamp if no descendants found
+        return result[0]?.max_timestamp || comment.timestamp;
     }
 
     async queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">, trx?: Transaction): Promise<PageIpfs["comments"]> {
@@ -731,53 +712,146 @@ export class DbHandler {
         return comments;
     }
 
-    async commentHasReplies(commentCid: string, trx?: Transaction): Promise<boolean> {
-        // very optimized function for finding if a comment has replies
-        const result = await this._baseTransaction(trx)(TABLES.COMMENTS).select("id").where("parentCid", commentCid).first();
-        return Boolean(result);
-    }
-
     async queryFlattenedPageReplies(
         options: Omit<PageOptions, "firstPageSizeBytes"> & { parentCid: string },
         trx?: Transaction
     ): Promise<PageIpfs["comments"]> {
-        const firstLevelReplies = await this.queryPageComments(options, trx);
+        // Get columns to select with proper prefixes
+        const commentUpdateColumns = <(keyof CommentUpdateType)[]>(
+            remeda.keys.strict(
+                options.commentUpdateFieldsToExclude
+                    ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
+                    : CommentUpdateSchema.shape
+            )
+        );
+        const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `c_updates.${col} AS commentUpdate_${col}`);
 
-        const nestedReplies = [];
-        for (const baseComment of firstLevelReplies) {
-            const commentHasReplies = await this.commentHasReplies(baseComment.commentUpdate.cid);
-            if (commentHasReplies) {
-                // Only get the nested replies, don't include the base comment again
-                const replies = await this.queryFlattenedPageReplies({ ...options, parentCid: baseComment.commentUpdate.cid });
-                nestedReplies.push(replies);
-            } else {
-                nestedReplies.push([]); // No replies to this comment
-            }
+        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
+        const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `comments.${col} AS commentIpfs_${col}`);
+
+        // Count exactly how many parameters we'll need for proper binding
+        let paramCount = 1; // Start with 1 for the parentCid
+        const whereConditions = {
+            base: [] as string[],
+            recursive: [] as string[]
+        };
+
+        if (options.excludeCommentsWithDifferentSubAddress) {
+            whereConditions.base.push(`comments.subplebbitAddress = ?`);
+            whereConditions.recursive.push(`comments.subplebbitAddress = ?`);
+            paramCount += 2; // One for base, one for recursive
         }
 
-        // Combine first level replies with all nested replies
-        return [...firstLevelReplies, ...remeda.flattenDeep(nestedReplies)];
+        if (options.excludeRemovedComments) {
+            whereConditions.base.push(`c_updates.removed IS NOT 1`);
+            whereConditions.recursive.push(`c_updates.removed IS NOT 1`);
+            // No parameters added
+        }
+
+        if (options.excludeDeletedComments) {
+            whereConditions.base.push(`d.deleted IS NOT 1`);
+            whereConditions.recursive.push(`d.deleted IS NOT 1`);
+            // No parameters added
+        }
+
+        // Build the base and recursive WHERE conditions
+        const baseWhereClause = whereConditions.base.length ? `AND ${whereConditions.base.join(" AND ")}` : "";
+
+        const recursiveWhereClause = whereConditions.recursive.length ? `AND ${whereConditions.recursive.join(" AND ")}` : "";
+
+        // Build a recursive CTE query that flattens the comment tree
+        const query = `
+            WITH RECURSIVE comment_tree AS (
+                -- Base case: first level replies to the parent comment
+                SELECT 
+                    comments.*, 
+                    c_updates.*,
+                    0 AS tree_level 
+                FROM ${TABLES.COMMENTS} comments
+                INNER JOIN ${TABLES.COMMENT_UPDATES} c_updates ON comments.cid = c_updates.cid
+                LEFT JOIN (
+                    SELECT cid, json_extract(edit, '$.deleted') AS deleted 
+                    FROM ${TABLES.COMMENT_UPDATES}
+                ) AS d ON comments.cid = d.cid
+                WHERE comments.parentCid = ? ${baseWhereClause}
+                
+                UNION ALL
+                
+                -- Recursive case: replies to replies
+                SELECT 
+                    comments.*, 
+                    c_updates.*,
+                    tree.tree_level + 1
+                FROM ${TABLES.COMMENTS} comments
+                INNER JOIN ${TABLES.COMMENT_UPDATES} c_updates ON comments.cid = c_updates.cid
+                LEFT JOIN (
+                    SELECT cid, json_extract(edit, '$.deleted') AS deleted 
+                    FROM ${TABLES.COMMENT_UPDATES}
+                ) AS d ON comments.cid = d.cid
+                INNER JOIN comment_tree tree ON comments.parentCid = tree.cid
+                WHERE 1=1 ${recursiveWhereClause}
+            )
+            -- Select all fields with aliases for proper mapping
+            SELECT 
+                ${commentIpfsColumnSelects.join(",\n")},
+                ${commentUpdateColumnSelects.join(",\n")}
+            FROM comment_tree comments
+            JOIN ${TABLES.COMMENT_UPDATES} c_updates ON comments.cid = c_updates.cid
+            ORDER BY tree_level, comments.id -- Sort by tree level to maintain hierarchy, then by ID
+        `;
+
+        // Prepare parameters with exact count
+        const params = [options.parentCid];
+
+        if (options.excludeCommentsWithDifferentSubAddress) {
+            params.push(this._subplebbit.address); // For base query
+            params.push(this._subplebbit.address); // For recursive query
+        }
+
+        // Execute the query
+        type CommentIpfsPrefixedColumns = {
+            [K in keyof CommentsTableRow as `commentIpfs_${string & K}`]?: CommentsTableRow[K];
+        };
+
+        type CommentUpdatePrefixedColumns = {
+            [K in keyof CommentUpdatesRow as `commentUpdate_${string & K}`]?: CommentUpdatesRow[K];
+        };
+
+        type FlattenedCommentRow = CommentIpfsPrefixedColumns &
+            CommentUpdatePrefixedColumns & {
+                tree_level: number;
+            };
+
+        // Verify parameter count matches expected count
+        if (params.length !== paramCount) {
+            throw new Error(`Parameter count mismatch: Expected ${paramCount}, got ${params.length}`);
+        }
+
+        // Use raw query for optimal performance
+        const rawQuery = await this._baseTransaction(trx).raw(query, params);
+        const commentsRaw = rawQuery as unknown as FlattenedCommentRow[];
+
+        // Handle post_cid for posts (depth = 0), following queryPageComments approach
+        for (const commentRaw of commentsRaw) if (commentRaw["commentIpfs_depth"] === 0) delete commentRaw["commentIpfs_postCid"];
+
+        // Format results to match PageIpfs["comments"]
+        const comments: PageIpfs["comments"] = commentsRaw.map((commentRaw) => ({
+            comment: remeda.mapKeys(
+                // Exclude extraProps from pageIpfs.comments[0].comment
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
+                (key, value) => key.replace("commentIpfs_", "")
+            ) as CommentIpfsType,
+            commentUpdate: remeda.mapKeys(
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
+                (key, value) => key.replace("commentUpdate_", "")
+            ) as CommentUpdateType
+        }));
+
+        return comments;
     }
 
     async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first();
-    }
-
-    async queryAllStoredCommentUpdates(trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES);
-    }
-
-    async queryCommentUpdatesOfPostsForBucketAdjustment(
-        trx?: Transaction
-    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "localMfsPath">)[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENTS)
-            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .select(`${TABLES.COMMENT_UPDATES}.localMfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
-            .where("depth", 0);
-    }
-
-    async deleteAllCommentUpdateRows(trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).del();
     }
 
     async queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]> {
@@ -990,12 +1064,59 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount">> {
-        const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
-            this.queryReplyCount(cid, trx),
-            this._queryCommentUpvote(cid, trx),
-            this._queryCommentDownvote(cid, trx)
-        ]);
-        return { replyCount, upvoteCount, downvoteCount };
+        // Get upvotes, downvotes, and reply count in a single query with 3 subqueries
+        // This is a bit more efficient than running 3 separate queries
+        // will not include deleted/removed comments in the reply count
+        const query = `
+        SELECT 
+            (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = ? AND vote = 1) AS upvoteCount,
+            (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = ? AND vote = -1) AS downvoteCount,
+            (
+                WITH RECURSIVE descendants AS (
+                    SELECT c.cid FROM ${TABLES.COMMENTS} c
+                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                    LEFT JOIN (
+                        SELECT cid, json_extract(edit, '$.deleted') AS deleted 
+                        FROM ${TABLES.COMMENT_UPDATES}
+                    ) AS d ON c.cid = d.cid
+                    WHERE c.parentCid = ?
+                    AND c.subplebbitAddress = ?
+                    AND cu.removed IS NOT 1
+                    AND d.deleted IS NOT 1
+                    
+                    UNION ALL
+                    
+                    SELECT c.cid FROM ${TABLES.COMMENTS} c
+                    INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                    LEFT JOIN (
+                        SELECT cid, json_extract(edit, '$.deleted') AS deleted 
+                        FROM ${TABLES.COMMENT_UPDATES}
+                    ) AS d ON c.cid = d.cid
+                    JOIN descendants desc ON c.parentCid = desc.cid
+                    WHERE c.subplebbitAddress = ?
+                    AND cu.removed IS NOT 1
+                    AND d.deleted IS NOT 1
+                )
+                SELECT COUNT(*) FROM descendants
+            ) AS replyCount
+        `;
+
+        const result = await this._baseTransaction(trx).raw(query, [cid, cid, cid, this._subplebbit.address, this._subplebbit.address]);
+
+        return {
+            upvoteCount: result[0].upvoteCount,
+            downvoteCount: result[0].downvoteCount,
+            replyCount: result[0].replyCount
+        };
+    }
+
+    async queryCommentUpdatesOfPostsForBucketAdjustment(
+        trx?: Transaction
+    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "localMfsPath">)[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .select(`${TABLES.COMMENT_UPDATES}.localMfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
+            .where("depth", 0);
     }
 
     private async _queryLatestAuthorEdit(
@@ -1080,7 +1201,7 @@ export class DbHandler {
             .select(["cid", "timestamp"])
             .first();
         // last reply timestamp is the timestamp of the latest child or indirect child timestamp
-        const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
+        const lastReplyTimestamp = lastChildCidRaw ? await this.queryMaximumTimestampUnderComment(comment, trx) : undefined;
         return {
             lastChildCid: lastChildCidRaw ? lastChildCidRaw.cid : undefined,
             lastReplyTimestamp
@@ -1476,5 +1597,118 @@ export class DbHandler {
         });
 
         return allCids;
+    }
+
+    async queryPostsWithActiveScore(
+        pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">,
+        trx?: Transaction
+    ): Promise<(PageIpfs["comments"][0] & { activeScore: number })[]> {
+        // First calculate active scores using a CTE
+        const activeScoresCte = `
+            WITH RECURSIVE descendants AS (
+                -- Base: posts with depth = 0
+                SELECT p.cid AS post_cid, p.cid, p.timestamp
+                FROM ${TABLES.COMMENTS} p
+                WHERE p.depth = 0
+                
+                UNION ALL
+                
+                -- Recursive: all descendants
+                SELECT d.post_cid, c.cid, c.timestamp
+                FROM ${TABLES.COMMENTS} c
+                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                LEFT JOIN (
+                    SELECT cid, json_extract(edit, '$.deleted') AS deleted 
+                    FROM ${TABLES.COMMENT_UPDATES}
+                ) AS d_edit ON c.cid = d_edit.cid
+                JOIN descendants d ON c.parentCid = d.cid
+                WHERE c.subplebbitAddress = ?
+                AND cu.removed IS NOT 1
+                AND d_edit.deleted IS NOT 1
+            ),
+            active_scores AS (
+                -- Calculate max timestamp for each post
+                SELECT post_cid, MAX(timestamp) as active_score
+                FROM descendants
+                GROUP BY post_cid
+            )
+            SELECT post_cid, active_score FROM active_scores
+        `;
+
+        // Get the post details using the same approach as queryPageComments
+        const commentUpdateColumns = <(keyof CommentUpdateType)[]>(
+            remeda.keys.strict(
+                pageOptions.commentUpdateFieldsToExclude
+                    ? remeda.omit(CommentUpdateSchema.shape, pageOptions.commentUpdateFieldsToExclude)
+                    : CommentUpdateSchema.shape
+            )
+        );
+        const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
+
+        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
+        const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
+
+        // Create a base query for posts
+        let postsQuery = this._baseTransaction(trx)(TABLES.COMMENTS)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .joinRaw(`INNER JOIN (${activeScoresCte}) AS active_scores ON ${TABLES.COMMENTS}.cid = active_scores.post_cid`, [
+                this._subplebbit.address
+            ])
+            .where("depth", 0);
+
+        // Apply filters
+        if (pageOptions.excludeCommentsWithDifferentSubAddress) {
+            postsQuery = postsQuery.where({ subplebbitAddress: this._subplebbit.address });
+        }
+        if (pageOptions.excludeRemovedComments) {
+            postsQuery = postsQuery.whereRaw(`${TABLES.COMMENT_UPDATES}.removed is not 1`);
+        }
+        if (pageOptions.excludeDeletedComments) {
+            postsQuery = postsQuery.whereRaw(`json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') is not 1`);
+        }
+
+        // Create types for prefixed columns that match our actual column names
+        type CommentIpfsPrefixedColumns = {
+            [K in keyof CommentsTableRow as `commentIpfs_${string & K}`]?: CommentsTableRow[K];
+        };
+
+        type CommentUpdatePrefixedColumns = {
+            [K in keyof CommentUpdatesRow as `commentUpdate_${string & K}`]?: CommentUpdatesRow[K];
+        };
+
+        // Combined type with additional fields from the query
+        type PostRowWithActiveScore = CommentIpfsPrefixedColumns &
+            CommentUpdatePrefixedColumns & {
+                active_score: number;
+            };
+
+        // Get the posts with all needed fields, but don't sort by active_score
+        const rawResults = await postsQuery.select([
+            ...commentIpfsColumnSelects,
+            ...commentUpdateColumnSelects,
+            "active_scores.active_score as active_score"
+        ]);
+
+        // Cast the results to our type (use unknown as an intermediate step to avoid direct casting errors)
+        const postsRaw: PostRowWithActiveScore[] = rawResults as unknown as PostRowWithActiveScore[];
+
+        // Handle post_cid for posts (depth = 0), following queryPageComments approach
+        for (const postRaw of postsRaw) if (postRaw["commentIpfs_depth"] === 0) delete postRaw["commentIpfs_postCid"];
+
+        // Map the results exactly like queryPageComments, but also include activeScore
+        const posts: (PageIpfs["comments"][0] & { activeScore: number })[] = postsRaw.map((postRaw) => ({
+            comment: remeda.mapKeys(
+                // Exclude extraProps from pageIpfs.comments[0].comment
+                remeda.pickBy(postRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
+                (key, value) => key.replace("commentIpfs_", "")
+            ) as CommentIpfsType,
+            commentUpdate: remeda.mapKeys(
+                remeda.pickBy(postRaw, (value, key) => key.startsWith("commentUpdate_")),
+                (key, value) => key.replace("commentUpdate_", "")
+            ) as CommentUpdateType,
+            activeScore: postRaw.active_score // Include the active score
+        }));
+
+        return posts;
     }
 }
