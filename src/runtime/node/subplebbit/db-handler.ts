@@ -1034,15 +1034,94 @@ export class DbHandler {
     }
 
     async querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats> {
-        const commentsRaw = await this._baseTransaction(trx)(TABLES.COMMENTS).select(["depth", "authorSignerAddress", "timestamp"]);
-        const votesRaw = await this._baseTransaction(trx)(TABLES.VOTES).select(["timestamp", "authorSignerAddress"]);
-        const res = {
-            ...this._calcActiveUserCount(commentsRaw, votesRaw),
-            ...this._calcCommentCount(commentsRaw, false),
-            ...this._calcCommentCount(commentsRaw, true)
-        };
-        //@ts-expect-error
-        return res;
+        const queryString = `
+            SELECT
+                (
+                    SELECT COUNT(DISTINCT author) 
+                    FROM (
+                        SELECT c.authorSignerAddress AS author FROM ${TABLES.COMMENTS} c
+                        WHERE c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 3600) AND strftime('%s', 'now')
+                        UNION
+                        SELECT v.authorSignerAddress AS author FROM ${TABLES.VOTES} v
+                        WHERE v.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 3600) AND strftime('%s', 'now')
+                    )
+                ) AS hourActiveUserCount,
+                
+                (
+                    SELECT COUNT(DISTINCT author) 
+                    FROM (
+                        SELECT c.authorSignerAddress AS author FROM ${TABLES.COMMENTS} c
+                        WHERE c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 86400) AND strftime('%s', 'now')
+                        UNION
+                        SELECT v.authorSignerAddress AS author FROM ${TABLES.VOTES} v
+                        WHERE v.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 86400) AND strftime('%s', 'now')
+                    )
+                ) AS dayActiveUserCount,
+                
+                (
+                    SELECT COUNT(DISTINCT author) 
+                    FROM (
+                        SELECT c.authorSignerAddress AS author FROM ${TABLES.COMMENTS} c
+                        WHERE c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 604800) AND strftime('%s', 'now')
+                        UNION
+                        SELECT v.authorSignerAddress AS author FROM ${TABLES.VOTES} v
+                        WHERE v.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 604800) AND strftime('%s', 'now')
+                    )
+                ) AS weekActiveUserCount,
+                
+                (
+                    SELECT COUNT(DISTINCT author) 
+                    FROM (
+                        SELECT c.authorSignerAddress AS author FROM ${TABLES.COMMENTS} c
+                        WHERE c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 2629746) AND strftime('%s', 'now')
+                        UNION
+                        SELECT v.authorSignerAddress AS author FROM ${TABLES.VOTES} v
+                        WHERE v.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 2629746) AND strftime('%s', 'now')
+                    )
+                ) AS monthActiveUserCount,
+                
+                (
+                    SELECT COUNT(DISTINCT author) 
+                    FROM (
+                        SELECT c.authorSignerAddress AS author FROM ${TABLES.COMMENTS} c
+                        WHERE c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 31557600) AND strftime('%s', 'now')
+                        UNION
+                        SELECT v.authorSignerAddress AS author FROM ${TABLES.VOTES} v
+                        WHERE v.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 31557600) AND strftime('%s', 'now')
+                    )
+                ) AS yearActiveUserCount,
+                
+                (
+                    SELECT COUNT(DISTINCT author) 
+                    FROM (
+                        SELECT c.authorSignerAddress AS author FROM ${TABLES.COMMENTS} c
+                        UNION
+                        SELECT v.authorSignerAddress AS author FROM ${TABLES.VOTES} v
+                    )
+                ) AS allActiveUserCount,
+                
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 3600) AND strftime('%s', 'now')) AS hourPostCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 86400) AND strftime('%s', 'now')) AS dayPostCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 604800) AND strftime('%s', 'now')) AS weekPostCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 2629746) AND strftime('%s', 'now')) AS monthPostCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 31557600) AND strftime('%s', 'now')) AS yearPostCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0) AS allPostCount,
+                
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 3600) AND strftime('%s', 'now')) AS hourReplyCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 86400) AND strftime('%s', 'now')) AS dayReplyCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 604800) AND strftime('%s', 'now')) AS weekReplyCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 2629746) AND strftime('%s', 'now')) AS monthReplyCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND c.timestamp BETWEEN MAX(0, strftime('%s', 'now') - 31557600) AND strftime('%s', 'now')) AS yearReplyCount,
+                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0) AS allReplyCount
+        `;
+
+        // Execute the single query
+        const result = await this._baseTransaction(trx).raw(queryString);
+
+        // Create stats object with proper typing, default to 0 for any missing fields
+        const stats: SubplebbitStats = result[0];
+
+        return stats;
     }
 
     async queryCommentsUnderComment(parentCid: string | null, trx?: Transaction): Promise<CommentsTableRow[]> {
@@ -1051,18 +1130,6 @@ export class DbHandler {
 
     async queryComment(cid: string, trx?: Transaction): Promise<CommentsTableRow | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", cid).first();
-    }
-
-    private async _queryCommentUpvote(cid: string, trx?: Transaction): Promise<number> {
-        const upvotes = <number>(await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: 1 }).count())[0]["count(*)"];
-        return upvotes;
-    }
-
-    private async _queryCommentDownvote(cid: string, trx?: Transaction): Promise<number> {
-        const downvotes = <number>(
-            (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: -1 }).count())[0]["count(*)"]
-        );
-        return downvotes;
     }
 
     private async _queryCommentCounts(
