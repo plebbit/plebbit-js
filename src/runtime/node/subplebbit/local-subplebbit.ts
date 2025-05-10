@@ -1936,7 +1936,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (this._mfsPathsToRemove.size > 0) {
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             try {
-                await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false });
+                await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: false });
                 log("Removed", toDeleteMfsPaths.length, "files from MFS directory", toDeleteMfsPaths);
                 return toDeleteMfsPaths;
             } catch (e) {
