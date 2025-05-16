@@ -40,7 +40,7 @@ const defaultChainProviders = {
         chainId: 137
     },
     sol: {
-        urls: ["web3.js", "https://solana.api.onfinality.io/public"],
+        urls: ["web3.js", "https://solana.api.onfinality.io/public", "https://solrpc.xyz"],
         chainId: -1 // no chain ID for solana
     }
 };
