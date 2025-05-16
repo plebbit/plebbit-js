@@ -24,7 +24,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit, {});
+            commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit);
             await commentToBeBanned.update();
             authorBanExpiresAt = timestamp() + 10; // Ban stays for 10 seconds
             reasonOfBan = "Just so " + Date.now();
@@ -71,7 +71,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Regular author can't ban another author`, async () => {
-            const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit);
 
             const banCommentEdit = await plebbit.createCommentModeration({
                 subplebbitAddress: tryToBanComment.subplebbitAddress,
