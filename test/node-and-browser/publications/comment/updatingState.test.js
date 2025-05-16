@@ -513,7 +513,9 @@ describe(`reply.updatingState - IPFS Gateway client`, async () => {
 
     it(`updating state of reply is in correct order upon updating a reply that's included in preloaded pages of its parent`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
+        // we don't want domain name in author addrses so its resolving doesn't get included in expected states
+        const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies && !post.author.address.includes(".")).replies.pages.best
+            .comments[0].cid;
         const mockReply = await plebbit.createComment({ cid: replyCid });
         const expectedStates = [
             "fetching-ipfs", // fetching comment ipfs of reply
