@@ -1431,6 +1431,8 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
     if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
     console.log("Successfully forced the subplebbit", updatingComment.subplebbitAddress, "to load all pages of comment", comment.cid);
+    if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
+        throw Error("Reply count is less than the number of comments published");
 }
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
