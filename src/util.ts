@@ -312,13 +312,25 @@ export async function resolveWhenPredicateIsTrue(
     eventName = "update"
 ) {
     // should add a timeout?
-    if (!(await predicate()))
-        await new Promise((resolve) => {
-            toUpdate.on(eventName, async () => {
+
+    const listenerPromise = new Promise(async (resolve) => {
+        const listener = async () => {
+            try {
                 const conditionStatus = await predicate();
-                if (conditionStatus) resolve(conditionStatus);
-            });
-        });
+                if (conditionStatus) {
+                    resolve(conditionStatus);
+                    toUpdate.removeListener(eventName, listener);
+                }
+            } catch (error) {
+                console.error(error);
+                throw error;
+            }
+        };
+        toUpdate.on(eventName, listener);
+        await listener(); // make sure we're checking at least once
+    });
+
+    await listenerPromise;
 }
 
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {

@@ -25,7 +25,8 @@ import {
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
     removeUndefinedValuesRecursively,
-    timestamp
+    timestamp,
+    resolveWhenPredicateIsTrue
 } from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
@@ -542,13 +543,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     async _awaitSubplebbitsToIncludeSub(subAddress: string): Promise<void> {
         if (this.subplebbits.includes(subAddress)) return;
-        else {
-            await new Promise((resolve) =>
-                this.on("subplebbitschange", (newSubs) => {
-                    if (newSubs.includes(subAddress)) resolve(1);
-                })
-            );
-        }
+        else await resolveWhenPredicateIsTrue(this, () => this.subplebbits.includes(subAddress), "subplebbitschange");
     }
 
     private async _createRemoteSubplebbitInstance(options: z.infer<typeof CreateRemoteSubplebbitFunctionArgumentSchema>) {
