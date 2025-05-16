@@ -465,6 +465,7 @@ export class DbHandler {
                 this._dbConfig.connection!.filename
             );
         if (backupDbPath) await fs.promises.rm(backupDbPath);
+        await this._knex.raw("PRAGMA journal_mode = WAL");
     }
 
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
