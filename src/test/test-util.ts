@@ -653,7 +653,7 @@ export async function waitTillPostInSubplebbitInstancePages(
             return Boolean(postInPage);
         } else return false;
     };
-    await sub.update();
+    if (sub.state === "stopped") await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
 }
 
