@@ -43,6 +43,7 @@ import KeyvSqlite from "@keyv/sqlite";
 import { exec } from "child_process";
 import { promisify } from "util";
 import pLimit from "p-limit";
+import { STORAGE_KEYS } from "../../../constants.js";
 
 const execPromise = promisify(exec);
 
@@ -430,8 +431,9 @@ export class DbHandler {
             await this._knex.raw(`VACUUM;`); // make sure we're not using extra space
             // we need to remove posts because it may include old incompatible comments
             // LocalSubplebbit will automatically produce a new posts json
-            //@ts-expect-error
-            const internalState = await this._subplebbit._getDbInternalState(false);
+            const internalState = (await this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
+                ? await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+                : undefined;
             if (internalState) {
                 const protocolVersion = internalState.protocolVersion || env.PROTOCOL_VERSION;
                 const _usingDefaultChallenge =

@@ -409,7 +409,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         lock: boolean
     ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:_getDbInternalState");
-        if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))) return undefined;
+        if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])))
+            throw new PlebbitError("ERR_SUB_HAS_NO_INTERNAL_STATE", { address: this.address, dataPath: this._plebbit.dataPath });
         let lockedIt = false;
         try {
             if (lock) {
@@ -470,7 +471,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
 
-        await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
+        if (await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
+
+        await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternalBeforeFirstUpdate());
 
         await this._updateStartedValue();
 
