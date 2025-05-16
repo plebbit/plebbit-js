@@ -779,14 +779,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 modTableRow.commentCid
             );
 
+            const commentUpdateToPurge = await this._dbHandler.queryStoredCommentUpdate({ cid: modTableRow.commentCid }, undefined);
+            const commentToPurge = await this._dbHandler.queryComment(modTableRow.commentCid, undefined);
+            if (!commentToPurge) throw Error("Comment to purge not found");
             const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid);
 
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
             purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
 
-            const purgedMfsPaths = cidsToPurgeOffIpfsNode.filter((ipfsPath) => ipfsPath.startsWith("/"));
-
-            purgedMfsPaths.forEach((path) => this._mfsPathsToRemove.add(path));
+            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number")
+                this._mfsPathsToRemove.add(
+                    this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket)
+                );
 
             await this._unpinStaleCids();
 
@@ -1778,8 +1782,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 throw e; // A critical error
             }
         }
-
-        await this._dbHandler.updateMfsPathOfCommentUpdates(oldAddress, newAddress);
     }
 
     private async _updateCommentsThatNeedToBeUpdated(): Promise<CommentUpdateToBeUpdated[]> {
@@ -1940,18 +1942,32 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:sync:_rmUnneededMfsPaths");
 
         if (this._mfsPathsToRemove.size > 0) {
-            const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
-            try {
-                await this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: false });
-                log("Removed", toDeleteMfsPaths.length, "files from MFS directory", toDeleteMfsPaths);
-                return toDeleteMfsPaths;
-            } catch (e) {
-                const error = <Error>e;
-                if (!error.message.includes("file does not exist")) {
-                    log.error("Failed to remove files from MFS", toDeleteMfsPaths, e);
-                    throw e;
-                } else return toDeleteMfsPaths;
-            }
+            const deletedMfsPaths: string[] = [];
+
+            // seems like removing files in parallel makes kubo bugs out
+            // so we're doing it 5 files at a time
+            const limit = pLimit(5);
+
+            // Process file removals in batches of 5 at a time
+            await Promise.all(
+                Array.from(this._mfsPathsToRemove.values()).map((path) =>
+                    limit(async () => {
+                        try {
+                            await this._clientsManager.getDefaultIpfs()._client.files.rm(path, { flush: false, recursive: true });
+                            deletedMfsPaths.push(path);
+                        } catch (e) {
+                            const error = <Error>e;
+                            if (!error.message.includes("file does not exist")) {
+                                log.error("Failed to remove file from MFS", path, e);
+                            } else deletedMfsPaths.push(path);
+                        }
+                    })
+                )
+            );
+
+            log("Removed", deletedMfsPaths.length, "files from MFS directory", deletedMfsPaths);
+            deletedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
+            return deletedMfsPaths;
         } else return [];
     }
     private pubsubTopicWithfallback() {
@@ -2049,36 +2065,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _adjustPostUpdatesBucketsIfNeeded() {
-        // This function will be ran a lot, maybe we should move it out of the sync loop or try to limit its execution
         if (!this.postUpdates) return;
         // Look for posts whose buckets should be changed
 
-        // TODO this function should be ran in a more efficient manner. It iterates through all posts in the database
-        // At some point we should have a db query that looks for posts that need to move to a different bucket
         const log = Logger("plebbit-js:local-subplebbit:start:_adjustPostUpdatesBucketsIfNeeded");
-        // TODO we can optimize this by excluding posts in the last bucket
-        const commentUpdateOfPosts = await this._dbHandler.queryCommentUpdatesOfPostsForBucketAdjustment();
-        for (const post of commentUpdateOfPosts) {
-            if (!post.localMfsPath) throw Error("localMfsPath Should be defined");
-            const currentTimestampBucketOfPost = Number(post.localMfsPath.split("/")[3]);
-            const newTimestampBucketOfPost = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= post.timestamp);
-            if (typeof newTimestampBucketOfPost !== "number") throw Error("Failed to calculate the timestamp bucket of post");
-            if (currentTimestampBucketOfPost !== newTimestampBucketOfPost) {
-                log(
-                    `Post (${post.cid}) current postUpdates timestamp bucket (${currentTimestampBucketOfPost}) is outdated. Will mark it to be republished under a new bucket (${newTimestampBucketOfPost})`
-                );
+        const postsWithOutdatedPostUpdateBucket = await this._dbHandler.queryPostsWithOutdatedBuckets(this._postUpdatesBuckets);
+        if (postsWithOutdatedPostUpdateBucket.length === 0) return;
 
-                const updateDirectoryOfPost = post.localMfsPath.replace("/update", "");
-                try {
-                    await this._clientsManager.getDefaultIpfs()._client.files.rm(updateDirectoryOfPost, { recursive: true });
-                    await this._dbHandler.resetPublishedToPostUpdatesMFSWithPostCid(post.cid);
-                } catch (e) {
-                    if ((<Error>e).message.includes("file does not exist")) {
-                        await this._dbHandler.resetPublishedToPostUpdatesMFSWithPostCid(post.cid);
-                    } else throw e;
-                }
-            }
-        }
+        await this._dbHandler.forceUpdateOnAllCommentsWithCid(postsWithOutdatedPostUpdateBucket.map((post) => post.cid));
+
+        log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets`);
     }
 
     private async _cleanUpIpfsRepoRarely(force = false) {

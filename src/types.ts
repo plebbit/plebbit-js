@@ -69,30 +69,30 @@ export type NativeFunctions = {
 
 export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id"> {}
 
 // CommentUpdates table
 
 export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
-    localMfsPath: string | undefined; // the MFS path of the post comment update within the kubo node. Not applicable to replies
-    publishedToPostUpdatesMFS: boolean;
+    postUpdatesBucket: number | undefined; // the post updates bucket of post CommentUpdate, not applicable to replies
+    publishedToPostUpdatesMFS: boolean; // whether the comment latest update has been published
     postCommentUpdateCid: string | undefined; // the cid of the post comment update, cid v0. Not applicable to replies
 }
 
-export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
+export type CommentUpdatesTableRowInsert = CommentUpdatesRow;
 
 // Votes table
 
 export type VotesTableRow = z.infer<typeof VoteTablesRowSchema>;
 
-export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
+export type VotesTableRowInsert = VotesTableRow;
 
 // Comment edits table
 
 export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt" | "id"> {}
-export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "insertedAt" | "id"> {}
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "id"> {}
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "id"> {}
 
 // Setting up the types of tables here so we can utilize auto completion in queries
 declare module "knex/types/tables" {

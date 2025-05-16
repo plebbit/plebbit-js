@@ -271,7 +271,7 @@ export class DbHandler {
             table.timestamp("lastReplyTimestamp").nullable();
 
             // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
-            table.text("localMfsPath").nullable(); // the mfs path of post CommentUpdate, not applicable to replies
+            table.integer("postUpdatesBucket").nullable(); // the post updates bucket of post CommentUpdate, not applicable to replies
             table.text("postCommentUpdateCid").nullable(); // the cid of CommentUpdate, cidv0, not applicable to replies
             table.boolean("publishedToPostUpdatesMFS").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
 
@@ -1187,13 +1187,58 @@ export class DbHandler {
         };
     }
 
-    async queryCommentUpdatesOfPostsForBucketAdjustment(
+    async queryPostsWithOutdatedBuckets(
+        buckets: number[],
         trx?: Transaction
-    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "localMfsPath">)[]> {
-        return this._baseTransaction(trx)(TABLES.COMMENTS)
-            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .select(`${TABLES.COMMENT_UPDATES}.localMfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
-            .where("depth", 0);
+    ): Promise<
+        {
+            cid: string;
+            timestamp: number;
+            currentBucket: number;
+            newBucket: number;
+        }[]
+    > {
+        const currentTimestamp = timestamp();
+        const maxBucket = Math.max(...buckets); // Get the largest bucket to exclude from processing
+
+        // Create a CTE to efficiently extract data and perform calculations in a single query
+        const query = this._baseTransaction(trx)
+            .with("post_data", (qb) => {
+                qb.select([
+                    "c.cid",
+                    "c.timestamp",
+                    "cu.postUpdatesBucket AS current_bucket",
+                    // Calculate correct bucket based on time elapsed
+                    this._knex.raw(`
+                    CASE
+                        ${buckets
+                            .map((bucket) => `WHEN (${currentTimestamp} - ${bucket}) <= c.timestamp THEN ${bucket}`)
+                            .join("\n                    ")}
+                        ELSE ${maxBucket}
+                    END AS new_bucket
+                `)
+                ])
+                    .from(`${TABLES.COMMENTS} as c`)
+                    .innerJoin(`${TABLES.COMMENT_UPDATES} as cu`, "c.cid", "cu.cid")
+                    .where("c.depth", 0)
+                    .where("c.subplebbitAddress", this._subplebbit.address)
+                    .whereNotNull("cu.postUpdatesBucket")
+                    // Exclude posts already in the last bucket
+                    .where("cu.postUpdatesBucket", "!=", maxBucket);
+            })
+            .select(["cid", "timestamp", "current_bucket AS currentBucket", "new_bucket AS newBucket"])
+            .from("post_data")
+            .where("current_bucket", "!=", this._knex.raw("new_bucket"));
+
+        // Type the result properly
+        type PostWithBucketInfo = {
+            cid: string;
+            timestamp: number;
+            currentBucket: number;
+            newBucket: number;
+        };
+
+        return (await query) as unknown as PostWithBucketInfo[];
     }
 
     private async _queryLatestAuthorEdit(
@@ -1504,7 +1549,6 @@ export class DbHandler {
             if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES)) {
                 try {
                     const commentUpdate = await this.queryStoredCommentUpdate({ cid });
-                    if (commentUpdate?.localMfsPath) purgedCids.push(commentUpdate.localMfsPath);
                     if (commentUpdate?.postCommentUpdateCid) purgedCids.push(commentUpdate.postCommentUpdateCid);
                     if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
                     await this._knex(TABLES.COMMENT_UPDATES).where({ cid }).del();
@@ -1518,7 +1562,6 @@ export class DbHandler {
                         let curCid = (await this._knex(TABLES.COMMENTS).where({ cid }).first())?.parentCid;
                         while (curCid) {
                             const commentUpdate = await this.queryStoredCommentUpdate({ cid: curCid });
-                            if (commentUpdate?.localMfsPath) purgedCids.push(commentUpdate.localMfsPath);
                             if (commentUpdate?.postCommentUpdateCid) purgedCids.push(commentUpdate.postCommentUpdateCid);
                             if (commentUpdate?.replies?.pageCids) purgedCids.push(...Object.values(commentUpdate.replies.pageCids));
 
@@ -1682,13 +1725,6 @@ export class DbHandler {
         return await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
             .whereIn("cid", commentCids)
             .update({ publishedToPostUpdatesMFS: true });
-    }
-
-    async updateMfsPathOfCommentUpdates(oldAddress: string, newAddress: string, trx?: Transaction): Promise<void> {
-        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({
-            //@ts-expect-error
-            localMfsPath: this._knex.raw("REPLACE(localMfsPath, ?, ?)", [oldAddress, newAddress])
-        });
     }
 
     async forceUpdateOnAllComments(trx?: Transaction): Promise<void> {
