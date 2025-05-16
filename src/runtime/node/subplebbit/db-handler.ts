@@ -1233,19 +1233,78 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">> {
-        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = Object.assign(
-            {},
-            ...(await Promise.all(
-                ["spoiler", "pinned", "locked", "removed", "nsfw"].map((field) =>
-                    this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
-                        .jsonExtract("commentModeration", `$.${field}`, field, true)
-                        .where("commentCid", cid)
-                        .whereNotNull(field)
-                        .orderBy("id", "desc")
-                        .first()
-                )
-            ))
-        );
+        // This query extracts all flags in a single operation
+        // For each flag, it finds the most recent non-null value set by a moderator
+        const query = `
+            WITH flags_with_rank AS (
+                -- For each flag, rank moderations by id descending to get the most recent first
+                SELECT 
+                    commentCid,
+                    json_extract(commentModeration, '$.spoiler') AS spoiler,
+                    json_extract(commentModeration, '$.pinned') AS pinned,
+                    json_extract(commentModeration, '$.locked') AS locked,
+                    json_extract(commentModeration, '$.removed') AS removed,
+                    json_extract(commentModeration, '$.nsfw') AS nsfw,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY commentCid, 
+                        CASE WHEN json_extract(commentModeration, '$.spoiler') IS NOT NULL THEN 'spoiler' ELSE NULL END
+                        ORDER BY id DESC
+                    ) AS spoiler_rank,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY commentCid, 
+                        CASE WHEN json_extract(commentModeration, '$.pinned') IS NOT NULL THEN 'pinned' ELSE NULL END
+                        ORDER BY id DESC
+                    ) AS pinned_rank,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY commentCid, 
+                        CASE WHEN json_extract(commentModeration, '$.locked') IS NOT NULL THEN 'locked' ELSE NULL END
+                        ORDER BY id DESC
+                    ) AS locked_rank,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY commentCid, 
+                        CASE WHEN json_extract(commentModeration, '$.removed') IS NOT NULL THEN 'removed' ELSE NULL END
+                        ORDER BY id DESC
+                    ) AS removed_rank,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY commentCid, 
+                        CASE WHEN json_extract(commentModeration, '$.nsfw') IS NOT NULL THEN 'nsfw' ELSE NULL END
+                        ORDER BY id DESC
+                    ) AS nsfw_rank
+                FROM ${TABLES.COMMENT_MODERATIONS}
+                WHERE commentCid = ?
+            )
+            -- Select the most recent non-null values for each flag
+            SELECT 
+                MAX(CASE WHEN spoiler IS NOT NULL AND spoiler_rank = 1 THEN spoiler ELSE NULL END) AS spoiler,
+                MAX(CASE WHEN pinned IS NOT NULL AND pinned_rank = 1 THEN pinned ELSE NULL END) AS pinned,
+                MAX(CASE WHEN locked IS NOT NULL AND locked_rank = 1 THEN locked ELSE NULL END) AS locked,
+                MAX(CASE WHEN removed IS NOT NULL AND removed_rank = 1 THEN removed ELSE NULL END) AS removed,
+                MAX(CASE WHEN nsfw IS NOT NULL AND nsfw_rank = 1 THEN nsfw ELSE NULL END) AS nsfw
+            FROM flags_with_rank
+        `;
+
+        // Execute the query and get the result
+        const result = await this._baseTransaction(trx).raw(query, [cid]);
+
+        // The result will have a single row with all the flags
+        // Filter out null values to match the original function's behavior
+        const flags = result[0];
+
+        // Create an object with only the non-null flags
+        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = {};
+
+        // Only include non-null values
+        for (const flag of ["spoiler", "pinned", "locked", "removed", "nsfw"] as const) {
+            if (flags[flag] !== null) {
+                // Convert to proper boolean type if needed (SQLite might return 0/1 for booleans)
+                if (typeof flags[flag] === "number") {
+                    res[flag] = Boolean(flags[flag]);
+                } else {
+                    res[flag] = flags[flag];
+                }
+            }
+        }
+
         return res;
     }
 
