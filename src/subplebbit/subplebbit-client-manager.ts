@@ -391,6 +391,19 @@ export class SubplebbitClientsManager extends ClientsManager {
                 }
             };
 
+            const checkResponseHeadersIfOldCid = async (gatewayRes: Response) => {
+                const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag");
+                if (cidOfIpnsFromEtagHeader && this._updateCidsAlreadyLoaded.has(cidOfIpnsFromEtagHeader)) {
+                    abortController.abort("Aborting subplebbit IPNS request because we already loaded this record");
+                    return new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
+                        cidOfIpnsFromEtagHeader,
+                        ipnsName,
+                        gatewayRes,
+                        gatewayUrl
+                    });
+                }
+            };
+
             const requestHeaders =
                 this._updateCidsAlreadyLoaded.size > 0
                     ? { "If-None-Match": '"' + Array.from(this._updateCidsAlreadyLoaded.values()).join(",") + '"' } // tell the gateway we already loaded these records
@@ -403,6 +416,7 @@ export class SubplebbitClientsManager extends ClientsManager {
                         root: ipnsName,
                         recordPlebbitType: "subplebbit",
                         validateGatewayResponseFunc: throwIfGatewayRespondsWithInvalidSubplebbit,
+                        abortRequestErrorBeforeLoadingBodyFunc: checkResponseHeadersIfOldCid,
                         abortController,
                         maxFileSizeBytes: MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS,
                         timeoutMs: this._plebbit._timeouts["subplebbit-ipns"],
@@ -431,11 +445,9 @@ export class SubplebbitClientsManager extends ClientsManager {
             const gatewaysWithSub = remeda.keys.strict(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord);
             if (gatewaysWithSub.length === 0) return undefined;
 
+            const currentUpdatedAt = this._subplebbit.raw.subplebbitIpfs?.updatedAt || 0;
+
             const totalGateways = gatewaysSorted.length;
-
-            const quorm = Math.min(2, totalGateways);
-
-            const freshThreshold = 60 * 60; // if a record is as old as 60 min, then use it immediately
 
             const gatewaysWithError = remeda.keys.strict(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
@@ -444,9 +456,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             );
             const bestGatewayRecordAge = timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord!.updatedAt; // how old is the record, relative to now, in seconds
 
-            if (bestGatewayRecordAge <= freshThreshold) {
-                // A very recent subplebbit, a good thing
-                // TODO reward this gateway
+            if (gatewayFetches[bestGatewayUrl].subplebbitRecord!.updatedAt > currentUpdatedAt) {
                 const bestSubRecord = gatewayFetches[bestGatewayUrl].subplebbitRecord!;
                 log(
                     `Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${bestSubRecord.address}) whose IPNS is (${ipnsName}).  The record has updatedAt (${bestSubRecord.updatedAt}) that's ${bestGatewayRecordAge}s old with a TTL of ${gatewayFetches[bestGatewayUrl].ttl} seconds`
@@ -454,11 +464,8 @@ export class SubplebbitClientsManager extends ClientsManager {
                 return { subplebbit: bestSubRecord, cid: gatewayFetches[bestGatewayUrl].cid! };
             }
 
-            // We weren't able to find a very recent subplebbit record
-            if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
-                // we find the gateway with the max updatedAt
-                return { subplebbit: gatewayFetches[bestGatewayUrl].subplebbitRecord!, cid: gatewayFetches[bestGatewayUrl].cid! };
-            } else return undefined;
+            // We weren't able to find any new subplebbit records
+            if (gatewaysWithError.length + gatewaysWithSub.length === totalGateways) return undefined;
         };
 
         const promisesToIterate = <Promise<{ resText: string; res: Response } | { error: PlebbitError }>[]>(
