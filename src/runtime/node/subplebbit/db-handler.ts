@@ -1678,11 +1678,7 @@ export class DbHandler {
         return fs.existsSync(subDbPath);
     }
 
-    async queryCommentsUnderPostSortedByDepth(postCid: string, trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).orderBy("depth", "DESC").select("cid");
-    }
-
-    async updateCommentUpdatesPublishedToPostUpdatesMFS(commentCids: string[], trx?: Transaction) {
+    async markCommentsAsPublishedToPostUpdates(commentCids: string[], trx?: Transaction) {
         return await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
             .whereIn("cid", commentCids)
             .update({ publishedToPostUpdatesMFS: true });
@@ -1695,24 +1691,13 @@ export class DbHandler {
         });
     }
 
-    async resetPublishedToPostUpdatesMFS(trx?: Transaction): Promise<void> {
+    async forceUpdateOnAllComments(trx?: Transaction): Promise<void> {
         // force a new production of CommentUpdate of all Comments
         await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).update({ publishedToPostUpdatesMFS: false });
     }
-    async resetPublishedToPostUpdatesMFSWithPostCid(postCid: CommentsTableRow["postCid"], trx?: Transaction): Promise<void> {
-        // Update the publishedToPostUpdatesMFS field for CommentUpdate rows where the postCid matches
-        // First, get all the comment cids that match the postCid
-        const commentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).where("postCid", postCid).select("cid");
 
-        // Then update the comment updates table using those cids
-        if (commentCids.length > 0) {
-            await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)
-                .whereIn(
-                    "cid",
-                    commentCids.map((record) => record.cid)
-                )
-                .update({ publishedToPostUpdatesMFS: false });
-        }
+    async forceUpdateOnAllCommentsWithCid(commentCids: string[], trx?: Transaction): Promise<void> {
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).whereIn("cid", commentCids).update({ publishedToPostUpdatesMFS: false });
     }
 
     async queryAllCidsUnderThisSubplebbit(trx?: Transaction): Promise<Set<string>> {
