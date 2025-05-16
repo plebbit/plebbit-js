@@ -20,7 +20,7 @@ const mockComments = [];
 // Clients of RPC will trust the response of RPC and won't validate
 // Skip testing for now because they keep failing randomly in github CI tests
 describeSkipIfRpc.skip(`Resolving text records`, async () => {
-    it(`Can resolve correctly with just viem`, async () => {
+    it.skip(`Can resolve correctly with just viem`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
@@ -28,21 +28,21 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
 
-    it(`Can resolve correctly with just ethers.js`, async () => {
+    it.skip(`Can resolve correctly with just ethers.js`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["ethers.js"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
-    it(`Can resolve correctly with custom chain provider`, async () => {
+    it.skip(`Can resolve correctly with custom chain provider`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
-    it(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
+    it.skip(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
         const plebbit = await mockRemotePlebbit({
             chainProviders: { eth: { urls: ["https://cloudflare-eth.com/", "viem", "ethers.js"], chainId: 1 } }
         }); // Should have viem defined
@@ -53,7 +53,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
     });
 
     // We don't need to test resolving solana domains anymore
-    describe(`Resolving solana domains`, async () => {
+    describe.skip(`Resolving solana domains`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await mockPlebbitV2({
