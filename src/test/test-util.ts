@@ -1404,12 +1404,12 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
     const content = "x".repeat(1024 * 30); //30kb
-    const replies = [];
-    for (let i = 0; i < numOfCommentsToPublish; i++) {
-        //@ts-expect-error
-        const reply = await publishRandomReply(comment, comment._plebbit, { content });
-        replies.push(reply);
-    }
+    const replies = await Promise.all(
+        new Array(numOfCommentsToPublish).fill(null).map(async () => {
+            //@ts-expect-error
+            return publishRandomReply(comment, comment._plebbit, { content });
+        })
+    );
 
     const lastPublishedReply = replies[replies.length - 1];
     console.log(
