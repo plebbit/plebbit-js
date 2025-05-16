@@ -316,7 +316,8 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
     await mkdir(subsPath, { recursive: true });
 
     fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false, recursive: false }, async (eventType, filename) => {
-        if (filename?.endsWith(".lock") || filename?.endsWith("-journal")) return; // we only care about subplebbits
+        const extensionsToIgnore = [".lock", "-journal", "-shm", "-wal"];
+        if (typeof filename === "string" && extensionsToIgnore.some((ext) => filename?.endsWith(ext))) return; // we only care about subplebbits
 
         const currentSubs = await listSubplebbits(plebbit);
         if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))
