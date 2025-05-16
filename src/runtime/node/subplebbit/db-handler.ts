@@ -920,111 +920,106 @@ export class DbHandler {
     }
 
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
-        // Criteria:
-        // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) or commentUpdate.publishedToPostUpdatesMFS is false OR
-        // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit or CommentModeration OR
-        // 3 - Comments that new votes, CommentEdit, commentModeration or other comments were published under them
+        // This optimized implementation uses a single SQL query with CTEs to identify:
+        // 1. Comments with no updates or not published to MFS
+        // 2. Comments with recent activity (votes, edits, moderations, child comments)
+        // 3. Parent comments of those identified in criteria 1 & 2
+        // 4. Previous comments by the same authors
 
-        // After retrieving all comments with any of criteria above, also add their parents to the list to update
-        // Also for each comment, add the previous comments of its author to update them too
+        const query = `
+            WITH RECURSIVE 
+            -- First, identify all comments needing direct updates
+            direct_updates AS (
+                SELECT c.* 
+                FROM ${TABLES.COMMENTS} c
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                WHERE 
+                    -- No CommentUpdate or not published to MFS
+                    cu.cid IS NULL OR cu.publishedToPostUpdatesMFS = 0
 
-        const criteriaOne: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
-            .select(`${TABLES.COMMENTS}.*`)
-            .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhere(`${TABLES.COMMENT_UPDATES}.publishedToPostUpdatesMFS`, false);
-        const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
-        // @ts-expect-error
-        const criteriaTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
-            .select(`${TABLES.COMMENTS}.*`)
-            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
-            .leftJoin(TABLES.COMMENT_MODERATIONS, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_MODERATIONS}.commentCid`)
-            .leftJoin(TABLES.COMMENT_EDITS, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_EDITS}.commentCid`)
-            .leftJoin({ childrenComments: TABLES.COMMENTS }, `${TABLES.COMMENTS}.cid`, `childrenComments.parentCid`)
-            .max({
-                voteLastInsertedAt: `${TABLES.VOTES}.insertedAt`,
-                commentEditLastInsertedAt: `${TABLES.COMMENT_EDITS}.insertedAt`,
-                modEditLastInsertedAt: `${TABLES.COMMENT_MODERATIONS}.insertedAt`,
-                childCommentLastInsertedAt: `childrenComments.insertedAt`,
-                lastUpdatedAt: `${TABLES.COMMENT_UPDATES}.updatedAt`
-            })
-            .groupBy(`${TABLES.COMMENTS}.cid`)
-            .having(`voteLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
-            .orHaving(`commentEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
-            .orHaving(`modEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
-            .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
+                UNION
 
-        const commentsToUpdate = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+                -- Find comments with activity newer than their last update
+                SELECT c.*
+                FROM ${TABLES.COMMENTS} c
+                JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                -- Using LEFT JOIN EXISTS pattern for better performance
+                WHERE EXISTS (
+                    -- Check for newer votes
+                    SELECT 1 FROM ${TABLES.VOTES} v 
+                    WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1
+                )
+                OR EXISTS (
+                    -- Check for newer edits
+                    SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce 
+                    WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1
+                )
+                OR EXISTS (
+                    -- Check for newer moderations
+                    SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm 
+                    WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1
+                )
+                OR EXISTS (
+                    -- Check for newer child comments
+                    SELECT 1 FROM ${TABLES.COMMENTS} cc 
+                    WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.updatedAt - 1
+                )
+            ),
 
-        // not just direct parent, also grandparents, till we reach the root post
-        const limit = pLimit(50);
-        const allParentsOfCommentsToUpdate = [];
+            -- Get all unique author addresses from direct updates
+            authors_to_update AS (
+                SELECT DISTINCT authorSignerAddress FROM direct_updates
+            ),
 
-        // Get comments that have a parentCid
-        const commentsWithParents = remeda.unique(commentsToUpdate.filter((comment) => comment.parentCid));
+            -- Get all parent comments recursively
+            parent_chain AS (
+                -- Start with direct parents of comments to update
+                SELECT DISTINCT p.*
+                FROM ${TABLES.COMMENTS} p
+                JOIN direct_updates du ON p.cid = du.parentCid
+                WHERE p.cid IS NOT NULL
+                
+                UNION
+                
+                -- Find parents of parents recursively
+                SELECT DISTINCT p.*
+                FROM ${TABLES.COMMENTS} p
+                JOIN parent_chain pc ON p.cid = pc.parentCid
+                WHERE p.cid IS NOT NULL
+            ),
 
-        // Create parallel queries with concurrency limit
-        const parentQueries = commentsWithParents.map((commentToUpdateWithParent) =>
-            limit(() => this.queryParents(commentToUpdateWithParent, trx))
-        );
+            -- Combine all sources of comments to update
+            all_updates AS (
+                -- Original comments needing updates
+                SELECT cid FROM direct_updates
+                
+                UNION
+                
+                -- Parent comments
+                SELECT cid FROM parent_chain
+                
+                UNION
+                
+                -- Comments by the same authors
+                SELECT c.cid
+                FROM ${TABLES.COMMENTS} c
+                JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
+            )
 
-        // Wait for all parent queries to complete
-        const parentsResults = await Promise.all(parentQueries);
+            -- Get the full details for all comments
+            SELECT c.*
+            FROM ${TABLES.COMMENTS} c
+            JOIN all_updates au ON c.cid = au.cid
+            ORDER BY c.id
+        `;
 
-        // Flatten the results into allParentsOfCommentsToUpdate
-        for (const parents of parentsResults) allParentsOfCommentsToUpdate.push(...parents);
+        // Execute the query and ensure we get properly typed results
+        const rawResults = await this._baseTransaction(trx).raw(query);
 
-        const authorComments = await this.queryCommentsOfAuthors(
-            remeda.unique(commentsToUpdate.map((comment) => comment.authorSignerAddress)),
-            trx
-        );
-        const uniqComments = remeda.uniqueBy(
-            [...commentsToUpdate, ...allParentsOfCommentsToUpdate, ...authorComments],
-            (comment) => comment.cid
-        );
+        // SQLite returns results as first element of an array
+        const comments: CommentsTableRow[] = Array.isArray(rawResults) ? rawResults : rawResults[0];
 
-        return uniqComments;
-    }
-
-    private _calcActiveUserCount(
-        commentsRaw: Pick<CommentsTableRow, "depth" | "authorSignerAddress" | "timestamp">[],
-        votesRaw: Pick<VotesTableRow, "authorSignerAddress" | "timestamp">[]
-    ) {
-        const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
-        const res = {};
-        for (const timeframe of timeframes) {
-            const propertyName = `${timeframe.toLowerCase()}ActiveUserCount`;
-            const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
-            const authors = remeda.unique([
-                ...commentsRaw
-                    .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
-                    .map((comment) => comment.authorSignerAddress),
-                ...votesRaw.filter((vote) => vote.timestamp >= from && vote.timestamp <= to).map((vote) => vote.authorSignerAddress)
-            ]);
-            // Too lazy to type this function up, not high priority
-            //@ts-expect-error
-            res[propertyName] = authors.length;
-        }
-        return res;
-    }
-
-    private _calcCommentCount(commentsRaw: Pick<CommentsTableRow, "depth" | "authorSignerAddress" | "timestamp">[], countReply: boolean) {
-        // if countReply = false, then it's a post count
-        const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
-        const res = {};
-        for (const timeframe of timeframes) {
-            const propertyName = timeframe.toLowerCase() + (countReply ? "ReplyCount" : "PostCount");
-            const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
-            const posts = commentsRaw
-                .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
-                .filter((comment) => (countReply ? comment.depth > 0 : comment.depth === 0));
-
-            // Too lazy to type this function up, not high priority
-            //@ts-expect-error
-            res[propertyName] = posts.length;
-        }
-        return res;
+        return comments;
     }
 
     async querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats> {
