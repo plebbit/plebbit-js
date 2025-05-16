@@ -1130,9 +1130,14 @@ export class DbHandler {
         cid: string,
         trx?: Transaction
     ): Promise<Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount">> {
-        // Get upvotes, downvotes, and reply count in a single query with 3 subqueries
-        // This is a bit more efficient than running 3 separate queries
-        // will not include deleted/removed comments in the reply count
+        // Define the type for the query result
+        type CommentCountsResult = {
+            upvoteCount: number;
+            downvoteCount: number;
+            replyCount: number;
+        };
+
+        // The query is correct as is
         const query = `
         SELECT 
             (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = ? AND vote = 1) AS upvoteCount,
@@ -1167,7 +1172,13 @@ export class DbHandler {
             ) AS replyCount
         `;
 
-        const result = await this._baseTransaction(trx).raw(query, [cid, cid, cid, this._subplebbit.address, this._subplebbit.address]);
+        const result = await this._baseTransaction(trx).raw<CommentCountsResult[]>(query, [
+            cid,
+            cid,
+            cid,
+            this._subplebbit.address,
+            this._subplebbit.address
+        ]);
 
         return {
             upvoteCount: result[0].upvoteCount,
