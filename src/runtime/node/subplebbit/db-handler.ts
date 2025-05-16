@@ -20,6 +20,7 @@ import type {
 import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
+import Database from "better-sqlite3";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
@@ -42,10 +43,7 @@ import KeyvSqlite from "@keyv/sqlite";
 
 import { exec } from "child_process";
 import { promisify } from "util";
-import pLimit from "p-limit";
 import { STORAGE_KEYS } from "../../../constants.js";
-
-const execPromise = promisify(exec);
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -133,8 +131,19 @@ export class DbHandler {
     }
 
     async keyvGet(key: string) {
-        const res = await this._keyv.get(key);
-        return res;
+        try {
+            const res = await this._keyv.get(key);
+            return res;
+        } catch (e) {
+            try {
+                const rawValue = await this._keyv.get(key, { raw: true });
+                //@ts-expect-error
+                e.details = { ...e.details, rawValue };
+            } catch {}
+            //@ts-expect-error
+            e.details = { ...e.details, rawValue };
+            throw e;
+        }
     }
 
     async keyvSet(key: string, value: any, ttl?: number) {
@@ -243,7 +252,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
 
             table.increments("id"); // Used for sorts
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.timestamp("insertedAt"); // Timestamp of when it was first inserted in the table
         });
     }
 
@@ -277,7 +286,7 @@ export class DbHandler {
             table.boolean("publishedToPostUpdatesMFS").notNullable(); // we need to keep track of whether the comment update has been published to ipfs postUpdates
 
             // Columns with defaults
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.timestamp("insertedAt"); // Timestamp of when it was upserted at the table
         });
     }
 
@@ -288,7 +297,7 @@ export class DbHandler {
             table.timestamp("timestamp").checkPositive().notNullable();
             table.tinyint("vote").checkBetween([-1, 1]).notNullable();
             table.text("protocolVersion").notNullable();
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.timestamp("insertedAt"); // Timestamp of when it was first inserted in the table
             table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
 
             table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
@@ -314,7 +323,7 @@ export class DbHandler {
             table.boolean("nsfw").nullable();
             table.boolean("isAuthorEdit").notNullable(); // if edit is signed by original author
 
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.timestamp("insertedAt"); // Timestamp of when it was first inserted in the table
 
             table.json("extraProps").nullable();
             table.primary(["id", "commentCid"]);
@@ -334,7 +343,7 @@ export class DbHandler {
             table.timestamp("timestamp").checkPositive().notNullable(); // from commentModerationPublication.timestamp
             table.json("commentModeration").notNullable(); // commentModerationPublication.commentModeration, should take extra props
 
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.timestamp("insertedAt"); // Timestamp of when it was first inserted in the table
 
             table.json("extraProps").nullable();
             table.primary(["id", "commentCid"]);
@@ -603,24 +612,34 @@ export class DbHandler {
             .del();
     }
 
-    async insertVote(vote: VotesTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.VOTES).insert(vote);
+    async insertVotes(votes: VotesTableRowInsert[], trx?: Transaction) {
+        if (votes.length === 0) return;
+        const processedVotes = this._processRecordsForDb(votes);
+        await this._baseTransaction(trx)(TABLES.VOTES).insert(processedVotes);
     }
 
-    async insertComment(comment: CommentsTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.COMMENTS).insert(comment);
+    async insertComments(comments: CommentsTableRowInsert[], trx?: Transaction) {
+        if (comments.length === 0) return;
+        const processedComments = this._processRecordsForDb(comments);
+        await this._baseTransaction(trx)(TABLES.COMMENTS).insert(processedComments);
     }
 
-    async upsertCommentUpdate(update: CommentUpdatesTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).insert(update).onConflict(["cid"]).merge();
+    async upsertCommentUpdates(updates: CommentUpdatesTableRowInsert[], trx?: Transaction) {
+        if (updates.length === 0) return;
+        const processedUpdates = this._processRecordsForDb(updates);
+        await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).insert(processedUpdates).onConflict(["cid"]).merge();
     }
 
-    async insertCommentModeration(moderation: CommentModerationsTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS).insert(moderation);
+    async insertCommentModerations(moderations: CommentModerationsTableRowInsert[], trx?: Transaction) {
+        if (moderations.length === 0) return;
+        const processedModerations = this._processRecordsForDb(moderations);
+        await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS).insert(processedModerations);
     }
 
-    async insertCommentEdit(edit: CommentEditsTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
+    async insertCommentEdits(edits: CommentEditsTableRowInsert[], trx?: Transaction) {
+        if (edits.length === 0) return;
+        const processedEdits = this._processRecordsForDb(edits);
+        await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(processedEdits);
     }
 
     async queryVote(commentCid: string, authorSignerAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined> {
@@ -1619,9 +1638,24 @@ export class DbHandler {
         delete this["_knex"];
         //@ts-expect-error
         delete this["_keyv"];
-        await fs.promises.cp(oldPathString, newPath);
-        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit._plebbit);
-        else await fs.promises.rm(oldPathString);
+
+        // Use better-sqlite3's backup API
+        try {
+            // Open source database
+            const sourceDb = new Database(oldPathString);
+
+            // Perform the backup directly to the destination file
+            await sourceDb.backup(newPath);
+
+            // Close the database connection
+            sourceDb.close();
+
+            if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit._plebbit);
+            else await fs.promises.rm(oldPathString);
+        } catch (error) {
+            log.error(`Failed to backup database from ${oldPathString} to ${newPath}:`, error);
+            throw error;
+        }
 
         this._dbConfig = {
             ...this._dbConfig,
@@ -1856,5 +1890,22 @@ export class DbHandler {
         }));
 
         return posts;
+    }
+
+    // Helper function to process database records for SQLite compatibility
+    private _processRecordsForDb<T extends Record<string, any>>(records: T[]): T[] {
+        return records.map((record) => {
+            const processed = { ...record };
+
+            // Convert object and array fields to JSON strings
+            for (const [key, value] of Object.entries(processed)) {
+                if (value !== null && typeof value === "object") {
+                    //@ts-expect-error
+                    processed[key] = JSON.stringify(value);
+                }
+            }
+
+            return processed;
+        });
     }
 }
