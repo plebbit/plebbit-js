@@ -1220,19 +1220,11 @@ export class DbHandler {
             FROM flags_with_rank
         `;
         const flags = this._db.prepare(query).get(cid) as
-            | Record<keyof Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">, any>
+            | Record<keyof Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">, 0 | 1 | null>
             | undefined;
-        const res: Partial<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">> = {};
-        if (flags) {
-            for (const flag of ["spoiler", "pinned", "locked", "removed", "nsfw"] as const) {
-                const val = flags[flag];
-                if (val !== null && val !== undefined) {
-                    if (val === 1 || val === "true" || val === true) res[flag] = true;
-                    else if (val === 0 || val === "false" || val === false) res[flag] = false;
-                }
-            }
-        }
-        return res;
+        if (!flags) return {};
+
+        return remeda.mapValues(removeNullUndefinedValues(flags), Boolean);
     }
 
     queryAuthorEditDeleted(cid: string): Pick<CommentEditsTableRow, "deleted"> | undefined {
@@ -1610,7 +1602,7 @@ export class DbHandler {
 
         const postsRaw = this._db.prepare(postsQueryStr).all(params) as (PrefixedCommentRow & { active_score: number })[];
         return postsRaw.map((postRaw) => {
-            if (postRaw["commentIpfs_depth"] === 0) delete postRaw["commentIpfs_postCid"];
+            if (postRaw["commentIpfs_depth"] === 0) delete postRaw["commentIpfs_postCid"]; // postCid is only included in file added to ipfs when depth > 0
             const commentIpfsData = remeda.pickBy(postRaw, (v, k) => k.startsWith("commentIpfs_"));
             const commentUpdateData = remeda.pickBy(postRaw, (v, k) => k.startsWith("commentUpdate_"));
             const parsedCommentIpfs = this._parseJsonAndExtraPropFields(
