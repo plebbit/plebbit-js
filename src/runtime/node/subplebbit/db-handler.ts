@@ -823,10 +823,11 @@ export class DbHandler {
         return { whereClauses, params };
     }
 
-    queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid" | "timestamp">): number {
+    queryMaximumTimestampUnderComment(comment: Pick<CommentsTableRow, "cid">): number | undefined {
         const query = `
             WITH RECURSIVE descendants AS (
-                SELECT cid, timestamp FROM ${TABLES.COMMENTS} WHERE cid = ?
+                SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                WHERE c.parentCid = ?
                 UNION ALL
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
@@ -837,7 +838,9 @@ export class DbHandler {
             SELECT MAX(timestamp) AS max_timestamp FROM descendants
         `;
         const result = this._db.prepare(query).get(comment.cid, this._subplebbit.address) as { max_timestamp: number | null };
-        return result?.max_timestamp || comment.timestamp;
+
+        if (result.max_timestamp === null) return undefined;
+        return result.max_timestamp;
     }
 
     queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"] {
@@ -1259,12 +1262,12 @@ export class DbHandler {
         return { flair: JSON.parse(result.flair) as CommentModerationTableRow["commentModeration"]["flair"] };
     }
 
-    private _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid" | "timestamp">) {
-        const lastChildRaw = this._db
-            .prepare(`SELECT cid, timestamp FROM ${TABLES.COMMENTS} WHERE parentCid = ? ORDER BY rowid DESC LIMIT 1`)
-            .get(comment.cid) as { cid: string; timestamp: number } | undefined;
+    private _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid">) {
+        const lastChildCid = this._db
+            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ? ORDER BY rowid DESC LIMIT 1`)
+            .get(comment.cid) as { cid: string } | undefined;
         const lastReplyTimestamp = this.queryMaximumTimestampUnderComment(comment);
-        return { lastChildCid: lastChildRaw?.cid, lastReplyTimestamp };
+        return { lastChildCid: lastChildCid?.cid, lastReplyTimestamp };
     }
 
     queryCalculatedCommentUpdate(
