@@ -294,7 +294,7 @@ export class PageGenerator {
             firstPageSizeBytes: preloadedPageSizeBytes
         };
         // Sorting posts on a subplebbit level
-        const rawPosts = await this._subplebbit._dbHandler.queryPostsWithActiveScore(pageOptions);
+        const rawPosts = this._subplebbit._dbHandler.queryPostsWithActiveScore(pageOptions);
         if (rawPosts.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
@@ -329,7 +329,7 @@ export class PageGenerator {
             baseTimestamp: timestamp()
         };
 
-        const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        const hierarchalReplies = this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, {
@@ -344,7 +344,7 @@ export class PageGenerator {
 
         const nonPreloadedSorts = remeda.keys.strict(POST_REPLIES_SORT_TYPES).filter((sortName) => sortName !== preloadedReplyPageSortName);
 
-        const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({
+        const flattenedReplies = this._subplebbit._dbHandler.queryFlattenedPageReplies({
             ...pageOptions,
             commentUpdateFieldsToExclude: ["replies"]
         });
@@ -375,7 +375,7 @@ export class PageGenerator {
             baseTimestamp: timestamp()
         };
 
-        const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        const hierarchalReplies = this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, {
