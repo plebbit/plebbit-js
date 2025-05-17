@@ -1008,7 +1008,6 @@ export class DbHandler {
         return removeNullUndefinedValues(result);
     }
 
-    // TODO, we only need to check if comment exists, remove this later
     hasCommentWithSignatureEncoded(signatureEncoded: string): boolean {
         const row = this._db
             .prepare(`SELECT 1 FROM ${TABLES.COMMENTS} WHERE json_extract(signature, '$.signature') = ? LIMIT 1`)
@@ -1031,7 +1030,7 @@ export class DbHandler {
     }
 
     queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">): Pick<CommentsTableRow, "cid">[] {
-        if (!rootComment.parentCid) return [];
+        if (!rootComment.parentCid) throw Error("Root comment has no parent cid");
         const query = `
             WITH RECURSIVE parent_chain AS (
                 SELECT cid, parentCid, 0 AS level FROM ${TABLES.COMMENTS} WHERE cid = ?
@@ -1147,18 +1146,18 @@ export class DbHandler {
     }
 
     queryPostsWithOutdatedBuckets(buckets: number[]): { cid: string; timestamp: number; currentBucket: number; newBucket: number }[] {
-        const currentTimestampMs = Date.now();
+        const currentTimestampSeconds = timestamp(); // timestamp is in seconds
         const maxBucket = Math.max(...buckets);
         const caseClauses = buckets
             .sort((a, b) => a - b)
-            .map((bucket) => `WHEN (${currentTimestampMs} - c.timestamp) <= ${bucket * 1000} THEN ${bucket}`)
+            .map((bucket) => `WHEN (${currentTimestampSeconds} - c.timestamp) <= ${bucket} THEN ${bucket}`)
             .join(" ");
         const query = `
             WITH post_data AS (
                 SELECT c.cid, c.timestamp, cu.postUpdatesBucket AS current_bucket,
                     CASE ${caseClauses} ELSE ${maxBucket} END AS new_bucket
                 FROM ${TABLES.COMMENTS} as c INNER JOIN ${TABLES.COMMENT_UPDATES} as cu ON c.cid = cu.cid
-                WHERE c.depth = 0 AND c.subplebbitAddress = ? AND cu.postUpdatesBucket IS NOT NULL AND cu.postUpdatesBucket != ?
+                WHERE c.subplebbitAddress = ? AND cu.postUpdatesBucket IS NOT NULL AND cu.postUpdatesBucket != ?
             ) SELECT cid, timestamp, current_bucket AS currentBucket, new_bucket AS newBucket
             FROM post_data WHERE current_bucket != new_bucket
         `;
