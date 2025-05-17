@@ -854,7 +854,7 @@ export class DbHandler {
         return result?.max_timestamp || comment.timestamp;
     }
 
-    async queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): Promise<PageIpfs["comments"]> {
+    queryPageComments(options: Omit<PageOptions, "firstPageSizeBytes">): PageIpfs["comments"] {
         const commentUpdateCols = remeda.keys.strict(
             options.commentUpdateFieldsToExclude
                 ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
@@ -906,9 +906,7 @@ export class DbHandler {
         });
     }
 
-    async queryFlattenedPageReplies(
-        options: Omit<PageOptions, "firstPageSizeBytes"> & { parentCid: string }
-    ): Promise<PageIpfs["comments"]> {
+    queryFlattenedPageReplies(options: Omit<PageOptions, "firstPageSizeBytes"> & { parentCid: string }): PageIpfs["comments"] {
         const commentUpdateCols = remeda.keys.strict(
             options.commentUpdateFieldsToExclude
                 ? remeda.omit(CommentUpdateSchema.shape, options.commentUpdateFieldsToExclude)
@@ -1011,34 +1009,25 @@ export class DbHandler {
     }
 
     // TODO, we only need to check if comment exists, remove this later
-    queryCommentBySignatureEncoded(signatureEncoded: string): CommentsTableRow | undefined {
+    hasCommentWithSignatureEncoded(signatureEncoded: string): boolean {
         const row = this._db
-            .prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE json_extract(signature, '$.signature') = ?`)
-            .get(signatureEncoded) as CommentsTableRow | undefined;
-        if (!row) return undefined;
-        const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
-        return this._intToBoolean(parsed, ["spoiler", "nsfw"]);
+            .prepare(`SELECT 1 FROM ${TABLES.COMMENTS} WHERE json_extract(signature, '$.signature') = ? LIMIT 1`)
+            .get(signatureEncoded);
+        return row !== undefined;
     }
 
-    // TODO, we only need to check if moderation exists, remove this later
-    queryCommentModerationBySignatureEncoded(signatureEncoded: string): CommentModerationTableRow | undefined {
+    hasCommentModerationWithSignatureEncoded(signatureEncoded: string): boolean {
         const row = this._db
-            .prepare(`SELECT * FROM ${TABLES.COMMENT_MODERATIONS} WHERE json_extract(signature, '$.signature') = ?`)
-            .get(signatureEncoded) as CommentModerationTableRow | undefined;
-        if (!row) return undefined;
-        return removeNullUndefinedValues(this._parseJsonFields(row, ["author", "signature", "commentModeration", "extraProps"]));
+            .prepare(`SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} WHERE json_extract(signature, '$.signature') = ? LIMIT 1`)
+            .get(signatureEncoded);
+        return row !== undefined;
     }
 
-    // TODO, we only need to check if edit exists, remove this later
-
-    queryCommentEditBySignatureEncoded(signatureEncoded: string): CommentEditsTableRow | undefined {
+    hasCommentEditWithSignatureEncoded(signatureEncoded: string): boolean {
         const row = this._db
-            .prepare(`SELECT * FROM ${TABLES.COMMENT_EDITS} WHERE json_extract(signature, '$.signature') = ?`)
-            .get(signatureEncoded) as CommentEditsTableRow | undefined;
-        if (!row) return undefined;
-        const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
-        const result = this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]);
-        return removeNullUndefinedValues(result);
+            .prepare(`SELECT 1 FROM ${TABLES.COMMENT_EDITS} WHERE json_extract(signature, '$.signature') = ? LIMIT 1`)
+            .get(signatureEncoded);
+        return row !== undefined;
     }
 
     queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">): Pick<CommentsTableRow, "cid">[] {

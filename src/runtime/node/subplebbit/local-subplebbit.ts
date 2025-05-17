@@ -1281,7 +1281,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     return messages.ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY;
             }
 
-            const commentInDb = await this._dbHandler.queryCommentBySignatureEncoded(commentPublication.signature.signature);
+            const commentInDb = await this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
             if (commentInDb) return messages.ERR_DUPLICATE_COMMENT;
         } else if (request.vote) {
             const votePublication = request.vote;
@@ -1319,7 +1319,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
-            const commentModInDb = await this._dbHandler.queryCommentModerationBySignatureEncoded(
+            const commentModInDb = await this._dbHandler.hasCommentModerationWithSignatureEncoded(
                 commentModerationPublication.signature.signature
             );
             if (commentModInDb) return messages.ERR_DUPLICATE_COMMENT_MODERATION;
@@ -1357,7 +1357,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
 
-            const commentEditInDb = await this._dbHandler.queryCommentEditBySignatureEncoded(commentEditPublication.signature.signature);
+            const commentEditInDb = await this._dbHandler.hasCommentEditWithSignatureEncoded(commentEditPublication.signature.signature);
             if (commentEditInDb) return messages.ERR_DUPLICATE_COMMENT_EDIT;
         }
 
