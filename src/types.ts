@@ -1,5 +1,4 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
-import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
@@ -69,7 +68,7 @@ export type NativeFunctions = {
 
 export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id"> {}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> {}
 
 // CommentUpdates table
 
@@ -91,24 +90,8 @@ export type VotesTableRowInsert = VotesTableRow;
 // Comment edits table
 
 export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "id"> {}
-export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "id"> {}
-
-// Setting up the types of tables here so we can utilize auto completion in queries
-declare module "knex/types/tables" {
-    interface Tables {
-        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;
-        commentUpdates: Knex.CompositeTableType<
-            CommentUpdatesRow,
-            CommentUpdatesTableRowInsert,
-            Partial<Omit<CommentUpdatesTableRowInsert, "cid">>,
-            Omit<CommentUpdatesTableRowInsert, "cid">
-        >;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
-        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
-        commentModerations: Knex.CompositeTableType<CommentModerationTableRow, CommentModerationsTableRowInsert>;
-    }
-}
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "rowid"> {}
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "rowid"> {}
 
 // Event emitter declaration
 export interface SubplebbitEvents {

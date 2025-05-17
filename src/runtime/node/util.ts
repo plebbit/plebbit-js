@@ -3,7 +3,6 @@ import { default as nodeNativeFunctions } from "./native-functions.js";
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
-import { Knex } from "knex";
 import { parseDbResponses, throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
@@ -25,13 +24,14 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
 import type { CommentUpdateType } from "../../publications/comment/types.js";
+import { DbHandler } from "./subplebbit/db-handler.js";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
     subplebbitAddress: SubplebbitIpfsType["address"],
     plebbit: Plebbit
-): Promise<Knex.Config<any>> => {
+): Promise<DbHandler["_dbConfig"]> => {
     let filename: string;
     if (plebbit.noData) filename = ":memory:";
     else {
@@ -41,13 +41,8 @@ export const getDefaultSubplebbitDbConfig = async (
     }
 
     return {
-        client: "better-sqlite3",
-        connection: { filename },
-        useNullAsDefault: true,
-        acquireConnectionTimeout: 120000,
-        postProcessResponse: (result, queryContext) => {
-            return parseDbResponses(result);
-        }
+        filename,
+        fileMustExist: true
     };
 };
 

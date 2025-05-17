@@ -52,7 +52,7 @@ export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSch
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing
     extraProps: z.object({}).passthrough().optional(), // will hold unknown props,
-    id: z.number().nonnegative().int()
+    rowid: z.number().nonnegative().int()
 }).strict();
 
 export const CommentEditChallengeRequestToEncryptSchema = CreateCommentEditOptionsSchema.shape.challengeRequest.unwrap().extend({
