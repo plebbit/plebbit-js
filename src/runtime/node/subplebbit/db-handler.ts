@@ -1,4 +1,4 @@
-import { hideClassPrivateProps, throwWithErrorCode, timestamp } from "../../../util.js";
+import { hideClassPrivateProps, removeNullUndefinedValues, throwWithErrorCode, timestamp } from "../../../util.js";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -215,40 +215,23 @@ export class DbHandler {
         }
     }
 
-    private _parseJsonFields<T extends Record<string, any>>(record: T | undefined, jsonFields: (keyof T)[]): T | undefined {
-        if (!record) return undefined;
-        const newRecord = { ...record };
+    private _parseJsonFields<T extends Record<string, any>>(record: T, jsonFields: (keyof T)[]): T {
         for (const field of jsonFields) {
-            if (newRecord[field] !== null && newRecord[field] !== undefined && typeof newRecord[field] === "string") {
+            if (record[field] !== null && record[field] !== undefined && typeof record[field] === "string") {
                 try {
-                    newRecord[field] = JSON.parse(newRecord[field] as string);
+                    record[field] = JSON.parse(record[field] as string);
                 } catch (e) {
-                    // console.warn(`Failed to parse JSON field ${String(field)}: \${(e as Error).message}`);
+                    console.warn(`Failed to parse JSON field ${String(field)}: ${(e as Error).message}`);
                 }
             }
         }
-        return newRecord;
+        return record;
     }
 
-    private _booleanToInt<T extends Record<string, any>>(record: T, booleanFields: (keyof T)[]): T {
-        const newRecord = { ...record };
-        for (const field of booleanFields) {
-            if (typeof newRecord[field] === "boolean") {
-                (newRecord[field] as any) = newRecord[field] ? 1 : 0;
-            }
-        }
-        return newRecord;
-    }
+    private _intToBoolean<T extends Record<string, any>>(record: T, booleanFields: (keyof T)[]): T {
+        for (const field of booleanFields) if (typeof record[field] === "number") (record[field] as any) = Boolean(record[field]);
 
-    private _intToBoolean<T extends Record<string, any>>(record: T | undefined, booleanFields: (keyof T)[]): T | undefined {
-        if (!record) return undefined;
-        const newRecord = { ...record };
-        for (const field of booleanFields) {
-            if (typeof newRecord[field] === "number") {
-                (newRecord[field] as any) = Boolean(newRecord[field]);
-            }
-        }
-        return newRecord;
+        return record;
     }
 
     private _createCommentsTable(tableName: string) {
@@ -530,7 +513,7 @@ export class DbHandler {
                 }
 
                 // Prepare record for insertion (stringify JSONs, convert booleans)
-                const processedRecord = this._processRecordsForDb(
+                const processedRecord = this._processRecordsForDbBeforeInsert(
                     [srcRecord],
                     [
                         "author",
@@ -624,7 +607,7 @@ export class DbHandler {
             commentModerationContent.author = commentEdit.author;
 
             moderationsToInsert.push(
-                this._processRecordsForDb(
+                this._processRecordsForDbBeforeInsert(
                     [
                         {
                             commentCid: commentEdit.commentCid,
@@ -671,7 +654,7 @@ export class DbHandler {
 
     insertVotes(votes: VotesTableRowInsert[]): void {
         if (votes.length === 0) return;
-        const processedVotes = this._processRecordsForDb(votes, ["extraProps"]);
+        const processedVotes = this._processRecordsForDbBeforeInsert(votes, ["extraProps"]);
 
         // Get all column names from the votes table to create defaults
         const columnNames = this._getColumnNames(TABLES.VOTES);
@@ -703,7 +686,7 @@ export class DbHandler {
 
     insertComments(comments: CommentsTableRowInsert[]): void {
         if (comments.length === 0) return;
-        const processedComments = this._processRecordsForDb(comments, ["author", "signature", "flair", "extraProps"]);
+        const processedComments = this._processRecordsForDbBeforeInsert(comments, ["author", "signature", "flair", "extraProps"]);
 
         // Get all column names from the comments table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENTS) as (keyof CommentsTableRow)[];
@@ -730,7 +713,7 @@ export class DbHandler {
 
     upsertCommentUpdates(updates: CommentUpdatesTableRowInsert[]): void {
         if (updates.length === 0) return;
-        const processedUpdates = this._processRecordsForDb(updates, ["edit", "flair", "signature", "author", "replies"]);
+        const processedUpdates = this._processRecordsForDbBeforeInsert(updates, ["edit", "flair", "signature", "author", "replies"]);
 
         // Get all column names from the comment_updates table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_UPDATES) as (keyof CommentUpdatesRow)[];
@@ -766,7 +749,12 @@ export class DbHandler {
 
     insertCommentModerations(moderations: CommentModerationsTableRowInsert[]): void {
         if (moderations.length === 0) return;
-        const processedModerations = this._processRecordsForDb(moderations, ["author", "signature", "commentModeration", "extraProps"]);
+        const processedModerations = this._processRecordsForDbBeforeInsert(moderations, [
+            "author",
+            "signature",
+            "commentModeration",
+            "extraProps"
+        ]);
 
         // Get all column names from the comment_moderations table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_MODERATIONS) as (keyof CommentModerationTableRow)[];
@@ -793,7 +781,7 @@ export class DbHandler {
 
     insertCommentEdits(edits: CommentEditsTableRowInsert[]): void {
         if (edits.length === 0) return;
-        const processedEdits = this._processRecordsForDb(edits, ["author", "signature", "flair", "extraProps"]);
+        const processedEdits = this._processRecordsForDbBeforeInsert(edits, ["author", "signature", "flair", "extraProps"]);
 
         // Get all column names from the comment_edits table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_EDITS) as (keyof CommentEditsTableRow)[];
@@ -822,7 +810,9 @@ export class DbHandler {
         const row = this._db
             .prepare(`SELECT * FROM ${TABLES.VOTES} WHERE commentCid = ? AND authorSignerAddress = ?`)
             .get(commentCid, authorSignerAddress) as VotesTableRow | undefined;
-        return this._parseJsonFields(row, ["extraProps"]);
+        if (!row) return undefined;
+        const parsed = this._parseJsonFields(row, ["extraProps"]);
+        return removeNullUndefinedValues(parsed);
     }
 
     private _buildPageQueryParts(options: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">): {
@@ -904,10 +894,14 @@ export class DbHandler {
             )!;
 
             return {
-                comment: remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]), (k) =>
-                    k.replace("commentIpfs_", "")
-                ) as CommentIpfsType,
-                commentUpdate: remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")) as CommentUpdateType
+                comment: removeNullUndefinedValues(
+                    remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]), (k) =>
+                        k.replace("commentIpfs_", "")
+                    ) as CommentIpfsType
+                ),
+                commentUpdate: removeNullUndefinedValues(
+                    remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")) as CommentUpdateType
+                )
             };
         });
     }
@@ -994,10 +988,14 @@ export class DbHandler {
             )!;
 
             return {
-                comment: remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]) as CommentIpfsPrefixedColumns, (k) =>
-                    k.replace("commentIpfs_", "")
-                ) as CommentIpfsType,
-                commentUpdate: remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")) as CommentUpdateType
+                comment: removeNullUndefinedValues(
+                    remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]) as CommentIpfsPrefixedColumns, (k) =>
+                        k.replace("commentIpfs_", "")
+                    ) as CommentIpfsType
+                ),
+                commentUpdate: removeNullUndefinedValues(
+                    remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")) as CommentUpdateType
+                )
             };
         });
     }
@@ -1008,7 +1006,8 @@ export class DbHandler {
             | undefined;
         if (!row) return undefined;
         const parsed = this._parseJsonFields(row, ["edit", "flair", "signature", "author", "replies"]);
-        return this._intToBoolean(parsed, ["spoiler", "nsfw", "pinned", "locked", "removed", "publishedToPostUpdatesMFS"]);
+        const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pinned", "locked", "removed", "publishedToPostUpdatesMFS"]);
+        return removeNullUndefinedValues(result);
     }
 
     // TODO, we only need to check if comment exists, remove this later
@@ -1026,7 +1025,8 @@ export class DbHandler {
         const row = this._db
             .prepare(`SELECT * FROM ${TABLES.COMMENT_MODERATIONS} WHERE json_extract(signature, '$.signature') = ?`)
             .get(signatureEncoded) as CommentModerationTableRow | undefined;
-        return this._parseJsonFields(row, ["author", "signature", "commentModeration", "extraProps"]);
+        if (!row) return undefined;
+        return removeNullUndefinedValues(this._parseJsonFields(row, ["author", "signature", "commentModeration", "extraProps"]));
     }
 
     // TODO, we only need to check if edit exists, remove this later
@@ -1037,7 +1037,8 @@ export class DbHandler {
             .get(signatureEncoded) as CommentEditsTableRow | undefined;
         if (!row) return undefined;
         const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
-        return this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]);
+        const result = this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]);
+        return removeNullUndefinedValues(result);
     }
 
     queryParentsCids(rootComment: Pick<CommentsTableRow, "parentCid">): Pick<CommentsTableRow, "cid">[] {
@@ -1080,7 +1081,8 @@ export class DbHandler {
         const results = this._db.prepare(query).all() as CommentsTableRow[];
         return results.map((r) => {
             const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            return this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            return removeNullUndefinedValues(result);
         });
     }
 
@@ -1109,14 +1111,15 @@ export class DbHandler {
                 (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND ${buildIntervalClause(31557600)}) AS yearReplyCount,
                 (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0) AS allReplyCount
         `;
-        return (this._db.prepare(queryString).get() as SubplebbitStats) || ({} as SubplebbitStats);
+        return this._db.prepare(queryString).get() as SubplebbitStats;
     }
 
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[] {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(parentCid) as CommentsTableRow[];
         return results.map((r) => {
             const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            return this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            return removeNullUndefinedValues(result);
         });
     }
 
@@ -1124,7 +1127,8 @@ export class DbHandler {
         const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as CommentsTableRow | undefined;
         if (!row) return undefined;
         const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
-        return this._intToBoolean(parsed, ["spoiler", "nsfw"]);
+        const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
+        return removeNullUndefinedValues(result);
     }
 
     private _queryCommentCounts(cid: string): Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount"> {
@@ -1147,8 +1151,10 @@ export class DbHandler {
                 ) SELECT COUNT(*) FROM descendants
             ) AS replyCount
         `;
-        const result = this._db.prepare(query).get({ cid, subplebbitAddress: this._subplebbit.address }) as any;
-        return result || { upvoteCount: 0, downvoteCount: 0, replyCount: 0 };
+        return this._db.prepare(query).get({ cid, subplebbitAddress: this._subplebbit.address }) as Pick<
+            CommentUpdateType,
+            "replyCount" | "upvoteCount" | "downvoteCount"
+        >;
     }
 
     queryPostsWithOutdatedBuckets(buckets: number[]): { cid: string; timestamp: number; currentBucket: number; newBucket: number }[] {
@@ -1157,7 +1163,7 @@ export class DbHandler {
         const caseClauses = buckets
             .sort((a, b) => a - b)
             .map((bucket) => `WHEN (${currentTimestampMs} - c.timestamp) <= ${bucket * 1000} THEN ${bucket}`)
-            .join("\\n                        ");
+            .join(" ");
         const query = `
             WITH post_data AS (
                 SELECT c.cid, c.timestamp, cu.postUpdatesBucket AS current_bucket,
@@ -1167,13 +1173,15 @@ export class DbHandler {
             ) SELECT cid, timestamp, current_bucket AS currentBucket, new_bucket AS newBucket
             FROM post_data WHERE current_bucket != new_bucket
         `;
-        return this._db.prepare(query).all(this._subplebbit.address, maxBucket) as any[];
+        return this._db.prepare(query).all(this._subplebbit.address, maxBucket) as {
+            cid: string;
+            timestamp: number;
+            currentBucket: number;
+            newBucket: number;
+        }[];
     }
 
-    private async _queryLatestAuthorEdit(
-        cid: string,
-        authorSignerAddress: string
-    ): Promise<CommentEditPubsubMessagePublication | undefined> {
+    private _queryLatestAuthorEdit(cid: string, authorSignerAddress: string): CommentEditPubsubMessagePublication | undefined {
         const row = this._db
             .prepare(
                 `
@@ -1191,25 +1199,11 @@ export class DbHandler {
             "nsfw",
             "isAuthorEdit"
         ]) as CommentEditsTableRow;
-        const pubsubMessage: CommentEditPubsubMessagePublication = {
-            commentCid: parsedResult.commentCid,
-            subplebbitAddress: parsedResult.subplebbitAddress,
-            author: parsedResult.author,
-            signature: parsedResult.signature,
-            protocolVersion: parsedResult.protocolVersion,
-            timestamp: parsedResult.timestamp,
-            content: parsedResult.content,
-            reason: parsedResult.reason,
-            deleted: parsedResult.deleted,
-            flair: parsedResult.flair,
-            spoiler: parsedResult.spoiler,
-            nsfw: parsedResult.nsfw,
-            ...(parsedResult.extraProps || {})
-        };
-        return CommentEditPubsubMessagePublicationSchema.parse(pubsubMessage);
+
+        return removeNullUndefinedValues(parsedResult);
     }
 
-    private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): { reason?: string } | undefined {
+    private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
         const result = this._db
             .prepare(
                 `
@@ -1217,8 +1211,9 @@ export class DbHandler {
             WHERE commentCid = ? AND json_extract(commentModeration, '$.reason') IS NOT NULL ORDER BY rowid DESC LIMIT 1
         `
             )
-            .get(comment.cid) as { reason: string | null } | undefined;
-        return result && result.reason !== null ? { reason: result.reason } : undefined;
+            .get(comment.cid) as { reason: string } | undefined;
+        if (!result) return undefined;
+        return result;
     }
 
     queryCommentFlagsSetByMod(cid: string): Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> {
@@ -1290,34 +1285,25 @@ export class DbHandler {
         return undefined;
     }
 
-    private async _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid" | "timestamp">) {
+    private _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid" | "timestamp">) {
         const lastChildRaw = this._db
             .prepare(`SELECT cid, timestamp FROM ${TABLES.COMMENTS} WHERE parentCid = ? ORDER BY rowid DESC LIMIT 1`)
             .get(comment.cid) as { cid: string; timestamp: number } | undefined;
-        let lastReplyTimestamp = await this.queryMaximumTimestampUnderComment(comment); // Use parent comment itself
+        const lastReplyTimestamp = this.queryMaximumTimestampUnderComment(comment);
         return { lastChildCid: lastChildRaw?.cid, lastReplyTimestamp };
     }
 
-    async queryCalculatedCommentUpdate(
+    queryCalculatedCommentUpdate(
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">
-    ): Promise<Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
-        const [
-            authorSubplebbit,
-            authorEdit,
-            commentUpdateCounts,
-            moderatorReason,
-            commentFlags,
-            commentModFlair,
-            lastChildAndLastReplyTimestamp
-        ] = await Promise.all([
-            this.querySubplebbitAuthor(comment.authorSignerAddress),
-            this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress),
-            this._queryCommentCounts(comment.cid),
-            this._queryLatestModeratorReason(comment),
-            this.queryCommentFlagsSetByMod(comment.cid),
-            this._queryModCommentFlair(comment),
-            this._queryLastChildCidAndLastReplyTimestamp(comment)
-        ]);
+    ): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion"> {
+        const authorSubplebbit = this.querySubplebbitAuthor(comment.authorSignerAddress);
+        const authorEdit = this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress);
+        const commentUpdateCounts = this._queryCommentCounts(comment.cid);
+        const moderatorReason = this._queryLatestModeratorReason(comment);
+        const commentFlags = this.queryCommentFlagsSetByMod(comment.cid);
+        const commentModFlair = this._queryModCommentFlair(comment);
+        const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
+
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             cid: comment.cid,
@@ -1347,7 +1333,8 @@ export class DbHandler {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all() as CommentsTableRow[];
         return results.map((r) => {
             const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            return this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            return removeNullUndefinedValues(result);
         });
     }
 
@@ -1663,17 +1650,21 @@ export class DbHandler {
                 ]),
                 ["commentUpdate_edit", "commentUpdate_flair", "commentUpdate_signature", "commentUpdate_author", "commentUpdate_replies"]
             )!;
+
+            const cleanedCommentIpfs = removeNullUndefinedValues(parsedCommentIpfs);
+            const cleanedCommentUpdate = removeNullUndefinedValues(parsedCommentUpdate);
+
             return {
-                comment: remeda.mapKeys(remeda.omit(parsedCommentIpfs, ["commentIpfs_extraProps"]) as CommentIpfsPrefixedColumns, (k) =>
+                comment: remeda.mapKeys(remeda.omit(cleanedCommentIpfs, ["commentIpfs_extraProps"]) as CommentIpfsPrefixedColumns, (k) =>
                     k.replace("commentIpfs_", "")
                 ) as CommentIpfsType,
-                commentUpdate: remeda.mapKeys(parsedCommentUpdate, (k) => k.replace("commentUpdate_", "")) as CommentUpdateType,
+                commentUpdate: remeda.mapKeys(cleanedCommentUpdate, (k) => k.replace("commentUpdate_", "")) as CommentUpdateType,
                 activeScore: postRaw.active_score
             };
         });
     }
 
-    private _processRecordsForDb<T extends Record<string, any>>(records: T[], jsonKeys: (keyof T)[] = []): T[] {
+    private _processRecordsForDbBeforeInsert<T extends Record<string, any>>(records: T[], jsonKeys: (keyof T)[] = []): T[] {
         return records.map((record) => {
             const processed = { ...record };
             for (const [key, value] of Object.entries(processed)) {

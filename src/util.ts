@@ -52,8 +52,8 @@ export function replaceXWithY(obj: Record<string, any>, x: any, y: any): any {
     return newObj;
 }
 
-export function removeNullUndefinedValues<T extends Object>(obj: T) {
-    return remeda.pickBy(obj, remeda.isNonNullish);
+export function removeNullUndefinedValues<T extends Object>(obj: T): T {
+    return remeda.pickBy(obj, remeda.isNonNullish) as T;
 }
 
 function removeUndefinedValues<T extends Object>(obj: T) {
