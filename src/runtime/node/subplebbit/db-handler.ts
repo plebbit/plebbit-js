@@ -27,13 +27,12 @@ import type { InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitStats } f
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
-import { CommentEditPubsubMessagePublicationSchema, CommentEditsTableRowSchema } from "../../../publications/comment-edit/schema.js";
 import type { CommentEditPubsubMessagePublication } from "../../../publications/comment-edit/types.js";
 import type { CommentIpfsType, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
-import type { PageIpfs } from "../../../pages/types.js";
+import type { PageIpfs, RepliesPagesIpfsDefinedManuallyType } from "../../../pages/types.js";
 import type { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import { createKeyv as createSqliteKeyv } from "./keyv-better-sqlite3.js";
@@ -513,18 +512,7 @@ export class DbHandler {
                 }
 
                 // Prepare record for insertion (stringify JSONs, convert booleans)
-                const processedRecord = this._processRecordsForDbBeforeInsert(
-                    [srcRecord],
-                    [
-                        "author",
-                        "signature",
-                        "flair",
-                        "extraProps", // comments
-                        "edit",
-                        "replies", // commentUpdates
-                        "commentModeration" // commentModerations
-                    ]
-                )[0];
+                const processedRecord = this._processRecordsForDbBeforeInsert([srcRecord])[0];
 
                 const finalRecordValues = dstTableColumns.map((col) => processedRecord[col]);
                 recordsToInsert.push(finalRecordValues);
@@ -607,23 +595,20 @@ export class DbHandler {
             commentModerationContent.author = commentEdit.author;
 
             moderationsToInsert.push(
-                this._processRecordsForDbBeforeInsert(
-                    [
-                        {
-                            commentCid: commentEdit.commentCid,
-                            author: commentEdit.author, //This is the moderator's author object
-                            signature: commentEdit.signature, // Moderator's signature
-                            modSignerAddress,
-                            protocolVersion: commentEdit.protocolVersion,
-                            subplebbitAddress: commentEdit.subplebbitAddress,
-                            timestamp: commentEdit.timestamp,
-                            commentModeration: commentModerationContent, // The specific moderation actions
-                            insertedAt: commentEdit.insertedAt ?? timestamp(),
-                            extraProps: commentEdit.extraProps
-                        }
-                    ],
-                    ["author", "signature", "commentModeration", "extraProps"]
-                )[0]
+                this._processRecordsForDbBeforeInsert([
+                    {
+                        commentCid: commentEdit.commentCid,
+                        author: commentEdit.author, //This is the moderator's author object
+                        signature: commentEdit.signature, // Moderator's signature
+                        modSignerAddress,
+                        protocolVersion: commentEdit.protocolVersion,
+                        subplebbitAddress: commentEdit.subplebbitAddress,
+                        timestamp: commentEdit.timestamp,
+                        commentModeration: commentModerationContent, // The specific moderation actions
+                        insertedAt: commentEdit.insertedAt ?? timestamp(),
+                        extraProps: commentEdit.extraProps
+                    }
+                ])[0]
             );
             modEditsIds.push(commentEdit.rowid);
         }
@@ -654,7 +639,7 @@ export class DbHandler {
 
     insertVotes(votes: VotesTableRowInsert[]): void {
         if (votes.length === 0) return;
-        const processedVotes = this._processRecordsForDbBeforeInsert(votes, ["extraProps"]);
+        const processedVotes = this._processRecordsForDbBeforeInsert(votes);
 
         // Get all column names from the votes table to create defaults
         const columnNames = this._getColumnNames(TABLES.VOTES);
@@ -686,7 +671,7 @@ export class DbHandler {
 
     insertComments(comments: CommentsTableRowInsert[]): void {
         if (comments.length === 0) return;
-        const processedComments = this._processRecordsForDbBeforeInsert(comments, ["author", "signature", "flair", "extraProps"]);
+        const processedComments = this._processRecordsForDbBeforeInsert(comments);
 
         // Get all column names from the comments table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENTS) as (keyof CommentsTableRow)[];
@@ -712,8 +697,7 @@ export class DbHandler {
     }
 
     upsertCommentUpdates(updates: CommentUpdatesTableRowInsert[]): void {
-        if (updates.length === 0) return;
-        const processedUpdates = this._processRecordsForDbBeforeInsert(updates, ["edit", "flair", "signature", "author", "replies"]);
+        const processedUpdates = this._processRecordsForDbBeforeInsert(updates);
 
         // Get all column names from the comment_updates table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_UPDATES) as (keyof CommentUpdatesRow)[];
@@ -749,12 +733,7 @@ export class DbHandler {
 
     insertCommentModerations(moderations: CommentModerationsTableRowInsert[]): void {
         if (moderations.length === 0) return;
-        const processedModerations = this._processRecordsForDbBeforeInsert(moderations, [
-            "author",
-            "signature",
-            "commentModeration",
-            "extraProps"
-        ]);
+        const processedModerations = this._processRecordsForDbBeforeInsert(moderations);
 
         // Get all column names from the comment_moderations table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_MODERATIONS) as (keyof CommentModerationTableRow)[];
@@ -781,7 +760,7 @@ export class DbHandler {
 
     insertCommentEdits(edits: CommentEditsTableRowInsert[]): void {
         if (edits.length === 0) return;
-        const processedEdits = this._processRecordsForDbBeforeInsert(edits, ["author", "signature", "flair", "extraProps"]);
+        const processedEdits = this._processRecordsForDbBeforeInsert(edits);
 
         // Get all column names from the comment_edits table to create defaults
         const columnNames = this._getColumnNames(TABLES.COMMENT_EDITS) as (keyof CommentEditsTableRow)[];
@@ -1564,18 +1543,18 @@ export class DbHandler {
                 postCommentUpdateCid: string;
             }[]
         ).forEach((row) => allCids.add(row.postCommentUpdateCid));
-        (
-            this._db.prepare(`SELECT replies FROM ${TABLES.COMMENT_UPDATES} WHERE replies IS NOT NULL`).all() as { replies: string }[]
-        ).forEach((row) => {
-            try {
-                const repliesData = JSON.parse(row.replies) as { pageCids?: Record<string, string> };
-                if (repliesData?.pageCids)
-                    Object.values(repliesData.pageCids).forEach((cid) => {
-                        if (typeof cid === "string") allCids.add(cid);
-                    });
-            } catch (e) {
-                /* ignore */
-            }
+        const pageCidsResult = this._db
+            .prepare(
+                `SELECT json_extract(replies, '$.pageCids') AS pageCids 
+                             FROM ${TABLES.COMMENT_UPDATES} 
+                             WHERE json_extract(replies, '$.pageCids') IS NOT NULL`
+            )
+            .all() as { pageCids: string }[];
+
+        pageCidsResult.forEach((row) => {
+            const pageCidsParsed = JSON.parse(row.pageCids) as NonNullable<RepliesPagesIpfsDefinedManuallyType["pageCids"]>;
+
+            Object.values(pageCidsParsed).forEach((cid) => allCids.add(cid));
         });
         return allCids;
     }
@@ -1652,16 +1631,12 @@ export class DbHandler {
         });
     }
 
-    private _processRecordsForDbBeforeInsert<T extends Record<string, any>>(records: T[], jsonKeys: (keyof T)[] = []): T[] {
+    private _processRecordsForDbBeforeInsert<T extends Record<string, any>>(records: T[]): T[] {
         return records.map((record) => {
             const processed = { ...record };
-            for (const [key, value] of Object.entries(processed)) {
-                const k = key as keyof T;
-                if (jsonKeys.includes(k)) {
-                    if (value !== null && typeof value === "object") (processed as any)[k] = JSON.stringify(value);
-                } else if (typeof value === "boolean") {
-                    (processed as any)[k] = value ? 1 : 0;
-                }
+            for (const [key, value] of remeda.entries(processed)) {
+                if (remeda.isPlainObject(value)) (processed as any)[key] = JSON.stringify(value);
+                else if (typeof value === "boolean") (processed as any)[key] = value ? 1 : 0;
             }
             return processed;
         });
