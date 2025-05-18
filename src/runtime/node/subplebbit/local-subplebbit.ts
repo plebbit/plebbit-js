@@ -165,6 +165,7 @@ import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/co
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
+import pTimeout from "p-timeout";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
@@ -1913,32 +1914,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:sync:_rmUnneededMfsPaths");
 
         if (this._mfsPathsToRemove.size > 0) {
-            const deletedMfsPaths: string[] = [];
+            const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
 
-            // seems like removing files in parallel makes kubo bugs out
-            // so we're doing it 5 files at a time
-            const limit = pLimit(5);
-
-            // Process file removals in batches of 5 at a time
-            await Promise.all(
-                Array.from(this._mfsPathsToRemove.values()).map((path) =>
-                    limit(async () => {
-                        try {
-                            await this._clientsManager.getDefaultIpfs()._client.files.rm(path, { flush: false, recursive: true });
-                            deletedMfsPaths.push(path);
-                        } catch (e) {
-                            const error = <Error>e;
-                            if (!error.message.includes("file does not exist")) {
-                                log.error("Failed to remove file from MFS", path, e);
-                            } else deletedMfsPaths.push(path);
-                        }
-                    })
-                )
-            );
-
-            log("Removed", deletedMfsPaths.length, "files from MFS directory", deletedMfsPaths);
-            deletedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
-            return deletedMfsPaths;
+            try {
+                await pTimeout(
+                    this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }),
+                    { milliseconds: 30000 }
+                );
+                return toDeleteMfsPaths;
+            } catch (e) {
+                const error = <Error>e;
+                if (!error.message.includes("file does not exist")) {
+                    log.error("Failed to remove paths from MFS", toDeleteMfsPaths, e);
+                    throw error;
+                } else return toDeleteMfsPaths;
+            }
         } else return [];
     }
     private pubsubTopicWithfallback() {
