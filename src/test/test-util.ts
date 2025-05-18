@@ -689,7 +689,6 @@ export async function waitTillReplyInParentPagesInstance(
     parentComment: Comment
 ) {
     const isReplyInParentPages = async () => {
-        console.log("waitTillReplyInParentPagesInstance", parentComment.replies.pageCids, parentComment.replies.pages);
         if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
@@ -1423,14 +1422,10 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     );
 
     const updatingComment = await comment._plebbit.createComment({ cid: comment.cid! });
-    updatingComment.on("updatingstatechange", (state) =>
-        console.log("forceSubplebbitToGenerateAllRepliesPages", "updatingstate of updating comment", comment.cid, state)
-    );
     await updatingComment.update();
     //@ts-expect-error
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
     if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
-    console.log("Successfully forced the subplebbit", updatingComment.subplebbitAddress, "to load all pages of comment", comment.cid);
     if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
         throw Error("Reply count is less than the number of comments published");
 }
