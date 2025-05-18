@@ -690,12 +690,15 @@ export async function waitTillReplyInParentPagesInstance(
 ) {
     const isReplyInParentPages = async () => {
         console.log("waitTillReplyInParentPagesInstance", parentComment.cid, "replyCount", parentComment.replyCount);
-        if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
+        if (Object.keys(parentComment.replies.pageCids).length === 0) {
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
             return Boolean(postInPage);
         } else {
-            if (!("new" in parentComment.replies.pageCids)) return false;
+            if (!("new" in parentComment.replies.pageCids)) {
+                console.error("no new page", "parentComment.replies.pageCids", parentComment.replies.pageCids);
+                return false;
+            }
 
             const commentNewPageCid = parentComment.replies.pageCids.new;
             const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
