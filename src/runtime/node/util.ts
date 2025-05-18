@@ -25,6 +25,7 @@ import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
 import type { CommentUpdateType } from "../../publications/comment/types.js";
 import { DbHandler } from "./subplebbit/db-handler.js";
+import { existsSync } from "fs";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -274,14 +275,40 @@ export async function importSignerIntoKuboNode(
 }
 
 export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: string, plebbit: Plebbit) {
-    // Delete subplebbit will just move the sub db file to another directory
     if (typeof plebbit.dataPath !== "string") throw Error("plebbit.dataPath is not defined");
+
     const oldPath = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
     const newPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbitAddress);
+
+    // Create the deleted directory if it doesn't exist
     await fs.mkdir(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true });
-    await fs.cp(oldPath, newPath);
-    if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPath, plebbit);
-    else await fs.rm(oldPath);
+
+    // Check if the source file exists
+    if (!existsSync(oldPath)) {
+        throw Error(`Source database ${oldPath} does not exist`);
+    }
+
+    // Use better-sqlite3 backup instead of file copy
+    try {
+        const Database = (await import("better-sqlite3")).default;
+        const sourceDb = new Database(oldPath, { fileMustExist: true });
+
+        // Perform backup
+        await sourceDb.backup(newPath);
+
+        // Close the connection
+        sourceDb.close();
+
+        // Delete the original file
+        if (os.type() === "Windows_NT") {
+            await deleteOldSubplebbitInWindows(oldPath, plebbit);
+        } else {
+            await fs.rm(oldPath);
+        }
+    } catch (error: any) {
+        error.details = { ...error.details, oldPath, newPath };
+        throw error;
+    }
 }
 
 export function createKuboRpcClient(kuboRpcClientOptions: KuboRpcClient["_clientOptions"]): KuboRpcClient["_client"] {
