@@ -121,6 +121,7 @@ import type { VotePubsubMessagePublication } from "../../../publications/vote/ty
 import type {
     CommentIpfsType,
     CommentPubsubMessagePublication,
+    CommentPubsubMessagPublicationSignature,
     CommentUpdateType,
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
@@ -411,7 +412,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _getDbInternalState(
         lock: boolean
-    ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType | undefined> {
+    ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType> {
         const log = Logger("plebbit-js:local-subplebbit:_getDbInternalState");
         if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])))
             throw new PlebbitError("ERR_SUB_HAS_NO_INTERNAL_STATE", { address: this.address, dataPath: this._plebbit.dataPath });
@@ -421,9 +422,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this._dbHandler.lockSubState();
                 lockedIt = true;
             }
-            return <InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType>(
-                await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
-            );
+            const internalState = await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
+            if (!internalState)
+                throw new PlebbitError("ERR_SUB_HAS_NO_INTERNAL_STATE", { address: this.address, dataPath: this._plebbit.dataPath });
+            return internalState as InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType;
         } catch (e) {
             log.error("Failed to get sub", this.address, "internal state from db", e);
             throw e;
@@ -434,9 +436,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _updateInstanceStateWithDbState() {
         const currentDbState = await this._getDbInternalState(false);
-        if (!currentDbState) {
-            throw Error("current db of sub " + this.address + " internal state should be defined before updating instance state with it");
-        }
 
         if ("updatedAt" in currentDbState) {
             await this.initInternalSubplebbitAfterFirstUpdateNoMerge(currentDbState);

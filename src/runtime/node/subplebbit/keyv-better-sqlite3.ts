@@ -19,8 +19,12 @@ export interface KeyvBetterSqlite3Options {
 
 interface KeyvRow {
     key: string;
+    value: string;
+}
+
+interface KeyvValue {
     value: any;
-    expires: number | null;
+    expires?: number | null;
 }
 
 interface ExistsRow {
@@ -56,12 +60,11 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
 
         if (this.opts.createTable) {
             try {
-                // Create table with TTL support
+                // Create table with value as JSON (including ttl)
                 this.db.exec(`
           CREATE TABLE IF NOT EXISTS ${this.opts.table} (
             key TEXT PRIMARY KEY,
-            value TEXT,
-            expires INTEGER NULL
+            value TEXT
           )
         `);
             } catch (error) {
@@ -73,16 +76,24 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Get a value from the store
      */
-    get<Value>(key: string): Promise<Value | undefined> {
+    async get<Value>(key: string): Promise<Value | undefined> {
         try {
-            const stmt = this.db.prepare(`SELECT * FROM ${this.opts.table} WHERE key = ? AND (expires IS NULL OR expires > ?)`);
-            const row = stmt.get(key, Date.now()) as KeyvRow | undefined;
+            const stmt = this.db.prepare(`SELECT * FROM ${this.opts.table} WHERE key = ?`);
+            const row = stmt.get("keyv:" + key) as KeyvRow | undefined;
 
             if (!row) {
-                return Promise.resolve(undefined);
+                return undefined;
             }
 
-            return Promise.resolve(row.value);
+            const parsed = JSON.parse(row.value) as KeyvValue;
+            // Check if the value has expired
+            if (parsed.expires && parsed.expires <= Date.now()) {
+                // Value has expired, remove it from the store
+                this.delete(key).catch((err) => this.emit("error", err));
+                return undefined;
+            }
+
+            return parsed.value;
         } catch (error) {
             throw error;
         }
@@ -91,24 +102,36 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Get multiple values from the store
      */
-    getMany<Value>(keys: string[]): Promise<Array<Value | undefined>> {
+    async getMany<Value>(keys: string[]): Promise<Array<Value | undefined>> {
         try {
             const placeholders = keys.map(() => "?").join(",");
-            const now = Date.now();
             const stmt = this.db.prepare(`
         SELECT * FROM ${this.opts.table} 
-        WHERE key IN (${placeholders}) 
-        AND (expires IS NULL OR expires > ?)
+        WHERE key IN (${placeholders})
       `);
 
-            const rows = stmt.all(...keys, now) as KeyvRow[];
+            const rows = stmt.all(...keys.map((key) => "keyv:" + key)) as KeyvRow[];
+            const now = Date.now();
 
             const results = keys.map((key) => {
-                const row = rows.find((r) => r.key === key);
-                return row ? row.value : undefined;
+                const row = rows.find((r) => r.key === "keyv:" + key);
+                if (!row) return undefined;
+
+                try {
+                    const parsed = JSON.parse(row.value) as KeyvValue;
+                    // Check if the value has expired
+                    if (parsed.expires && parsed.expires <= now) {
+                        // Value has expired, remove it from the store
+                        this.delete(key).catch((err) => this.emit("error", err));
+                        return undefined;
+                    }
+                    return parsed.value;
+                } catch (e) {
+                    return undefined;
+                }
             });
 
-            return Promise.resolve(results);
+            return results;
         } catch (error) {
             throw error;
         }
@@ -117,19 +140,23 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Set a value in the store
      */
-    set(key: string, value: any, ttl?: number): Promise<any> {
+    async set(key: string, value: any, ttl?: number): Promise<any> {
         try {
             const expires = typeof ttl === "number" ? Date.now() + ttl : null;
+            const valueWithExpires: KeyvValue = {
+                value,
+                ...(expires && { expires })
+            };
 
             const stmt = this.db.prepare(`
-        INSERT INTO ${this.opts.table} (key, value, expires)
-        VALUES (?, ?, ?)
+        INSERT INTO ${this.opts.table} (key, value)
+        VALUES (?, ?)
         ON CONFLICT(key) 
-        DO UPDATE SET value = excluded.value, expires = excluded.expires
+        DO UPDATE SET value = excluded.value
       `);
 
-            const result = stmt.run(key, value, expires);
-            return Promise.resolve(result);
+            const result = stmt.run("keyv:" + key, JSON.stringify(valueWithExpires));
+            return result;
         } catch (error) {
             throw error;
         }
@@ -138,11 +165,11 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Delete a value from the store
      */
-    delete(key: string): Promise<boolean> {
+    async delete(key: string): Promise<boolean> {
         try {
             const stmt = this.db.prepare(`DELETE FROM ${this.opts.table} WHERE key = ?`);
-            const result = stmt.run(key);
-            return Promise.resolve(result.changes > 0);
+            const result = stmt.run("keyv:" + key);
+            return result.changes > 0;
         } catch (error) {
             throw error;
         }
@@ -151,12 +178,12 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Delete multiple values from the store
      */
-    deleteMany(keys: string[]): Promise<boolean> {
+    async deleteMany(keys: string[]): Promise<boolean> {
         try {
             const placeholders = keys.map(() => "?").join(",");
             const stmt = this.db.prepare(`DELETE FROM ${this.opts.table} WHERE key IN (${placeholders})`);
-            const result = stmt.run(...keys);
-            return Promise.resolve(result.changes > 0);
+            const result = stmt.run(...keys.map((key) => "keyv:" + key));
+            return result.changes > 0;
         } catch (error) {
             throw error;
         }
@@ -165,7 +192,7 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Clear all values from the store
      */
-    clear(): Promise<void> {
+    async clear(): Promise<void> {
         try {
             const stmt = this.db.prepare(
                 this.namespace ? `DELETE FROM ${this.opts.table} WHERE key LIKE ?` : `DELETE FROM ${this.opts.table}`
@@ -176,7 +203,6 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
             } else {
                 stmt.run();
             }
-            return Promise.resolve();
         } catch (error) {
             throw error;
         }
@@ -185,17 +211,27 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Check if a key exists in the store
      */
-    has(key: string): Promise<boolean> {
+    async has(key: string): Promise<boolean> {
         try {
-            const stmt = this.db.prepare(`
-        SELECT EXISTS (
-          SELECT 1 FROM ${this.opts.table} 
-          WHERE key = ? AND (expires IS NULL OR expires > ?)
-        ) as exists_
-      `);
+            const stmt = this.db.prepare(`SELECT value FROM ${this.opts.table} WHERE key = ?`);
+            const row = stmt.get("keyv:" + key) as KeyvRow | undefined;
 
-            const result = stmt.get(key, Date.now()) as ExistsRow;
-            return Promise.resolve(result.exists_ === 1);
+            if (!row) {
+                return false;
+            }
+
+            try {
+                const parsed = JSON.parse(row.value) as KeyvValue;
+                // Check if the value has expired
+                if (parsed.expires && parsed.expires <= Date.now()) {
+                    // Value has expired, remove it from the store
+                    this.delete(key).catch((err) => this.emit("error", err));
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
         } catch (error) {
             throw error;
         }
@@ -209,19 +245,28 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     async *iterator<Value>(namespace?: string): AsyncGenerator<[string, Value], void, unknown> {
         const ns = namespace || this.namespace;
         const pattern = ns ? `${ns}:%` : "%";
+        const now = Date.now();
 
         try {
-            const stmt = this.db.prepare(`
-        SELECT key, value FROM ${this.opts.table} 
-        WHERE key LIKE ? AND (expires IS NULL OR expires > ?)
-      `);
+            const stmt = this.db.prepare(`SELECT key, value FROM ${this.opts.table} WHERE key LIKE ?`);
+            const rows = stmt.all(pattern) as KeyvRow[];
 
-            // Get all rows at once - this is synchronous in better-sqlite3
-            const rows = stmt.all(pattern, Date.now()) as KeyvRow[];
-
-            // We still need to use async iteration to meet the interface requirements
             for (const row of rows) {
-                yield [row.key, row.value];
+                try {
+                    const parsed = JSON.parse(row.value) as KeyvValue;
+
+                    // Skip expired values
+                    if (parsed.expires && parsed.expires <= now) {
+                        // Value has expired, remove it from the store
+                        this.delete(row.key).catch((err) => this.emit("error", err));
+                        continue;
+                    }
+
+                    yield [row.key, parsed.value];
+                } catch (e) {
+                    // Skip invalid JSON
+                    continue;
+                }
             }
         } catch (error) {
             throw error;
@@ -231,9 +276,8 @@ export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter 
     /**
      * Disconnect from the store
      */
-    disconnect(): Promise<void> {
+    async disconnect(): Promise<void> {
         // The database is managed externally, so we don't close it here
-        return Promise.resolve(undefined);
     }
 }
 
