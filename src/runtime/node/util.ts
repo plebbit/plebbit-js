@@ -223,7 +223,12 @@ export async function listSubplebbits(plebbit: Plebbit) {
     if (deletedPersistentSubs.length > 0) log(`persistent subplebbits that refuse to be deleted`, deletedPersistentSubs);
 
     const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter(
-        (file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)
+        (file) =>
+            !file.includes(".lock") &&
+            !file.endsWith("-journal") &&
+            !file.endsWith("-shm") &&
+            !file.endsWith("-wal") &&
+            !deletedPersistentSubs.includes(file)
     ); // Filter locks and journal files out
 
     const subplebbitFilesWeDontNeedToCheck = plebbit.subplebbits ? files.filter((address) => plebbit.subplebbits.includes(address)) : [];
@@ -340,6 +345,7 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
     fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false, recursive: false }, async (eventType, filename) => {
         const extensionsToIgnore = [".lock", "-journal", "-shm", "-wal"];
         if (typeof filename === "string" && extensionsToIgnore.some((ext) => filename?.endsWith(ext))) return; // we only care about subplebbits
+        if (typeof filename === "string" && plebbit.subplebbits.includes(filename)) return; // we only care about unknown subplebbits
 
         const currentSubs = await listSubplebbits(plebbit);
         if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))
