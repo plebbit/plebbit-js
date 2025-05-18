@@ -3,7 +3,6 @@ import path from "path";
 import assert from "assert";
 import fs from "fs";
 import os from "os";
-import Keyv from "keyv";
 import type {
     CommentEditsTableRow,
     CommentEditsTableRowInsert,
@@ -23,21 +22,31 @@ import Database, { type Database as BetterSqlite3Database } from "better-sqlite3
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
 import type { PageOptions } from "./page-generator.js";
-import type { InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitStats } from "../../../subplebbit/types.js";
+import type {
+    InternalSubplebbitRecordAfterFirstUpdateType,
+    InternalSubplebbitRecordBeforeFirstUpdateType,
+    SubplebbitStats
+} from "../../../subplebbit/types.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import type { CommentEditPubsubMessagePublication, CommentEditSignature } from "../../../publications/comment-edit/types.js";
-import type { CommentIpfsType, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import type {
+    CommentIpfsType,
+    CommentPubsubMessagPublicationSignature,
+    CommentUpdateType,
+    SubplebbitAuthor
+} from "../../../publications/comment/types.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs, RepliesPagesIpfsDefinedManuallyType } from "../../../pages/types.js";
 import type { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
-import { createKeyv as createSqliteKeyv } from "./keyv-better-sqlite3.js";
+import KeyvBetterSqlite3 from "./keyv-better-sqlite3.js";
 
 import { STORAGE_KEYS } from "../../../constants.js";
+import { CommentEditPubsubMessagePublicationSchema } from "../../../publications/comment-edit/schema.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -63,7 +72,7 @@ export class DbHandler {
     private _subplebbit!: LocalSubplebbit;
     private _transactionDepth!: number;
     private _dbConfig!: { filename: string } & Database.Options;
-    private _keyv!: Keyv;
+    private _keyv!: KeyvBetterSqlite3;
     private _createdTables: boolean;
 
     constructor(subplebbit: DbHandler["_subplebbit"]) {
@@ -99,7 +108,7 @@ export class DbHandler {
             }
             log("initialized a new connection to db", dbFilePath);
         }
-        if (!this._keyv) this._keyv = createSqliteKeyv(this._db);
+        if (!this._keyv) this._keyv = new KeyvBetterSqlite3(this._db);
     }
 
     async createOrMigrateTablesIfNeeded() {
@@ -124,16 +133,12 @@ export class DbHandler {
         return this._dbConfig;
     }
 
-    async keyvGet(key: string) {
+    async keyvGet<Value>(key: string): Promise<Value | undefined> {
         try {
-            const res = await this._keyv.get(key);
+            const res = await this._keyv.get<Value>(key);
             return res;
         } catch (e: any) {
-            try {
-                const rawValue = await this._keyv.get(key, { raw: true });
-                e.details = { ...e.details, rawValue };
-            } catch {}
-            e.details = { ...e.details };
+            e.details = { ...e.details, key };
             throw e;
         }
     }
@@ -142,7 +147,7 @@ export class DbHandler {
         return this._keyv.set(key, value, ttl);
     }
 
-    async keyvDelete(key: string | string[]) {
+    async keyvDelete(key: string) {
         return this._keyv.delete(key);
     }
 
@@ -153,6 +158,7 @@ export class DbHandler {
     async destoryConnection() {
         const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
         if (this._db && this._db.open) {
+            this._db.exec("PRAGMA checkpoint"); // write all wal to disk
             this._db.close();
         }
         if (this._keyv) await this._keyv.disconnect();
@@ -214,7 +220,7 @@ export class DbHandler {
         }
     }
 
-    private _parseJsonAndExtraPropFields<T extends Record<string, any>>(record: T, jsonFields: (keyof T)[]): T {
+    private _parseJsonFields<T extends Record<string, any>>(record: T, jsonFields: (keyof T)[]): T {
         for (const field of jsonFields) {
             if (record[field] !== null && record[field] !== undefined && typeof record[field] === "string") {
                 try {
@@ -226,11 +232,7 @@ export class DbHandler {
                 }
             }
         }
-        const extraPropsNames = ["extraProps", "commentIpfs_extraProps", "commentUpdate_extaProps"];
-        extraPropsNames.forEach((extraPropName) => {
-            record = { ...record, ...record[extraPropName] };
-            delete record[extraPropName];
-        });
+
         return record;
     }
 
@@ -247,8 +249,8 @@ export class DbHandler {
                 authorSignerAddress TEXT NOT NULL,
                 author TEXT NOT NULL, -- JSON
                 link TEXT NULLABLE,
-                linkWidth INTEGER NULLABLE CHECK(linkWidth > 0),
-                linkHeight INTEGER NULLABLE CHECK(linkHeight > 0),
+                linkWidth INTEGER NULLABLE,
+                linkHeight INTEGER NULLABLE,
                 thumbnailUrl TEXT NULLABLE,
                 thumbnailUrlWidth INTEGER NULLABLE,
                 thumbnailUrlHeight INTEGER NULLABLE,
@@ -267,7 +269,7 @@ export class DbHandler {
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 extraProps TEXT NULLABLE, -- JSON
                 protocolVersion TEXT NOT NULL,
-                insertedAt INTEGER NULLABLE 
+                insertedAt INTEGER NOT NULL
             )
         `);
     }
@@ -297,7 +299,7 @@ export class DbHandler {
                 postUpdatesBucket INTEGER NULLABLE,
                 postCommentUpdateCid TEXT NULLABLE,
                 publishedToPostUpdatesMFS INTEGER NOT NULL, -- BOOLEAN (0/1)
-                insertedAt INTEGER NULLABLE 
+                insertedAt INTEGER NOT NULL 
             )
         `);
     }
@@ -310,7 +312,7 @@ export class DbHandler {
                 timestamp INTEGER CHECK(timestamp > 0) NOT NULL, 
                 vote INTEGER CHECK(vote BETWEEN -1 AND 1) NOT NULL,
                 protocolVersion TEXT NOT NULL,
-                insertedAt INTEGER NULLABLE, 
+                insertedAt INTEGER NOT NULL, 
                 extraProps TEXT NULLABLE, -- JSON
                 PRIMARY KEY (commentCid, authorSignerAddress)
             )
@@ -334,7 +336,7 @@ export class DbHandler {
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 isAuthorEdit INTEGER NOT NULL, -- BOOLEAN (0/1)
-                insertedAt INTEGER NULLABLE, 
+                insertedAt INTEGER NOT NULL, 
                 extraProps TEXT NULLABLE -- JSON
             )
         `);
@@ -351,7 +353,7 @@ export class DbHandler {
                 subplebbitAddress TEXT NOT NULL,
                 timestamp INTEGER CHECK(timestamp > 0) NOT NULL, 
                 commentModeration TEXT NOT NULL, -- JSON
-                insertedAt INTEGER NULLABLE, 
+                insertedAt INTEGER NOT NULL, 
                 extraProps TEXT NULLABLE -- JSON
             )
         `);
@@ -375,7 +377,7 @@ export class DbHandler {
 
     async _createOrMigrateTablesIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
-        const currentDbVersion = await this.getDbVersion();
+        const currentDbVersion = this.getDbVersion();
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
         const dbPath = this._dbConfig.filename;
@@ -437,9 +439,12 @@ export class DbHandler {
             if (currentDbVersion <= 15) await this._purgeCommentsWithInvalidSchemaOrSignature();
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
+            await this.initDbIfNeeded(); // to init keyv
 
             const internalState = (await this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
-                ? await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+                ? ((await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) as
+                      | InternalSubplebbitRecordAfterFirstUpdateType
+                      | InternalSubplebbitRecordBeforeFirstUpdateType)
                 : undefined;
             if (internalState) {
                 const protocolVersion = internalState.protocolVersion || env.PROTOCOL_VERSION;
@@ -448,8 +453,10 @@ export class DbHandler {
                         ? internalState._usingDefaultChallenge
                         : //@ts-expect-error
                           remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
-                const updateCid =
-                    ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f";
+                const updateCid: string =
+                    "updateCid" in internalState && typeof internalState.updateCid === "string"
+                        ? internalState.updateCid
+                        : "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f";
                 const newSettings = this._migrateOldSettings(internalState.settings);
                 const newChallenges = newSettings.challenges?.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
                 await this._subplebbit._updateDbInternalState({
@@ -464,7 +471,7 @@ export class DbHandler {
         }
         this._db.exec(`VACUUM;`); // Run vacuum outside transaction or after commit
 
-        const newDbVersion = await this.getDbVersion();
+        const newDbVersion = this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
         if (needToMigrate)
@@ -485,7 +492,7 @@ export class DbHandler {
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns = this._getColumnNames(dstTable);
-        const srcRecordsRaw: any[] = this._db.prepare(`SELECT * FROM ${srcTable}`).all();
+        const srcRecordsRaw: any[] = this._db.prepare(`SELECT * FROM ${srcTable} ORDER BY rowid ASC`).all();
 
         if (srcRecordsRaw.length > 0) {
             log(`Attempting to copy ${srcRecordsRaw.length} records from ${srcTable} to ${dstTable}`);
@@ -499,8 +506,9 @@ export class DbHandler {
 
                 // Pre-process specific migrations
                 if (currentDbVersion <= 11 && srcTable === TABLES.COMMENT_EDITS) {
-                    const parsedSig = typeof srcRecord.signature === "string" ? JSON.parse(srcRecord.signature) : srcRecord.signature;
-                    const commentToBeEdited = await this.queryComment(srcRecord.commentCid);
+                    const parsedSig: CommentEditSignature =
+                        typeof srcRecord.signature === "string" ? JSON.parse(srcRecord.signature) : srcRecord.signature;
+                    const commentToBeEdited = this.queryComment(srcRecord.commentCid);
                     if (!commentToBeEdited) throw Error(`Failed to compute isAuthorEdit for ${srcRecord.commentCid}`);
                     srcRecord["isAuthorEdit"] = parsedSig.publicKey === commentToBeEdited.signature.publicKey;
                 }
@@ -508,14 +516,14 @@ export class DbHandler {
                     const sig = typeof srcRecord.signature === "string" ? JSON.parse(srcRecord.signature) : srcRecord.signature;
                     srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(sig["publicKey"]);
                 }
-                if (srcTable === TABLES.COMMENTS && srcRecord["ipnsName"]) {
-                    let extraProps = srcRecord.extraProps
-                        ? typeof srcRecord.extraProps === "string"
-                            ? JSON.parse(srcRecord.extraProps)
-                            : srcRecord.extraProps
-                        : {};
-                    extraProps.ipnsName = srcRecord.ipnsName;
-                    srcRecord.extraProps = extraProps; // Keep as object for now, will be stringified by _processRecordsForDb
+                if (srcTable === TABLES.COMMENTS) {
+                    const commentIpfsFieldsNotIncludedAnymore = ["ipnsName"];
+                    const extraProps = removeNullUndefinedValues(remeda.pick(srcRecord, commentIpfsFieldsNotIncludedAnymore)) as Record<
+                        string,
+                        any
+                    >;
+
+                    if (Object.keys(extraProps).length > 0) srcRecord.extraProps = { ...srcRecord.extraProps, ...extraProps };
                 }
 
                 // Prepare record for insertion (stringify JSONs, convert booleans)
@@ -546,7 +554,7 @@ export class DbHandler {
                 CommentIpfsSchema.strip().parse(commentRecord); // Validate against the already parsed object
             } catch (e) {
                 log.error(`Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged.`, e);
-                await this.purgeComment(commentRecord.cid);
+                this.purgeComment(commentRecord.cid);
                 continue;
             }
             const validRes = await verifyCommentIpfs({
@@ -558,48 +566,41 @@ export class DbHandler {
             });
             if (!validRes.valid) {
                 log.error(`Comment ${commentRecord.cid} in DB has invalid signature due to ${validRes.reason}. Will be purged.`);
-                await this.purgeComment(commentRecord.cid);
+                this.purgeComment(commentRecord.cid);
             }
         }
     }
 
     private async _moveCommentEditsToModAuthorTables() {
+        // Prior to db version 17, all comment edits, author and mod's were in the same table
+        // code below will split them to their separate tables
         this._createCommentModerationsTable(TABLES.COMMENT_MODERATIONS);
-        const allCommentEditsRaw = this._db.prepare(`SELECT * FROM ${TABLES.COMMENT_EDITS}`).all() as any[];
+        const allCommentEditsRaw = this._db.prepare(`SELECT rowid, * FROM ${TABLES.COMMENT_EDITS} ORDER BY rowid ASC`).all() as any[];
 
         const allCommentEdits = allCommentEditsRaw.map((r) => {
-            let parsed = this._parseJsonAndExtraPropFields(r, ["author", "signature", "flair", "extraProps"]);
-            return this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]) as CommentEditsTableRow;
+            let parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
+            return this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]);
         });
 
-        const commentModerationSchemaKeys = remeda.keys.strict(
-            ModeratorOptionsSchema.shape
-        ) as (keyof CommentModerationTableRow["commentModeration"])[];
-        const modEditsIds: number[] = [];
+        const commentModerationSchemaKeys = remeda.keys.strict(ModeratorOptionsSchema.shape);
+        const modEditRowIds: number[] = [];
         const moderationsToInsert: any[] = [];
 
         for (const commentEdit of allCommentEdits) {
             const commentToBeEdited = this.queryComment(commentEdit.commentCid);
             if (!commentToBeEdited) {
-                console.error(`Comment ${commentEdit.commentCid} not found while migrating comment edits.`);
-                continue;
+                throw Error(`Comment ${commentEdit.commentCid} not found while migrating comment edits.`);
             }
+            const rowid: number = commentEdit.rowid || commentEdit.id;
+            if (typeof rowid !== "number") throw Error("rowid should be part of the query results");
             const editHasBeenSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
-            if (editHasBeenSignedByOriginalAuthor) continue;
+            if (editHasBeenSignedByOriginalAuthor) continue; // we're only interested in mod edits
 
             const modSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
-            const commentModerationContent: Partial<CommentModerationTableRow["commentModeration"]> = {};
-            for (const key of commentModerationSchemaKeys) {
-                if (commentEdit[key as keyof CommentEditsTableRow] !== undefined) {
-                    (commentModerationContent as any)[key] = commentEdit[key as keyof CommentEditsTableRow];
-                }
-            }
-            // 'author' inside commentModeration was 'commentAuthor' in the old structure (picked from commentEdit directly)
-            // This needs clarification if commentEdit.author (the editor's author object) or something else was intended for commentModeration.author
-            // Assuming the intent was that the `commentModeration.author` field refers to the moderator's action metadata, not original comment author.
-            // The original code used `commentEdit.commentAuthor` which seems to have been a denormalized field.
-            // For now, let's set `commentModeration.author` to `commentEdit.author` (the editor).
-            commentModerationContent.author = commentEdit.author;
+            const commentModeration: CommentModerationTableRow["commentModeration"] = removeNullUndefinedValues({
+                ...remeda.pick(commentEdit, commentModerationSchemaKeys),
+                ...(commentEdit.commentAuthor && { author: JSON.parse(commentEdit.commentAuthor) })
+            });
 
             moderationsToInsert.push(
                 this._processRecordsForDbBeforeInsert([
@@ -611,13 +612,13 @@ export class DbHandler {
                         protocolVersion: commentEdit.protocolVersion,
                         subplebbitAddress: commentEdit.subplebbitAddress,
                         timestamp: commentEdit.timestamp,
-                        commentModeration: commentModerationContent, // The specific moderation actions
-                        insertedAt: commentEdit.insertedAt ?? timestamp(),
+                        commentModeration: commentModeration, // The specific moderation actions
+                        insertedAt: commentEdit.insertedAt,
                         extraProps: commentEdit.extraProps
-                    }
+                    } as CommentModerationsTableRowInsert
                 ])[0]
             );
-            modEditsIds.push(commentEdit.rowid);
+            modEditRowIds.push(rowid);
         }
 
         if (moderationsToInsert.length > 0) {
@@ -632,9 +633,32 @@ export class DbHandler {
             insertMany(moderationsToInsert);
         }
 
-        if (modEditsIds.length > 0) {
-            const placeholders = modEditsIds.map(() => "?").join(",");
-            this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})`).run(...modEditsIds);
+        if (modEditRowIds.length > 0) {
+            const placeholders = modEditRowIds.map(() => "?").join(",");
+
+            // Update the query to use explicit rowids
+            const deleteRes = this._db
+                .prepare(
+                    `DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})
+                         OR (removed IS NOT NULL OR pinned IS NOT NULL OR locked IS NOT NULL OR commentAuthor IS NOT NULL)`
+                )
+                .run(...modEditRowIds);
+
+            // Check if deletion was successful
+            if (deleteRes.changes < modEditRowIds.length) {
+                // Get list of rowids that actually exist for better error reporting
+                const existingRowids = this._db
+                    .prepare(`SELECT rowid FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})`)
+                    .all(...modEditRowIds)
+                    .map((row: any) => row.rowid);
+
+                const error =
+                    `Failed to delete ${modEditRowIds.length} comment edits. Only deleted ${deleteRes.changes}. ` +
+                    `Missing rowids likely don't exist in the database. ` +
+                    `Attempted: [${modEditRowIds.join(", ")}], Found existing: [${existingRowids.join(", ")}]`;
+
+                throw Error(error);
+            }
         }
     }
 
@@ -797,7 +821,7 @@ export class DbHandler {
             .prepare(`SELECT * FROM ${TABLES.VOTES} WHERE commentCid = ? AND authorSignerAddress = ?`)
             .get(commentCid, authorSignerAddress) as VotesTableRow | undefined;
         if (!row) return undefined;
-        const parsed = this._parseJsonAndExtraPropFields(row, ["extraProps"]);
+        const parsed = this._parseJsonFields(row, ["extraProps"]);
         return removeNullUndefinedValues(parsed);
     }
 
@@ -867,20 +891,32 @@ export class DbHandler {
             const commentIpfsData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentIpfs_")) as CommentIpfsPrefixedColumns;
             const commentUpdateData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentUpdate_")) as CommentUpdatePrefixedColumns;
 
-            const parsedCommentIpfs = this._parseJsonAndExtraPropFields(
-                this._intToBoolean(commentIpfsData, ["commentIpfs_spoiler", "commentIpfs_nsfw"]),
-                ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]
-            )!;
-            const parsedCommentUpdate = this._parseJsonAndExtraPropFields(
-                this._intToBoolean(commentUpdateData, [
-                    "commentUpdate_spoiler",
-                    "commentUpdate_nsfw",
-                    "commentUpdate_pinned",
-                    "commentUpdate_locked",
-                    "commentUpdate_removed"
-                ]),
-                ["commentUpdate_edit", "commentUpdate_flair", "commentUpdate_signature", "commentUpdate_author", "commentUpdate_replies"]
-            )!;
+            const parsedCommentIpfs = this._spreadExtraProps(
+                this._parseJsonFields(this._intToBoolean(commentIpfsData, ["commentIpfs_spoiler", "commentIpfs_nsfw"]), [
+                    "commentIpfs_author",
+                    "commentIpfs_signature",
+                    "commentIpfs_flair",
+                    "commentIpfs_extraProps"
+                ])!
+            );
+            const parsedCommentUpdate = this._spreadExtraProps(
+                this._parseJsonFields(
+                    this._intToBoolean(commentUpdateData, [
+                        "commentUpdate_spoiler",
+                        "commentUpdate_nsfw",
+                        "commentUpdate_pinned",
+                        "commentUpdate_locked",
+                        "commentUpdate_removed"
+                    ]),
+                    [
+                        "commentUpdate_edit",
+                        "commentUpdate_flair",
+                        "commentUpdate_signature",
+                        "commentUpdate_author",
+                        "commentUpdate_replies"
+                    ]
+                )!
+            );
 
             return {
                 comment: removeNullUndefinedValues(
@@ -959,20 +995,30 @@ export class DbHandler {
             const commentIpfsData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentIpfs_"));
             const commentUpdateData = remeda.pickBy(commentRaw, (v, k) => k.startsWith("commentUpdate_"));
 
-            const parsedCommentIpfs = this._parseJsonAndExtraPropFields(
-                this._intToBoolean(commentIpfsData as CommentIpfsPrefixedColumns, ["commentIpfs_spoiler", "commentIpfs_nsfw"]),
-                ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]
-            )!;
-            const parsedCommentUpdate = this._parseJsonAndExtraPropFields(
-                this._intToBoolean(commentUpdateData as CommentUpdatePrefixedColumns, [
-                    "commentUpdate_spoiler",
-                    "commentUpdate_nsfw",
-                    "commentUpdate_pinned",
-                    "commentUpdate_locked",
-                    "commentUpdate_removed"
-                ]),
-                ["commentUpdate_edit", "commentUpdate_flair", "commentUpdate_signature", "commentUpdate_author", "commentUpdate_replies"]
-            )!;
+            const parsedCommentIpfs = this._spreadExtraProps(
+                this._parseJsonFields(
+                    this._intToBoolean(commentIpfsData as CommentIpfsPrefixedColumns, ["commentIpfs_spoiler", "commentIpfs_nsfw"]),
+                    ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]
+                )!
+            );
+            const parsedCommentUpdate = this._spreadExtraProps(
+                this._parseJsonFields(
+                    this._intToBoolean(commentUpdateData as CommentUpdatePrefixedColumns, [
+                        "commentUpdate_spoiler",
+                        "commentUpdate_nsfw",
+                        "commentUpdate_pinned",
+                        "commentUpdate_locked",
+                        "commentUpdate_removed"
+                    ]),
+                    [
+                        "commentUpdate_edit",
+                        "commentUpdate_flair",
+                        "commentUpdate_signature",
+                        "commentUpdate_author",
+                        "commentUpdate_replies"
+                    ]
+                )!
+            );
 
             return {
                 comment: removeNullUndefinedValues(
@@ -992,7 +1038,7 @@ export class DbHandler {
             | CommentUpdatesRow
             | undefined;
         if (!row) return undefined;
-        const parsed = this._parseJsonAndExtraPropFields(row, ["edit", "flair", "signature", "author", "replies"]);
+        const parsed = this._parseJsonFields(row, ["edit", "flair", "signature", "author", "replies"]);
         const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pinned", "locked", "removed", "publishedToPostUpdatesMFS"]);
         return removeNullUndefinedValues(result);
     }
@@ -1057,7 +1103,7 @@ export class DbHandler {
         `;
         const results = this._db.prepare(query).all() as CommentsTableRow[];
         return results.map((r) => {
-            const parsed = this._parseJsonAndExtraPropFields(r, ["author", "signature", "flair", "extraProps"]);
+            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
             const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
             return removeNullUndefinedValues(result);
         });
@@ -1094,7 +1140,7 @@ export class DbHandler {
     queryCommentsUnderComment(parentCid: string | null): CommentsTableRow[] {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(parentCid) as CommentsTableRow[];
         return results.map((r) => {
-            const parsed = this._parseJsonAndExtraPropFields(r, ["author", "signature", "flair", "extraProps"]);
+            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
             const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
             return removeNullUndefinedValues(result);
         });
@@ -1103,7 +1149,7 @@ export class DbHandler {
     queryComment(cid: string): CommentsTableRow | undefined {
         const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as CommentsTableRow | undefined;
         if (!row) return undefined;
-        const parsed = this._parseJsonAndExtraPropFields(row, ["author", "signature", "flair", "extraProps"]);
+        const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
         const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
         return removeNullUndefinedValues(result);
     }
@@ -1163,25 +1209,29 @@ export class DbHandler {
             .prepare(
                 `
             SELECT * FROM ${TABLES.COMMENT_EDITS}
-            WHERE commentCid = ? AND authorSignerAddress = ? AND (isAuthorEdit = 1 OR isAuthorEdit = TRUE)
+            WHERE commentCid = ? AND authorSignerAddress = ? AND (isAuthorEdit = 1)
             ORDER BY rowid DESC LIMIT 1
         `
             )
             .get(cid, authorSignerAddress) as CommentEditsTableRow | undefined;
         if (!row) return undefined;
 
-        const parsedResult = this._intToBoolean(this._parseJsonAndExtraPropFields(row, ["author", "signature", "flair", "extraProps"]), [
-            "deleted",
-            "spoiler",
-            "nsfw",
-            "isAuthorEdit"
-        ]) as CommentEditsTableRow;
+        const parsedResult = this._spreadExtraProps(
+            this._intToBoolean(this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]), [
+                "deleted",
+                "spoiler",
+                "nsfw",
+                "isAuthorEdit"
+            ]) as CommentEditsTableRow
+        );
 
         const parsed = removeNullUndefinedValues(parsedResult);
 
         const signedKeys = parsed.signature.signedPropertyNames as CommentEditSignature["signedPropertyNames"];
 
-        return remeda.pick(parsed, ["signature", ...signedKeys]) as CommentEditPubsubMessagePublication;
+        const commentEditFields = remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape);
+
+        return remeda.pick(parsed, ["signature", ...signedKeys, ...commentEditFields]) as CommentEditPubsubMessagePublication;
     }
 
     private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
@@ -1301,7 +1351,7 @@ export class DbHandler {
     queryAllCommentsOrderedByIdAsc(): CommentsTableRow[] {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all() as CommentsTableRow[];
         return results.map((r) => {
-            const parsed = this._parseJsonAndExtraPropFields(r, ["author", "signature", "flair", "extraProps"]);
+            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
             const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
             return removeNullUndefinedValues(result);
         });
@@ -1605,20 +1655,30 @@ export class DbHandler {
             if (postRaw["commentIpfs_depth"] === 0) delete postRaw["commentIpfs_postCid"]; // postCid is only included in file added to ipfs when depth > 0
             const commentIpfsData = remeda.pickBy(postRaw, (v, k) => k.startsWith("commentIpfs_"));
             const commentUpdateData = remeda.pickBy(postRaw, (v, k) => k.startsWith("commentUpdate_"));
-            const parsedCommentIpfs = this._parseJsonAndExtraPropFields(
-                this._intToBoolean(commentIpfsData as CommentIpfsPrefixedColumns, ["commentIpfs_spoiler", "commentIpfs_nsfw"]),
-                ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]
-            )!;
-            const parsedCommentUpdate = this._parseJsonAndExtraPropFields(
-                this._intToBoolean(commentUpdateData as CommentUpdatePrefixedColumns, [
-                    "commentUpdate_spoiler",
-                    "commentUpdate_nsfw",
-                    "commentUpdate_pinned",
-                    "commentUpdate_locked",
-                    "commentUpdate_removed"
-                ]),
-                ["commentUpdate_edit", "commentUpdate_flair", "commentUpdate_signature", "commentUpdate_author", "commentUpdate_replies"]
-            )!;
+            const parsedCommentIpfs = this._spreadExtraProps(
+                this._parseJsonFields(
+                    this._intToBoolean(commentIpfsData as CommentIpfsPrefixedColumns, ["commentIpfs_spoiler", "commentIpfs_nsfw"]),
+                    ["commentIpfs_author", "commentIpfs_signature", "commentIpfs_flair", "commentIpfs_extraProps"]
+                )!
+            );
+            const parsedCommentUpdate = this._spreadExtraProps(
+                this._parseJsonFields(
+                    this._intToBoolean(commentUpdateData as CommentUpdatePrefixedColumns, [
+                        "commentUpdate_spoiler",
+                        "commentUpdate_nsfw",
+                        "commentUpdate_pinned",
+                        "commentUpdate_locked",
+                        "commentUpdate_removed"
+                    ]),
+                    [
+                        "commentUpdate_edit",
+                        "commentUpdate_flair",
+                        "commentUpdate_signature",
+                        "commentUpdate_author",
+                        "commentUpdate_replies"
+                    ]
+                )!
+            );
 
             const cleanedCommentIpfs = removeNullUndefinedValues(parsedCommentIpfs);
             const cleanedCommentUpdate = removeNullUndefinedValues(parsedCommentUpdate);
@@ -1642,5 +1702,14 @@ export class DbHandler {
             }
             return processed;
         });
+    }
+
+    private _spreadExtraProps<T extends Record<string, any>>(record: T): T {
+        const extraPropsNames = ["extraProps", "commentIpfs_extraProps", "commentUpdate_extaProps"];
+        extraPropsNames.forEach((extraPropName) => {
+            record = { ...record, ...record[extraPropName] };
+            delete record[extraPropName];
+        });
+        return record;
     }
 }

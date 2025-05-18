@@ -1842,21 +1842,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const limit = pLimit(50);
         const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) =>
             limit(async () => {
-                const baseIpfsProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
-                const baseSignatureProps = remeda.pick(
+                const commentIpfs = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
+                const commentPubsub = remeda.pick(
                     unpinnedCommentRow,
-                    //@ts-expect-error
-                    remeda.keys.strict(unpinnedCommentRow.signature.signedPropertyNames)
-                );
-                const commentIpfsJson = <CommentIpfsType>{
-                    ...baseSignatureProps,
-                    ...baseIpfsProps,
+                    (unpinnedCommentRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
+                ) as CommentPubsubMessagePublication;
+                const finalCommentIpfsJson = <CommentIpfsType>{
+                    ...commentPubsub,
+                    ...commentIpfs,
                     ...unpinnedCommentRow.extraProps
                 };
-                if (unpinnedCommentRow.depth === 0) delete commentIpfsJson.postCid;
-                const commentIpfsContent = deterministicStringify(commentIpfsJson);
+                if (unpinnedCommentRow.depth === 0) delete finalCommentIpfsJson.postCid;
+                const commentIpfsContent = deterministicStringify(finalCommentIpfsJson);
                 const contentHash: string = await calculateIpfsHash(commentIpfsContent);
-                if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+                if (contentHash !== unpinnedCommentRow.cid) {
+                    throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+                }
 
                 // TODO move this to addAll method
                 const addRes = await retryKuboIpfsAdd({
