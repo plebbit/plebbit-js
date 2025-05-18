@@ -130,7 +130,7 @@ describe(`comment.replies.clients`, async () => {
                     actualStates[gatewayUrl].push(newState);
                 });
 
-            multipleGatewayPlebbit._timeouts["page-ipfs"] = 10 * 1000; // Change timeout to 10s
+            multipleGatewayPlebbit._timeouts["page-ipfs"] = 2 * 1000; // Change timeout to 2s
             const timeBefore = Date.now();
             try {
                 await comment.replies.getPage(comment.replies.pageCids.new);

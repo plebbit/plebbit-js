@@ -95,7 +95,7 @@ describeSkipIfRpc(`post.updatingState - Kubo RPC client`, async () => {
 
     it(`Updating states is in correct upon updating a post that's included in preloaded pages of subplebbit`, async () => {
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const postCid = sub.posts.pages.hot.comments[0].cid;
+        const postCid = sub.posts.pages.hot.comments.find((comment) => !comment.author.address.includes(".")).cid;
         const mockPost = await plebbit.createComment({ cid: postCid });
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
@@ -136,7 +136,7 @@ describeSkipIfRpc(`post.updatingState - Kubo RPC client`, async () => {
     });
 
     it(`updating state of post is set to failed if sub has an invalid Subplebbit record - Kubo RPC client`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ resolveAuthorAddresses: false }); // set resolve to false so it wouldn't show up in states
         const sub = await plebbit.getSubplebbit(subplebbitAddress);
         const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
         const createdPost = await plebbit.createComment({
