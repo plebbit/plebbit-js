@@ -1110,9 +1110,8 @@ export class DbHandler {
     }
 
     querySubplebbitStats(): SubplebbitStats {
-        const nowSeconds = Math.floor(Date.now() / 1000);
-        const buildIntervalClause = (secondsAgo: number) =>
-            `timestamp >= ${(nowSeconds - secondsAgo) * 1000} AND timestamp < ${nowSeconds * 1000}`; // Use < for end of interval
+        const nowSeconds = timestamp();
+        const buildIntervalClause = (secondsAgo: number) => `timestamp >= ${nowSeconds - secondsAgo} AND timestamp < ${nowSeconds}`; // Timestamps are already in seconds
         const queryString = `
             SELECT
                 (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(3600)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(3600)})) AS hourActiveUserCount,
@@ -1120,7 +1119,9 @@ export class DbHandler {
                 (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(604800)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(604800)})) AS weekActiveUserCount,
                 (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(2629746)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(2629746)})) AS monthActiveUserCount,
                 (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(31557600)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(31557600)})) AS yearActiveUserCount,
-                (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v)) AS allActiveUserCount,
+                (SELECT COUNT(DISTINCT authorSignerAddress) FROM ${TABLES.COMMENTS} WHERE depth = 0) +
+                (SELECT COUNT(DISTINCT authorSignerAddress) FROM ${TABLES.COMMENTS} WHERE depth > 0) +
+                (SELECT COUNT(DISTINCT authorSignerAddress) FROM ${TABLES.VOTES} WHERE authorSignerAddress NOT IN (SELECT DISTINCT authorSignerAddress FROM ${TABLES.COMMENTS})) AS allActiveUserCount,
                 (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(3600)}) AS hourPostCount,
                 (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(86400)}) AS dayPostCount,
                 (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(604800)}) AS weekPostCount,
