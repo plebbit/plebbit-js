@@ -274,6 +274,7 @@ declare const Plebbit: {
                 error: string;
                 success: false;
             }>;
+            caseInsensitive?: boolean | undefined;
         }>;
         description?: string | undefined;
         optionInputs?: [import("zod").objectOutputType<{
@@ -567,6 +568,7 @@ export declare const challenges: Record<string, (args_0: {
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>;
     description?: string | undefined;
     optionInputs?: [import("zod").objectOutputType<{

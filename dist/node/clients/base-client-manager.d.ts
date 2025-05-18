@@ -17,7 +17,7 @@ export type OptionsToLoadFromGateway = {
     recordPlebbitType: LoadType;
     abortController: AbortController;
     timeoutMs: number;
-    shouldAbortRequestFunc?: (res: Response) => Promise<PlebbitError | undefined>;
+    abortRequestErrorBeforeLoadingBodyFunc?: (res: Response) => Promise<PlebbitError | undefined>;
     validateGatewayResponseFunc: (resObj: {
         resText: string | undefined;
         res: Response;
@@ -45,7 +45,7 @@ export declare class BaseClientsManager {
     _fetchWithLimit(url: string, options: {
         cache: RequestCache;
         signal: AbortSignal;
-    } & Pick<OptionsToLoadFromGateway, "shouldAbortRequestFunc" | "maxFileSizeBytes" | "requestHeaders">): Promise<{
+    } & Pick<OptionsToLoadFromGateway, "abortRequestErrorBeforeLoadingBodyFunc" | "maxFileSizeBytes" | "requestHeaders">): Promise<{
         resText: string | undefined;
         res: Response;
         abortError?: PlebbitError;

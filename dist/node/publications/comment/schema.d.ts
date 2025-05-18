@@ -15180,7 +15180,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
 } & {
     cid: z.ZodEffects<z.ZodString, string, string>;
     postCid: z.ZodEffects<z.ZodString, string, string>;
-    id: z.ZodNumber;
+    rowid: z.ZodNumber;
     insertedAt: z.ZodNumber;
     authorSignerAddress: z.ZodString;
     extraProps: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
@@ -15192,7 +15192,6 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
         signature: string;
         signedPropertyNames: string[];
     };
-    id: number;
     author: {
         address: string;
         previousCommentCid?: string | undefined;
@@ -15234,6 +15233,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     protocolVersion: string;
     insertedAt: number;
     authorSignerAddress: string;
+    rowid: number;
     postCid: string;
     depth: number;
     cid: string;
@@ -15265,7 +15265,6 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
         signature: string;
         signedPropertyNames: string[];
     };
-    id: number;
     author: {
         address: string;
         previousCommentCid?: string | undefined;
@@ -15307,6 +15306,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     protocolVersion: string;
     insertedAt: number;
     authorSignerAddress: string;
+    rowid: number;
     postCid: string;
     depth: number;
     cid: string;

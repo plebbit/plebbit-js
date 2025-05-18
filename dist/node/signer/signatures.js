@@ -376,6 +376,8 @@ export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolve
     return { valid: true };
 }
 async function _validateSignatureOfPlebbitRecord(publication) {
+    if (typeof publication.signature.publicKey !== "string")
+        return { valid: false, reason: messages.ERR_SIGNATURE_HAS_NO_PUBLIC_KEY };
     const signatureValidity = await _verifyJsonSignature(publication);
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };

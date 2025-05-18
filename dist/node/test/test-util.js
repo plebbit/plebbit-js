@@ -7,6 +7,7 @@ import { createMockPubsubClient } from "./mock-ipfs-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { v4 as uuidV4 } from "uuid";
+import pTimeout from "p-timeout";
 import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, _signPubsubMsg, signChallengeVerification, signSubplebbit } from "../signer/signatures.js";
 import { findCommentInPageInstance, findCommentInPageInstanceRecursively, mapPageIpfsCommentToPageJsonComment, TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/node/util.js";
@@ -395,11 +396,8 @@ export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, 
     return voteObj;
 }
 export async function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
-    let receivedResponse = false;
-    const validateResponsePromise = new Promise((resolve, reject) => {
-        setTimeout(() => !receivedResponse && reject(new Error(`Publication did not receive any response`)), 90000); // throw after 20 seconds if we haven't received a response
+    const challengeVerificationPromise = new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
-            receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason}): ${JSON.stringify(remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
                 reject(msg);
@@ -412,10 +410,25 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
                 resolve(1);
         });
     });
-    publication.once("challenge", (challenge) => publication.listenerCount("challenge") > 1 &&
-        console.log("Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?", challenge));
+    const validateResponsePromise = pTimeout(challengeVerificationPromise, {
+        milliseconds: 90000,
+        message: new PlebbitError("ERR_PUBLICATION_DID_NOT_RECEIVE_RESPONSE", {
+            publication,
+            expectedChallengeSuccess,
+            expectedReason,
+            waitTime: 90000
+        })
+    });
+    publication.once("challenge", (challenge) => publication.listenerCount("challenge") === 0 &&
+        console.error("Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?", challenge));
     await publication.publish();
-    await validateResponsePromise;
+    try {
+        await validateResponsePromise;
+    }
+    catch (error) {
+        console.error(error);
+        throw error;
+    }
 }
 export async function iterateThroughPageCidToFindComment(commentCid, pageCid, pages) {
     if (!commentCid)
@@ -447,7 +460,8 @@ export async function waitTillPostInSubplebbitInstancePages(post, sub) {
         else
             return false;
     };
-    await sub.update();
+    if (sub.state === "stopped")
+        await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
 }
 export async function waitTillPostInSubplebbitPages(post, plebbit) {
@@ -469,14 +483,17 @@ export async function iterateThroughPagesToFindCommentInParentPagesInstance(comm
 }
 export async function waitTillReplyInParentPagesInstance(reply, parentComment) {
     const isReplyInParentPages = async () => {
-        if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
+        console.log("waitTillReplyInParentPagesInstance", parentComment.cid, "replyCount", parentComment.replyCount);
+        if (Object.keys(parentComment.replies.pageCids).length === 0) {
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
             return Boolean(postInPage);
         }
         else {
-            if (!("new" in parentComment.replies.pageCids))
+            if (!("new" in parentComment.replies.pageCids)) {
+                console.error("no new page", "parentComment.replies.pageCids", parentComment.replies.pageCids);
                 return false;
+            }
             const commentNewPageCid = parentComment.replies.pageCids.new;
             const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
             return Boolean(replyInPage);
@@ -989,6 +1006,8 @@ export function mockCommentToNotUsePagesForUpdates(comment) {
         throw Error("Comment should be updating before starting to mock");
     if (comment._plebbit._plebbitRpcClient)
         throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
+    delete updatingComment.raw.commentUpdate;
+    delete updatingComment.updatedAt;
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
@@ -1002,17 +1021,19 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
     const content = "x".repeat(1024 * 30); //30kb
-    let lastPublishedReply;
-    await Promise.all(new Array(numOfCommentsToPublish).fill(null).map(async () => {
-        //@ts-expect-error
-        lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+    const replies = await Promise.all(new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
+        return publishRandomReply(comment, comment._plebbit, { content });
     }));
-    const updatingComment = await comment._plebbit.createComment(comment);
+    const lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+    console.log("Published", numOfCommentsToPublish, "replies under comment", comment.cid, "to force subplebbit", comment.subplebbitAddress, "to generate all pages");
+    const updatingComment = await comment._plebbit.createComment({ cid: comment.cid });
     await updatingComment.update();
     //@ts-expect-error
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
     if (Object.keys(updatingComment.replies.pageCids).length === 0)
         throw Error("Failed to force the subplebbit to load all pages");
+    if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
+        throw Error("Reply count is less than the number of comments published");
 }
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit) {
     // max comment size is 40kb = 40000
@@ -1061,7 +1082,7 @@ export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit) 
     if (replyInPage)
         return replyInPage;
     //@ts-expect-error
-    const reply = await publishRandomReply(post, subplebbit._plebbit, {});
+    const reply = await publishRandomReply(post, subplebbit._plebbit);
     return reply;
 }
 export function mockReplyToUseParentPagesForUpdates(reply) {
@@ -1070,6 +1091,8 @@ export function mockReplyToUseParentPagesForUpdates(reply) {
         throw Error("Reply should be updating before starting to mock");
     if (updatingComment.depth === 0)
         throw Error("Should not call this function on a post");
+    delete updatingComment.raw.commentUpdate;
+    delete updatingComment.updatedAt;
     mockCommentToNotUsePagesForUpdates(reply);
     const originalFunc = updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate.bind(updatingComment._clientsManager);
     updatingComment._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate = (postInstance) => {

@@ -1,6 +1,6 @@
 import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, createKuboRpcClient, monitorSubplebbitsDirectory } from "../runtime/browser/util.js";
 import { Comment } from "../publications/comment/comment.js";
-import { waitForUpdateInSubInstanceWithErrorAndTimeout, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { waitForUpdateInSubInstanceWithErrorAndTimeout, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp, resolveWhenPredicateIsTrue } from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -33,7 +33,6 @@ export class Plebbit extends PlebbitTypedEmitter {
         this._updatingSubplebbits = {}; // storing subplebbit instance that are getting updated rn
         this._updatingComments = {}; // storing comment instancse that are getting updated rn
         this._startedSubplebbits = {}; // storing subplebbit instance that are started rn
-        this._subplebbitschangeEventHasbeenEmitted = false;
         this._storageLRUs = {}; // Cache name to storage interface
         this._timeouts = {
             "subplebbit-ipns": 5 * 60 * 1000, // 5min, for resolving subplebbit IPNS, or fetching subplebbit from gateways
@@ -73,8 +72,8 @@ export class Plebbit extends PlebbitTypedEmitter {
         this._domainResolver = new DomainResolver(this);
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
-            this._subplebbitschangeEventHasbeenEmitted = true;
         });
+        this._promiseToWaitForFirstSubplebbitschangeEvent = new Promise((resolve) => this.once("subplebbitschange", resolve));
         //@ts-expect-error
         this.clients = {};
         this._initKuboRpcClientsIfNeeded();
@@ -345,20 +344,15 @@ export class Plebbit extends PlebbitTypedEmitter {
     }
     async _waitForSubplebbitsToBeDefined() {
         // we're just wait until this.subplebbits is either defined, or subplebbitschange is emitted
-        if (!this._subplebbitschangeEventHasbeenEmitted)
-            await new Promise((resolve) => this.once("subplebbitschange", resolve));
+        await this._promiseToWaitForFirstSubplebbitschangeEvent;
         if (!Array.isArray(this.subplebbits))
             throw Error("plebbit.subplebbits should be defined after subplebbitschange event");
     }
     async _awaitSubplebbitsToIncludeSub(subAddress) {
         if (this.subplebbits.includes(subAddress))
             return;
-        else {
-            await new Promise((resolve) => this.on("subplebbitschange", (newSubs) => {
-                if (newSubs.includes(subAddress))
-                    resolve(1);
-            }));
-        }
+        else
+            await resolveWhenPredicateIsTrue(this, () => this.subplebbits.includes(subAddress), "subplebbitschange");
     }
     async _createRemoteSubplebbitInstance(options) {
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");

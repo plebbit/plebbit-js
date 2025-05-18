@@ -272,6 +272,7 @@ declare const PlebbitJs: {
                     error: string;
                     success: false;
                 }>;
+                caseInsensitive?: boolean | undefined;
             }>;
             description?: string | undefined;
             optionInputs?: [import("zod").objectOutputType<{

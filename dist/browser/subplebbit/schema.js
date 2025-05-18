@@ -81,7 +81,8 @@ export const ChallengeFromGetChallengeSchema = z
         .function()
         .args(z.lazy(() => ChallengeAnswerStringSchema))
         .returns(z.promise(ChallengeResultSchema)), // args is answer
-    type: z.string().min(1)
+    type: z.string().min(1),
+    caseInsensitive: z.boolean().optional()
 })
     .strict();
 export const ResultOfGetChallengeSchema = ChallengeFromGetChallengeSchema.or(ChallengeResultSchema);
