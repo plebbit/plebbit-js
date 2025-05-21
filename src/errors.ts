@@ -107,6 +107,7 @@ export enum messages {
     ERR_INVALID_CREATE_PLEBBIT_ARGS_SCHEMA = "User sent arguments with invalid schema in an attempt to create a Plebbit instance",
     ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA = "User provided invalid schema of arguments for plebbit.createSubplebbit while connected to RPC",
     ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT = "The subplebbit has subplebbit.settings.challenges[x].exclude[y].publicationType is set to an empty object. You should either choose which publication to exclude or remove exclude.publicationType",
+    ERR_SUB_HAS_NO_INTERNAL_STATE = "The subplebbit has no internal state. This should never happen. Please report this bug.",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
@@ -116,6 +117,7 @@ export enum messages {
 
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",
+    ERR_SIGNATURE_HAS_NO_PUBLIC_KEY = "Signature of publication has no public key",
     ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID = "The author edit of comment (commentUpdate.edit) has an invalid signature",
     ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED = "The subplebbit record address does not correspond to the requested subplebbit. requestedSubplebbit.address !== providedSubplebbit.address",
     ERR_AUTHOR_NOT_MATCHING_SIGNATURE = "comment.author.address doesn't match comment.signature.publicKey",

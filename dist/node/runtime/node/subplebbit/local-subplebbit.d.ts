@@ -73,10 +73,8 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _parseChallengeAnswerOrRespondWithFailure;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessageType): Promise<void>;
     private handleChallengeExchange;
-    private _calculatePostUpdatePathForExistingCommentUpdate;
     private _calculateLocalMfsPathForCommentUpdate;
-    private _writeCommentUpdateToDatabase;
-    private _calculateNewCommentUpdateAndWriteToDb;
+    private _calculateNewCommentUpdate;
     private _validateCommentUpdateSignature;
     private _listenToIncomingRequests;
     private _movePostUpdatesFolderToNewAddress;

@@ -209,7 +209,7 @@ export class PageGenerator {
     }
 
     async sortAndChunkComments(
-        unsortedComments: PageIpfs["comments"],
+        unsortedComments: (PageIpfs["comments"][0] & { activeScore?: number })[],
         sortName: PostSortName | ReplySortName,
         options: PageOptions
     ): Promise<PageIpfs["comments"][]> {
@@ -219,25 +219,17 @@ export class PageGenerator {
             : POSTS_SORT_TYPES[<PostSortName>sortName];
         if (typeof sortProps.score !== "function") throw Error(`SortProps[${sortName}] score function is not defined`);
 
-        let activeScores: Record<string, number>;
-
-        if (sortName === "active") {
-            activeScores = {};
-            for (const comment of unsortedComments)
-                activeScores[comment.commentUpdate.cid] = await this._subplebbit._dbHandler.queryActiveScore({
-                    cid: comment.commentUpdate.cid,
-                    timestamp: comment.comment.timestamp
-                });
-        }
-
-        const scoreSort = (obj1: PageIpfs["comments"][0], obj2: PageIpfs["comments"][0]) => {
-            if (activeScores) {
-                // Make exception for active sorting because it has a different mechanism for sorting
-                return activeScores[obj2.commentUpdate.cid] - activeScores[obj1.commentUpdate.cid];
+        const scoreSort = (obj1: (typeof unsortedComments)[0], obj2: (typeof unsortedComments)[0]) => {
+            // calculated from DB
+            if (sortName === "active") {
+                if (typeof obj1.activeScore !== "number") throw Error("Active score is not defined");
+                if (typeof obj2.activeScore !== "number") throw Error("Active score is not defined");
+                return obj2.activeScore - obj1.activeScore;
+            } else {
+                const score1 = sortProps.score(obj1);
+                const score2 = sortProps.score(obj2);
+                return score2 - score1;
             }
-            const score1 = sortProps.score(obj1);
-            const score2 = sortProps.score(obj2);
-            return score2 - score1;
         };
 
         const pinnedComments = unsortedComments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
@@ -248,7 +240,7 @@ export class PageGenerator {
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);
         }
 
-        const commentsSorted = pinnedComments.concat(unpinnedComments);
+        const commentsSorted = pinnedComments.concat(unpinnedComments).map((comment) => remeda.omit(comment, ["activeScore"]));
 
         if (commentsSorted.length === 0) return [];
 
@@ -302,7 +294,7 @@ export class PageGenerator {
             firstPageSizeBytes: preloadedPageSizeBytes
         };
         // Sorting posts on a subplebbit level
-        const rawPosts = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        const rawPosts = this._subplebbit._dbHandler.queryPostsWithActiveScore(pageOptions);
         if (rawPosts.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(rawPosts, preloadedPageSortName, pageOptions);
@@ -337,7 +329,7 @@ export class PageGenerator {
             baseTimestamp: timestamp()
         };
 
-        const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        const hierarchalReplies = this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, {
@@ -352,7 +344,7 @@ export class PageGenerator {
 
         const nonPreloadedSorts = remeda.keys.strict(POST_REPLIES_SORT_TYPES).filter((sortName) => sortName !== preloadedReplyPageSortName);
 
-        const flattenedReplies = await this._subplebbit._dbHandler.queryFlattenedPageReplies({
+        const flattenedReplies = this._subplebbit._dbHandler.queryFlattenedPageReplies({
             ...pageOptions,
             commentUpdateFieldsToExclude: ["replies"]
         });
@@ -383,7 +375,7 @@ export class PageGenerator {
             baseTimestamp: timestamp()
         };
 
-        const hierarchalReplies = await this._subplebbit._dbHandler.queryPageComments(pageOptions);
+        const hierarchalReplies = this._subplebbit._dbHandler.queryPageComments(pageOptions);
         if (hierarchalReplies.length === 0) return undefined;
 
         const preloadedChunk = await this.sortAndChunkComments(hierarchalReplies, preloadedReplyPageSortName, {

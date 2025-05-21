@@ -193,8 +193,8 @@ export class BaseClientsManager {
             });
             if (res.status !== 200)
                 throw Error(`Failed to fetch due to status code: ${res.status} + ", res.statusText" + (${res.statusText})`);
-            if (options.shouldAbortRequestFunc) {
-                const abortError = await options.shouldAbortRequestFunc(res);
+            if (options.abortRequestErrorBeforeLoadingBodyFunc) {
+                const abortError = await options.abortRequestErrorBeforeLoadingBodyFunc(res);
                 if (abortError) {
                     return { res, resText: undefined, abortError: abortError };
                 }
@@ -480,19 +480,11 @@ export class BaseClientsManager {
             return resolvedTextRecord;
         }
         catch (e) {
-            const parsedError = e instanceof PlebbitError
-                ? e
-                : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", {
-                    error: e,
-                    address,
-                    txtRecordName,
-                    chain,
-                    chainproviderUrl,
-                    chainId
-                });
-            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError, staleCache);
+            //@ts-expect-error
+            e.details = { ...e.details, address, txtRecordName, chain, chainproviderUrl, chainId };
+            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e, staleCache);
             await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
-            return { error: parsedError };
+            return { error: e };
         }
     }
     async _resolveTextRecordConcurrently(address, txtRecordName, chain, chainId) {

@@ -9,7 +9,7 @@ import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Record<string, any>, x: any, y: any): any;
-export declare function removeNullUndefinedValues<T extends Object>(obj: T): T extends Record<keyof T, T[keyof T]> ? T : Partial<T>;
+export declare function removeNullUndefinedValues<T extends Object>(obj: T): T;
 export declare function removeUndefinedValuesRecursively<T>(obj: T): T;
 export declare function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: {}): void;

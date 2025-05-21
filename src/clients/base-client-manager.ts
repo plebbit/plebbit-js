@@ -49,7 +49,7 @@ export type OptionsToLoadFromGateway = {
     recordPlebbitType: LoadType;
     abortController: AbortController;
     timeoutMs: number;
-    shouldAbortRequestFunc?: (res: Response) => Promise<PlebbitError | undefined>; // this is called before consuming the body of the gateway response. Can be used to abort and stop the consumption. Should provide an abort error
+    abortRequestErrorBeforeLoadingBodyFunc?: (res: Response) => Promise<PlebbitError | undefined>; // this is called before consuming the body of the gateway response. Can be used to abort and stop the consumption. Should provide an abort error
     validateGatewayResponseFunc: (resObj: { resText: string | undefined; res: Response }) => Promise<void>; // can throw here to trigger a failure in response
     log: Logger;
 };
@@ -234,7 +234,7 @@ export class BaseClientsManager {
         url: string,
         options: { cache: RequestCache; signal: AbortSignal } & Pick<
             OptionsToLoadFromGateway,
-            "shouldAbortRequestFunc" | "maxFileSizeBytes" | "requestHeaders"
+            "abortRequestErrorBeforeLoadingBodyFunc" | "maxFileSizeBytes" | "requestHeaders"
         >
     ): Promise<{ resText: string | undefined; res: Response; abortError?: PlebbitError }> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
@@ -276,8 +276,8 @@ export class BaseClientsManager {
 
             if (res.status !== 200)
                 throw Error(`Failed to fetch due to status code: ${res.status} + ", res.statusText" + (${res.statusText})`);
-            if (options.shouldAbortRequestFunc) {
-                const abortError = await options.shouldAbortRequestFunc(res);
+            if (options.abortRequestErrorBeforeLoadingBodyFunc) {
+                const abortError = await options.abortRequestErrorBeforeLoadingBodyFunc(res);
                 if (abortError) {
                     return { res, resText: undefined, abortError: abortError };
                 }
@@ -390,13 +390,13 @@ export class BaseClientsManager {
             this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
             return resObj;
         } catch (e) {
-            if (e instanceof PlebbitError) e.details = { ...e.details, url };
+            //@ts-expect-error
+            e.details = { ...e.details, url, loadOpts, wasRequestAborted: loadOpts.abortController.signal.aborted };
 
             this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
             this._plebbit._stats
                 .recordGatewayFailure(gateway, loadOpts.recordIpfsType)
                 .catch((err) => log.error("failed to report gateway error", err));
-            delete (<PlebbitError>e)!["stack"];
             return { error: <PlebbitError>e };
         }
     }

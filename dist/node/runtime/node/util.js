@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
 import path from "path";
 import assert from "assert";
-import { parseDbResponses, throwWithErrorCode } from "../../util.js";
+import { throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -18,6 +18,7 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
+import { existsSync } from "fs";
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) => {
     let filename;
@@ -29,13 +30,8 @@ export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) =
         await fs.mkdir(path.dirname(filename), { recursive: true });
     }
     return {
-        client: "better-sqlite3",
-        connection: { filename },
-        useNullAsDefault: true,
-        acquireConnectionTimeout: 120000,
-        postProcessResponse: (result, queryContext) => {
-            return parseDbResponses(result);
-        }
+        filename,
+        fileMustExist: true
     };
 };
 async function _getThumbnailUrlOfLink(url, agent) {
@@ -199,17 +195,28 @@ export async function listSubplebbits(plebbit) {
     const deletedPersistentSubs = (await _handlePersistentSubsIfNeeded(plebbit, log)) || [];
     if (deletedPersistentSubs.length > 0)
         log(`persistent subplebbits that refuse to be deleted`, deletedPersistentSubs);
-    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter((file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)); // Filter locks and journal files out
-    const filterResults = await Promise.all(files.map(async (address) => {
+    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter((file) => !file.includes(".lock") &&
+        !file.endsWith("-journal") &&
+        !file.endsWith("-shm") &&
+        !file.endsWith("-wal") &&
+        !deletedPersistentSubs.includes(file)); // Filter locks and journal files out
+    const subplebbitFilesWeDontNeedToCheck = plebbit.subplebbits ? files.filter((address) => plebbit.subplebbits.includes(address)) : [];
+    const filesToCheckIfSqlite = files.filter((address) => !subplebbitFilesWeDontNeedToCheck.includes(address));
+    const filterResults = await Promise.all(filesToCheckIfSqlite.map(async (address) => {
         try {
             const typeOfFile = await fileTypeFromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
-            return typeOfFile?.mime === "application/x-sqlite3";
+            if (typeOfFile?.mime === "application/x-sqlite3") {
+                log.trace("Detected new sqlite db file in plebbit.datapath", address);
+                return true;
+            }
+            else
+                return false;
         }
         catch (e) {
             return false;
         }
     }));
-    const filtered_results = files.filter((_, i) => filterResults[i]).sort(); // make sure it's sorted, so the order is always the same
+    const filtered_results = [...subplebbitFilesWeDontNeedToCheck, ...filesToCheckIfSqlite.filter((_, i) => filterResults[i])].sort(); // make sure it's sorted, so the order is always the same
     return filtered_results;
 }
 export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, kuboRpcClientOptions) {
@@ -234,17 +241,36 @@ export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, kuboRpcClie
     return { id: resJson.Id, name: resJson.Name };
 }
 export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress, plebbit) {
-    // Delete subplebbit will just move the sub db file to another directory
     if (typeof plebbit.dataPath !== "string")
         throw Error("plebbit.dataPath is not defined");
     const oldPath = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
     const newPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbitAddress);
+    // Create the deleted directory if it doesn't exist
     await fs.mkdir(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true });
-    await fs.cp(oldPath, newPath);
-    if (os.type() === "Windows_NT")
-        await deleteOldSubplebbitInWindows(oldPath, plebbit);
-    else
-        await fs.rm(oldPath);
+    // Check if the source file exists
+    if (!existsSync(oldPath)) {
+        throw Error(`Source database ${oldPath} does not exist`);
+    }
+    // Use better-sqlite3 backup instead of file copy
+    try {
+        const Database = (await import("better-sqlite3")).default;
+        const sourceDb = new Database(oldPath, { fileMustExist: true });
+        // Perform backup
+        await sourceDb.backup(newPath);
+        // Close the connection
+        sourceDb.close();
+        // Delete the original file
+        if (os.type() === "Windows_NT") {
+            await deleteOldSubplebbitInWindows(oldPath, plebbit);
+        }
+        else {
+            await fs.rm(oldPath);
+        }
+    }
+    catch (error) {
+        error.details = { ...error.details, oldPath, newPath };
+        throw error;
+    }
 }
 export function createKuboRpcClient(kuboRpcClientOptions) {
     const log = Logger("plebbit-js:plebbit:createKuboRpcClient");
@@ -266,8 +292,9 @@ export async function monitorSubplebbitsDirectory(plebbit) {
     const watchAbortController = new AbortController();
     const subsPath = path.join(plebbit.dataPath, "subplebbits");
     await mkdir(subsPath, { recursive: true });
-    fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false }, async (eventType, filename) => {
-        if (filename?.endsWith(".lock") || filename?.endsWith("-journal"))
+    const extensionsToIgnore = [".lock", "-journal", "-shm", "-wal"];
+    fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false, recursive: false }, async (eventType, filename) => {
+        if (typeof filename === "string" && extensionsToIgnore.some((ext) => filename?.endsWith(ext)))
             return; // we only care about subplebbits
         const currentSubs = await listSubplebbits(plebbit);
         if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))

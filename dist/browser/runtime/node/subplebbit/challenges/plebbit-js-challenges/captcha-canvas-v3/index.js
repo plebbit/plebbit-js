@@ -55,7 +55,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     };
     // const challenge = (await res.image).toString('base64')
     const challenge = imageBase64;
-    return { challenge, verify, type };
+    return { challenge, verify, type, caseInsensitive: true };
 };
 function ChallengeFileFactory(subplebbitChallengeSettings) {
     return { getChallenge, optionInputs, type, description, caseInsensitive: true };

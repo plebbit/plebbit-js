@@ -653,7 +653,7 @@ export async function waitTillPostInSubplebbitInstancePages(
             return Boolean(postInPage);
         } else return false;
     };
-    await sub.update();
+    if (sub.state === "stopped") await sub.update();
     await resolveWhenConditionIsTrue(sub, isPostInSubPages);
 }
 
@@ -689,12 +689,16 @@ export async function waitTillReplyInParentPagesInstance(
     parentComment: Comment
 ) {
     const isReplyInParentPages = async () => {
-        if (Object.keys(parentComment.replies.pageCids).length === 0 && Object.keys(parentComment.replies.pages).length > 0) {
+        console.log("waitTillReplyInParentPagesInstance", parentComment.cid, "replyCount", parentComment.replyCount);
+        if (Object.keys(parentComment.replies.pageCids).length === 0) {
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
             return Boolean(postInPage);
         } else {
-            if (!("new" in parentComment.replies.pageCids)) return false;
+            if (!("new" in parentComment.replies.pageCids)) {
+                console.error("no new page", "parentComment.replies.pageCids", parentComment.replies.pageCids);
+                return false;
+            }
 
             const commentNewPageCid = parentComment.replies.pageCids.new;
             const replyInPage = await iterateThroughPageCidToFindComment(reply.cid, commentNewPageCid, parentComment.replies);
@@ -1385,6 +1389,9 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
 
     if (comment._plebbit._plebbitRpcClient)
         throw Error("Can't mock comment  _findCommentInPagesOfUpdatingCommentsSubplebbit with plebbit rpc clients");
+
+    delete updatingComment.raw.commentUpdate;
+    delete updatingComment.updatedAt;
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 
@@ -1400,19 +1407,30 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
     const content = "x".repeat(1024 * 30); //30kb
-    let lastPublishedReply: Comment;
-    await Promise.all(
-        new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            //@ts-expect-error
-            lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
+    const replies = await Promise.all(
+        new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
+            return publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content });
         })
     );
 
-    const updatingComment = await comment._plebbit.createComment(comment);
+    const lastPublishedReply = await publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content });
+    console.log(
+        "Published",
+        numOfCommentsToPublish,
+        "replies under comment",
+        comment.cid,
+        "to force subplebbit",
+        comment.subplebbitAddress,
+        "to generate all pages"
+    );
+
+    const updatingComment = await comment._plebbit.createComment({ cid: comment.cid! });
     await updatingComment.update();
     //@ts-expect-error
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
     if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
+    if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
+        throw Error("Reply count is less than the number of comments published");
 }
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
@@ -1466,7 +1484,7 @@ export async function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: 
     if (replyInPage) return replyInPage;
 
     //@ts-expect-error
-    const reply = await publishRandomReply(post, subplebbit._plebbit, {});
+    const reply = await publishRandomReply(post, subplebbit._plebbit);
     return reply;
 }
 
@@ -1474,6 +1492,8 @@ export function mockReplyToUseParentPagesForUpdates(reply: Comment) {
     const updatingComment = reply._plebbit._updatingComments[reply.cid!];
     if (!updatingComment) throw Error("Reply should be updating before starting to mock");
     if (updatingComment.depth === 0) throw Error("Should not call this function on a post");
+    delete updatingComment.raw.commentUpdate;
+    delete updatingComment.updatedAt;
 
     mockCommentToNotUsePagesForUpdates(reply);
 

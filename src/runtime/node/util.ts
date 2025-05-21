@@ -3,8 +3,7 @@ import { default as nodeNativeFunctions } from "./native-functions.js";
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
-import { Knex } from "knex";
-import { parseDbResponses, throwWithErrorCode } from "../../util.js";
+import { throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -25,13 +24,15 @@ import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import { watch as fsWatch } from "node:fs";
 import { mkdir } from "fs/promises";
 import type { CommentUpdateType } from "../../publications/comment/types.js";
+import { DbHandler } from "./subplebbit/db-handler.js";
+import { existsSync } from "fs";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
     subplebbitAddress: SubplebbitIpfsType["address"],
     plebbit: Plebbit
-): Promise<Knex.Config<any>> => {
+): Promise<DbHandler["_dbConfig"]> => {
     let filename: string;
     if (plebbit.noData) filename = ":memory:";
     else {
@@ -41,13 +42,8 @@ export const getDefaultSubplebbitDbConfig = async (
     }
 
     return {
-        client: "better-sqlite3",
-        connection: { filename },
-        useNullAsDefault: true,
-        acquireConnectionTimeout: 120000,
-        postProcessResponse: (result, queryContext) => {
-            return parseDbResponses(result);
-        }
+        filename,
+        fileMustExist: true
     };
 };
 
@@ -227,7 +223,12 @@ export async function listSubplebbits(plebbit: Plebbit) {
     if (deletedPersistentSubs.length > 0) log(`persistent subplebbits that refuse to be deleted`, deletedPersistentSubs);
 
     const files = (await fs.readdir(subplebbitsPath, { withFileTypes: false, recursive: false })).filter(
-        (file) => !file.includes(".lock") && !file.endsWith("-journal") && !deletedPersistentSubs.includes(file)
+        (file) =>
+            !file.includes(".lock") &&
+            !file.endsWith("-journal") &&
+            !file.endsWith("-shm") &&
+            !file.endsWith("-wal") &&
+            !deletedPersistentSubs.includes(file)
     ); // Filter locks and journal files out
 
     const subplebbitFilesWeDontNeedToCheck = plebbit.subplebbits ? files.filter((address) => plebbit.subplebbits.includes(address)) : [];
@@ -279,14 +280,40 @@ export async function importSignerIntoKuboNode(
 }
 
 export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: string, plebbit: Plebbit) {
-    // Delete subplebbit will just move the sub db file to another directory
     if (typeof plebbit.dataPath !== "string") throw Error("plebbit.dataPath is not defined");
+
     const oldPath = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
     const newPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbitAddress);
+
+    // Create the deleted directory if it doesn't exist
     await fs.mkdir(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true });
-    await fs.cp(oldPath, newPath);
-    if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPath, plebbit);
-    else await fs.rm(oldPath);
+
+    // Check if the source file exists
+    if (!existsSync(oldPath)) {
+        throw Error(`Source database ${oldPath} does not exist`);
+    }
+
+    // Use better-sqlite3 backup instead of file copy
+    try {
+        const Database = (await import("better-sqlite3")).default;
+        const sourceDb = new Database(oldPath, { fileMustExist: true });
+
+        // Perform backup
+        await sourceDb.backup(newPath);
+
+        // Close the connection
+        sourceDb.close();
+
+        // Delete the original file
+        if (os.type() === "Windows_NT") {
+            await deleteOldSubplebbitInWindows(oldPath, plebbit);
+        } else {
+            await fs.rm(oldPath);
+        }
+    } catch (error: any) {
+        error.details = { ...error.details, oldPath, newPath };
+        throw error;
+    }
 }
 
 export function createKuboRpcClient(kuboRpcClientOptions: KuboRpcClient["_clientOptions"]): KuboRpcClient["_client"] {
@@ -314,9 +341,9 @@ export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
     const watchAbortController = new AbortController();
     const subsPath = path.join(plebbit.dataPath!, "subplebbits");
     await mkdir(subsPath, { recursive: true });
-
+    const extensionsToIgnore = [".lock", "-journal", "-shm", "-wal"];
     fsWatch(subsPath, { signal: watchAbortController.signal, persistent: false, recursive: false }, async (eventType, filename) => {
-        if (filename?.endsWith(".lock") || filename?.endsWith("-journal")) return; // we only care about subplebbits
+        if (typeof filename === "string" && extensionsToIgnore.some((ext) => filename?.endsWith(ext))) return; // we only care about subplebbits
 
         const currentSubs = await listSubplebbits(plebbit);
         if (deterministicStringify(currentSubs) !== deterministicStringify(plebbit.subplebbits))

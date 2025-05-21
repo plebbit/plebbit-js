@@ -52,8 +52,8 @@ export function replaceXWithY(obj: Record<string, any>, x: any, y: any): any {
     return newObj;
 }
 
-export function removeNullUndefinedValues<T extends Object>(obj: T) {
-    return remeda.pickBy(obj, remeda.isNonNullish);
+export function removeNullUndefinedValues<T extends Object>(obj: T): T {
+    return remeda.pickBy(obj, remeda.isNonNullish) as T;
 }
 
 function removeUndefinedValues<T extends Object>(obj: T) {
@@ -312,13 +312,25 @@ export async function resolveWhenPredicateIsTrue(
     eventName = "update"
 ) {
     // should add a timeout?
-    if (!(await predicate()))
-        await new Promise((resolve) => {
-            toUpdate.on(eventName, async () => {
+
+    const listenerPromise = new Promise(async (resolve) => {
+        const listener = async () => {
+            try {
                 const conditionStatus = await predicate();
-                if (conditionStatus) resolve(conditionStatus);
-            });
-        });
+                if (conditionStatus) {
+                    resolve(conditionStatus);
+                    toUpdate.removeListener(eventName, listener);
+                }
+            } catch (error) {
+                console.error(error);
+                throw error;
+            }
+        };
+        toUpdate.on(eventName, listener);
+        await listener(); // make sure we're checking at least once
+    });
+
+    await listenerPromise;
 }
 
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {

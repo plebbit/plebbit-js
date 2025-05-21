@@ -11,7 +11,9 @@ import {
     describeSkipIfRpc,
     waitUntilPlebbitSubplebbitsIncludeSubAddress,
     publishRandomPost,
-    resolveWhenConditionIsTrue
+    createSubWithNoChallenge,
+    resolveWhenConditionIsTrue,
+    waitTillPostInSubplebbitInstancePages
 } from "../../../dist/node/test/test-util.js";
 
 import plebbitVersion from "../../../dist/node/version.js";
@@ -42,6 +44,21 @@ const getDatabasesToMigrate = () => {
     return databasesToMigrate;
 };
 
+const generateRandomSub = async () => {
+    const plebbit = await mockPlebbit();
+    const sub = await createSubWithNoChallenge({}, plebbit);
+    await sub.start();
+    await resolveWhenConditionIsTrue(sub, () => sub.updatedAt);
+
+    const post = await publishRandomPost(sub.address, plebbit);
+    await waitTillPostInSubplebbitInstancePages(post, sub);
+
+    await sub.stop();
+    await plebbit.destroy();
+
+    return sub;
+};
+
 const copyDbToDataPath = async (databaseObj, plebbit) => {
     const newPath = path.join(plebbit.dataPath, "subplebbits", databaseObj.address);
     await fs.promises.cp(databaseObj.path, newPath);
@@ -69,12 +86,13 @@ describeSkipIfRpc(`DB importing`, async () => {
 
     it(`Can import a subplebbit by copying its sql file to datapath/subplebbits`, async () => {
         const regularPlebbit = await mockPlebbit();
+        const randomSub = await generateRandomSub();
         const tempPlebbit = await mockPlebbit(getTemporaryPlebbitOptions());
-        const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address);
-        await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", signers[0].address));
-        await waitUntilPlebbitSubplebbitsIncludeSubAddress(tempPlebbit, signers[0].address);
+        const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", randomSub.address);
+        await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", randomSub.address));
+        await waitUntilPlebbitSubplebbitsIncludeSubAddress(tempPlebbit, randomSub.address);
         // Should be included in tempPlebbit.subplebbits now
-        const subplebbit = await tempPlebbit.createSubplebbit({ address: signers[0].address });
+        const subplebbit = await tempPlebbit.createSubplebbit({ address: randomSub.address });
         await subplebbit.edit({
             settings: { ...subplebbit.settings, challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] }
         }); // We want this sub to have a full challenge exchange to test all db tables

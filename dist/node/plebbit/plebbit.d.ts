@@ -67,8 +67,8 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     _updatingComments: Record<string, Awaited<ReturnType<Plebbit["createComment"]>>>;
     _startedSubplebbits: Record<SubplebbitIpfsType["address"], LocalSubplebbit | RpcLocalSubplebbit>;
     private _subplebbitFsWatchAbort?;
-    private _subplebbitschangeEventHasbeenEmitted;
     private _addressRewriterDestroy?;
+    private _promiseToWaitForFirstSubplebbitschangeEvent;
     private _storageLRUs;
     _memCaches: PlebbitMemCaches;
     _domainResolver: DomainResolver;

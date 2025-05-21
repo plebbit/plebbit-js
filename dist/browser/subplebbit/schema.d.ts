@@ -186,6 +186,7 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
         success: false;
     }>]>>>;
     type: z.ZodString;
+    caseInsensitive: z.ZodOptional<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
     type: string;
     challenge: string;
@@ -195,6 +196,7 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
         error: string;
         success: false;
     }>;
+    caseInsensitive?: boolean | undefined;
 }, {
     type: string;
     challenge: string;
@@ -204,6 +206,7 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
         error: string;
         success: false;
     }>;
+    caseInsensitive?: boolean | undefined;
 }>;
 export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     challenge: z.ZodString;
@@ -224,6 +227,7 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
         success: false;
     }>]>>>;
     type: z.ZodString;
+    caseInsensitive: z.ZodOptional<z.ZodBoolean>;
 }, "strict", z.ZodTypeAny, {
     type: string;
     challenge: string;
@@ -233,6 +237,7 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
         error: string;
         success: false;
     }>;
+    caseInsensitive?: boolean | undefined;
 }, {
     type: string;
     challenge: string;
@@ -242,6 +247,7 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
         error: string;
         success: false;
     }>;
+    caseInsensitive?: boolean | undefined;
 }>, z.ZodUnion<[z.ZodObject<{
     success: z.ZodLiteral<true>;
 }, "strip", z.ZodTypeAny, {
@@ -1891,6 +1897,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             success: false;
         }>]>>>;
         type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         type: string;
         challenge: string;
@@ -1900,6 +1907,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }, {
         type: string;
         challenge: string;
@@ -1909,6 +1917,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>, z.ZodUnion<[z.ZodObject<{
         success: z.ZodLiteral<true>;
     }, "strip", z.ZodTypeAny, {
@@ -2065,6 +2074,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>;
     description?: string | undefined;
     optionInputs?: [z.objectOutputType<{
@@ -2224,6 +2234,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>;
     description?: string | undefined;
     optionInputs?: [z.objectInputType<{
@@ -4198,6 +4209,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             success: false;
         }>]>>>;
         type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "strict", z.ZodTypeAny, {
         type: string;
         challenge: string;
@@ -4207,6 +4219,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }, {
         type: string;
         challenge: string;
@@ -4216,6 +4229,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>, z.ZodUnion<[z.ZodObject<{
         success: z.ZodLiteral<true>;
     }, "strip", z.ZodTypeAny, {
@@ -4372,6 +4386,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>;
     description?: string | undefined;
     optionInputs?: [z.objectOutputType<{
@@ -4531,6 +4546,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             error: string;
             success: false;
         }>;
+        caseInsensitive?: boolean | undefined;
     }>;
     description?: string | undefined;
     optionInputs?: [z.objectInputType<{

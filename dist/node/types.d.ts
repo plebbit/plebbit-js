@@ -1,5 +1,4 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
-import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
@@ -40,32 +39,21 @@ export type NativeFunctions = {
     fetch: typeof fetch;
 };
 export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> {
 }
 export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
-    localMfsPath: string | undefined;
+    postUpdatesBucket: number | undefined;
     publishedToPostUpdatesMFS: boolean;
     postCommentUpdateCid: string | undefined;
 }
-export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {
-}
+export type CommentUpdatesTableRowInsert = CommentUpdatesRow;
 export type VotesTableRow = z.infer<typeof VoteTablesRowSchema>;
-export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
-}
+export type VotesTableRowInsert = VotesTableRow;
 export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt" | "id"> {
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "rowid"> {
 }
-export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "insertedAt" | "id"> {
-}
-declare module "knex/types/tables" {
-    interface Tables {
-        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;
-        commentUpdates: Knex.CompositeTableType<CommentUpdatesRow, CommentUpdatesTableRowInsert, Partial<Omit<CommentUpdatesTableRowInsert, "cid">>, Omit<CommentUpdatesTableRowInsert, "cid">>;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
-        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
-        commentModerations: Knex.CompositeTableType<CommentModerationTableRow, CommentModerationsTableRowInsert>;
-    }
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "rowid"> {
 }
 export interface SubplebbitEvents {
     challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;

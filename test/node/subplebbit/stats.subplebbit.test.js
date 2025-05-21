@@ -67,7 +67,7 @@ describe(`subplebbit.statsCid`, async () => {
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewPost[userCountKey]).to.equal(statsBefore[userCountKey]);
         });
 
-        it(`ActiveUserCount should increase by 1 for new comment author`, async () => {
+        it(`ActiveUserCount should increase by 1 for author of new reply`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
             const reply = await publishRandomReply(post, plebbit, { signer: signers[4] });

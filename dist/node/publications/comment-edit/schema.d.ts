@@ -2186,7 +2186,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<Pick<{
     authorSignerAddress: z.ZodString;
     isAuthorEdit: z.ZodBoolean;
     extraProps: z.ZodOptional<z.ZodObject<{}, "passthrough", z.ZodTypeAny, z.objectOutputType<{}, z.ZodTypeAny, "passthrough">, z.objectInputType<{}, z.ZodTypeAny, "passthrough">>>;
-    id: z.ZodNumber;
+    rowid: z.ZodNumber;
 }, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
@@ -2195,7 +2195,6 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<Pick<{
         signature: string;
         signedPropertyNames: string[];
     };
-    id: number;
     author: {
         address: string;
         previousCommentCid?: string | undefined;
@@ -2237,6 +2236,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<Pick<{
     insertedAt: number;
     authorSignerAddress: string;
     isAuthorEdit: boolean;
+    rowid: number;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -2257,7 +2257,6 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<Pick<{
         signature: string;
         signedPropertyNames: string[];
     };
-    id: number;
     author: {
         address: string;
         previousCommentCid?: string | undefined;
@@ -2299,6 +2298,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<Pick<{
     insertedAt: number;
     authorSignerAddress: string;
     isAuthorEdit: boolean;
+    rowid: number;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;

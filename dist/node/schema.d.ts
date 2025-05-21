@@ -38,17 +38,17 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     userAgent: string;
     ipfsGatewayUrls: string[];
+    httpRoutersOptions: string[];
     pubsubKuboRpcClientsOptions: import("kubo-rpc-client").Options[];
-    resolveAuthorAddresses: boolean;
     chainProviders: Record<string, {
         urls: string[];
         chainId: number;
     }>;
+    resolveAuthorAddresses: boolean;
     publishInterval: number;
     updateInterval: number;
     noData: boolean;
     validatePages: boolean;
-    httpRoutersOptions: string[];
     kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
@@ -56,19 +56,19 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<{
     userAgent?: string | undefined;
     ipfsGatewayUrls?: string[] | undefined;
     kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
-    resolveAuthorAddresses?: boolean | undefined;
     chainProviders?: Record<string, {
         urls: string[];
         chainId: number;
     }> | undefined;
+    resolveAuthorAddresses?: boolean | undefined;
     publishInterval?: number | undefined;
     updateInterval?: number | undefined;
     noData?: boolean | undefined;
     validatePages?: boolean | undefined;
-    httpRoutersOptions?: string[] | undefined;
 }>;
 export declare const PlebbitParsedOptionsSchema: z.ZodObject<{
     ipfsGatewayUrls: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
@@ -96,36 +96,36 @@ export declare const PlebbitParsedOptionsSchema: z.ZodObject<{
     pubsubKuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
 }, "strict", z.ZodTypeAny, {
     userAgent: string;
-    resolveAuthorAddresses: boolean;
     chainProviders: Record<string, {
         urls: string[];
         chainId: number;
     }>;
+    resolveAuthorAddresses: boolean;
     publishInterval: number;
     updateInterval: number;
     noData: boolean;
     validatePages: boolean;
     ipfsGatewayUrls?: string[] | undefined;
     kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
-    httpRoutersOptions?: string[] | undefined;
 }, {
     userAgent: string;
-    resolveAuthorAddresses: boolean;
     chainProviders: Record<string, {
         urls: string[];
         chainId: number;
     }>;
+    resolveAuthorAddresses: boolean;
     publishInterval: number;
     updateInterval: number;
     noData: boolean;
     validatePages: boolean;
     ipfsGatewayUrls?: string[] | undefined;
     kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
-    httpRoutersOptions?: string[] | undefined;
 }>;

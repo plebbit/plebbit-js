@@ -572,7 +572,8 @@ export async function verifySubplebbit({
     resolveAuthorAddresses,
     clientsManager,
     overrideAuthorAddressIfInvalid,
-    validatePages
+    validatePages,
+    cacheIfValid
 }: {
     subplebbit: SubplebbitIpfsType;
     subplebbitIpnsName: string;
@@ -580,6 +581,7 @@ export async function verifySubplebbit({
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
+    cacheIfValid?: boolean;
 }): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     if (!_allFieldsOfRecordInSignedPropertyNames(subplebbit))
@@ -588,10 +590,11 @@ export async function verifySubplebbit({
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_RESERVED_FIELD };
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
+    const cacheIfValidWithDefault = typeof cacheIfValid === "boolean" ? cacheIfValid : true;
     const cacheKey = sha256(
         subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + validatePages + subplebbitIpnsName
     );
-    if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey)) return { valid: true };
+    if (cacheIfValidWithDefault && clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey)) return { valid: true };
 
     if (subplebbit.posts?.pages && validatePages)
         for (const preloadedPageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
@@ -628,6 +631,7 @@ export async function verifySubplebbit({
 }
 
 async function _validateSignatureOfPlebbitRecord(publication: PlebbitRecordToVerify): Promise<ValidationResult> {
+    if (typeof publication.signature.publicKey !== "string") return { valid: false, reason: messages.ERR_SIGNATURE_HAS_NO_PUBLIC_KEY };
     const signatureValidity = await _verifyJsonSignature(publication);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };

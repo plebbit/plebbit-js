@@ -1,5 +1,4 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
-import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
@@ -69,46 +68,30 @@ export type NativeFunctions = {
 
 export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> {}
 
 // CommentUpdates table
 
 export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
-    localMfsPath: string | undefined; // the MFS path of the post comment update within the kubo node. Not applicable to replies
-    publishedToPostUpdatesMFS: boolean;
+    postUpdatesBucket: number | undefined; // the post updates bucket of post CommentUpdate, not applicable to replies
+    publishedToPostUpdatesMFS: boolean; // whether the comment latest update has been published
     postCommentUpdateCid: string | undefined; // the cid of the post comment update, cid v0. Not applicable to replies
 }
 
-export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
+export type CommentUpdatesTableRowInsert = CommentUpdatesRow;
 
 // Votes table
 
 export type VotesTableRow = z.infer<typeof VoteTablesRowSchema>;
 
-export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
+export type VotesTableRowInsert = VotesTableRow;
 
 // Comment edits table
 
 export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt" | "id"> {}
-export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "insertedAt" | "id"> {}
-
-// Setting up the types of tables here so we can utilize auto completion in queries
-declare module "knex/types/tables" {
-    interface Tables {
-        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;
-        commentUpdates: Knex.CompositeTableType<
-            CommentUpdatesRow,
-            CommentUpdatesTableRowInsert,
-            Partial<Omit<CommentUpdatesTableRowInsert, "cid">>,
-            Omit<CommentUpdatesTableRowInsert, "cid">
-        >;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
-        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
-        commentModerations: Knex.CompositeTableType<CommentModerationTableRow, CommentModerationsTableRowInsert>;
-    }
-}
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "rowid"> {}
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "rowid"> {}
 
 // Event emitter declaration
 export interface SubplebbitEvents {
