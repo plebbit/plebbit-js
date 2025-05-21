@@ -691,7 +691,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             resolveAuthorAddresses: false,
             clientsManager: this._clientsManager,
             overrideAuthorAddressIfInvalid: false,
-            validatePages: this._plebbit.validatePages
+            validatePages: true,
+            cacheIfValid: false
         };
         try {
             const validation = await verifySubplebbit(verificationOpts);
@@ -703,6 +704,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
         } catch (e) {
             log.error(`Local subplebbit (${this.address}) produced an invalid signature`, e);
+            throw e;
+        }
+
+        verificationOpts.subplebbit = JSON.parse(deterministicStringify(recordToPublishRaw)); // let's stringify and parse again to make sure we're not using any invalid data
+        try {
+            const validation = await verifySubplebbit(verificationOpts);
+            if (!validation.valid) {
+                throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
+                    validation,
+                    verificationOpts
+                });
+            }
+        } catch (e) {
+            log.error(
+                `Local subplebbit (${this.address}) produced an invalid signature after stringifying and parsing again. This is a critical bug.`,
+                e
+            );
             throw e;
         }
 
