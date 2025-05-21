@@ -61,13 +61,14 @@ export declare function verifyCommentIpfs(opts: {
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
 }): ReturnType<typeof verifyCommentPubsubMessage>;
-export declare function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages }: {
+export declare function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages, cacheIfValid }: {
     subplebbit: SubplebbitIpfsType;
     subplebbitIpnsName: string;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
     validatePages: boolean;
+    cacheIfValid?: boolean;
 }): Promise<ValidationResult>;
 export declare function verifyCommentUpdate({ update, resolveAuthorAddresses, clientsManager, subplebbit, comment, overrideAuthorAddressIfInvalid, validatePages, validateUpdateSignature }: {
     update: CommentUpdateType;
