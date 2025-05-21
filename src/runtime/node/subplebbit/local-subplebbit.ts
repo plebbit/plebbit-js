@@ -1937,7 +1937,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             try {
                 await pTimeout(
                     this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }),
-                    { milliseconds: 30000 }
+                    { milliseconds: 60000 }
                 );
                 return toDeleteMfsPaths;
             } catch (e) {
@@ -1945,7 +1945,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 if (!error.message.includes("file does not exist")) {
                     log.error("Failed to remove paths from MFS", toDeleteMfsPaths, e);
                     throw error;
-                } else return toDeleteMfsPaths;
+                } else return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
             }
         } else return [];
     }
