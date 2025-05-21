@@ -116,8 +116,8 @@ export class AddressesRewriterProxyServer {
 
             // Handle proxy request errors - make sure to close connections
             proxyReq.on("error", (e) => {
-                debug.error("proxy error:", e, "Request options", requestOptions, "request.body", rewrittenBody);
                 if (!res.headersSent) {
+                    debug.error("proxy error:", e, "Request options", requestOptions, "request.body", rewrittenBody);
                     res.writeHead(500);
                     res.end("Internal Server Error");
                 }
