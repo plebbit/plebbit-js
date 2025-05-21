@@ -390,13 +390,13 @@ export class BaseClientsManager {
             this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
             return resObj;
         } catch (e) {
-            if (e instanceof PlebbitError) e.details = { ...e.details, url };
+            //@ts-expect-error
+            e.details = { ...e.details, url, loadOpts, wasRequestAborted: loadOpts.abortController.signal.aborted };
 
             this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
             this._plebbit._stats
                 .recordGatewayFailure(gateway, loadOpts.recordIpfsType)
                 .catch((err) => log.error("failed to report gateway error", err));
-            delete (<PlebbitError>e)!["stack"];
             return { error: <PlebbitError>e };
         }
     }
