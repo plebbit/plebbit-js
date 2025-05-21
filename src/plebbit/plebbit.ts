@@ -130,13 +130,15 @@ import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 import type { PageTypeJson } from "../pages/types.js";
+import { Libp2pJsClient } from "../helia/types.js";
+import { createHeliaNode } from "../helia/helia-for-plebbit.js";
 
 export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
-    libp2pJsClientsOptions?: ParsedPlebbitOptions["libp2pJsClientsOptions"];
+    libp2pJsClientOptions?: ParsedPlebbitOptions["libp2pJsClientOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders!: ParsedPlebbitOptions["chainProviders"];
@@ -150,12 +152,12 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     // Only Plebbit instance has these props
     clients: {
-        ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
+        ipfsGateways: { [ipfsGatewayUrl: NonNullable<ParsedPlebbitOptions["ipfsGatewayUrls"]>[number]]: GatewayClient };
         kuboRpcClients: { [kuboRpcClientUrl: string]: KuboRpcClient };
         pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
-        plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
-        libp2pJsClient: { [libp2pJsClientUrl: string]: Libp2pJsClient };
+        plebbitRpcClients: { [plebbitRpcUrl: NonNullable<ParsedPlebbitOptions["plebbitRpcClientsOptions"]>[number]]: PlebbitRpcClient };
+        libp2pJsClient: { [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"]]: Libp2pJsClient };
     };
     subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
 
@@ -215,6 +217,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
             : this.parsedPlebbitOptions.chainProviders;
+        this.libp2pJsClientOptions = this.parsedPlebbitOptions.libp2pJsClientOptions;
         this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses;
         this.publishInterval = this.parsedPlebbitOptions.publishInterval;
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
@@ -291,6 +294,25 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         }
     }
 
+    private async _initLibp2pJsClientsIfNeeded() {
+        this.clients.libp2pJsClient = {};
+        if (!this.libp2pJsClientOptions) return;
+        if (!this.httpRoutersOptions) throw Error("httpRoutersOptions is required for libp2pJsClient");
+        for (const clientOptions of this.libp2pJsClientOptions) {
+            const { helia, heliaWithKuboRpcClientFunctions, heliaUnixfs, heliaIpnsRouter } = await createHeliaNode({
+                ...clientOptions,
+                httpRoutersOptions: this.httpRoutersOptions
+            });
+            this.clients.libp2pJsClient[clientOptions.key] = {
+                libp2pJsClientOptions: clientOptions,
+                helia,
+                heliaWithKuboRpcClientFunctions,
+                heliaUnixfs,
+                heliaIpnsRouter
+            };
+        }
+    }
+
     private _initRpcClientsIfNeeded() {
         this.clients.plebbitRpcClients = {};
         if (!this.plebbitRpcClientsOptions) return;
@@ -348,7 +370,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         }
 
         await this._setupHttpRoutersWithKuboNodeInBackground();
-
+        await this._initLibp2pJsClientsIfNeeded();
         hideClassPrivateProps(this);
     }
 

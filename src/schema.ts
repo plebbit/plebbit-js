@@ -3,6 +3,7 @@ import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import { parseIpfsRawOptionToIpfsOptions } from "./util.js";
 import { UserAgentSchema } from "./schema/schema.js";
 import version from "./version.js";
+import { createHelia } from "helia";
 
 // This file will have misc schemas, as well as Plebbit class schema
 
@@ -51,6 +52,11 @@ const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.arra
 
 const ParsedKuboRpcClientOptionsSchema = z.custom<z.output<typeof TransformKuboRpcClientOptionsSchema>>();
 
+// I guess {libp2pOptions, heliaOptions, key} for now, this way we can experiment with passing any config to libp2pJsClientOptions. we can test different libp2p transport and stuff like that
+
+type heliaOptions = Parameters<typeof createHelia>[0];
+type libp2pOptions = NonNullable<heliaOptions>["libp2p"];
+
 const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
     kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
@@ -65,7 +71,15 @@ const PlebbitUserOptionBaseSchema = z.object({
     updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
     noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
     validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
-    userAgent: UserAgentSchema
+    userAgent: UserAgentSchema,
+    libp2pJsClientOptions: z
+        .object({
+            key: z.string().min(1),
+            libp2pOptions: z.custom<libp2pOptions>(),
+            heliaOptions: z.custom<heliaOptions>()
+        })
+        .array()
+        .optional()
 });
 
 const defaultPubsubKuboRpcClientsOptions = [

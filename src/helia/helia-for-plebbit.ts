@@ -15,13 +15,16 @@ import Logger from "@plebbit/plebbit-logger";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
-import type { HeliaWithLibp2pPubsub, IpfsClientForBrowser } from "./types.js";
+import type { HeliaWithLibp2pPubsub, HeliaWithKuboRpcClientFunctions, Libp2pJsClient } from "./types.js";
 import type { NameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 
 const log = Logger("plebbit-js:helia-browser");
 
-let heliaBrowserClient: IpfsClientForBrowser;
+const keyToHeliaClientMap: Record<
+    NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"],
+    Pick<Libp2pJsClient, "helia" | "heliaWithKuboRpcClientFunctions" | "heliaUnixfs" | "heliaIpnsRouter">
+> = {};
 
 function getDelegatedRoutingFields(routers: string[]) {
     const routersObj: Record<string, ReturnType<typeof createDelegatedRoutingV1HttpApiClient>> = {};
@@ -36,9 +39,10 @@ function getDelegatedRoutingFields(routers: string[]) {
 }
 
 export async function createHeliaNode(
-    plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">>
-): Promise<IpfsClientForBrowser> {
-    if (heliaBrowserClient) return heliaBrowserClient;
+    plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">> &
+        NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
+): Promise<Pick<Libp2pJsClient, "helia" | "heliaWithKuboRpcClientFunctions" | "heliaUnixfs" | "heliaIpnsRouter">> {
+    if (plebbitOptions.key in keyToHeliaClientMap) return keyToHeliaClientMap[plebbitOptions.key];
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
 
     if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
@@ -46,21 +50,21 @@ export async function createHeliaNode(
     // const peerId = await createEd25519PeerId();
     const helia = <HeliaWithLibp2pPubsub>await createHelia({
         libp2p: {
-            peerId: peerId, // TODO use indexed db here
-            addresses: {
-                listen: [] // Empty for browser environment
-            },
+            // peerId: peerId, // TODO use indexed db here
+            ...(typeof window !== "undefined" ? { addresses: { listen: [] } } : {}), // Empty for browser environment, but other environments should have addresses
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
                 fetch: libp2pFetch(),
                 ...getDelegatedRoutingFields(plebbitOptions.httpRoutersOptions)
             },
-            peerDiscovery: undefined
+            peerDiscovery: undefined,
+            ...plebbitOptions.libp2pOptions
         },
         blockstore: new MemoryBlockstore(), // TODO use indexed db here
         blockBrokers: [bitswap()],
-        start: false
+        start: false,
+        ...plebbitOptions.heliaOptions
     });
 
     //@ts-expect-error
@@ -88,7 +92,7 @@ export async function createHeliaNode(
     //@ts-expect-error
     ipnsNameResolver.routers = ipnsNameResolver.routers.slice(1); // remove gateway ipns routing
 
-    const ipfsClientForBrowesr: IpfsClientForBrowser["_client"] = {
+    const ipfsClientForBrowesr: Libp2pJsClient["heliaWithKuboRpcClientFunctions"] = {
         name: {
             resolve: (ipnsName: string, options?: NameResolveOptions | undefined) => {
                 // Create an async generator function
@@ -140,15 +144,12 @@ export async function createHeliaNode(
         }
     };
 
-    heliaBrowserClient = {
-        _client: ipfsClientForBrowesr,
-        //@ts-expect-error
-        _clientOptions: undefined, // TODO not sure if it should be undefined
-        peers: async () =>
-            helia.libp2p.getConnections().map((conn) => ({ ...conn, peer: conn.remotePeer, addr: conn.remoteAddr, streams: undefined }))
-    };
-
     await helia.start();
 
-    return heliaBrowserClient;
+    return {
+        helia,
+        heliaWithKuboRpcClientFunctions: ipfsClientForBrowesr,
+        heliaUnixfs: heliaFs,
+        heliaIpnsRouter: ipnsNameResolver
+    };
 }
