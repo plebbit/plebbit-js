@@ -554,6 +554,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
 
+        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         let foundCommentUpdate = false;
         let pageNum = 0;
         while (curPageCid) {
@@ -714,7 +715,6 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
 
-        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         try {
             await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
             this._comment._setUpdatingStateNoEmission("succeeded");
