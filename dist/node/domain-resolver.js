@@ -25,7 +25,9 @@ export class DomainResolver {
             }
         }));
         Object.values(this._ethersClients).map((etherClient) => etherClient.destroy());
-        this._ethersClients = this._solanaConnections = this._viemClients = {};
+        this._ethersClients = {};
+        this._solanaConnections = {};
+        this._viemClients = {};
     }
     _createViemClientIfNeeded(chainTicker, chainProviderUrl) {
         const cacheKey = chainTicker + chainProviderUrl;
@@ -87,9 +89,10 @@ export class DomainResolver {
         }
         catch (e) {
             e.details = { ...e.details, address, txtRecordName, chainProviderUrl, addressWithSubdomain };
-            log.error(`Failed to resolve solana address (${address}) text-record (${txtRecordName}) with chainProviderUrl (${chainProviderUrl})`, e);
-            if (e?.type !== "AccountDoesNotExist")
+            if (e?.type !== "AccountDoesNotExist") {
+                log.error(`Failed to resolve solana address (${address}) text-record (${txtRecordName}) with chainProviderUrl (${chainProviderUrl})`, e);
                 throw e;
+            }
         }
         return null;
     }
@@ -101,7 +104,6 @@ export class DomainResolver {
             log("Created a new connection instance for ethers", clientKey);
         }
         const ethersClient = this._ethersClients[clientKey];
-        ethersClient.destroy();
         const resolver = await ethersClient.getResolver(address);
         if (!resolver)
             throw Error("ethersClient.getResolver returned null");
@@ -124,7 +126,7 @@ export class DomainResolver {
             txtRecordResult = await this._resolveViaSolana(address, txtRecordName, chainProviderUrl);
         }
         else
-            throw Error(`Failed to resolve address (${address}) text record (${txtRecordName}) on chain ${chain}`);
+            throw Error(`plebbit-js doesn't support resolving text records on chain ${chain}`);
         // Should add a check if result is IPNS address
         log(`Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`);
         return txtRecordResult;

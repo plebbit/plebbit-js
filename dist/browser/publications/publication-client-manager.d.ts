@@ -51,6 +51,6 @@ export declare class PublicationClientsManager extends ClientsManager {
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
         kuboRpcListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]>;
         chainProviderListeners?: Record<ChainTicker, Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>>;
-    } & Pick<SubplebbitEvents, "error" | "updatingstatechange" | "update">>;
+    } & Pick<SubplebbitEvents, "error" | "update" | "updatingstatechange">>;
     cleanUpUpdatingSubInstance(): Promise<void>;
 }

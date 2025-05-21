@@ -2585,17 +2585,17 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
 export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any): {
     userAgent: string;
     ipfsGatewayUrls: string[];
+    httpRoutersOptions: string[];
     pubsubKuboRpcClientsOptions: import("kubo-rpc-client").Options[];
-    resolveAuthorAddresses: boolean;
     chainProviders: Record<string, {
         urls: string[];
         chainId: number;
     }>;
+    resolveAuthorAddresses: boolean;
     publishInterval: number;
     updateInterval: number;
     noData: boolean;
     validatePages: boolean;
-    httpRoutersOptions: string[];
     kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;

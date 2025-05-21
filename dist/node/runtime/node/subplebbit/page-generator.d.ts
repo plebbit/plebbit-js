@@ -27,7 +27,9 @@ export declare class PageGenerator {
         comments: PageIpfs["comments"];
         firstPageSizeBytes: number;
     }): PageIpfs["comments"][];
-    sortAndChunkComments(unsortedComments: PageIpfs["comments"], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageIpfs["comments"][]>;
+    sortAndChunkComments(unsortedComments: (PageIpfs["comments"][0] & {
+        activeScore?: number;
+    })[], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageIpfs["comments"][]>;
     sortChunkAddIpfsNonPreloaded(comments: PageIpfs["comments"], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<AddedPageChunksToIpfsRes | undefined>;
     private _generationResToPages;
     generateSubplebbitPosts(preloadedPageSortName: PostSortName, preloadedPageSizeBytes: number): Promise<PostsPagesTypeIpfs | {

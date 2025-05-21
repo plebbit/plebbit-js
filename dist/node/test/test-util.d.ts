@@ -381,7 +381,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
         plebbit: Plebbit;
     };
 }>;
-export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "settings" | "started" | "updatingState" | "startedState" | "editable">;
+export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "settings" | "startedState" | "editable" | "updatingState" | "started">;
 export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit): Omit<{
     address: SubplebbitIpfsType["address"];
     shortAddress: string;
@@ -451,20 +451,20 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
     }, import("zod").ZodTypeAny, "passthrough">[]> | undefined;
     settings: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
-    started: boolean;
-    updatingState: import("../subplebbit/types.js").SubplebbitUpdatingState;
-    startedState: import("../subplebbit/types.js").SubplebbitStartedState;
     ipnsName?: string | undefined;
     raw: {
         subplebbitIpfs?: SubplebbitIpfsType;
     };
     updateCid?: string | undefined;
+    startedState: import("../subplebbit/types.js").SubplebbitStartedState;
     editable: Pick<RpcLocalSubplebbit, keyof import("../subplebbit/types.js").SubplebbitEditOptions>;
+    updatingState: import("../subplebbit/types.js").SubplebbitUpdatingState;
+    started: boolean;
     ipnsPubsubTopic?: string | undefined;
     ipnsPubsubTopicDhtKey?: string | undefined;
     pubsubTopicPeersCid?: string | undefined;
-}, "state" | "clients" | "started" | "updatingState" | "startedState">;
-export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): Omit<any, "state" | "publishingState" | "clients" | "updatingState" | "raw">;
+}, "state" | "clients" | "startedState" | "updatingState" | "started">;
+export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): Omit<any, "state" | "publishingState" | "clients" | "raw" | "updatingState">;
 export declare function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string): Promise<void>;
 export declare function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean;
 export declare function mockRpcWsToSkipSignatureValidation(plebbitWs: any): void;

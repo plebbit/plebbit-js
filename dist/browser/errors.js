@@ -107,6 +107,7 @@ export var messages;
     messages["ERR_INVALID_CREATE_PLEBBIT_ARGS_SCHEMA"] = "User sent arguments with invalid schema in an attempt to create a Plebbit instance";
     messages["ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA"] = "User provided invalid schema of arguments for plebbit.createSubplebbit while connected to RPC";
     messages["ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT"] = "The subplebbit has subplebbit.settings.challenges[x].exclude[y].publicationType is set to an empty object. You should either choose which publication to exclude or remove exclude.publicationType";
+    messages["ERR_SUB_HAS_NO_INTERNAL_STATE"] = "The subplebbit has no internal state. This should never happen. Please report this bug.";
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
     messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58"] = "author.address is not a domain or B58";
@@ -114,6 +115,7 @@ export var messages;
     messages["ERR_PUBLICATION_FAILED_TO_DECRYPT_CHALLENGE"] = "The publication received a challenge and failed to decrypt";
     // Verify Signature errors
     messages["ERR_SIGNATURE_IS_INVALID"] = "Signature of publication is invalid";
+    messages["ERR_SIGNATURE_HAS_NO_PUBLIC_KEY"] = "Signature of publication has no public key";
     messages["ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID"] = "The author edit of comment (commentUpdate.edit) has an invalid signature";
     messages["ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED"] = "The subplebbit record address does not correspond to the requested subplebbit. requestedSubplebbit.address !== providedSubplebbit.address";
     messages["ERR_AUTHOR_NOT_MATCHING_SIGNATURE"] = "comment.author.address doesn't match comment.signature.publicKey";
@@ -270,6 +272,7 @@ export var messages;
     messages["ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST"] = "Did not receive response to challenge request in the specified time";
     messages["ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS"] = "All pubsub providers throw an error and unable to publish or subscribe";
     messages["ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER"] = "The challenge request has been published over the pubsub topic but no response was received";
+    messages["ERR_PUBLICATION_DID_NOT_RECEIVE_RESPONSE"] = "Publication did not receive any response to challenge request";
     // RPC errors
     messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"] = "Failed to open connection to RPC";
     messages["ERR_FAILED_TO_CREATE_WS_RPC_SERVER"] = "Failed to create WebSocket RPC server";

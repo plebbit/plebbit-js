@@ -1,11 +1,11 @@
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
-import { Knex } from "knex";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { CommentUpdateType } from "../../publications/comment/types.js";
+import { DbHandler } from "./subplebbit/db-handler.js";
 export declare const getDefaultDataPath: () => string;
-export declare const getDefaultSubplebbitDbConfig: (subplebbitAddress: SubplebbitIpfsType["address"], plebbit: Plebbit) => Promise<Knex.Config<any>>;
+export declare const getDefaultSubplebbitDbConfig: (subplebbitAddress: SubplebbitIpfsType["address"], plebbit: Plebbit) => Promise<DbHandler["_dbConfig"]>;
 export declare function getThumbnailPropsOfLink(url: string, subplebbit: RemoteSubplebbit, proxyHttpUrl?: string): Promise<{
     thumbnailUrl: string;
     thumbnailUrlWidth?: number;
