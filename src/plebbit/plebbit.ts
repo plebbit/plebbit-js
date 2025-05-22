@@ -307,16 +307,12 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         if (!this.libp2pJsClientOptions) return;
         if (!this.httpRoutersOptions) throw Error("httpRoutersOptions is required for libp2pJsClient");
         for (const clientOptions of this.libp2pJsClientOptions) {
-            const { helia, heliaWithKuboRpcClientFunctions, heliaUnixfs, heliaIpnsRouter } = await createHeliaNode({
-                ...clientOptions,
-                httpRoutersOptions: this.httpRoutersOptions
-            });
             this.clients.libp2pJsClients[clientOptions.key] = {
-                libp2pJsClientOptions: clientOptions,
-                helia,
-                heliaWithKuboRpcClientFunctions,
-                heliaUnixfs,
-                heliaIpnsRouter
+                ...(await createHeliaNode({
+                    ...clientOptions,
+                    httpRoutersOptions: this.httpRoutersOptions
+                })),
+                libp2pJsClientOptions: clientOptions
             };
         }
     }
@@ -951,6 +947,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         await this._storage.destroy();
         for (const storage of Object.values(this._storageLRUs)) await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
+
+        Object.values(this.clients.libp2pJsClients).forEach((client) => client.helia.stop());
 
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))
