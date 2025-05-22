@@ -367,7 +367,6 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         // Init stats
         this._stats = new Stats({ _storage: this._storage, clients: this.clients });
         // Init clients manager
-        this._clientsManager = new PlebbitClientsManager(this);
 
         // plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
         if (this._canCreateNewLocalSub() && !this.plebbitRpcClientsOptions) {
@@ -379,6 +378,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         await this._setupHttpRoutersWithKuboNodeInBackground();
         await this._initLibp2pJsClientsIfNeeded();
+        this._clientsManager = new PlebbitClientsManager(this);
+
         hideClassPrivateProps(this);
     }
 

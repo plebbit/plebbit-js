@@ -2639,6 +2639,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log.error(`Failed to unlock start lock on sub (${this.address})`, e);
             }
             const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
+            const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
 
             this._setStartedState("stopped");
             delete this._plebbit._startedSubplebbits[this.address];
@@ -2649,7 +2650,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._dbHandler.unlockSubState();
             await this._updateStartedValue();
             this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
-            this._clientsManager.updateKuboRpcPubsubState("stopped", kuboRpcClient.url);
+            this._clientsManager.updateKuboRpcPubsubState("stopped", pubsubClient.url);
             if (this._dbHandler) await this._dbHandler.destoryConnection();
             log(`Stopped the running of local subplebbit (${this.address})`);
             this._setState("stopped");
