@@ -40,6 +40,7 @@ const offlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline"),
     apiPort: 15001,
     gatewayPort: 18080,
+    daemonArgs: " --enable-namesys-pubsub",
     swarmPort: 4001,
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
@@ -48,7 +49,7 @@ const pubsubNodeArgs = {
     apiPort: 15002,
     gatewayPort: 18081,
     swarmPort: 4002,
-    daemonArgs: "--enable-pubsub-experiment --enable-namesys-pubsub",
+    daemonArgs: "--enable-namesys-pubsub",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
