@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
 import { Database as BetterSqlite3Database } from "better-sqlite3";
-import { KeyvStoreAdapter } from "keyv";
 
 export interface KeyvBetterSqlite3Options {
     /**
@@ -34,7 +33,7 @@ interface ExistsRow {
 /**
  * A KeyvStoreAdapter implementation using better-sqlite3 directly
  */
-export class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter {
+export class KeyvBetterSqlite3 extends EventEmitter {
     ttlSupport: boolean;
     opts: KeyvBetterSqlite3Options & {
         dialect: string;
