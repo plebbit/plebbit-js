@@ -1,8 +1,71 @@
 import { expect } from "chai";
 import Plebbit from "../../../dist/node/index.js";
 import signers from "../../fixtures/signers.js";
-import { addStringToIpfs, getRemotePlebbitConfigs, mockGatewayPlebbit, itSkipIfRpc } from "../../../dist/node/test/test-util.js";
+import {
+    addStringToIpfs,
+    getRemotePlebbitConfigs,
+    mockGatewayPlebbit,
+    itSkipIfRpc,
+    isPlebbitFetchingUsingGateways
+} from "../../../dist/node/test/test-util.js";
 const fixtureSigner = signers[0];
+
+// TODO this has to be ran inside getRemotePlebbitConfigs
+getRemotePlebbitConfigs().map((config) => {
+    describe(`plebbit.fetchCid - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+
+        it(`Can fetch a cid correctly`, async () => {
+            const fileString = "Hello plebs";
+            const cid = await addStringToIpfs(fileString);
+            expect(cid).to.equal("QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr");
+            const contentFromFetchCid = await plebbit.fetchCid(cid);
+            expect(contentFromFetchCid).to.equal(fileString);
+        });
+
+        it(`Throws an error if malicious RPC modifies content of file in plebbit.fetchCid`);
+
+        it("plebbit.fetchCid() throws if provided with invalid cid", async () => {
+            const gibberishCid = "12345";
+
+            try {
+                await plebbit.fetchCid(gibberishCid);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_INVALID_CID_STRING_SCHEMA");
+            }
+        });
+        it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
+            const jsonFileTest = { 123: "123" };
+            const cid = await addStringToIpfs(JSON.stringify(jsonFileTest));
+            expect(cid).to.equal("QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo");
+            expect(JSON.parse(await plebbit.fetchCid(cid))).to.deep.equal(jsonFileTest);
+        });
+
+        it("Throws an error when file to download is over 1mb", async () => {
+            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
+
+            const cid = await addStringToIpfs(JSON.stringify(twoMbObject)); // Cid of a file with over 1mb size
+            expect(cid).to.equal("QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4");
+
+            try {
+                await plebbit.fetchCid(cid);
+                expect.fail("should not succeed");
+            } catch (e) {
+                if (isPlebbitFetchingUsingGateways(plebbit)) {
+                    expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
+                    expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                } else {
+                    // fetching with kubo/helia
+                    expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                }
+            }
+        });
+    });
+});
 
 describe("plebbit.fetchCid - IPFS Gateway", () => {
     itSkipIfRpc(`Throws an error if malicious gateway modifies content of file`, async () => {
@@ -45,56 +108,5 @@ describe("plebbit.fetchCid - IPFS Gateway", () => {
         expect(content).to.be.a("string");
         const timeItTookInMs = Date.now() - timeBefore;
         expect(timeItTookInMs).to.be.lessThan(9000);
-    });
-});
-
-// TODO this has to be ran inside getRemotePlebbitConfigs
-getRemotePlebbitConfigs().map((config) => {
-    describe(`plebbit.fetchCid - ${config.name}`, async () => {
-        let plebbit, gatewayPlebbit, ipfsPlebbit;
-        before(async () => {
-            plebbit = await config.plebbitInstancePromise();
-        });
-
-        it(`Can fetch a cid correctly`, async () => {
-            const fileString = "Hello plebs";
-            const cid = await addStringToIpfs(fileString);
-            expect(cid).to.equal("QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr");
-            const contentFromFetchCid = await plebbit.fetchCid(cid);
-            expect(contentFromFetchCid).to.equal(fileString);
-        });
-
-        it(`Throws an error if malicious RPC modifies content of file in plebbit.fetchCid`);
-
-        it("plebbit.fetchCid() throws if provided with invalid cid", async () => {
-            const gibberishCid = "12345";
-
-            try {
-                await plebbit.fetchCid(gibberishCid);
-                expect.fail("Should have thrown");
-            } catch (e) {
-                expect(e.code).to.equal("ERR_INVALID_CID_STRING_SCHEMA");
-            }
-        });
-        it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
-            const jsonFileTest = { 123: "123" };
-            const cid = await addStringToIpfs(JSON.stringify(jsonFileTest));
-            expect(cid).to.equal("QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo");
-            expect(JSON.parse(await plebbit.fetchCid(cid))).to.deep.equal(jsonFileTest);
-        });
-
-        it("Throws an error when file to download is over 1mb", async () => {
-            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
-
-            const cid = await addStringToIpfs(JSON.stringify(twoMbObject)); // Cid of a file with over 1mb size
-            expect(cid).to.equal("QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4");
-
-            try {
-                await plebbit.fetchCid(cid);
-                expect.fail("should not succeed");
-            } catch (e) {
-                expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
-            }
-        });
     });
 });
