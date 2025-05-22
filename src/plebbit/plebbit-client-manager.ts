@@ -34,16 +34,19 @@ export class PlebbitClientsManager extends BaseClientsManager {
     }
 
     protected _initIpfsGateways() {
+        this.clients.ipfsGateways = {};
         for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
             this.clients.ipfsGateways = { ...this.clients.ipfsGateways, [gatewayUrl]: new PlebbitIpfsGatewayClient("stopped") };
     }
 
     protected _initKuboRpcClients() {
+        this.clients.kuboRpcClients = {};
         for (const kuboRpcUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
             this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [kuboRpcUrl]: new PlebbitKuboRpcClient("stopped") };
     }
 
     protected _initPubsubKuboRpcClients() {
+        this.clients.pubsubKuboRpcClients = {};
         for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
             this.clients.pubsubKuboRpcClients = {
                 ...this.clients.pubsubKuboRpcClients,
@@ -52,6 +55,7 @@ export class PlebbitClientsManager extends BaseClientsManager {
     }
 
     protected _initLibp2pJsClients() {
+        this.clients.libp2pJsClients = {};
         for (const libp2pJsClientKey of remeda.keys.strict(this._plebbit.clients.libp2pJsClients))
             this.clients.libp2pJsClients = { ...this.clients.libp2pJsClients, [libp2pJsClientKey]: new PlebbitLibp2pJsClient("stopped") };
     }
