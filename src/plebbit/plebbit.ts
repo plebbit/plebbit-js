@@ -218,7 +218,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             ? {}
             : this.parsedPlebbitOptions.chainProviders;
         this.libp2pJsClientOptions = this.parsedPlebbitOptions.libp2pJsClientOptions;
-        if (this.libp2pJsClientOptions && (this.kuboRpcClientsOptions || this.pubsubKuboRpcClientsOptions))
+        if (this.libp2pJsClientOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
             throw new PlebbitError("ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED", {
                 libp2pJsClientOptions: this.libp2pJsClientOptions,
                 kuboRpcClientsOptions: this.kuboRpcClientsOptions,
