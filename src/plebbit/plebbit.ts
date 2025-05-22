@@ -1,6 +1,6 @@
 import {
     getDefaultDataPath,
-    listSubplebbits as nodeListSubplebbits,
+    listSubplebbitsSync as nodeListSubplebbits,
     createKuboRpcClient,
     monitorSubplebbitsDirectory
 } from "../runtime/node/util.js";

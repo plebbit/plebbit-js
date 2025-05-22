@@ -86,7 +86,6 @@ import {
     calculateExpectedSignatureSize,
     getThumbnailPropsOfLink,
     importSignerIntoKuboNode,
-    listSubplebbits,
     moveSubplebbitDbToDeletedDirectory
 } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
