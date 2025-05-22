@@ -23,7 +23,7 @@ describe(`subplebbit.delete`, async () => {
     });
 
     itSkipIfRpc(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
-        const ipfsKeys = await plebbit._clientsManager.getDefaultIpfs()._client.key.list();
+        const ipfsKeys = await plebbit._clientsManager.getDefaultKuboRpcClient()._client.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
         expect(subKeyExists).to.be.false;
     });

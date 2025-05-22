@@ -47,7 +47,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         const errors = [];
         sub.on("error", (err) => errors.push(err));
 
-        const ipfsClient = sub._clientsManager.getDefaultIpfs()._client;
+        const ipfsClient = sub._clientsManager.getDefaultKuboRpcClient()._client;
 
         const originalCp = ipfsClient.files.cp.bind(ipfsClient.files);
         ipfsClient.files.cp = () => {
@@ -73,7 +73,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         const errors = [];
         sub.on("error", (err) => errors.push(err));
 
-        const pubsubClient = sub._clientsManager.getDefaultPubsub()._client;
+        const pubsubClient = Object.values(plebbit.clients.pubsubKuboRpcClients)[0]._client;
 
         const originalPubsub = pubsubClient.pubsub.ls.bind(pubsubClient.pubsub);
         pubsubClient.pubsub.ls = () => {

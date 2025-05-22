@@ -53,9 +53,9 @@ describe(`subplebbit.start`, async () => {
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
         // The restoration of subscription should happen within the sync loop of Subplebbit
         await subplebbit._plebbit._clientsManager
-            .getDefaultPubsub()
+            .getDefaultKuboPubsubClient()
             ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
-        const listedTopics = async () => await subplebbit._plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
+        const listedTopics = async () => await subplebbit._plebbit._clientsManager.getDefaultKuboPubsubClient()._client.pubsub.ls();
         expect(await listedTopics()).to.not.include(subplebbit.address);
 
         await new Promise((resolve) => setTimeout(resolve, subplebbit._plebbit.publishInterval * 2));
@@ -102,7 +102,7 @@ describe(`subplebbit.start`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        const ipfsClient = sub._clientsManager.getDefaultIpfs()._client;
+        const ipfsClient = sub._clientsManager.getDefaultKuboRpcClient()._client;
 
         const originalFunc = ipfsClient.files.cp;
         ipfsClient.files.cp = () => {
