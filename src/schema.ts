@@ -46,9 +46,9 @@ const defaultChainProviders = {
     }
 };
 
-const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array()
-    .nonempty()
-    .transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
+const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array().transform((options) =>
+    options.map(parseIpfsRawOptionToIpfsOptions)
+);
 
 const ParsedKuboRpcClientOptionsSchema = z.custom<z.output<typeof TransformKuboRpcClientOptionsSchema>>();
 
