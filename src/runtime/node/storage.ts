@@ -1,10 +1,9 @@
 import { Plebbit } from "../../plebbit/plebbit.js";
-import { StorageInterface } from "../../types.js";
+import type { StorageInterface } from "../../types.js";
 import path from "path";
 import fs from "fs";
-import { PlebbitError } from "../../plebbit-error.js";
 import { hideClassPrivateProps } from "../../util.js";
-import { KeyvBetterSqlite3 } from "./subplebbit/keyv-better-sqlite3.js";
+import { KeyvBetterSqlite3 } from "../node/subplebbit/keyv-better-sqlite3.js";
 import Database from "better-sqlite3";
 
 // Storage is for long term items, no eviction based on ttl or anything like that
@@ -27,9 +26,9 @@ export default class Storage implements StorageInterface {
         this._keyv = new KeyvBetterSqlite3(this._db);
 
         this._keyv.on("error", (err: any) => {
-            const error = new PlebbitError("ERR_PLEBBIT_SQLITE_LONG_TERM_STORAGE_KEYV_ERROR", { err, dbFilePath });
+            err.details = { ...err.details, dbFilePath, keyv: this._keyv, db: this._db };
             console.error("Error in Keyv", err);
-            this._plebbit.emit("error", error);
+            this._plebbit.emit("error", err);
         });
 
         hideClassPrivateProps(this);

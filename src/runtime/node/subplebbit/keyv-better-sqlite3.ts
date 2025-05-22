@@ -26,10 +26,6 @@ interface KeyvValue {
     expires?: number | null;
 }
 
-interface ExistsRow {
-    exists_: number;
-}
-
 /**
  * A KeyvStoreAdapter implementation using better-sqlite3 directly
  */
@@ -279,14 +275,5 @@ export class KeyvBetterSqlite3 extends EventEmitter {
         // The database is managed externally, so we don't close it here
     }
 }
-
-/**
- * Create a new Keyv instance with a KeyvBetterSqlite3 adapter
- */
-import Keyv from "keyv";
-
-export const createKeyv = (db: BetterSqlite3Database, options?: KeyvBetterSqlite3Options) => {
-    return new Keyv({ store: new KeyvBetterSqlite3(db, options) });
-};
 
 export default KeyvBetterSqlite3;
