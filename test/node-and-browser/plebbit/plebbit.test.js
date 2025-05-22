@@ -7,9 +7,7 @@ import {
     describeIfRpc,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     resolveWhenConditionIsTrue,
-    mockRpcRemotePlebbit,
-    mockGatewayPlebbit,
-    itSkipIfRpc
+    mockRpcRemotePlebbit
 } from "../../../dist/node/test/test-util.js";
 const fixtureSigner = signers[0];
 
@@ -108,6 +106,27 @@ describe("Plebbit options", async () => {
         expect(plebbit.ipfsGatewayUrls).to.be.undefined;
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
+
+    it(`Plebbit({pubsubKuboRpcClientsOptions: []}) sets plebbit instance to not use pubsub providers`, async () => {
+        const plebbit = await Plebbit({ pubsubKuboRpcClientsOptions: [], httpRoutersOptions: [] });
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal([]);
+        expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal([]);
+        JSON.stringify(plebbit); // Will throw an error if circular json
+    });
+
+    it(`Plebbit({pubsubKuboRpcClientsOptions: undefined}) sets Plebbit instance to use default pubsub providers`, async () => {
+        const plebbit = await Plebbit({ httpRoutersOptions: [] });
+        const defaultPubsubKuboRpcClientsOptions = ["https://pubsubprovider.xyz/api/v0", "https://plebpubsub.xyz/api/v0"];
+        expect(Object.keys(plebbit.clients.pubsubKuboRpcClients).sort()).to.deep.equal(defaultPubsubKuboRpcClientsOptions.sort());
+        JSON.stringify(plebbit); // Will throw an error if circular json
+    });
+
+    it(`Plebbit({kuboRpcClientsOptions: []}) sets plebbit instance to not use kubo providers`, async () => {
+        const plebbit = await Plebbit({ kuboRpcClientsOptions: [], httpRoutersOptions: [] });
+        expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
+        expect(plebbit.kuboRpcClientsOptions).to.deep.equal([]);
+        JSON.stringify(plebbit); // Will throw an error if circular json
+    });
 });
 
 describe("plebbit.createSigner", async () => {
@@ -185,120 +204,6 @@ describe(`plebbit.destroy`, async () => {
         } catch (e) {
             expect(e.code).to.equal("ERR_PLEBBIT_IS_DESTROYED");
         }
-    });
-});
-
-describe("plebbit.fetchCid", async () => {
-    let plebbit, gatewayPlebbit, ipfsPlebbit;
-    before(async () => {
-        plebbit = await mockRemotePlebbit(); // Here this should be alternated for RPC
-        gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
-        ipfsPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    });
-
-    it(`Can fetch a cid correctly`, async () => {
-        const fileString = "Hello plebs";
-        const cid = (await addStringToIpfs(fileString)).path;
-        const contentFromFetchCid = await plebbit.fetchCid(cid);
-        expect(contentFromFetchCid).to.equal(fileString);
-        const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
-        expect(contentFromGatewayFetchCid).to.equal(fileString);
-    });
-
-    itSkipIfRpc(`Throws an error if malicious gateway modifies content of file`, async () => {
-        // RPC exception
-        const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
-        const cids = await Promise.all([fileString1, fileString2].map((file) => addStringToIpfs(file)));
-
-        const plebbitWithMaliciousGateway = await mockGatewayPlebbit({
-            ipfsGatewayUrls: ["http://127.0.0.1:13415"],
-            httpRoutersOptions: [],
-            dataPath: undefined
-        });
-        const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
-        expect(fileString1).to.equal(fileString1FromGateway);
-
-        // The following line should throw since the malicious gateway would send a content that differs from original content
-
-        try {
-            await plebbitWithMaliciousGateway.fetchCid(cids[1]);
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
-            expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
-        }
-    });
-
-    it(`Throws an error if malicious RPC modifies content of file in plebbit.fetchCid`);
-
-    it("plebbit.fetchCid() throws if provided with invalid cid", async () => {
-        const gibberishCid = "12345";
-
-        try {
-            await plebbit.fetchCid(gibberishCid);
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_INVALID_CID_STRING_SCHEMA");
-        }
-
-        try {
-            await gatewayPlebbit.fetchCid(gibberishCid);
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_INVALID_CID_STRING_SCHEMA");
-        }
-    });
-    it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
-        const jsonFileTest = { 123: "123" };
-        const cid = await addStringToIpfs(JSON.stringify(jsonFileTest));
-        expect(cid).to.equal("QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo");
-        expect(JSON.parse(await plebbit.fetchCid(cid))).to.deep.equal(jsonFileTest);
-        expect(JSON.parse(await gatewayPlebbit.fetchCid(cid))).to.deep.equal(jsonFileTest);
-    });
-
-    it("Throws an error when file to download is over 1mb for both loading via IPFS and gateway", async () => {
-        const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
-
-        const cid = await addStringToIpfs(JSON.stringify(twoMbObject)); // Cid of a file with over 1mb size
-        expect(cid).to.equal("QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4");
-
-        try {
-            await plebbit.fetchCid(cid);
-            expect.fail("should not succeed");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
-        }
-    });
-
-    it(`Throws an error when file to download is over 1mb via ipfs gateway`, async () => {
-        const twoMbCid = "QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4";
-
-        const gatewayUrl = Object.keys(gatewayPlebbit.clients.ipfsGateways)[0];
-        try {
-            await gatewayPlebbit.fetchCid(twoMbCid);
-            expect.fail("should not succeed");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
-            expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
-        }
-    });
-
-    it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
-        // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
-        // RPC exception
-        const multipleGatewayPlebbit = await Plebbit({
-            ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"],
-            httpRoutersOptions: [],
-            dataPath: undefined
-        });
-
-        const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
-
-        const timeBefore = Date.now();
-        const content = await multipleGatewayPlebbit.fetchCid(cid);
-        expect(content).to.be.a("string");
-        const timeItTookInMs = Date.now() - timeBefore;
-        expect(timeItTookInMs).to.be.lessThan(9000);
     });
 });
 
