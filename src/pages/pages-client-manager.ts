@@ -1,23 +1,21 @@
-import assert from "assert";
-import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
-import { PagesKuboRpcClient } from "./ipfs-client.js";
-import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
+import { BaseClientsManager, OptionsToLoadFromGateway } from "../clients/base-client-manager.js";
+import type { PageIpfs } from "./types.js";
 import * as remeda from "remeda";
-import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { BasePages, PostsPages, RepliesPages } from "../pages/pages.js";
-import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../pages/util.js";
+import { BasePages, PostsPages, RepliesPages } from "./pages.js";
+import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "./util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 import { sha256 } from "js-sha256";
+import { PagesIpfsGatewayClient, PagesKuboRpcClient, PagesLibp2pJsClient, PagesPlebbitRpcStateClient } from "./pages-clients.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: { [sortType: string]: { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient } };
         kuboRpcClients: { [sortType: string]: { [kuboRpcClientUrl: string]: PagesKuboRpcClient } };
         plebbitRpcClients: { [sortType: string]: { [rpcUrl: string]: PagesPlebbitRpcStateClient } };
+        libp2pJsClients: { [sortType: string]: { [libp2pJsClientKey: string]: PagesLibp2pJsClient } };
     };
 
     protected _pages: RepliesPages | PostsPages;
@@ -30,6 +28,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._updateIpfsGatewayClientStates(this.getSortTypes());
         this._updateKuboRpcClientStates(this.getSortTypes());
         this._updatePlebbitRpcClientStates(this.getSortTypes());
+        this._updateLibp2pJsClientStates(this.getSortTypes());
 
         if (opts.pages.pageCids) this.updatePageCidsToSortTypes(opts.pages.pageCids);
         hideClassPrivateProps(this);
@@ -53,6 +52,16 @@ export class BasePagesClientsManager extends BaseClientsManager {
             for (const kuboRpcUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
                 if (!this.clients.kuboRpcClients[sortType][kuboRpcUrl])
                     this.clients.kuboRpcClients[sortType][kuboRpcUrl] = new PagesKuboRpcClient("stopped");
+        }
+    }
+
+    protected _updateLibp2pJsClientStates(sortTypes: string[]) {
+        if (this._plebbit.clients.libp2pJsClients && !this.clients.libp2pJsClients) this.clients.libp2pJsClients = {};
+        for (const sortType of sortTypes) {
+            if (!this.clients.libp2pJsClients[sortType]) this.clients.libp2pJsClients[sortType] = {};
+            for (const libp2pJsClientKey of remeda.keys.strict(this._plebbit.clients.libp2pJsClients))
+                if (!this.clients.libp2pJsClients[sortType][libp2pJsClientKey])
+                    this.clients.libp2pJsClients[sortType][libp2pJsClientKey] = new PagesLibp2pJsClient("stopped");
         }
     }
 
@@ -125,13 +134,25 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     }
 
-    updateIpfsState(newState: PagesKuboRpcClient["state"], sortTypes: string[] | undefined) {
+    updateKuboRpcState(newState: PagesKuboRpcClient["state"], kuboRpcClientUrl: string, sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
-        assert(typeof this._defaultIpfsProviderUrl === "string", "Can't update ipfs state without ipfs client");
         for (const sortType of sortTypes) {
-            if (this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state === newState) continue;
-            this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].state = newState;
-            this.clients.kuboRpcClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
+            if (this.clients.kuboRpcClients[sortType][kuboRpcClientUrl].state === newState) continue;
+            this.clients.kuboRpcClients[sortType][kuboRpcClientUrl].state = newState;
+            this.clients.kuboRpcClients[sortType][kuboRpcClientUrl].emit("statechange", newState);
+        }
+    }
+
+    updateLibp2pJsClientState(
+        newState: PagesLibp2pJsClient["state"],
+        libp2pJsClientKey: keyof Plebbit["clients"]["libp2pJsClients"],
+        sortTypes: string[] | undefined
+    ) {
+        if (!Array.isArray(sortTypes)) return;
+        for (const sortType of sortTypes) {
+            if (this.clients.libp2pJsClients[sortType][libp2pJsClientKey].state === newState) continue;
+            this.clients.libp2pJsClients[sortType][libp2pJsClientKey].state = newState;
+            this.clients.libp2pJsClients[sortType][libp2pJsClientKey].emit("statechange", newState);
         }
     }
 
@@ -151,6 +172,15 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.clients.plebbitRpcClients[sortType][rpcUrl].state = newState;
             this.clients.plebbitRpcClients[sortType][rpcUrl].emit("statechange", newState);
         }
+    }
+
+    _updateKuboRpcClientOrHeliaState(
+        newState: PagesKuboRpcClient["state"] | PagesLibp2pJsClient["state"],
+        kuboRpcOrHelia: Plebbit["clients"]["kuboRpcClients"][string] | Plebbit["clients"]["libp2pJsClients"][string],
+        sortTypes: string[] | undefined
+    ) {
+        if ("helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState(newState, kuboRpcOrHelia.libp2pJsClientOptions.key, sortTypes);
+        else this.updateKuboRpcState(newState, kuboRpcOrHelia.url, sortTypes);
     }
 
     private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
@@ -176,13 +206,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    private async _fetchPageWithIpfsP2P(
+    private async _fetchPageWithKuboOrHeliaP2P(
         pageCid: string,
         log: Logger,
         sortTypes: string[] | undefined,
         pageMaxSize: number
     ): Promise<PageIpfs> {
-        this.updateIpfsState("fetching-ipfs", sortTypes);
+        const heliaOrKubo = this.getDefaultKuboRpcClientOrHelia();
+        this._updateKuboRpcClientOrHeliaState("fetching-ipfs", heliaOrKubo, sortTypes);
         const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
         try {
             return parsePageIpfsSchemaWithPlebbitErrorIfItFails(
@@ -196,7 +227,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
         } finally {
-            this.updateIpfsState("stopped", sortTypes);
+            this._updateKuboRpcClientOrHeliaState("stopped", heliaOrKubo, sortTypes);
         }
     }
 
@@ -236,8 +267,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
         let page: PageIpfs;
         try {
             if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
-            else if (this._defaultIpfsProviderUrl)
-                page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypesFromMemcache, pageMaxSize);
+            else if (
+                Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
+                Object.keys(this._plebbit.clients.libp2pJsClients).length > 0
+            )
+                page = await this._fetchPageWithKuboOrHeliaP2P(pageCid, log, sortTypesFromMemcache, pageMaxSize);
             else page = await this._fetchPageFromGateways(pageCid, log, pageMaxSize);
         } catch (e) {
             //@ts-expect-error
@@ -263,6 +297,7 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
         ipfsGateways: Record<keyof typeof POST_REPLIES_SORT_TYPES, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         kuboRpcClients: Record<keyof typeof POST_REPLIES_SORT_TYPES, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<keyof typeof POST_REPLIES_SORT_TYPES, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
+        libp2pJsClients: Record<keyof typeof POST_REPLIES_SORT_TYPES, { [libp2pJsClientKey: string]: PagesIpfsGatewayClient }>;
     };
 
     protected override getSortTypes() {
@@ -275,6 +310,7 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
         ipfsGateways: Record<keyof typeof POSTS_SORT_TYPES, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         kuboRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
+        libp2pJsClients: Record<keyof typeof POSTS_SORT_TYPES, { [libp2pJsClientKey: string]: PagesIpfsGatewayClient }>;
     };
 
     protected override getSortTypes() {

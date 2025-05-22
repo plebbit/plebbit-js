@@ -1,6 +1,5 @@
 import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../../clients/chain-provider-client.js";
-import { CommentPlebbitRpcStateClient } from "../../clients/rpc-client/plebbit-rpc-state-client.js";
 import type { PageIpfs } from "../../pages/types.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { ChainTicker, PublicationEvents } from "../../types.js";
@@ -18,11 +17,16 @@ import { verifyCommentIpfs, verifyCommentUpdate } from "../../signer/signatures.
 import Logger from "@plebbit/plebbit-logger";
 import { getPostUpdateTimestampRange, hideClassPrivateProps, resolveWhenPredicateIsTrue } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
-import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
-import { PublicationKuboPubsubClient } from "../../clients/pubsub-client.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import { findCommentInPageInstance, findCommentInPageInstanceRecursively, findCommentInParsedPages } from "../../pages/util.js";
-import { CommentIpfsGatewayClient } from "../../clients/ipfs-gateway-client.js";
+import {
+    CommentIpfsGatewayClient,
+    CommentKuboPubsubClient,
+    CommentKuboRpcClient,
+    CommentLibp2pJsClient,
+    CommentPlebbitRpcStateClient
+} from "./comment-clients.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }
@@ -33,9 +37,10 @@ export class CommentClientsManager extends PublicationClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
         kuboRpcClients: { [ipfsClientUrl: string]: CommentKuboRpcClient };
-        pubsubKuboRpcClients: { [pubsubClientUrl: string]: PublicationKuboPubsubClient };
+        pubsubKuboRpcClients: { [pubsubClientUrl: string]: CommentKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
+        libp2pJsClients: { [libp2pJsClientKey: string]: CommentLibp2pJsClient };
     };
     private _postForUpdating?: {
         comment: Comment;
@@ -61,9 +66,30 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [ipfsUrl]: new CommentKuboRpcClient("stopped") };
     }
 
+    protected override _initLibp2pJsClients(): void {
+        for (const libp2pJsClientKey of remeda.keys.strict(this._plebbit.clients.libp2pJsClients))
+            this.clients.libp2pJsClients = { ...this.clients.libp2pJsClients, [libp2pJsClientKey]: new CommentLibp2pJsClient("stopped") };
+    }
+
     protected override _initPlebbitRpcClients() {
         for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new CommentPlebbitRpcStateClient("stopped") };
+    }
+
+    override updateLibp2pJsClientState(newState: CommentLibp2pJsClient["state"], libp2pJsClientKey: string) {
+        super.updateLibp2pJsClientState(newState, libp2pJsClientKey);
+    }
+
+    override updateKuboRpcState(newState: CommentKuboRpcClient["state"], kuboRpcClientUrl: string) {
+        super.updateKuboRpcState(newState, kuboRpcClientUrl);
+    }
+
+    override updateGatewayState(newState: CommentIpfsGatewayClient["state"], ipfsGatewayClientUrl: string) {
+        super.updateGatewayState(newState, ipfsGatewayClientUrl);
+    }
+
+    override updateKuboRpcPubsubState(newState: CommentKuboPubsubClient["state"], pubsubKuboRpcClientUrl: string) {
+        super.updateKuboRpcPubsubState(newState, pubsubKuboRpcClientUrl);
     }
 
     // Resolver methods here
@@ -101,10 +127,20 @@ export class CommentClientsManager extends PublicationClientsManager {
         return `${folderCid}/` + postCid + "/update";
     }
 
+    _updateKuboRpcClientOrHeliaState(
+        newState: CommentKuboRpcClient["state"] | CommentLibp2pJsClient["state"],
+        kuboRpcOrHelia: Plebbit["clients"]["kuboRpcClients"][string] | Plebbit["clients"]["libp2pJsClients"][string]
+    ) {
+        if ("helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState(newState, kuboRpcOrHelia.libp2pJsClientOptions.key);
+        else this.updateKuboRpcState(newState as CommentKuboRpcClient["state"], kuboRpcOrHelia.url);
+    }
+
     async _fetchPostCommentUpdateIpfsP2P(subIpns: SubplebbitIpfsType, timestampRanges: string[], log: Logger): Promise<NewCommentUpdate> {
         // only get new CommentUpdates
         // not interested in CommentUpdate we already fetched before
         const attemptedPathsToLoadErrors: Record<string, Error> = {};
+        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = this._calculatePathForPostCommentUpdate(folderCid, this._comment.postCid!);
@@ -132,7 +168,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 return undefined;
             }
             this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
-            this.updateIpfsState("fetching-update-ipfs");
+            this._updateKuboRpcClientOrHeliaState("fetching-update-ipfs", kuboRpcOrHelia);
             let res: string;
             const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update-ipfs"];
             try {
@@ -145,7 +181,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 attemptedPathsToLoadErrors[path] = <Error>e;
                 continue;
             } finally {
-                this.updateIpfsState("stopped");
+                this._updateKuboRpcClientOrHeliaState("stopped", kuboRpcOrHelia);
             }
             try {
                 const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
@@ -325,8 +361,14 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         let newCommentUpdate: NewCommentUpdate;
         try {
-            if (this._defaultIpfsProviderUrl) newCommentUpdate = await this._fetchPostCommentUpdateIpfsP2P(subIpfs, timestampRanges, log);
-            else newCommentUpdate = await this._fetchPostCommentUpdateFromGateways(subIpfs, timestampRanges, log);
+            if (
+                Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
+                Object.keys(this._plebbit.clients.libp2pJsClients).length > 0
+            ) {
+                newCommentUpdate = await this._fetchPostCommentUpdateIpfsP2P(subIpfs, timestampRanges, log);
+            } else {
+                newCommentUpdate = await this._fetchPostCommentUpdateFromGateways(subIpfs, timestampRanges, log);
+            }
         } catch (e) {
             if (e instanceof Error) {
                 if (this._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e)) {
@@ -359,7 +401,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     private async _fetchRawCommentCidIpfsP2P(cid: string): Promise<string> {
-        this.updateIpfsState("fetching-ipfs");
+        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+        this._updateKuboRpcClientOrHeliaState("fetching-ipfs", kuboRpcOrHelia);
         let commentRawString: string;
         const commentTimeoutMs = this._plebbit._timeouts["comment-ipfs"];
         try {
@@ -369,7 +412,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             e.details = { ...e.details, commentCid: cid, commentTimeoutMs };
             throw e;
         } finally {
-            this.updateIpfsState("stopped");
+            this._updateKuboRpcClientOrHeliaState("stopped", kuboRpcOrHelia);
         }
 
         return commentRawString;
@@ -408,17 +451,13 @@ export class CommentClientsManager extends PublicationClientsManager {
     // We're gonna fetch Comment Ipfs, and verify its signature and schema
     async fetchAndVerifyCommentCid(cid: string): Promise<CommentIpfsType> {
         let commentRawString: string;
-        if (this._defaultIpfsProviderUrl) {
+        if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0) {
             commentRawString = await this._fetchRawCommentCidIpfsP2P(cid);
         } else commentRawString = await this._fetchCommentIpfsFromGateways(cid);
 
         const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
         await this._throwIfCommentIpfsIsInvalid(commentIpfs, cid);
         return commentIpfs;
-    }
-
-    override updateIpfsState(newState: CommentKuboRpcClient["state"]) {
-        super.updateIpfsState(newState);
     }
 
     protected _isPublishing() {
@@ -655,12 +694,11 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     _handleIpfsGatewayPostState(newState: Comment["clients"]["ipfsGateways"][string]["state"], gatewayUrl: string) {
-        //@ts-expect-error
         this.updateGatewayState(newState, gatewayUrl);
     }
 
     _handleKuboRpcPostState(newState: Comment["clients"]["kuboRpcClients"][string]["state"], kuboRpcUrl: string) {
-        this.updateIpfsState(newState);
+        this.updateKuboRpcState(newState, kuboRpcUrl);
     }
 
     _handleChainProviderPostState(
@@ -824,7 +862,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     "statechange",
                     this._postForUpdating.kuboRpcListeners[kuboRpcUrl]
                 );
-                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+                this.updateKuboRpcState("stopped", kuboRpcUrl); // need to reset all Kubo RPC states
             }
         }
 

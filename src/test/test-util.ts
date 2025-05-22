@@ -1051,7 +1051,7 @@ export async function publishChallengeVerificationMessageWithEncryption(
 
 export async function addStringToIpfs(content: string): Promise<string> {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
     const cid = (await ipfsClient._client.add(content)).path;
     return cid;
 }
@@ -1066,15 +1066,9 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
 
     const kuboRpcClientToMock = "http://helia-client-mock.com/api/v0";
     const heliaPlebbit = await mockPlebbit({
-        ipfsGatewayUrls: ["http://shouldfail"],
-        kuboRpcClientsOptions: [kuboRpcClientToMock],
-        pubsubKuboRpcClientsOptions: [kuboRpcClientToMock],
+        libp2pJsClientOptions: [{ key: "Default" }],
         dataPath: undefined
     });
-
-    const heliaInstance = await createHeliaNode({ httpRoutersOptions: ["http://localhost:20001"] });
-    //@ts-expect-error
-    heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock] = heliaInstance;
 
     if (mockPubsub) {
         heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
@@ -1152,7 +1146,7 @@ export function getRemotePlebbitConfigs() {
 
 export async function createNewIpns() {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
     const signer = await plebbit.createSigner();
     signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
 

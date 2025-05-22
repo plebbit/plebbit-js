@@ -377,7 +377,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
         if (!this.signer.ipfsKey) throw Error("subplebbit.signer.ipfsKey is not defined");
 
-        const kuboNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient()._client;
+        const kuboNodeKeys = await kuboRpc.key.list();
         if (!kuboNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
             await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
                 url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
@@ -490,11 +491,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _calculateNewPostUpdates(): Promise<SubplebbitIpfsType["postUpdates"]> {
         const postUpdates: SubplebbitIpfsType["postUpdates"] = {};
+        const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient()._client;
         for (const timeBucket of this._postUpdatesBuckets) {
             try {
-                const statRes = await this._clientsManager
-                    .getDefaultIpfs()
-                    ._client.files.stat(`/${this.address}/postUpdates/${timeBucket}`);
+                const statRes = await kuboRpcClient.files.stat(`/${this.address}/postUpdates/${timeBucket}`);
                 if (statRes.blocks !== 0) postUpdates[String(timeBucket)] = String(statRes.cid);
             } catch {}
         }
@@ -550,10 +550,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (commentUpdateRowsToPublishToIpfs.length > 0) await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
 
         const newPostUpdates = await this._calculateNewPostUpdates();
+        const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
         const statsCid = (
             await retryKuboIpfsAdd({
-                kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+                ipfsClient: kuboRpcClient._client,
                 log,
                 content: deterministicStringify(stats),
                 options: { pin: true }
@@ -619,7 +620,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await retryKuboIpfsAdd({
-            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            ipfsClient: kuboRpcClient._client,
             log,
             content: deterministicStringify(newSubplebbitRecord),
             options: { pin: true }
@@ -628,7 +629,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
         if (this._firstTimePublishingIpns) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
-        const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
+        const publishRes = await kuboRpcClient._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
@@ -648,7 +649,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
         this._setStartedState("succeeded");
-        this._clientsManager.updateIpfsState("stopped");
+        this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
         this.emit("update", this);
     }
 
@@ -940,8 +941,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
         };
 
+        const heliaOrKubo = this._clientsManager.getDefaultKuboRpcClientOrHelia();
+        const ipfsClient = "helia" in heliaOrKubo ? heliaOrKubo.heliaWithKuboRpcClientFunctions : heliaOrKubo._client;
         const file = await retryKuboIpfsAdd({
-            kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+            ipfsClient: ipfsClient,
             log,
             content: deterministicStringify(commentIpfs),
             options: { pin: true }
@@ -1051,8 +1054,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...toSignChallenge,
             signature: await signChallengeMessage(toSignChallenge, this.signer)
         };
+        const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
 
-        this._clientsManager.updatePubsubState("publishing-challenge", undefined);
+        this._clientsManager.updateKuboRpcPubsubState("publishing-challenge", pubsubClient.url);
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log(
@@ -1060,7 +1064,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             remeda.pick(toSignChallenge, ["timestamp"]),
             toEncryptChallenge.challenges.map((challenge) => challenge.type)
         );
-        this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
+        this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-answers", pubsubClient.url);
         this.emit("challenge", {
             ...challengeMessage,
             challenges
@@ -1090,14 +1094,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             signature: await signChallengeVerification(toSignVerification, this.signer)
         };
 
-        this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
+        const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
+        this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
         log(
             `Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`,
             remeda.omit(toSignVerification, ["challengeRequestId"])
         );
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
-        this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
+        this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
 
         this.emit("challengeverification", challengeVerification);
         this._ongoingChallengeExchanges.delete(challengeRequestId.toString());
@@ -1163,11 +1168,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 signature: await signChallengeVerification(toSignMsg, this.signer)
             };
 
-            this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
+            const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
+
+            this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
 
             await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
 
-            this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
+            this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
 
             const objectToEmit = <DecryptedChallengeVerificationMessageType>{ ...challengeVerification, ...toEncrypt };
             this.emit("challengeverification", objectToEmit);
@@ -1751,19 +1758,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:sync:_listenToIncomingRequests");
         // Make sure subplebbit listens to pubsub topic
         // Code below is to handle in case the ipfs node restarted and the subscription got lost or something
-        const subscribedTopics = await this._clientsManager.getDefaultPubsub()._client.pubsub.ls();
+        const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
+        const subscribedTopics = await pubsubClient._client.pubsub.ls();
         if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
             await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
             await this._clientsManager.pubsubSubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
-            this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
+            this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
             log(`Waiting for publications on pubsub topic (${this.pubsubTopicWithfallback()})`);
         }
     }
 
     private async _movePostUpdatesFolderToNewAddress(oldAddress: string, newAddress: string) {
         const log = Logger("plebbit-js:local-subplebbit:_movePostUpdatesFolderToNewAddress");
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         try {
-            await this._clientsManager.getDefaultIpfs()._client.files.mv(`/${oldAddress}`, `/${newAddress}`); // Could throw
+            await kuboRpc._client.files.mv(`/${oldAddress}`, `/${newAddress}`); // Could throw
         } catch (e) {
             if (e instanceof Error && e.message !== "file does not exist") {
                 log.error("Failed to move directory of post updates in MFS", this.address, e);
@@ -1844,8 +1853,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:start:_repinCommentsIPFSIfNeeded");
         const latestCommentCid = this._dbHandler.queryLatestCommentCid(); // latest comment ordered by id
         if (!latestCommentCid) return;
+        const kuboRpcOrHelia = this._clientsManager.getDefaultKuboRpcClient();
         try {
-            await genToArray(this._clientsManager.getDefaultIpfs()._client.pin.ls({ paths: latestCommentCid.cid }));
+            await genToArray(kuboRpcOrHelia._client.pin.ls({ paths: latestCommentCid.cid }));
             return; // the comment is already pinned, we assume the rest of the comments are so too
         } catch (e) {
             if (!(<Error>e).message.includes("is not pinned")) throw e;
@@ -1878,8 +1888,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 }
 
                 // TODO move this to addAll method
+                const kuboOrHelia = this._clientsManager.getDefaultKuboRpcClientOrHelia();
+                const ipfsClient = "helia" in kuboOrHelia ? kuboOrHelia.heliaWithKuboRpcClientFunctions : kuboOrHelia._client;
                 const addRes = await retryKuboIpfsAdd({
-                    kuboRpcClient: this._clientsManager.getDefaultIpfs()._client,
+                    ipfsClient: ipfsClient,
                     log,
                     content: commentIpfsContent,
                     options: { pin: true }
@@ -1905,12 +1917,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             // Create a concurrency limiter with a limit of 50
             const limit = pLimit(50);
 
+            const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             // Process all unpinning in parallel with concurrency limit
             await Promise.all(
                 Array.from(this._cidsToUnPin.values()).map((cid) =>
                     limit(async () => {
                         try {
-                            await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
+                            await kuboRpc._client.pin.rm(cid, { recursive: true });
                             this._cidsToUnPin.delete(cid);
                         } catch (e) {
                             const error = <Error>e;
@@ -1933,12 +1946,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         if (this._mfsPathsToRemove.size > 0) {
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
-
+            const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             try {
-                await pTimeout(
-                    this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }),
-                    { milliseconds: 60000 }
-                );
+                await pTimeout(kuboRpc._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }), { milliseconds: 60000 });
                 return toDeleteMfsPaths;
             } catch (e) {
                 const error = <Error>e;
@@ -1958,8 +1968,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // iterating on all comment updates is not efficient, we should figure out a better way
         // Most of the time we run this function, the comment updates are already written to ipfs rpeo
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         try {
-            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`, { hash: true });
+            await kuboRpc._client.files.stat(`/${this.address}`, { hash: true });
             return; // if the directory of this sub exists, we assume all the comment updates are there
         } catch (e) {
             if (!(<Error>e).message.includes("file does not exist")) throw e;
@@ -1995,8 +2006,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         if (commentUpdatesOfPosts.length === 0) throw Error("No comment updates of posts to publish to postUpdates directory");
 
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         const newCommentUpdatesAddAll = await genToArray(
-            this._clientsManager.getDefaultIpfs()._client.addAll(this._createCommentUpdateIterable(commentUpdatesOfPosts), {
+            kuboRpc._client.addAll(this._createCommentUpdateIterable(commentUpdatesOfPosts), {
                 wrapWithDirectory: false // we want to publish them to ipfs as is
             })
         );
@@ -2016,7 +2028,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
 
             const copyPromise = limit(() =>
-                this._clientsManager.getDefaultIpfs()._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
+                kuboRpc._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
                     parents: true,
                     flush: false
                 })
@@ -2028,7 +2040,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // Wait for all copy operations to complete
         await Promise.all(copyPromises);
 
-        const postUpdatesDirectoryCid = await this._clientsManager.getDefaultIpfs()._client.files.flush(postUpdatesDirectory);
+        const postUpdatesDirectoryCid = await kuboRpc._client.files.flush(postUpdatesDirectory);
         removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
         log(
             "Subplebbit",
@@ -2059,8 +2071,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
+            const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             try {
-                for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
+                for await (const res of kuboRpc._client.repo.gc({ quiet: true })) {
                     if (res.cid) gcCids++;
                     else log.error("Failed to GC ipfs repo due to error", res.err);
                 }
@@ -2075,11 +2088,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
 
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         try {
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedState("publishing-ipns");
-            this._clientsManager.updateIpfsState("publishing-ipns");
+            this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
@@ -2089,7 +2103,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             e.details = { ...e.details, subplebbitAddress: this.address };
             const errorTyped = <Error>e;
             this._setStartedState("failed");
-            this._clientsManager.updateIpfsState("stopped");
+            this._clientsManager.updateKuboRpcState("stopped", kuboRpc.url);
 
             log.error(
                 `Failed to sync sub`,
@@ -2347,7 +2361,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:start");
         if (this.state === "updating") throw new PlebbitError("ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING", { address: this.address });
         this._stopHasBeenCalled = false;
-        if (!this._clientsManager.getDefaultIpfs())
+        if (!this._clientsManager.getDefaultKuboRpcClientOrHelia())
             throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
         await this.initDbHandlerIfNeeded();
         await this._updateStartedValue();
@@ -2624,6 +2638,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             } catch (e) {
                 log.error(`Failed to unlock start lock on sub (${this.address})`, e);
             }
+            const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
             this._setStartedState("stopped");
             delete this._plebbit._startedSubplebbits[this.address];
@@ -2633,8 +2648,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._dbHandler.rollbackAllTransactions();
             await this._dbHandler.unlockSubState();
             await this._updateStartedValue();
-            this._clientsManager.updateIpfsState("stopped");
-            this._clientsManager.updatePubsubState("stopped", undefined);
+            this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
+            this._clientsManager.updateKuboRpcPubsubState("stopped", kuboRpcClient.url);
             if (this._dbHandler) await this._dbHandler.destoryConnection();
             log(`Stopped the running of local subplebbit (${this.address})`);
             this._setState("stopped");
@@ -2671,7 +2686,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         if (this.state === "updating" || this.state === "started") await this.stop();
 
-        const kuboClient = this._clientsManager.getDefaultIpfs();
+        const kuboClient = this._clientsManager.getDefaultKuboRpcClient();
         if (!kuboClient) throw Error("Ipfs client is not defined");
 
         if (typeof this.signer?.ipnsKeyName === "string")

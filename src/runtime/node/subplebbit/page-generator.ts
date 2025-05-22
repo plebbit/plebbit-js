@@ -57,6 +57,8 @@ export class PageGenerator {
     ): Promise<AddedPageChunksToIpfsRes> {
         assert(chunks.length > 0);
 
+        const heliaOrKubo = this._subplebbit._clientsManager.getDefaultKuboRpcClientOrHelia();
+        const ipfsClient = "helia" in heliaOrKubo ? heliaOrKubo.heliaWithKuboRpcClientFunctions : heliaOrKubo._client;
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: string[] = new Array(chunks.length);
         let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
@@ -64,7 +66,7 @@ export class PageGenerator {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
             const addRes = await retryKuboIpfsAdd({
-                kuboRpcClient: this._subplebbit._clientsManager.getDefaultIpfs()._client,
+                ipfsClient: ipfsClient,
                 log: Logger("plebbit-js:page-generator:addCommentChunksToIpfs"),
                 content: deterministicStringify(pageIpfs)
             });
@@ -89,11 +91,13 @@ export class PageGenerator {
     ): Promise<AddedPreloadedPageChunksToIpfs> {
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: PageCidUndefinedIfPreloadedPage = [undefined]; // pageCids will never have the cid of preloaded page
+        const heliaOrKubo = this._subplebbit._clientsManager.getDefaultKuboRpcClientOrHelia();
+        const ipfsClient = "helia" in heliaOrKubo ? heliaOrKubo.heliaWithKuboRpcClientFunctions : heliaOrKubo._client;
         for (let i = chunks.length - 1; i >= 1; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
             const addRes = await retryKuboIpfsAdd({
-                kuboRpcClient: this._subplebbit._clientsManager.getDefaultIpfs()._client,
+                ipfsClient: ipfsClient,
                 log: Logger("plebbit-js:page-generator:addPreloadedCommentChunksToIpfs"),
                 content: deterministicStringify(pageIpfs)
             });

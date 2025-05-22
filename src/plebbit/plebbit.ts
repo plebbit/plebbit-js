@@ -47,7 +47,7 @@ import {
 } from "../signer/signatures.js";
 import Stats from "../stats.js";
 import Storage from "../runtime/node/storage.js";
-import { ClientsManager } from "../clients/client-manager.js";
+import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../plebbit-error.js";
 import type {
@@ -157,7 +157,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: NonNullable<ParsedPlebbitOptions["plebbitRpcClientsOptions"]>[number]]: PlebbitRpcClient };
-        libp2pJsClient: { [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"]]: Libp2pJsClient };
+        libp2pJsClients: { [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"]]: Libp2pJsClient };
     };
     subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
 
@@ -165,7 +165,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     _plebbitRpcClient?: PlebbitRpcClient; // default rpc client for now. For now we will default to clients.plebbitRpcClients[0]
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
-    _clientsManager!: ClientsManager;
+    _clientsManager!: PlebbitClientsManager;
     _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
     _stats!: Stats;
     _storage!: StorageInterface;
@@ -218,6 +218,12 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             ? {}
             : this.parsedPlebbitOptions.chainProviders;
         this.libp2pJsClientOptions = this.parsedPlebbitOptions.libp2pJsClientOptions;
+        if (this.libp2pJsClientOptions && (this.kuboRpcClientsOptions || this.pubsubKuboRpcClientsOptions))
+            throw new PlebbitError("ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED", {
+                libp2pJsClientOptions: this.libp2pJsClientOptions,
+                kuboRpcClientsOptions: this.kuboRpcClientsOptions,
+                pubsubKuboRpcClientsOptions: this.pubsubKuboRpcClientsOptions
+            });
         this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses;
         this.publishInterval = this.parsedPlebbitOptions.publishInterval;
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
@@ -270,7 +276,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             this.clients.kuboRpcClients[clientOptions.url!.toString()] = {
                 _client: kuboRpcClient,
                 _clientOptions: clientOptions,
-                peers: kuboRpcClient.swarm.peers
+                peers: kuboRpcClient.swarm.peers,
+                url: clientOptions.url!.toString()
             };
         }
     }
@@ -289,13 +296,14 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                     const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => kuboRpcClient.pubsub.peers(topic))));
                     const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                     return peers;
-                }
+                },
+                url: clientOptions.url!.toString()
             };
         }
     }
 
     private async _initLibp2pJsClientsIfNeeded() {
-        this.clients.libp2pJsClient = {};
+        this.clients.libp2pJsClients = {};
         if (!this.libp2pJsClientOptions) return;
         if (!this.httpRoutersOptions) throw Error("httpRoutersOptions is required for libp2pJsClient");
         for (const clientOptions of this.libp2pJsClientOptions) {
@@ -303,7 +311,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                 ...clientOptions,
                 httpRoutersOptions: this.httpRoutersOptions
             });
-            this.clients.libp2pJsClient[clientOptions.key] = {
+            this.clients.libp2pJsClients[clientOptions.key] = {
                 libp2pJsClientOptions: clientOptions,
                 helia,
                 heliaWithKuboRpcClientFunctions,
@@ -359,7 +367,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         // Init stats
         this._stats = new Stats({ _storage: this._storage, clients: this.clients });
         // Init clients manager
-        this._clientsManager = new ClientsManager(this);
+        this._clientsManager = new PlebbitClientsManager(this);
 
         // plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
         if (this._canCreateNewLocalSub() && !this.plebbitRpcClientsOptions) {

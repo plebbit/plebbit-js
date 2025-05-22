@@ -1,28 +1,23 @@
-import { Plebbit } from "../plebbit/plebbit.js";
-import { hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
+import { Plebbit } from "./plebbit.js";
+import { hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode } from "../util.js";
 import assert from "assert";
 import type { ChainTicker } from "../types.js";
 import * as remeda from "remeda";
-import { GenericKuboRpcClient } from "./ipfs-client.js";
-import { GenericKuboPubsubClient } from "./pubsub-client.js";
-import { GenericChainProviderClient } from "./chain-provider-client.js";
-import { GenericIpfsGatewayClient } from "./ipfs-gateway-client.js";
+import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
 
-import { BaseClientsManager, CachedTextRecordResolve, OptionsToLoadFromGateway } from "./base-client-manager.js";
+import { BaseClientsManager, CachedTextRecordResolve, OptionsToLoadFromGateway } from "../clients/base-client-manager.js";
 
-import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
+import { PlebbitIpfsGatewayClient, PlebbitKuboRpcClient, PlebbitLibp2pJsClient } from "./plebbit-clients.js";
+import { GenericStateClient } from "../generic-state-client.js";
 
-export type ResultOfFetchingSubplebbit =
-    | { subplebbit: SubplebbitIpfsType; cid: string } // when we fetch a new subplebbit only
-    | undefined; // undefined is when we resolve an IPNS and it's equal to subplebbit.updateCid. So no need to fetch IPFS
-
-export class ClientsManager extends BaseClientsManager {
+export class PlebbitClientsManager extends BaseClientsManager {
     clients: {
-        ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
-        kuboRpcClients: { [kuboRpcClientUrl: string]: GenericKuboRpcClient };
-        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: GenericKuboPubsubClient };
+        ipfsGateways: { [ipfsGatewayUrl: string]: PlebbitIpfsGatewayClient };
+        kuboRpcClients: { [kuboRpcClientUrl: string]: PlebbitKuboRpcClient };
+        pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: GenericStateClient<string> }; // plebbit will never use this, but we're keeping it for compatibility
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        libp2pJsClients: { [libp2pJsClientKey: string]: PlebbitLibp2pJsClient };
     };
 
     constructor(plebbit: Plebbit) {
@@ -34,25 +29,31 @@ export class ClientsManager extends BaseClientsManager {
         this._initKuboRpcClients();
         this._initPubsubKuboRpcClients();
         this._initChainProviders();
+        this._initLibp2pJsClients();
         hideClassPrivateProps(this);
     }
 
     protected _initIpfsGateways() {
         for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
-            this.clients.ipfsGateways = { ...this.clients.ipfsGateways, [gatewayUrl]: new GenericIpfsGatewayClient("stopped") };
+            this.clients.ipfsGateways = { ...this.clients.ipfsGateways, [gatewayUrl]: new PlebbitIpfsGatewayClient("stopped") };
     }
 
     protected _initKuboRpcClients() {
         for (const kuboRpcUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
-            this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [kuboRpcUrl]: new GenericKuboRpcClient("stopped") };
+            this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [kuboRpcUrl]: new PlebbitKuboRpcClient("stopped") };
     }
 
     protected _initPubsubKuboRpcClients() {
         for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients))
             this.clients.pubsubKuboRpcClients = {
                 ...this.clients.pubsubKuboRpcClients,
-                [pubsubUrl]: new GenericKuboPubsubClient("stopped")
+                [pubsubUrl]: new GenericStateClient<string>("stopped")
             };
+    }
+
+    protected _initLibp2pJsClients() {
+        for (const libp2pJsClientKey of remeda.keys.strict(this._plebbit.clients.libp2pJsClients))
+            this.clients.libp2pJsClients = { ...this.clients.libp2pJsClients, [libp2pJsClientKey]: new PlebbitLibp2pJsClient("stopped") };
     }
 
     protected _initChainProviders() {
@@ -137,24 +138,31 @@ export class ClientsManager extends BaseClientsManager {
 
     // State methods here
 
-    updatePubsubState(newState: GenericKuboPubsubClient["state"], pubsubProvider: string | undefined) {
-        pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
-        assert(typeof pubsubProvider === "string");
+    updateKuboRpcPubsubState(newState: PlebbitClientsManager["clients"]["pubsubKuboRpcClients"][string]["state"], pubsubProvider: string) {
+        assert(typeof pubsubProvider === "string", "Can't update pubsub state to undefined");
         assert(typeof newState === "string", "Can't update pubsub state to undefined");
         if (this.clients.pubsubKuboRpcClients[pubsubProvider].state === newState) return;
         this.clients.pubsubKuboRpcClients[pubsubProvider].state = newState;
         this.clients.pubsubKuboRpcClients[pubsubProvider].emit("statechange", newState);
     }
 
-    updateIpfsState(newState: GenericKuboRpcClient["state"]) {
-        assert(this._defaultIpfsProviderUrl);
+    updateKuboRpcState(newState: PlebbitClientsManager["clients"]["kuboRpcClients"][string]["state"], kuboRpcClientUrl: string) {
         assert(typeof newState === "string", "Can't update ipfs state to undefined");
-        if (this.clients.kuboRpcClients[this._defaultIpfsProviderUrl].state === newState) return;
-        this.clients.kuboRpcClients[this._defaultIpfsProviderUrl].state = newState;
-        this.clients.kuboRpcClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
+        assert(typeof kuboRpcClientUrl === "string", "Can't update ipfs state to undefined");
+        if (this.clients.kuboRpcClients[kuboRpcClientUrl].state === newState) return;
+        this.clients.kuboRpcClients[kuboRpcClientUrl].state = newState;
+        this.clients.kuboRpcClients[kuboRpcClientUrl].emit("statechange", newState);
     }
 
-    updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string) {
+    updateLibp2pJsClientState(newState: PlebbitClientsManager["clients"]["libp2pJsClients"][string]["state"], libp2pJsClientKey: string) {
+        assert(typeof newState === "string", "Can't update libp2p js client state to undefined");
+        assert(typeof libp2pJsClientKey === "string", "Can't update libp2p js client state to undefined");
+        if (this.clients.libp2pJsClients[libp2pJsClientKey].state === newState) return;
+        this.clients.libp2pJsClients[libp2pJsClientKey].state = newState;
+        this.clients.libp2pJsClients[libp2pJsClientKey].emit("statechange", newState);
+    }
+
+    updateGatewayState(newState: PlebbitClientsManager["clients"]["ipfsGateways"][string]["state"], gateway: string) {
         assert(typeof newState === "string", "Can't update gateway state to undefined");
         if (this.clients.ipfsGateways[gateway].state === newState) return;
         this.clients.ipfsGateways[gateway].state = newState;
@@ -173,7 +181,8 @@ export class ClientsManager extends BaseClientsManager {
         if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         const timeoutMs = this._plebbit._timeouts["generic-ipfs"];
-        if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024, timeoutMs });
+        if (Object.keys(this.clients.kuboRpcClients).length > 0 || Object.keys(this.clients.libp2pJsClients).length > 0)
+            return this._fetchCidP2P(cid, { maxFileSizeBytes: 1024 * 1024, timeoutMs });
         else {
             const log = Logger("plebbit-js:clients-manager:fetchCid");
             const resObj = await this.fetchFromMultipleGateways({

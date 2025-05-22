@@ -396,13 +396,13 @@ export async function pubsubTopicToDhtKey(pubsubTopic: string) {
 }
 
 export async function retryKuboIpfsAdd({
-    kuboRpcClient,
+    ipfsClient: kuboRpcClient,
     log,
     content,
     inputNumOfRetries,
     options
 }: {
-    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"];
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add">;
     log: Logger;
     content: string;
     inputNumOfRetries?: number;

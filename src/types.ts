@@ -195,6 +195,7 @@ export interface KuboRpcClient {
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: ReturnType<typeof CreateIpfsClient>; // Private API, shouldn't be used by consumers
+    url: string;
     _clientOptions: IpfsHttpClientOptions;
 }
 
@@ -207,6 +208,7 @@ export interface PubsubClient {
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: Pick<KuboRpcClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
     _clientOptions: KuboRpcClient["_clientOptions"];
+    url: string;
 }
 
 export interface GatewayClient {

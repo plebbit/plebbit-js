@@ -77,17 +77,12 @@ export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
 
     _plebbit: Plebbit;
-    _defaultPubsubProviderUrl: string; // The URL of the pubsub that is used by default for pubsub
-    _defaultIpfsProviderUrl: string | undefined; // The URL of the ipfs node that is used by default for IPFS ipfs/ipns retrieval
-    providerSubscriptions: Record<string, string[]> = {}; // To keep track of subscriptions of each provider
+    pubsubProviderSubscriptions: Record<string, string[]> = {}; // To keep track of subscriptions of each provider/helia
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        if (plebbit.clients.kuboRpcClients) this._defaultIpfsProviderUrl = remeda.keys.strict(plebbit.clients.kuboRpcClients)[0];
-        this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)[0]; // TODO Should be the gateway with the best score
-        if (this._defaultPubsubProviderUrl) {
-            for (const provider of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) this.providerSubscriptions[provider] = [];
-        }
+        for (const provider of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) this.pubsubProviderSubscriptions[provider] = [];
+
         hideClassPrivateProps(this);
     }
 
@@ -95,14 +90,43 @@ export class BaseClientsManager {
         return undefined;
     }
 
-    getDefaultPubsub() {
-        return this._plebbit.clients.pubsubKuboRpcClients[this._defaultPubsubProviderUrl];
+    getDefaultPubsubKuboRpcClientOrHelia() {
+        const defaultPubsubProviderUrl = remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients)[0];
+        if (defaultPubsubProviderUrl) return this._plebbit.clients.pubsubKuboRpcClients[defaultPubsubProviderUrl];
+        const defaultLibp2pJsClient = remeda.keys.strict(this._plebbit.clients.libp2pJsClients)[0];
+        if (defaultLibp2pJsClient) return this._plebbit.clients.libp2pJsClients[defaultLibp2pJsClient];
+        throw new PlebbitError("ERR_NO_DEFAULT_PUBSUB_PROVIDER", {
+            pubsubKuboRpcClients: this._plebbit.clients.pubsubKuboRpcClients,
+            libp2pJsClients: this._plebbit.clients.libp2pJsClients
+        });
     }
 
-    getDefaultIpfs() {
-        assert(this._defaultIpfsProviderUrl);
-        assert(this._plebbit.clients.kuboRpcClients[this._defaultIpfsProviderUrl]);
-        return this._plebbit.clients.kuboRpcClients[this._defaultIpfsProviderUrl];
+    getDefaultKuboRpcClientOrHelia(): Plebbit["clients"]["kuboRpcClients"][string] | Plebbit["clients"]["libp2pJsClients"][string] {
+        const defaultKuboRpcClient = remeda.keys.strict(this._plebbit.clients.kuboRpcClients)[0];
+        if (defaultKuboRpcClient) return this._plebbit.clients.kuboRpcClients[defaultKuboRpcClient];
+        const defaultLibp2pJsClient = remeda.keys.strict(this._plebbit.clients.libp2pJsClients)[0];
+        if (defaultLibp2pJsClient) return this._plebbit.clients.libp2pJsClients[defaultLibp2pJsClient];
+        throw new PlebbitError("ERR_NO_DEFAULT_IPFS_PROVIDER", {
+            kuboRpcClients: this._plebbit.clients.kuboRpcClients,
+            libp2pJsClients: this._plebbit.clients.libp2pJsClients
+        });
+    }
+
+    getDefaultKuboRpcClient() {
+        const defaultKuboRpcClient = remeda.keys.strict(this._plebbit.clients.kuboRpcClients)[0];
+        if (defaultKuboRpcClient) return this._plebbit.clients.kuboRpcClients[defaultKuboRpcClient];
+        throw new PlebbitError("ERR_NO_DEFAULT_KUBO_RPC_IPFS_PROVIDER", {
+            kuboRpcClients: this._plebbit.clients.kuboRpcClients,
+            libp2pJsClients: this._plebbit.clients.libp2pJsClients
+        });
+    }
+
+    getDefaultKuboPubsubClient() {
+        const defaultKuboPubsubClient = remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients)[0];
+        if (defaultKuboPubsubClient) return this._plebbit.clients.pubsubKuboRpcClients[defaultKuboPubsubClient];
+        throw new PlebbitError("ERR_NO_DEFAULT_KUBO_RPC_PUBSUB_PROVIDER", {
+            pubsubKuboRpcClients: this._plebbit.clients.pubsubKuboRpcClients
+        });
     }
 
     // Pubsub methods
@@ -138,7 +162,7 @@ export class BaseClientsManager {
             });
             if (error) throw error;
             await this._plebbit._stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
-            this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
+            this.pubsubProviderSubscriptions[pubsubProviderUrl].push(pubsubTopic);
         } catch (e) {
             await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
             log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl}) due to error`, e);
@@ -167,7 +191,7 @@ export class BaseClientsManager {
 
     async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler) {
         await this._plebbit.clients.pubsubKuboRpcClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
-        this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
+        this.pubsubProviderSubscriptions[pubsubProvider] = this.pubsubProviderSubscriptions[pubsubProvider].filter(
             (subPubsubTopic) => subPubsubTopic !== pubsubTopic
         );
     }
@@ -477,15 +501,21 @@ export class BaseClientsManager {
 
     // IPFS P2P methods
     async resolveIpnsToCidP2P(ipnsName: string, loadOpts: { timeoutMs: number }): Promise<string> {
-        const ipfsClient = this.getDefaultIpfs();
+        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+
+        const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
 
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns: string | undefined = await last(
-                ipfsClient._client.name.resolve(ipnsName, { nocache: true, recursive: true })
-            );
+            const resolvedCidOfIpns: string | undefined = await last(ipfsClient.name.resolve(ipnsName, { nocache: true, recursive: true }));
 
             if (!resolvedCidOfIpns)
-                throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", { resolvedCidOfIpns, ipnsName, ipfsClient, loadOpts });
+                throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
+                    resolvedCidOfIpns,
+                    ipnsName,
+                    kuboRpcOrHelia,
+                    ipfsClient,
+                    loadOpts
+                });
 
             return CidPathSchema.parse(resolvedCidOfIpns);
         };
@@ -493,32 +523,39 @@ export class BaseClientsManager {
             // Wrap the resolution function with pTimeout because kubo-rpc-client doesn't support timeout for IPNS
             const result = await pTimeout(performIpnsResolve(), {
                 milliseconds: loadOpts.timeoutMs,
-                message: new PlebbitError("ERR_IPNS_RESOLUTION_P2P_TIMEOUT", { ipnsName, loadOpts, ipfsClient })
+                message: new PlebbitError("ERR_IPNS_RESOLUTION_P2P_TIMEOUT", {
+                    ipnsName,
+                    loadOpts,
+                    ipfsClient: kuboRpcOrHelia,
+                    kuboRpcOrHelia
+                })
             });
 
             return result;
         } catch (error) {
             if (error instanceof PlebbitError) throw error;
-            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error, loadOpts, ipfsClient });
+            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error, loadOpts, ipfsClient: kuboRpcOrHelia });
         }
 
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
     }
 
+    
+
     // TODO rename this to _fetchPathP2P
 
     async _fetchCidP2P(cidV0: string, loadOpts: { maxFileSizeBytes: number; timeoutMs: number }): Promise<string> {
-        const ipfsClient = this.getDefaultIpfs();
+        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+
+        const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
 
         const fetchPromise = async () => {
-            const rawData = await all(
-                ipfsClient._client.cat(cidV0, { length: loadOpts.maxFileSizeBytes, timeout: `${loadOpts.timeoutMs}ms` })
-            );
+            const rawData = await all(ipfsClient.cat(cidV0, { length: loadOpts.maxFileSizeBytes, timeout: `${loadOpts.timeoutMs}ms` }));
             const data = uint8ArrayConcat(rawData);
             const fileContent = uint8ArrayToString(data);
 
             if (typeof fileContent !== "string")
-                throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, loadOpts, ipfsClient });
+                throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P", { cid: cidV0, loadOpts, ipfsClient, kuboRpcOrHelia });
             if (data.byteLength === loadOpts.maxFileSizeBytes) {
                 const calculatedCid: string = await calculateIpfsHash(fileContent);
                 if (calculatedCid !== cidV0)
@@ -526,7 +563,8 @@ export class BaseClientsManager {
                         cid: cidV0,
                         loadOpts,
                         endedDownloadAtFileContentLength: data.byteLength,
-                        ipfsClient: ipfsClient._clientOptions
+                        ipfsClient,
+                        kuboRpcOrHelia
                     });
             }
             return fileContent;

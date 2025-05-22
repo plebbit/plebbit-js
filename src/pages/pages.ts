@@ -1,11 +1,7 @@
 import { parsePageIpfs } from "../pages/util.js";
 import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
 import { verifyPage } from "../signer/signatures.js";
-import {
-    BasePagesClientsManager,
-    SubplebbitPostsPagesClientsManager,
-    RepliesPagesClientsManager
-} from "../clients/pages-client-manager.js";
+import { BasePagesClientsManager, SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";

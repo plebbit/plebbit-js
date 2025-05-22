@@ -356,10 +356,11 @@ export class Comment
         // only if we're connected to kubo
 
         if (!this.raw.comment) throw Error("comment.raw.commentIpfs should be defined after challenge verification");
-        const kuboRpcClient = this._clientsManager.getDefaultIpfs()._client;
+        const kuboRpcOrHelia = this._clientsManager.getDefaultKuboRpcClientOrHelia();
+        const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
         // use p-retry here, 3 times maybe?
         const addRes = await retryKuboIpfsAdd({
-            kuboRpcClient,
+            ipfsClient: ipfsClient,
             log: Logger("plebbit-js:comment:publish:_addOwnCommentToIpfsIfConnectedToIpfsClient"),
             content: JSON.stringify(this.raw.comment),
             options: { pin: true }
@@ -413,7 +414,7 @@ export class Comment
         this._updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification);
 
         // Add the comment to IPFS network in the background
-        if (this._clientsManager._defaultIpfsProviderUrl)
+        if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0)
             this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification)
                 .then(() => log("Added the file of comment ipfs", this.cid, "to IPFS network successfully"))
                 .catch((err) => log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err));

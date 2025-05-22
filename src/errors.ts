@@ -59,7 +59,11 @@ export enum messages {
     ERR_FETCH_CID_P2P_TIMEOUT = "Fetching CID via Kubo-rpc-client/helia P2P has timed out",
     ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED = "Resolved IPNS name to undefined. Does this IPNS name exist?",
     ERR_IPNS_RESOLUTION_P2P_TIMEOUT = "IPNS resolution P2P timed out",
-
+    ERR_NO_DEFAULT_IPFS_PROVIDER = "No default IPFS provider found. Make sure to define either kuboRpcClientOptions or libp2pJsClientOptions",
+    ERR_NO_DEFAULT_PUBSUB_PROVIDER = "No default pubsub provider found. Make sure to define either pubsubKuboRpcClientOptions or libp2pJsClientOptions",
+    ERR_NO_DEFAULT_KUBO_RPC_PUBSUB_PROVIDER = "No default kubo rpc pubsub provider found. Make sure to define pubsubKuboRpcClientOptions",
+    ERR_NO_DEFAULT_KUBO_RPC_IPFS_PROVIDER = "No default kubo rpc ipfs provider found. Make sure to define kuboRpcClientOptions",
+    ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED = "Can't have both libp2pJsClientOptions and kuboRpcClientOptions or pubsubKuboRpcClientOptions defined. Please define only one of them",
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",
     ERR_INVALID_COMMENT_IPFS_SCHEMA = "The schema of Comment ipfs file is invalid",

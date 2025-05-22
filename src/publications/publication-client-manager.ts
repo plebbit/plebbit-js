@@ -1,24 +1,27 @@
-import Logger from "@plebbit/plebbit-logger";
-import { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
-import { ClientsManager, ResultOfFetchingSubplebbit } from "../clients/client-manager.js";
-import { CommentKuboRpcClient, PublicationKuboRpcClient } from "../clients/ipfs-client.js";
-import { CommentIpfsGatewayClient, PublicationIpfsGatewayClient } from "../clients/ipfs-gateway-client.js";
-import { PublicationKuboPubsubClient } from "../clients/pubsub-client.js";
-import { PublicationPlebbitRpcStateClient } from "../clients/rpc-client/plebbit-rpc-state-client.js";
+import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { ChainTicker, SubplebbitEvents } from "../types.js";
 import Publication from "./publication.js";
 import * as remeda from "remeda";
+import {
+    PublicationIpfsGatewayClient,
+    PublicationKuboPubsubClient,
+    PublicationKuboRpcClient,
+    PublicationLibp2pJsClient,
+    PublicationPlebbitRpcStateClient
+} from "./publication-clients.js";
+import { CommentIpfsGatewayClient, CommentKuboRpcClient } from "./comment/comment-clients.js";
 
-export class PublicationClientsManager extends ClientsManager {
+export class PublicationClientsManager extends PlebbitClientsManager {
     override clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient };
         kuboRpcClients: { [kuboRpcUrl: string]: PublicationKuboRpcClient | CommentKuboRpcClient };
         pubsubKuboRpcClients: { [kuboRpcUrl: string]: PublicationKuboPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
+        libp2pJsClients: { [libp2pJsUrl: string]: PublicationLibp2pJsClient };
     };
     _publication: Publication;
     _subplebbitForUpdating?: {
@@ -67,15 +70,18 @@ export class PublicationClientsManager extends ClientsManager {
         this._publication.emit("error", e);
     }
 
-    override updateIpfsState(newState: PublicationKuboRpcClient["state"] | CommentKuboRpcClient["state"]) {
-        super.updateIpfsState(newState);
+    override updateKuboRpcState(newState: PublicationKuboRpcClient["state"] | CommentKuboRpcClient["state"], kuboRpcClientUrl: string) {
+        super.updateKuboRpcState(newState, kuboRpcClientUrl);
     }
 
-    override updatePubsubState(newState: PublicationKuboPubsubClient["state"], pubsubProvider: string | undefined) {
-        super.updatePubsubState(newState, pubsubProvider);
+    override updateKuboRpcPubsubState(newState: PublicationKuboPubsubClient["state"], pubsubProvider: string) {
+        super.updateKuboRpcPubsubState(newState, pubsubProvider);
     }
 
-    override updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void {
+    override updateGatewayState(
+        newState: PublicationIpfsGatewayClient["state"] | CommentIpfsGatewayClient["state"],
+        gateway: string
+    ): void {
         super.updateGatewayState(newState, gateway);
     }
 
@@ -132,7 +138,7 @@ export class PublicationClientsManager extends ClientsManager {
         };
 
         const translatedState = stateMapper[subplebbitNewKuboRpcState];
-        if (translatedState) this.updateIpfsState(translatedState);
+        if (translatedState) this.updateKuboRpcState(translatedState, kuboRpcUrl);
     }
 
     async _createSubInstanceWithStateTranslation() {
@@ -237,7 +243,7 @@ export class PublicationClientsManager extends ClientsManager {
                     "statechange",
                     this._subplebbitForUpdating.kuboRpcListeners[kuboRpcUrl]
                 );
-                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+                this.updateKuboRpcState("stopped", kuboRpcUrl); // need to reset all Kubo RPC states
             }
         }
 
