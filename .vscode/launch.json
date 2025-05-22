@@ -4,7 +4,7 @@
         {
             "type": "node",
             "request": "launch",
-            "runtimeVersion": "18",
+            "runtimeVersion": "20",
             "runtimeArgs": ["--es-module-specifier-resolution", "node"],
             "name": "Launch current file with NodeJS",
             "skipFiles": ["<node_internals>/**"],
@@ -18,8 +18,7 @@
         {
             "type": "node",
             "request": "launch",
-            "runtimeVersion": "18",
-            "runtimeArgs": ["--es-module-specifier-resolution", "node"],
+            "runtimeVersion": "20",
             "name": "Launch Test Server",
             "skipFiles": ["<node_internals>/**"],
             "program": "${workspaceFolder}/test/server/test-server.js",
