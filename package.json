@@ -23,7 +23,7 @@
         "test:node:remote": "node test/run-test-config.js --plebbit-config remote-kubo-rpc,remote-ipfs-gateway --environment node",
         "test:browser:chrome": "PLEBBIT_CONFIGS=remote-kubo-rpc,remote-ipfs-gateway CHROME_BIN=$(which chrome || which chromium) FIREFOX_BIN='' karma start config/karma.conf.cjs",
         "test:browser:firefox": "PLEBBIT_CONFIGS=remote-kubo-rpc,remote-ipfs-gateway FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.cjs",
-        "test:server:node": "node --es-module-specifier-resolution=node test/server/test-server.js",
+        "test:server:node": "node test/server/test-server.js",
         "test:server:node:rpc": "START_RPC_SERVER=1 PLEBBIT_CONFIGS=remote-kubo-rpc node --es-module-specifier-resolution=node test/server/test-server.js",
         "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",
