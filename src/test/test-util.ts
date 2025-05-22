@@ -59,7 +59,6 @@ import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../si
 import env from "../version.js";
 import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
-import { createHeliaNode } from "../helia/helia-for-plebbit.js";
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
@@ -1062,30 +1061,45 @@ export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: Pubs
 }
 
 export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
-    const plebbitWithKubo = await mockPlebbitNoDataPathWithOnlyKuboClient();
-
-    const kuboRpcClientToMock = "http://helia-client-mock.com/api/v0";
-    const heliaPlebbit = await mockPlebbit({
-        libp2pJsClientOptions: [{ key: "Default" }],
-        dataPath: undefined
+    const libp2pJsClientOptions = [{ key: "Helia config default for testing(remote)" }];
+    const heliaPlebbit = await mockPlebbitV2({
+        plebbitOptions: {
+            libp2pJsClientOptions,
+            pubsubKuboRpcClientsOptions: [],
+            kuboRpcClientsOptions: [],
+            httpRoutersOptions: ["http://localhost:20001"],
+            dataPath: undefined
+        },
+        forceMockPubsub: false
     });
 
+    // if (!plebbitOptions?.pubsubKuboRpcClientsOptions || forceMockPubsub)
+    //     for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
+    //         plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
+
     if (mockPubsub) {
-        heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
-        const kuboClient = plebbitWithKubo.clients.kuboRpcClients[Object.keys(plebbitWithKubo.clients.kuboRpcClients)[0]];
-        // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
-        heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock]._client.name.resolve = kuboClient._client.name.resolve.bind(
-            kuboClient._client.name
-        );
-    } else {
-        //@ts-expect-error
-        heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
+        const mockedPubsubClient = createMockPubsubClient();
+        const heliaLibp2pJsClient = heliaPlebbit.clients.libp2pJsClients[Object.keys(heliaPlebbit.clients.libp2pJsClients)[0]];
+        heliaLibp2pJsClient.heliaWithKuboRpcClientFunctions.pubsub = mockedPubsubClient.pubsub; // that should work for publishing/subscribing
+        // we still need to deal with IPNS-Over-Pubsub
+        // heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
+        // const kuboClient = plebbitWithKubo.clients.kuboRpcClients[Object.keys(plebbitWithKubo.clients.kuboRpcClients)[0]];
+        // // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
+        // heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock]._client.name.resolve = kuboClient._client.name.resolve.bind(
+        //     kuboClient._client.name
+        // );
     }
+    // else {
+    //     //@ts-expect-error
+    //     heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
+    // }
+
+    // TODO need to get helia to connect to kubo node
 
     return heliaPlebbit;
 }
 
-type PlebbitTestConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc";
+type PlebbitTestConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc" | "remote-libp2pjs";
 
 type PlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit> };
 
@@ -1095,8 +1109,9 @@ export function setPlebbitConfigs(configs: PlebbitTestConfig[]) {
     const mapper: Record<PlebbitTestConfig, PlebbitConfigWithName> = {
         "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
         "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
-        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" },
-        "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" }
+        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "Plebbit RPC Remote" },
+        "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" },
+        "remote-libp2pjs": { plebbitInstancePromise: mockPlebbitWithHeliaConfig, name: "Libp2pJS client with no datapath (remote)" }
     };
     if (configs.length === 0) throw Error("No configs were provided");
 

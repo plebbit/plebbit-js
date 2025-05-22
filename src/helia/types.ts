@@ -28,4 +28,5 @@ export interface Libp2pJsClient {
     heliaIpnsRouter: ReturnType<typeof ipns>;
     heliaWithKuboRpcClientFunctions: HeliaWithKuboRpcClientFunctions;
     libp2pJsClientOptions: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number];
+    mergedHeliaOptions: Parameters<typeof createHelia>[0]; // merged defaults with user input for helia and libp2p
 }
