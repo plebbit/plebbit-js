@@ -471,7 +471,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             resolveAuthorAddresses: false,
             clientsManager: this._clientsManager,
             overrideAuthorAddressIfInvalid: false,
-            validatePages: this._plebbit.validatePages
+            validatePages: true,
+            cacheIfValid: false
         };
         try {
             const validation = await verifySubplebbit(verificationOpts);
@@ -484,6 +485,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         catch (e) {
             log.error(`Local subplebbit (${this.address}) produced an invalid signature`, e);
+            throw e;
+        }
+        verificationOpts.subplebbit = JSON.parse(deterministicStringify(recordToPublishRaw)); // let's stringify and parse again to make sure we're not using any invalid data
+        try {
+            const validation = await verifySubplebbit(verificationOpts);
+            if (!validation.valid) {
+                throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
+                    validation,
+                    verificationOpts
+                });
+            }
+        }
+        catch (e) {
+            log.error(`Local subplebbit (${this.address}) produced an invalid signature after stringifying and parsing again. This is a critical bug.`, e);
             throw e;
         }
         if (this.shouldResolveDomainForVerification()) {
@@ -1394,7 +1409,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this._mfsPathsToRemove.size > 0) {
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             try {
-                await pTimeout(this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }), { milliseconds: 30000 });
+                await pTimeout(this._clientsManager.getDefaultIpfs()._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }), { milliseconds: 60000 });
                 return toDeleteMfsPaths;
             }
             catch (e) {
@@ -1404,7 +1419,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     throw error;
                 }
                 else
-                    return toDeleteMfsPaths;
+                    return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
             }
         }
         else
