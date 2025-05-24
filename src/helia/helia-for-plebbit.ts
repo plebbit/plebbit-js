@@ -12,11 +12,12 @@ import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
 import Logger from "@plebbit/plebbit-logger";
+import type { AddOptions, AddResult } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub, HeliaWithKuboRpcClientFunctions, Libp2pJsClient } from "./types.js";
-import type { NameResolveOptions } from "kubo-rpc-client";
+import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 
 const log = Logger("plebbit-js:libp2p-js");
@@ -50,7 +51,7 @@ export async function createHeliaNode(
     const mergedHeliaInit = {
         libp2p: {
             // peerId: peerId, // TODO use indexed db here
-            addresses: { listen: [] }, // TODO at some point we should use addresses
+            addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
@@ -96,7 +97,7 @@ export async function createHeliaNode(
 
     const heliaWithKuboRpcClientShape: Libp2pJsClient["heliaWithKuboRpcClientFunctions"] = {
         name: {
-            resolve: (ipnsName: string, options?: NameResolveOptions) => {
+            resolve: (ipnsName: string, options?: KuboNameResolveOptions) => {
                 // Create an async generator function
                 async function* generator() {
                     const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
@@ -138,8 +139,38 @@ export async function createHeliaNode(
                 if (pubsubEventHandler.listenerCount(topic) === 0) helia.libp2p.services.pubsub.unsubscribe(topic);
             }
         },
-        add(entry, options) {
-            throw Error("Adding files to helia node is not supported at the moment");
+        async add(
+            entry: unknown, // More specific types will be checked internally
+            options?: AddOptions
+        ): Promise<AddResult> {
+            let contentBytes: Uint8Array;
+            // Other options from AddOptions (like hashAlg, progress, onlyHash) could be mapped
+            // to helia's UnixFSAddOptions if compatible and needed.
+
+            if (typeof entry === "string") contentBytes = new TextEncoder().encode(entry);
+            else {
+                log.error("Helia 'add' currently supports string 'content'.", entry);
+                throw new Error("Unsupported entry type for Helia add. Please provide string");
+            }
+
+            const cid = await heliaFs.addBytes(contentBytes, options);
+
+            const finalPath = providedPath ?? cid.toString();
+
+            const result: AddResult = {
+                cid: cid, // Helia's CID (multiformats/cid) is compatible with kubo-rpc-client's AddResult.cid
+                path: finalPath,
+                size: contentBytes.byteLength
+            };
+
+            if (mode !== undefined) {
+                result.mode = mode;
+            }
+            // Mtime is part of AddResult but not easily derived from addBytes or simple entry.
+            // Kubo's AddResult.mtime is { Seconds: BigInt | number, FractionalNanoseconds?: number }.
+            // For simplicity, we omit it unless Helia explicitly provides it for an added entity.
+
+            return result;
         },
         stop(options) {
             return helia.stop();
