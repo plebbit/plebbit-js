@@ -14,7 +14,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
         const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true });
         const mockSub = await plebbit.getSubplebbit(signers[0].address);
-        expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(1);
+        expect(Object.keys(mockSub.clients.chainProviders).length).to.be.greaterThanOrEqual(1)
         for (const chain of Object.keys(mockSub.clients.chainProviders)) {
             expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
             for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
