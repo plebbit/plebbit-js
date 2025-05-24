@@ -252,7 +252,11 @@ getRemotePlebbitConfigs().map((config) => {
                 await post.publish();
                 expect.fail("should fail");
             } catch (e) {
-                expect(e.code).to.be.oneOf(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]);
+                expect(e.code).to.be.oneOf([
+                    "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", // for ipfs gateways
+                    "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", // for kubo-rpc-client
+                    "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P" // for libp2p/helia
+                ]);
             }
             expect(post.publishingState).to.equal("failed");
             expect(post.state).to.equal("stopped");
@@ -341,7 +345,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] });
         const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
-        gatewayPlebbit._timeouts["subplebbit-ipns"] = 3000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
+        gatewayPlebbit._timeouts["subplebbit-ipns"] = 1000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
 
         try {
             await post.publish();
@@ -349,7 +353,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         } catch (e) {
             expect(e.code, messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
             expect(e.details.gatewayToError[error429Gateway].details.status).to.equal(429);
-            expect(e.details.gatewayToError[normalIpfsGateway].details.status).to.equal(500);
+            expect(e.details.gatewayToError[normalIpfsGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
         }
     });
     it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
