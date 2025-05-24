@@ -254,7 +254,7 @@ export function findCommentInParsedPages(pageJson: PageTypeJson, targetCommentCi
     if (!pageJson) throw Error("should define page json");
     if (!targetCommentCid) throw Error("should define target comment cid");
 
-    for (const pageComment of pageJson.comments) if (pageComment.cid === targetCommentCid) return pageComment;
+    return remeda.find(pageJson.comments, (comment) => comment.cid === targetCommentCid);
 }
 
 export function findCommentInHierarchicalPageIpfsRecursively(page: PageIpfs, targetCid: string): PageIpfs["comments"][0] | undefined {

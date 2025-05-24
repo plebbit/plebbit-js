@@ -494,7 +494,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
 
-    _chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp: number): "old" | "new" {
+    _chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp: number): "old" | "new" {
         // Choose which page type to search first based on our reply's timestamp
         const replyTimestamp = this._comment.timestamp;
         const currentTime = Math.floor(Date.now() / 1000);
@@ -544,7 +544,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             );
             return;
         }
-        const pageSortName = this._chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
+        const pageSortName = this._chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
 
         let curPageCid: string | undefined = parentCommentInstance.replies.pageCids[pageSortName];
         if (!curPageCid) throw Error("Parent comment does not have any new or old pages");
@@ -555,32 +555,47 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
 
         this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
-        let foundCommentUpdate = false;
-        let pageNum = 0;
-        while (curPageCid) {
+        let newCommentUpdate: PageIpfs["comments"][0] | undefined;
+        const pageCidsSearchedForNewUpdate: string[] = [];
+        while (curPageCid && !newCommentUpdate) {
             // TODO can optimize this by using _loadedUniqueCommentFromGetPage
             // TODO need to use _findCommentInPagesOfUpdatingCommentsOrSubplebbit
             const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid); // should update _loadedUniqueCommentFromGetPage
-            if (pageNum === 0) this._parentCommentCidsAlreadyLoaded.add(curPageCid);
-            pageNum++;
-            const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid);
+            if (pageCidsSearchedForNewUpdate.length === 0) this._parentCommentCidsAlreadyLoaded.add(curPageCid);
+            pageCidsSearchedForNewUpdate.push(curPageCid);
+            const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid)?.raw;
+            const replyWithinUpdatingPages = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: parentCommentInstance });
+
             if (replyWithinParentPage) {
-                this._useLoadedCommentUpdateIfNewInfo(
-                    { commentUpdate: replyWithinParentPage.raw.commentUpdate },
-                    subplebbitWithSignature,
-                    log
-                );
-                foundCommentUpdate = true;
-                break;
+                const isNewUpdate = replyWithinParentPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
+                if (isNewUpdate) {
+                    newCommentUpdate = replyWithinParentPage;
+                }
+                break; // if we found the comment in parent pages, there's no point in continuing to look for it in updating pages
+            } else if (replyWithinUpdatingPages) {
+                const isNewUpdate = replyWithinUpdatingPages.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
+                if (isNewUpdate) newCommentUpdate = replyWithinUpdatingPages;
             }
+
             curPageCid = pageLoaded.nextCid;
         }
-        if (!foundCommentUpdate)
+        log(
+            "Searched for new comment update of comment",
+            this._comment.cid,
+            "in the following pageCids of parent comment:",
+            parentCommentInstance.cid,
+            pageCidsSearchedForNewUpdate,
+            "and found",
+            newCommentUpdate ? "a new comment update" : "no new comment update"
+        );
+        if (newCommentUpdate)
+            this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: newCommentUpdate.commentUpdate }, subplebbitWithSignature, log);
+        else
             throw new PlebbitError("ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS", {
                 reply: this._comment,
                 parentComment: parentCommentInstance,
                 pageSortName,
-                pageLoadedCount: pageNum
+                pageCidsSearchedForNewUpdate
             });
     }
 
@@ -689,7 +704,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         const repliesSubplebbit = <Pick<SubplebbitIpfsType, "signature" | "address">>postInstance.replies._subplebbit;
         if (!repliesSubplebbit.signature) throw Error("repliesSubplebbit.signature needs to be defined to fetch comment update of reply");
-        if (replyInPage) {
+        if (replyInPage && replyInPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)) {
             const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
             const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo(
                 { commentUpdate: replyInPage.commentUpdate },
