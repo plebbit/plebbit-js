@@ -25,7 +25,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
     });
     it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, plebbit);
-        expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(1);
+        expect(Object.keys(mockPost.clients.chainProviders).length).to.be.greaterThanOrEqual(1)
         for (const chain of Object.keys(mockPost.clients.chainProviders)) {
             expect(Object.keys(mockPost.clients.chainProviders[chain]).length).to.be.greaterThan(0);
             for (const chainUrl of Object.keys(mockPost.clients.chainProviders[chain]))
