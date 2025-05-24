@@ -18,26 +18,26 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -48,12 +48,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -63,12 +63,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -78,12 +78,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>>;
@@ -112,26 +112,26 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -142,12 +142,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -157,12 +157,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -172,12 +172,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>>;
@@ -206,26 +206,26 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -236,12 +236,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -251,12 +251,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -266,12 +266,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>>;
@@ -1949,26 +1949,26 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1979,12 +1979,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -1994,12 +1994,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -2009,12 +2009,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>>;
@@ -2239,26 +2239,26 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -2269,12 +2269,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -2284,12 +2284,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -2299,12 +2299,12 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>>;
@@ -3809,17 +3809,17 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     protocolVersion: import("zod").ZodString;
 } & {
     signature: import("zod").ZodObject<{
-        type: import("zod").ZodEnum<["ed25519", "eip191"]>;
+        type: import("zod").ZodString;
         signature: import("zod").ZodString;
         publicKey: import("zod").ZodString;
         signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
     }, "strip", import("zod").ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3833,26 +3833,26 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3863,12 +3863,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -3878,12 +3878,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -3893,12 +3893,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -3927,26 +3927,26 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3957,12 +3957,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -3972,12 +3972,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -3987,12 +3987,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -4021,26 +4021,26 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", import("zod").ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -4051,12 +4051,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -4066,12 +4066,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -4081,12 +4081,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -4110,7 +4110,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
 }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "strict", import("zod").ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4123,7 +4123,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4134,12 +4134,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
@@ -4340,7 +4340,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4353,7 +4353,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4364,12 +4364,12 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             timestamp: import("zod").ZodNumber;
             signature: import("zod").ZodObject<{
                 signature: import("zod").ZodString;
-                type: import("zod").ZodEnum<["eip191"]>;
+                type: import("zod").ZodString;
             }, "strip", import("zod").ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
@@ -6049,17 +6049,17 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: import("zod").ZodString;
     } & {
         signature: import("zod").ZodObject<{
-            type: import("zod").ZodEnum<["ed25519", "eip191"]>;
+            type: import("zod").ZodString;
             signature: import("zod").ZodString;
             publicKey: import("zod").ZodString;
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -6073,26 +6073,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -6103,12 +6103,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -6118,12 +6118,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -6133,12 +6133,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -6167,26 +6167,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -6197,12 +6197,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -6212,12 +6212,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -6227,12 +6227,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -6261,26 +6261,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -6291,12 +6291,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -6306,12 +6306,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -6321,12 +6321,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -7824,17 +7824,17 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: import("zod").ZodString;
     } & {
         signature: import("zod").ZodObject<{
-            type: import("zod").ZodEnum<["ed25519", "eip191"]>;
+            type: import("zod").ZodString;
             signature: import("zod").ZodString;
             publicKey: import("zod").ZodString;
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -7848,26 +7848,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7878,12 +7878,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -7893,12 +7893,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -7908,12 +7908,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -7942,26 +7942,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7972,12 +7972,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -7987,12 +7987,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -8002,12 +8002,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -8036,26 +8036,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8066,12 +8066,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -8081,12 +8081,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -8096,12 +8096,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -9599,17 +9599,17 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         protocolVersion: import("zod").ZodString;
     } & {
         signature: import("zod").ZodObject<{
-            type: import("zod").ZodEnum<["ed25519", "eip191"]>;
+            type: import("zod").ZodString;
             signature: import("zod").ZodString;
             publicKey: import("zod").ZodString;
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -9623,26 +9623,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9653,12 +9653,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -9668,12 +9668,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -9683,12 +9683,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -9717,26 +9717,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9747,12 +9747,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -9762,12 +9762,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -9777,12 +9777,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -9811,26 +9811,26 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", import("zod").ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9841,12 +9841,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
@@ -9856,12 +9856,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
@@ -9871,12 +9871,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough">>>;
@@ -9902,7 +9902,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
     subplebbitEdit: {
         timestamp: number;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -9915,7 +9915,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }> | undefined;
@@ -9926,12 +9926,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;
@@ -10138,7 +10138,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
     subplebbitEdit: {
         timestamp: number;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -10151,7 +10151,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }> | undefined;
@@ -10162,12 +10162,12 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 timestamp: import("zod").ZodNumber;
                 signature: import("zod").ZodObject<{
                     signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
+                    type: import("zod").ZodString;
                 }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined;

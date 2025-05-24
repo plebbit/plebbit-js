@@ -63,7 +63,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
         post?: Comment;
     }): PageIpfs["comments"][0] | undefined;
     handleUpdateEventFromSub(sub: RemoteSubplebbit): Promise<void>;
-    _chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp: number): "old" | "new";
+    _chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp: number): "old" | "new";
     usePageCidsOfParentToFetchCommentUpdateForReply(postCommentInstance: Comment): Promise<void>;
     handleErrorEventFromSub(error: PlebbitError | Error): Promise<void>;
     handleIpfsGatewaySubplebbitState(subplebbitNewGatewayState: RemoteSubplebbit["clients"]["ipfsGateways"][string]["state"], gatewayUrl: string): void;

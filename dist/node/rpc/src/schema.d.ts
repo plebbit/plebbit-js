@@ -131,7 +131,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         ipfsGatewayUrls: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>, string[], string[] | undefined>;
         pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
         httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-        chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
+        chainProviders: z.ZodEffects<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
             chainId: z.ZodNumber;
         }, "strip", z.ZodTypeAny, {
@@ -140,7 +140,27 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         }, {
             urls: string[];
             chainId: number;
-        }>>>;
+        }>>>, {
+            eth: {
+                urls: string[];
+                chainId: number;
+            };
+            avax: {
+                urls: string[];
+                chainId: number;
+            };
+            matic: {
+                urls: string[];
+                chainId: number;
+            };
+            sol: {
+                urls: string[];
+                chainId: number;
+            };
+        }, Record<string, {
+            urls: string[];
+            chainId: number;
+        }> | undefined>;
         resolveAuthorAddresses: z.ZodDefault<z.ZodBoolean>;
         publishInterval: z.ZodDefault<z.ZodNumber>;
         updateInterval: z.ZodDefault<z.ZodNumber>;
@@ -155,7 +175,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         ipfsGatewayUrls: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>, string[], string[] | undefined>;
         pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
         httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-        chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
+        chainProviders: z.ZodEffects<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
             chainId: z.ZodNumber;
         }, "strip", z.ZodTypeAny, {
@@ -164,7 +184,27 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         }, {
             urls: string[];
             chainId: number;
-        }>>>;
+        }>>>, {
+            eth: {
+                urls: string[];
+                chainId: number;
+            };
+            avax: {
+                urls: string[];
+                chainId: number;
+            };
+            matic: {
+                urls: string[];
+                chainId: number;
+            };
+            sol: {
+                urls: string[];
+                chainId: number;
+            };
+        }, Record<string, {
+            urls: string[];
+            chainId: number;
+        }> | undefined>;
         resolveAuthorAddresses: z.ZodDefault<z.ZodBoolean>;
         publishInterval: z.ZodDefault<z.ZodNumber>;
         updateInterval: z.ZodDefault<z.ZodNumber>;
@@ -179,7 +219,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         ipfsGatewayUrls: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>, string[], string[] | undefined>;
         pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
         httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
-        chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
+        chainProviders: z.ZodEffects<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
             chainId: z.ZodNumber;
         }, "strip", z.ZodTypeAny, {
@@ -188,7 +228,27 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         }, {
             urls: string[];
             chainId: number;
-        }>>>;
+        }>>>, {
+            eth: {
+                urls: string[];
+                chainId: number;
+            };
+            avax: {
+                urls: string[];
+                chainId: number;
+            };
+            matic: {
+                urls: string[];
+                chainId: number;
+            };
+            sol: {
+                urls: string[];
+                chainId: number;
+            };
+        }, Record<string, {
+            urls: string[];
+            chainId: number;
+        }> | undefined>;
         resolveAuthorAddresses: z.ZodDefault<z.ZodBoolean>;
         publishInterval: z.ZodDefault<z.ZodNumber>;
         updateInterval: z.ZodDefault<z.ZodNumber>;
@@ -202,10 +262,24 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         ipfsGatewayUrls: string[];
         httpRoutersOptions: string[];
         pubsubKuboRpcClientsOptions: import("kubo-rpc-client").Options[];
-        chainProviders: Record<string, {
-            urls: string[];
-            chainId: number;
-        }>;
+        chainProviders: {
+            eth: {
+                urls: string[];
+                chainId: number;
+            };
+            avax: {
+                urls: string[];
+                chainId: number;
+            };
+            matic: {
+                urls: string[];
+                chainId: number;
+            };
+            sol: {
+                urls: string[];
+                chainId: number;
+            };
+        };
         resolveAuthorAddresses: boolean;
         publishInterval: number;
         updateInterval: number;

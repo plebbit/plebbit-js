@@ -30,7 +30,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
     subplebbit: {
         address: string;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -297,7 +297,7 @@ export declare function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(upda
 export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: SubplebbitEditPubsubMessagePublication): {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -310,7 +310,7 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -321,12 +321,12 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -724,26 +724,26 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -754,12 +754,12 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -769,12 +769,12 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -784,12 +784,12 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -883,26 +883,26 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -913,12 +913,12 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -928,12 +928,12 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -943,12 +943,12 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -978,7 +978,7 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
 export declare function parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CommentModerationPubsubMessagePublicationSchema>): {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -991,7 +991,7 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1002,12 +1002,12 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -1083,26 +1083,26 @@ export declare function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(ar
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1113,12 +1113,12 @@ export declare function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(ar
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1128,12 +1128,12 @@ export declare function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(ar
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1143,12 +1143,12 @@ export declare function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(ar
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1178,7 +1178,7 @@ export declare function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(ar
 export declare function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof VotePubsubMessagePublicationSchema>): {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -1191,7 +1191,7 @@ export declare function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorI
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1202,12 +1202,12 @@ export declare function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorI
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -1248,26 +1248,26 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1278,12 +1278,12 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1293,12 +1293,12 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1308,12 +1308,12 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1348,7 +1348,7 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
 export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CommentEditPubsubMessagePublicationSchema>): {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -1361,7 +1361,7 @@ export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbi
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1372,12 +1372,12 @@ export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -1965,17 +1965,17 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2323,7 +2323,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
 } | {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2587,10 +2587,24 @@ export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(a
     ipfsGatewayUrls: string[];
     httpRoutersOptions: string[];
     pubsubKuboRpcClientsOptions: import("kubo-rpc-client").Options[];
-    chainProviders: Record<string, {
-        urls: string[];
-        chainId: number;
-    }>;
+    chainProviders: {
+        eth: {
+            urls: string[];
+            chainId: number;
+        };
+        avax: {
+            urls: string[];
+            chainId: number;
+        };
+        matic: {
+            urls: string[];
+            chainId: number;
+        };
+        sol: {
+            urls: string[];
+            chainId: number;
+        };
+    };
     resolveAuthorAddresses: boolean;
     publishInterval: number;
     updateInterval: number;
@@ -3162,17 +3176,17 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3520,7 +3534,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
 } | {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3782,7 +3796,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
 export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails(args: z.infer<typeof CommentPubsubMessagePublicationSchema>): {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3795,7 +3809,7 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -3806,12 +3820,12 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -3863,26 +3877,26 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -3893,12 +3907,12 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3908,12 +3922,12 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3923,12 +3937,12 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;

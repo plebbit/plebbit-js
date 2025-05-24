@@ -584,7 +584,6 @@ export class Comment extends Publication {
                     this.emit("error", err);
             }
         };
-        this._useUpdatePropsFromUpdatingCommentIfPossible();
         updatingCommentInstance.on("update", this._updatingCommentInstance.update);
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
         updatingCommentInstance.on("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
@@ -599,6 +598,7 @@ export class Comment extends Publication {
                         for (const clientUrlDeeper of Object.keys(this.clients[clientType][clientUrl]))
                             this.clients[clientType][clientUrl][clientUrlDeeper].mirror(updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]);
         updatingCommentInstance._numOfListenersForUpdatingInstance++;
+        this._useUpdatePropsFromUpdatingCommentIfPossible();
     }
     async _setUpNewUpdatingCommentInstance() {
         // create a new plebbit._updatingComments[this.cid]
