@@ -77,11 +77,12 @@ export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
 
     _plebbit: Plebbit;
-    pubsubProviderSubscriptions: Record<string, string[]> = {}; // To keep track of subscriptions of each provider/helia
+    pubsubProviderSubscriptions: Record<string, string[]> = {}; // To keep track of subscriptions of each kubo pubsub provider/helia
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
         for (const provider of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients)) this.pubsubProviderSubscriptions[provider] = [];
+        for (const provider of remeda.keys.strict(plebbit.clients.libp2pJsClients)) this.pubsubProviderSubscriptions[provider] = [];
 
         hideClassPrivateProps(this);
     }
@@ -131,42 +132,56 @@ export class BaseClientsManager {
 
     // Pubsub methods
 
-    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string) {
+    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, kuboPubsubRpcUrlOrLibp2pJsKey: string) {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
 
+        const pubsubClient =
+            this._plebbit.clients.libp2pJsClients[kuboPubsubRpcUrlOrLibp2pJsKey]?.heliaWithKuboRpcClientFunctions ||
+            this._plebbit.clients.pubsubKuboRpcClients[kuboPubsubRpcUrlOrLibp2pJsKey]._client;
+        if (!pubsubClient) throw new PlebbitError("ERR_INVALID_PUBSUB_PROVIDER", { pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey });
         const timeBefore = Date.now();
         let error: Error | undefined;
         try {
             // TODO sshould rewrite this to accomodate helia
-            await this._plebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
+            await pubsubClient.pubsub.subscribe(pubsubTopic, handler, {
                 onError: async (err) => {
                     error = err;
                     log.error(
                         "pubsub callback error, topic",
                         pubsubTopic,
                         "provider url",
-                        pubsubProviderUrl,
+                        kuboPubsubRpcUrlOrLibp2pJsKey,
                         "error",
                         err,
                         "Will unsubscribe and re-attempt to subscribe"
                     );
 
-                    await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+                    await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe");
                     try {
-                        await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
+                        await this.pubsubUnsubscribeOnProvider(pubsubTopic, kuboPubsubRpcUrlOrLibp2pJsKey, handler);
                     } catch (e) {
-                        log.error("Failed to unsubscribe after onError, topic", pubsubTopic, "provider url", pubsubProviderUrl, e);
+                        log.error(
+                            "Failed to unsubscribe after onError, topic",
+                            pubsubTopic,
+                            "provider url",
+                            kuboPubsubRpcUrlOrLibp2pJsKey,
+                            e
+                        );
                     }
-                    await this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
+                    await this.pubsubSubscribeOnProvider(pubsubTopic, handler, kuboPubsubRpcUrlOrLibp2pJsKey);
                 }
             });
             if (error) throw error;
-            await this._plebbit._stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
-            this.pubsubProviderSubscriptions[pubsubProviderUrl].push(pubsubTopic);
+            await this._plebbit._stats.recordGatewaySuccess(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe", Date.now() - timeBefore);
+            this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey].push(pubsubTopic);
         } catch (e) {
-            await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
-            log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl}) due to error`, e);
-            throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubProviderUrl, error: e });
+            await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe");
+            log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${kuboPubsubRpcUrlOrLibp2pJsKey}) due to error`, e);
+            throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", {
+                pubsubTopic,
+                pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey,
+                error: e
+            });
         }
     }
 
@@ -189,11 +204,16 @@ export class BaseClientsManager {
         throw combinedError;
     }
 
-    async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler) {
-        await this._plebbit.clients.pubsubKuboRpcClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
-        this.pubsubProviderSubscriptions[pubsubProvider] = this.pubsubProviderSubscriptions[pubsubProvider].filter(
-            (subPubsubTopic) => subPubsubTopic !== pubsubTopic
-        );
+    async pubsubUnsubscribeOnProvider(pubsubTopic: string, kuboPubsubRpcUrlOrLibp2pJsKey: string, handler?: PubsubSubscriptionHandler) {
+        const pubsubClient =
+            this._plebbit.clients.libp2pJsClients[kuboPubsubRpcUrlOrLibp2pJsKey]?.heliaWithKuboRpcClientFunctions ||
+            this._plebbit.clients.pubsubKuboRpcClients[kuboPubsubRpcUrlOrLibp2pJsKey]._client;
+        if (!pubsubClient) throw new PlebbitError("ERR_INVALID_PUBSUB_PROVIDER", { pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey });
+
+        await pubsubClient.pubsub.unsubscribe(pubsubTopic, handler);
+        this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey] = this.pubsubProviderSubscriptions[
+            kuboPubsubRpcUrlOrLibp2pJsKey
+        ].filter((subPubsubTopic) => subPubsubTopic !== pubsubTopic);
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
@@ -209,25 +229,23 @@ export class BaseClientsManager {
         }
     }
 
-    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string) {}
-
-    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string) {}
-
-    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError) {}
-
-    async pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string) {
+    async pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, kuboPubsubRpcUrlOrLibp2pJsKey: string) {
         const log = Logger("plebbit-js:plebbit:pubsubPublish");
+        const pubsubClient =
+            this._plebbit.clients.libp2pJsClients[kuboPubsubRpcUrlOrLibp2pJsKey]?.heliaWithKuboRpcClientFunctions ||
+            this._plebbit.clients.pubsubKuboRpcClients[kuboPubsubRpcUrlOrLibp2pJsKey]._client;
+        if (!pubsubClient) throw new PlebbitError("ERR_INVALID_PUBSUB_PROVIDER", { pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey });
+
         const dataBinary = cborg.encode(data);
-        this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
         const timeBefore = Date.now();
         try {
-            await this._plebbit.clients.pubsubKuboRpcClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary);
-            this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
-            this._plebbit._stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
+            await pubsubClient.pubsub.publish(pubsubTopic, dataBinary);
+            this._plebbit._stats.recordGatewaySuccess(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {
-            this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, <PlebbitError>error);
-            await this._plebbit._stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
-            throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
+            //@ts-expect-error
+            error.details = { ...error.details, pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey, pubsubTopic };
+            await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-publish");
+            throw error;
         }
     }
 
@@ -539,8 +557,6 @@ export class BaseClientsManager {
 
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
     }
-
-    
 
     // TODO rename this to _fetchPathP2P
 

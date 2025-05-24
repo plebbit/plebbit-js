@@ -125,7 +125,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
-        this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients);
+        const libp2pJsClientsKeys = remeda.keys.strict(this._plebbit.clients.libp2pJsClients);
+        // pubsub providers are either kubo or helia
+        // if helia, then it's list of keys, for kubo it's list of urls of kubo rpcs
+        this._pubsubProviders =
+            libp2pJsClientsKeys.length > 0 ? libp2pJsClientsKeys : remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients);
         hideClassPrivateProps(this);
     }
 
@@ -254,7 +258,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
             .map(([provider]) => provider);
 
-        subscribedProviders.forEach((provider) => this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-answers", provider));
+        subscribedProviders.forEach((provider) => this._updatePubsubState("waiting-challenge-answers", provider));
         this.emit("challenge", this._challenge);
     }
 
@@ -392,6 +396,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return this._handleIncomingChallengeVerificationPubsubMessage(pubsubMsgParsed);
     }
 
+    private _updatePubsubState(pubsubState: Publication["clients"]["pubsubKuboRpcClients"][string]["state"], keyOrUrl: string) {
+        const kuboOrHelia = this._clientsManager.getDefaultKuboRpcClientOrHelia();
+        if ("helia" in kuboOrHelia) this._clientsManager.updateLibp2pJsClientState(pubsubState, keyOrUrl);
+        else this._updatePubsubState(pubsubState, keyOrUrl);
+    }
+
     async publishChallengeAnswers(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]) {
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
 
@@ -436,10 +446,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         };
 
         this._updatePublishingStateWithEmission("publishing-challenge-answer");
-        this._clientsManager.updateKuboRpcPubsubState(
-            "publishing-challenge-answer",
-            this._pubsubProviders[this._currentPubsubProviderIndex]
-        );
+        this._updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
         await this._clientsManager.pubsubPublishOnProvider(
             this._pubsubTopicWithfallback(),
             answerMsgToPublish,
@@ -455,7 +462,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const providers = Object.entries(this._clientsManager.pubsubProviderSubscriptions)
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
             .map(([provider]) => provider);
-        providers.forEach((provider) => this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-verification", provider));
+        providers.forEach((provider) => this._updatePubsubState("waiting-challenge-verification", provider));
 
         log(`Responded to challenge  with answers`, challengeAnswers);
         this.emit("challengeanswer", this._challengeAnswer);
@@ -615,7 +622,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     this._pubsubProviders[providerIndex],
                     this._handleChallengeExchange
                 );
-                this._clientsManager.updateKuboRpcPubsubState("stopped", this._pubsubProviders[providerIndex]);
+                this._updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
 
                 if (this._isAllAttemptsExhausted()) {
                     await this._postSucessOrFailurePublishing();
@@ -648,7 +655,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         } else if (this._subplebbit) {
             // the client is publishing to pubsub without using plebbit RPC
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this._handleChallengeExchange);
-            this._pubsubProviders.forEach((provider) => this._clientsManager.updateKuboRpcPubsubState("stopped", provider));
+            this._pubsubProviders.forEach((provider) => this._updatePubsubState("stopped", provider));
         }
     }
 
@@ -806,24 +813,21 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
             this._updatePublishingStateWithEmission("publishing-challenge-request");
-            this._clientsManager.updateKuboRpcPubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);
+            this._updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);
             try {
                 await this._clientsManager.pubsubSubscribeOnProvider(
                     this._pubsubTopicWithfallback(),
                     this._handleChallengeExchange,
                     this._pubsubProviders[this._currentPubsubProviderIndex]
                 );
-                this._clientsManager.updateKuboRpcPubsubState(
-                    "publishing-challenge-request",
-                    this._pubsubProviders[this._currentPubsubProviderIndex]
-                );
+                this._updatePubsubState("publishing-challenge-request", this._pubsubProviders[this._currentPubsubProviderIndex]);
                 await this._clientsManager.pubsubPublishOnProvider(
                     this._pubsubTopicWithfallback(),
                     challengeRequest,
                     this._pubsubProviders[this._currentPubsubProviderIndex]
                 );
             } catch (e) {
-                this._clientsManager.updateKuboRpcPubsubState("stopped", this._pubsubProviders[this._currentPubsubProviderIndex]);
+                this._updatePubsubState("stopped", this._pubsubProviders[this._currentPubsubProviderIndex]);
                 log.error("Failed to publish challenge request using provider ", this._pubsubProviders[this._currentPubsubProviderIndex]);
                 this._currentPubsubProviderIndex += 1;
                 if (this._isAllAttemptsExhausted()) {
@@ -848,7 +852,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 ...pubsubMsgToEncrypt
             };
             this._publishedChallengeRequests.push(decryptedRequest);
-            this._clientsManager.updateKuboRpcPubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
+            this._updatePubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
             this._setProviderToFailIfNoResponse(this._currentPubsubProviderIndex);
 
             this._updatePublishingStateWithEmission("waiting-challenge");

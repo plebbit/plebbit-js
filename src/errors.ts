@@ -64,6 +64,8 @@ export enum messages {
     ERR_NO_DEFAULT_KUBO_RPC_PUBSUB_PROVIDER = "No default kubo rpc pubsub provider found. Make sure to define pubsubKuboRpcClientOptions",
     ERR_NO_DEFAULT_KUBO_RPC_IPFS_PROVIDER = "No default kubo rpc ipfs provider found. Make sure to define kuboRpcClientOptions",
     ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED = "Can't have both libp2pJsClientOptions and kuboRpcClientOptions or pubsubKuboRpcClientOptions defined. Please define only one of them",
+    ERR_INVALID_PUBSUB_PROVIDER = "Couldn't find a kubo pubsub RPC with that url or a libp2pjs with that key",
+
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",
     ERR_INVALID_COMMENT_IPFS_SCHEMA = "The schema of Comment ipfs file is invalid",
