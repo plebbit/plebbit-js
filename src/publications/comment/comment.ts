@@ -734,7 +734,6 @@ export class Comment
                 } else this.emit("error", err);
             }
         };
-        this._useUpdatePropsFromUpdatingCommentIfPossible();
 
         updatingCommentInstance.on("update", this._updatingCommentInstance.update);
         updatingCommentInstance.on("error", this._updatingCommentInstance.error);
@@ -753,6 +752,7 @@ export class Comment
                                 updatingCommentInstance.clients[clientType][clientUrl][clientUrlDeeper]
                             );
         updatingCommentInstance._numOfListenersForUpdatingInstance++;
+        this._useUpdatePropsFromUpdatingCommentIfPossible();
     }
 
     async _setUpNewUpdatingCommentInstance() {
