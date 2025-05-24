@@ -38,6 +38,7 @@ import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
+import { CID } from "kubo-rpc-client";
 
 export class Comment
     extends Publication
@@ -353,20 +354,29 @@ export class Comment
 
     private async _addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification: DecryptedChallengeVerification) {
         // Will add and pin our own comment to IPFS
-        // only if we're connected to kubo
+        // only if we're connected to kubo or helia/libp2p
 
+        const log = Logger("plebbit-js:comment:publish:_addOwnCommentToIpfsIfConnectedToIpfsClient");
         if (!this.raw.comment) throw Error("comment.raw.commentIpfs should be defined after challenge verification");
-        const kuboRpcOrHelia = this._clientsManager.getDefaultKuboRpcClientOrHelia();
-        const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
+        if (Object.keys(this._plebbit.clients.kuboRpcClients).length === 0) {
+            log("No kubo rpc client found, will not add newly published comment", this.cid, "to ipfs");
+            return;
+        }
+        const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
         // use p-retry here, 3 times maybe?
         const addRes = await retryKuboIpfsAdd({
-            ipfsClient: ipfsClient,
+            ipfsClient: kuboRpcClient._client,
             log: Logger("plebbit-js:comment:publish:_addOwnCommentToIpfsIfConnectedToIpfsClient"),
             content: JSON.stringify(this.raw.comment),
             options: { pin: true }
         });
-        if (addRes.path !== decryptedVerification.commentUpdate.cid)
-            throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
+
+        if (!addRes.cid.equals(CID.parse(decryptedVerification.commentUpdate.cid)))
+            throw new PlebbitError("ERR_ADDED_COMMENT_IPFS_TO_IPFS_BUT_GOT_DIFFERENT_CID", {
+                addedCidToIpfs: addRes.cid,
+                expectedCidString: decryptedVerification.commentUpdate.cid,
+                expectedCid: CID.parse(decryptedVerification.commentUpdate.cid)
+            });
     }
 
     _initCommentUpdateFromChallengeVerificationProps(commentUpdate: CommentUpdateForChallengeVerification) {
