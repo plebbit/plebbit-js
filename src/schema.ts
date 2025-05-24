@@ -89,7 +89,10 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
         "https://peers.forumindex.com",
         "https://peers.plebpubsub.xyz"
     ]),
-    chainProviders: PlebbitUserOptionBaseSchema.shape.chainProviders.default(defaultChainProviders),
+    chainProviders: PlebbitUserOptionBaseSchema.shape.chainProviders
+        .default(defaultChainProviders)
+        .transform((userInput) => ({ ...defaultChainProviders, ...userInput })),
+
     resolveAuthorAddresses: PlebbitUserOptionBaseSchema.shape.resolveAuthorAddresses.default(true),
     publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
     updateInterval: PlebbitUserOptionBaseSchema.shape.updateInterval.default(60000),
