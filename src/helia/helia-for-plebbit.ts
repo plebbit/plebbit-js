@@ -19,14 +19,8 @@ import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub, HeliaWithKuboRpcClientFunctions, Libp2pJsClient } from "./types.js";
 import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
-import remeda from "remeda";
 
 const log = Logger("plebbit-js:libp2p-js");
-
-const keyToHeliaClientMap: Record<
-    NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"],
-    Pick<Libp2pJsClient, "helia" | "heliaWithKuboRpcClientFunctions" | "heliaUnixfs" | "heliaIpnsRouter" | "mergedHeliaOptions">
-> = {};
 
 function getDelegatedRoutingFields(routers: string[]) {
     const routersObj: Record<string, ReturnType<typeof createDelegatedRoutingV1HttpApiClient>> = {};
@@ -44,8 +38,7 @@ export async function createHeliaNode(
     plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">> &
         NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
 ): Promise<Pick<Libp2pJsClient, "helia" | "heliaWithKuboRpcClientFunctions" | "heliaUnixfs" | "heliaIpnsRouter" | "mergedHeliaOptions">> {
-    if (plebbitOptions.key in keyToHeliaClientMap) return keyToHeliaClientMap[plebbitOptions.key];
-    // if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
+    if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
 
     if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
 
@@ -148,11 +141,10 @@ export async function createHeliaNode(
         },
         async stop(options) {
             await helia.stop();
-            delete keyToHeliaClientMap[plebbitOptions.key];
         }
     };
 
-    keyToHeliaClientMap[plebbitOptions.key] = {
+    const fullInstanceWithOptions = {
         helia,
         heliaWithKuboRpcClientFunctions: heliaWithKuboRpcClientShape,
         heliaUnixfs: heliaFs,
@@ -167,5 +159,5 @@ export async function createHeliaNode(
             log.error("Error starting helia/libp2p-js with key", plebbitOptions.key, e);
         });
 
-    return keyToHeliaClientMap[plebbitOptions.key];
+    return fullInstanceWithOptions;
 }
