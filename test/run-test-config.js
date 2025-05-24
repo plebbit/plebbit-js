@@ -56,7 +56,7 @@ if (environment === "node") {
     const mochaBin = path.join(projectRoot, "node_modules", ".bin", "mocha");
     const mochaArgs = ["--exit", "--bail", "--recursive", testDir];
 
-    console.log(`Running mocha with args:`, mochaArgs);
+    console.log(`Running mocha with args:`, mochaArgs.join(" "));
     console.log(`Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}`);
 
     const mochaProcess = spawn(mochaBin, mochaArgs, {
