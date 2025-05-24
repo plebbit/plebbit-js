@@ -141,30 +141,14 @@ export async function createHeliaNode(
             }
         },
         async add(
-            entry: unknown, // More specific types will be checked internally
-            options?: AddOptions
+            entry: Parameters<Libp2pJsClient["heliaWithKuboRpcClientFunctions"]["add"]>[0], // More specific types will be checked internally
+            options?: Parameters<Libp2pJsClient["heliaWithKuboRpcClientFunctions"]["add"]>[1]
         ): Promise<AddResult> {
-            let contentBytes: Uint8Array;
-            // Other options from AddOptions (like hashAlg, progress, onlyHash) could be mapped
-            // to helia's UnixFSAddOptions if compatible and needed.
-
-            if (typeof entry === "string") contentBytes = new TextEncoder().encode(entry);
-            else {
-                log.error("Helia 'add' currently supports string 'content'.", entry);
-                throw new Error("Unsupported entry type for Helia add. Please provide string");
-            }
-            const cid = await heliaFs.addBytes(contentBytes, options ? remeda.omit(options, ["chunker"]) : undefined);
-
-            const result: AddResult = {
-                cid: cid, // Helia's CID (multiformats/cid) is compatible with kubo-rpc-client's AddResult.cid
-                path: cid.toV0().toString(),
-                size: contentBytes.byteLength
-            };
-
-            return result;
+            throw Error("Helia 'add' is not supported");
         },
-        stop(options) {
-            return helia.stop();
+        async stop(options) {
+            await helia.stop();
+            delete keyToHeliaClientMap[plebbitOptions.key];
         }
     };
 
