@@ -108,6 +108,23 @@ describe("Plebbit options", async () => {
         expect(plebbit.ipfsGatewayUrls).to.be.undefined;
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
+
+    it(`Plebbit({chainProviders: {options}}) will merge chain providers from user input with default chain providers`, async () => {
+        const plebbit = await Plebbit({
+            chainProviders: {
+                testNewChain: {
+                    urls: ["https://eth-mainnet.g.alchemy.com/v2/your-api-key"],
+                    chainId: -1
+                }
+            },
+            httpRoutersOptions: []
+        });
+        expect(plebbit.chainProviders.testNewChain.urls).to.deep.equal(["https://eth-mainnet.g.alchemy.com/v2/your-api-key"]);
+        expect(plebbit.chainProviders.eth).to.exist;
+        expect(plebbit.chainProviders.eth.urls.length).to.be.greaterThan(0);
+        expect(plebbit.chainProviders.sol).to.exist;
+        expect(plebbit.chainProviders.sol.urls.length).to.be.greaterThan(0);
+    });
 });
 
 describe("plebbit.createSigner", async () => {
