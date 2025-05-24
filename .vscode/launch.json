@@ -65,7 +65,7 @@
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*, -plebbit*trace",
-                "PLEBBIT_CONFIGS": "remote-ipfs-gateway,remote-kubo-rpc"
+                "PLEBBIT_CONFIGS": "remote-libp2pjs,remote-kubo-rpc,remote-ipfs-gateway"
             }
         },
         {
