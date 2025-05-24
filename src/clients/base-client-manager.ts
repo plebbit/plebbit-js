@@ -551,8 +551,11 @@ export class BaseClientsManager {
 
             return result;
         } catch (error) {
-            if (error instanceof PlebbitError) throw error;
-            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error, loadOpts, ipfsClient: kuboRpcOrHelia });
+            //@ts-expect-error
+            error.details = { ...error.details, ipnsName, loadOpts, ipfsClient: kuboRpcOrHelia };
+            //@ts-expect-error
+            if (!("code" in error)) error.code = "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P";
+            throw error;
         }
 
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
