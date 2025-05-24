@@ -19,6 +19,7 @@ import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub, HeliaWithKuboRpcClientFunctions, Libp2pJsClient } from "./types.js";
 import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
+import remeda from "remeda";
 
 const log = Logger("plebbit-js:libp2p-js");
 
@@ -152,23 +153,13 @@ export async function createHeliaNode(
                 log.error("Helia 'add' currently supports string 'content'.", entry);
                 throw new Error("Unsupported entry type for Helia add. Please provide string");
             }
-
-            const cid = await heliaFs.addBytes(contentBytes, options);
-
-            const finalPath = providedPath ?? cid.toString();
+            const cid = await heliaFs.addBytes(contentBytes, options ? remeda.omit(options, ["chunker"]) : undefined);
 
             const result: AddResult = {
                 cid: cid, // Helia's CID (multiformats/cid) is compatible with kubo-rpc-client's AddResult.cid
-                path: finalPath,
+                path: cid.toV0().toString(),
                 size: contentBytes.byteLength
             };
-
-            if (mode !== undefined) {
-                result.mode = mode;
-            }
-            // Mtime is part of AddResult but not easily derived from addBytes or simple entry.
-            // Kubo's AddResult.mtime is { Seconds: BigInt | number, FractionalNanoseconds?: number }.
-            // For simplicity, we omit it unless Helia explicitly provides it for an added entity.
 
             return result;
         },
