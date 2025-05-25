@@ -60,6 +60,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
         after(async () => {
             await plebbit.destroy();
+            await remotePlebbitIpfs.destroy();
         });
 
         it(`Regular author can not purge a comment`, async () => {
@@ -193,6 +194,7 @@ getRemotePlebbitConfigs().map((config) => {
                     await purgedComment.stop();
                 })
             );
+            await differentPlebbit.destroy();
         });
     });
 });

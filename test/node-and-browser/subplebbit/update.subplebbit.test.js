@@ -87,6 +87,7 @@ getRemotePlebbitConfigs().map((config) => {
             await tempSubplebbit.update();
             await errorPromise;
             await tempSubplebbit.stop();
+            await ipnsObj.plebbit.destroy();
         });
 
         it(`subplebbit.update emits error if schema of subplebbit is invalid `, async () => {
@@ -113,6 +114,7 @@ getRemotePlebbitConfigs().map((config) => {
             await errorPromise;
 
             await tempSubplebbit.stop();
+            await ipnsObj.plebbit.destroy();
         });
 
         it(`subplebbit.update emits error if subplebbit record is invalid json`, async () => {
@@ -138,6 +140,7 @@ getRemotePlebbitConfigs().map((config) => {
             await errorPromise;
 
             await tempSubplebbit.stop();
+            await ipnsObj.plebbit.destroy();
         });
 
         it(`subplebbit.update emits error and keeps retrying if address is ENS and ENS address has no subplebbit-address text record`, async () => {
@@ -210,6 +213,7 @@ getRemotePlebbitConfigs().map((config) => {
                 for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways))
                     expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
             } else expect(err.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+            await ipnsObj.plebbit.destroy();
         });
     });
 });

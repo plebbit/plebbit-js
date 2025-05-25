@@ -263,6 +263,7 @@ getRemotePlebbitConfigs().map((config) => {
                         expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                     }
                 }
+                await plebbit.destroy();
             });
         });
     });
@@ -281,6 +282,10 @@ getRemotePlebbitConfigs().map((config) => {
             await postWithReplies.stop();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`replies.validatePage will throw if any comment is invalid`, async () => {
             const plebbit = await config.plebbitInstancePromise({ validatePages: false });
 
@@ -297,6 +302,7 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(e.code).to.equal("ERR_REPLIES_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
             }
+            await plebbit.destroy();
         });
 
         it(`replies.validatePage will throw if any comment is not of the same post`, async () => {
@@ -317,6 +323,7 @@ getRemotePlebbitConfigs().map((config) => {
                     messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE
                 );
             }
+            await plebbit.destroy();
         });
 
         it(`replies.validatePage will throw if postCid not defined on the parent comment`, async () => {
@@ -334,6 +341,7 @@ getRemotePlebbitConfigs().map((config) => {
             } catch (e) {
                 expect(e.code).to.equal("ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID");
             }
+            await plebbit.destroy();
         });
 
         it("validates flat pages correctly", async () => {

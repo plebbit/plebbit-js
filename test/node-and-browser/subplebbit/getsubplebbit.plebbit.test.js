@@ -74,6 +74,7 @@ getRemotePlebbitConfigs().map((config) => {
                     "ERR_THE_SUBPLEBBIT_IPNS_RECORD_POINTS_TO_DIFFERENT_ADDRESS_THAN_WE_EXPECTED"
                 ]).to.include(e.code);
             }
+            await ipnsObj.plebbit.destroy();
         });
 
         it(`plebbit.getSubplebbit times out if subplebbit does not load`, async () => {
@@ -91,7 +92,7 @@ getRemotePlebbitConfigs().map((config) => {
                     "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"
                 ]).to.include(e.code);
             }
-            await plebbit.destroy();
+            await customPlebbit.destroy();
         });
     });
 });

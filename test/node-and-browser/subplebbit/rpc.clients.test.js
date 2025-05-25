@@ -46,6 +46,7 @@ describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
         expect(recordedStates).to.deep.equal(expectedStates);
 
         await sub.stop();
+        await newIpns.plebbit.destroy();
     });
 
     it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with ENS address`, async () => {

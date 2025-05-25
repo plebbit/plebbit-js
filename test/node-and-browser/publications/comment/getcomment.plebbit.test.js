@@ -102,6 +102,7 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(e.details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
                 } else expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
             }
+            await customPlebbit.destroy();
         });
     });
 });
