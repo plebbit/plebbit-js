@@ -127,6 +127,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     it(`Validate props of challengeverification (challengeSuccess=false)`, async () => {
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
+        comment.removeAllListeners("challenge");
         const challengePromise = new Promise((resolve) => comment.once("challenge", resolve));
         await comment.publish();
         await challengePromise;
