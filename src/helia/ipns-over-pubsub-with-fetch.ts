@@ -70,10 +70,20 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
 
                 //@ts-expect-error
                 options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:subscribe", { topic }));
+
+                if (ipnsRecordFromFetch) {
+                    log("Fetched IPNS record of topic", topic, "from peers", peersToFetchFrom, "Using libp2p-fetch");
+                } else {
+                    log(
+                        "Failed to fetch IPNS record of topic",
+                        topic,
+                        "using libp2p-fetch from peers",
+                        peersToFetchFrom,
+                        ".Will be awaiting in the gossip topic, it may take 30s+"
+                    );
+                }
             }
             if (ipnsRecordFromFetch) return ipnsRecordFromFetch;
-
-            log("Failed to fetch IPNS from all IPNS-Over-Pubsub peers, will await the IPNS in the gossipsub topic", topic);
 
             //@ts-expect-error
             const { record } = await this.localStore.get(routingKey, options);

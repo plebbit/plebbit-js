@@ -14,7 +14,7 @@ export interface HeliaWithKuboRpcClientFunctions extends Pick<NonNullable<KuboRp
 
 type baseHelia = Awaited<ReturnType<typeof createHelia>>;
 
-export interface HeliaWithLibp2pPubsub extends Awaited<ReturnType<typeof createHelia>> {
+export interface HeliaWithLibp2pPubsub extends baseHelia {
     libp2p: baseHelia["libp2p"] & {
         services: baseHelia["libp2p"]["services"] & {
             pubsub: PubsubRoutingComponents["libp2p"]["services"]["pubsub"];

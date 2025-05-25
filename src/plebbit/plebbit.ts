@@ -948,7 +948,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         for (const storage of Object.values(this._storageLRUs)) await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
 
-        Object.values(this.clients.libp2pJsClients).forEach((client) => client.helia.stop());
+        await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
 
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))

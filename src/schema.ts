@@ -75,8 +75,8 @@ const PlebbitUserOptionBaseSchema = z.object({
     libp2pJsClientOptions: z
         .object({
             key: z.string().min(1),
-            libp2pOptions: z.custom<libp2pOptions>(),
-            heliaOptions: z.custom<heliaOptions>()
+            libp2pOptions: z.custom<Partial<libp2pOptions>>(),
+            heliaOptions: z.custom<Partial<heliaOptions>>()
         })
         .array()
         .optional()
