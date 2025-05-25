@@ -91,6 +91,7 @@ getRemotePlebbitConfigs().map((config) => {
                     "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"
                 ]).to.include(e.code);
             }
+            await plebbit.destroy();
         });
     });
 });

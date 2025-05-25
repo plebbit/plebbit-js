@@ -40,6 +40,7 @@ getRemotePlebbitConfigs().map((config) => {
             for (const replyPostConfig of replyPostConfigs) {
                 runTestsForCommentType(replyPostConfig);
             }
+            await plebbit.destroy();
         });
 
         // Function to define test cases for a specific comment type

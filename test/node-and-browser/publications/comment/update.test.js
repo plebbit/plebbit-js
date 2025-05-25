@@ -154,6 +154,8 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
     postIpfs.title += "1234"; // Invalidate signature
     const postWithInvalidSignatureCid = addStringToIpfs(JSON.stringify(postIpfs));
 
+    await plebbit.destroy();
+
     return postWithInvalidSignatureCid;
 };
 
@@ -166,6 +168,8 @@ const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
     postIpfs.content = 1234; // Content is supposed to be a string, this will make the schema invalid
 
     const postWithInvalidSchemaCid = addStringToIpfs(JSON.stringify(postIpfs));
+
+    await plebbit.destroy();
 
     return postWithInvalidSchemaCid;
 };

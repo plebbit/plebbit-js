@@ -36,6 +36,10 @@ getRemotePlebbitConfigs().map((config) => {
             await post.stop();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         itSkipIfRpc(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
             const invalidCommentUpdate = remeda.clone(post.raw.commentUpdate);
             Object.assign(invalidCommentUpdate, extraProps);
@@ -211,6 +215,11 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`Extra props in decryptedVerification.commentUpdate should fail if they're not part of commentUpdate.signature.signedPropertyNames`, async () => {
             const post = await generateMockPost(subWithNoResponseSigner.address, plebbit);
 

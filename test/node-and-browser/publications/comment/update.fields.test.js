@@ -81,7 +81,6 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await post.stop();
             await plebbit.destroy();
         });
 
