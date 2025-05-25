@@ -553,8 +553,6 @@ export class BaseClientsManager {
         } catch (error) {
             //@ts-expect-error
             error.details = { ...error.details, ipnsName, loadOpts, ipfsClient: kuboRpcOrHelia };
-            //@ts-expect-error
-            if (!("code" in error)) error.code = "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P";
             throw error;
         }
 
