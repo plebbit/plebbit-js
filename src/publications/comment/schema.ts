@@ -39,7 +39,7 @@ export const CreateCommentOptionsSchema = z
         link: z.string().max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT).url().optional(),
         linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
         linkHeight: z.number().positive().optional(),
-        linkHtmlTagName: z.enum(["a", "img", "video", "audio"]).optional(),
+        linkHtmlTagName: z.string().min(1).optional(),
         parentCid: CidStringSchema.optional(), // The parent comment CID
         postCid: CidStringSchema.optional() // the post cid, required if the comment is reply
     })

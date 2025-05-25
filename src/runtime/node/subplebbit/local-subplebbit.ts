@@ -11,9 +11,9 @@ import type {
     SubplebbitIpfsType,
     RpcInternalSubplebbitRecordBeforeFirstUpdateType,
     RpcInternalSubplebbitRecordAfterFirstUpdateType,
-    SubplebbitRole,
     SubplebbitUpdatingState,
-    SubplebbitState
+    SubplebbitState,
+    SubplebbitRoleNameUnion
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
@@ -1188,20 +1188,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _isPublicationAuthorPartOfRoles(
         publication: Pick<CommentModerationPubsubMessagePublication, "author" | "signature">,
-        rolesToCheckAgainst: SubplebbitRole["role"][]
+        rolesToCheckAgainst: SubplebbitRoleNameUnion[]
     ): Promise<boolean> {
         if (!this.roles) return false;
         // is the author of publication a moderator?
         const signerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
-        if (rolesToCheckAgainst.includes(this.roles[signerAddress]?.role)) return true;
+        if (rolesToCheckAgainst.includes(this.roles[signerAddress]?.role as SubplebbitRoleNameUnion)) return true;
 
         if (this._plebbit.resolveAuthorAddresses) {
             const resolvedSignerAddress = isStringDomain(publication.author.address)
                 ? await this._plebbit.resolveAuthorAddress(publication.author.address)
                 : publication.author.address;
             if (resolvedSignerAddress !== signerAddress) return false;
-            if (rolesToCheckAgainst.includes(this.roles[publication.author.address]?.role)) return true;
-            if (rolesToCheckAgainst.includes(this.roles[resolvedSignerAddress]?.role)) return true;
+            if (rolesToCheckAgainst.includes(this.roles[publication.author.address]?.role as SubplebbitRoleNameUnion)) return true;
+            if (rolesToCheckAgainst.includes(this.roles[resolvedSignerAddress]?.role as SubplebbitRoleNameUnion)) return true;
         }
         return false;
     }

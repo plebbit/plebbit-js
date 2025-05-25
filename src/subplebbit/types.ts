@@ -19,7 +19,8 @@ import {
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema,
     RpcRemoteSubplebbitUpdateEventResultSchema,
-    SubplebbitSignedPropertyNames
+    SubplebbitSignedPropertyNames,
+    SubplebbitRoleNames
 } from "./schema.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
@@ -61,6 +62,8 @@ export type Flair = z.infer<typeof FlairSchema>;
 export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
+
+export type SubplebbitRoleNameUnion = z.infer<typeof SubplebbitRoleNames>;
 
 export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitUpdateEventResultSchema>;
 

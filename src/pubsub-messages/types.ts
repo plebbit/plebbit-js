@@ -118,7 +118,7 @@ export type EncryptedEncoded = {
     ciphertext: string; // base64
     iv: string; // base64
     tag: string; // base64
-    type: "ed25519-aes-gcm";
+    type: string; // ed25519-aes-gcm for now
 };
 
 export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {

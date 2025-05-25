@@ -25,7 +25,7 @@ export const PubsubMessageSignatureSchema = z
     .object({
         signature: z.instanceof(Uint8Array), // (byte string in cbor)
         publicKey: z.instanceof(Uint8Array), // (byte string in cbor) 32 bytes
-        type: z.enum(["ed25519"]),
+        type: z.string().min(1),
         signedPropertyNames: z.string().array()
     })
     .strict();
@@ -44,7 +44,7 @@ export const EncryptedSchema = z
         ciphertext: z.instanceof(Uint8Array),
         iv: z.instanceof(Uint8Array),
         tag: z.instanceof(Uint8Array),
-        type: z.enum(["ed25519-aes-gcm"])
+        type: z.string().min(1)
     })
     .strict();
 
@@ -53,7 +53,7 @@ export const EncryptedSchema = z
 // Challenge Request message
 
 export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
-    type: z.enum(["CHALLENGEREQUEST"]),
+    type: z.literal("CHALLENGEREQUEST"),
     encrypted: EncryptedSchema, // Will decrypt to DecryptedChallengeRequestSchema
     acceptedChallengeTypes: AcceptedChallengeTypeSchema.array().optional()
 }).strict();
@@ -85,7 +85,7 @@ export const ChallengeInChallengePubsubMessageSchema = z
     .strict();
 
 export const ChallengeMessageSchema = PubsubMessageBaseSchema.extend({
-    type: z.enum(["CHALLENGE"]),
+    type: z.literal("CHALLENGE"),
     encrypted: EncryptedSchema // Will decrypt to DecryptedChallengeSchema
 }).strict();
 
@@ -99,7 +99,7 @@ export const ChallengeMessageSignedPropertyNames = remeda.keys.strict(remeda.omi
 // Challenge answer
 
 export const ChallengeAnswerMessageSchema = PubsubMessageBaseSchema.extend({
-    type: z.enum(["CHALLENGEANSWER"]),
+    type: z.literal("CHALLENGEANSWER"),
     encrypted: EncryptedSchema // Will decrypt to DecryptedChallengeAnswerSchema
 }).strict();
 
@@ -114,7 +114,7 @@ export const ChallengeAnswerMessageSignedPropertyNames = remeda.keys.strict(reme
 // Challenge Verification
 
 export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend({
-    type: z.enum(["CHALLENGEVERIFICATION"]),
+    type: z.literal("CHALLENGEVERIFICATION"),
     challengeSuccess: z.boolean(),
     challengeErrors: z.record(nonNegativeIntStringSchema, z.string()).optional(), // challenge index => challenge error
     reason: z.string().optional(),

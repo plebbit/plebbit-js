@@ -21,14 +21,15 @@ import { nonNegativeIntStringSchema } from "../schema.js";
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
     .object({
-        type: z.enum(["ed25519-aes-gcm"]), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
+        type: z.string().min(1), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
         publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
     })
     .passthrough();
 
+export const SubplebbitRoleNames = z.enum(["owner", "admin", "moderator"]);
 export const SubplebbitRoleSchema = z
     .object({
-        role: z.enum(["owner", "admin", "moderator"])
+        role: SubplebbitRoleNames.or(z.string().min(1))
     })
     .passthrough();
 
