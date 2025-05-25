@@ -24,6 +24,11 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         expect(plebbit.dataPath).to.be.a("string");
         expect(lanAddress).to.be.a("string");
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Rpc server emits an error is rpc port is already taken`, async () => {
         const rpcServerPort = 9138;
         const options = {

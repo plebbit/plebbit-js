@@ -71,6 +71,10 @@ describeSkipIfRpc(`DB importing`, async () => {
         plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Subplebbit will show up in plebbit.subplebbits if its db was copied to datapath/subplebbits`, async () => {
         expect(plebbit.subplebbits).to.not.include(signers[0].address);
 
@@ -82,6 +86,7 @@ describeSkipIfRpc(`DB importing`, async () => {
         await copyDbToDataPath(databaseToMigrate, plebbit);
         await waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit, databaseToMigrate.address);
         expect(plebbit.subplebbits).to.include(databaseToMigrate.address);
+        await regularPlebbit.destroy();
     });
 
     it(`Can import a subplebbit by copying its sql file to datapath/subplebbits`, async () => {
@@ -111,6 +116,8 @@ describeSkipIfRpc(`DB importing`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         await subplebbit.delete();
+        await tempPlebbit.destroy();
+        await regularPlebbit.destroy();
     });
 });
 
@@ -148,6 +155,7 @@ describeSkipIfRpc("DB Migration", () => {
             await mockPost.stop();
 
             await subplebbit.delete();
+            await plebbit.destroy();
         }).timeout(400000)
     );
 });

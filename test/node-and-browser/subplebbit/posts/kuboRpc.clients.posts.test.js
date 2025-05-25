@@ -28,6 +28,7 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
         const sortTypes = Object.keys(mockSub.posts.clients.kuboRpcClients);
         expect(sortTypes.length).to.be.greaterThan(0);
         for (const sortType of sortTypes) expect(mockSub.posts.clients.kuboRpcClients[sortType]).to.deep.equal({});
+        await gatewayPlebbit.destroy();
     });
 
     it(`subplebbit.posts.clients.kuboRpcClients[sortType][url] is stopped by default`, async () => {

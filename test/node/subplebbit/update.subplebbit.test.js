@@ -12,6 +12,10 @@ describe(`subplebbit.update - Local subs`, async () => {
         plebbit = await mockPlebbit();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Can receive updates from local sub`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();

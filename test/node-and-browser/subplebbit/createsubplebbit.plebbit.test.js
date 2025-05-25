@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import { messages } from "../../../dist/node/errors.js";
 
 import {
     getRemotePlebbitConfigs,

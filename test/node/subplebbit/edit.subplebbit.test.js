@@ -55,6 +55,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
     after(async () => {
         await subplebbit.stop();
         await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     [{ title: `Test subplebbit title edit ${Date.now()}` }, { description: `Test subplebbit description edit ${Date.now()}` }].map(
@@ -361,6 +362,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         const post = await publishRandomPost(sub.address, customPlebbit);
         await waitTillPostInSubplebbitPages(post, customPlebbit);
         await sub.stop();
+        await customPlebbit.destroy();
     });
 });
 
@@ -378,6 +380,7 @@ describe(`Edit misc`, async () => {
 
         expect(newSub.address).to.equal("no-sub-address.eth");
         await newSub.delete();
+        await customPlebbit.destroy();
     });
 
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not match subplebbit.signer.address`, async () => {
@@ -394,6 +397,7 @@ describe(`Edit misc`, async () => {
         await newSub.edit({ address: subAddress });
         expect(newSub.address).to.equal(subAddress);
         await newSub.delete();
+        await customPlebbit.destroy();
     });
 
     it(`subplebbit.edit({address}) fails if the new address is already taken by another subplebbit`, async () => {
@@ -409,6 +413,7 @@ describe(`Edit misc`, async () => {
         } catch (e) {
             expect(e.code).to.equal("ERR_SUB_OWNER_ATTEMPTED_EDIT_NEW_ADDRESS_THAT_ALREADY_EXISTS");
         }
+        await customPlebbit.destroy();
     });
 });
 
@@ -425,6 +430,8 @@ describe(`Editing subplebbit.roles`, async () => {
 
     after(async () => {
         await sub.delete();
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
     });
 
     it(`Setting sub.roles[author-address] to undefined removes the role`, async () => {
@@ -516,6 +523,7 @@ describeIfRpc(`subplebbit.edit (RPC)`, async () => {
             await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);
             expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
             await loadedSubplebbit.stop();
+            await remotePlebbit.destroy();
         })
     );
 });

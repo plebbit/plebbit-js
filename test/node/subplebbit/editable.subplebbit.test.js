@@ -7,6 +7,10 @@ describe(`subplebbit.editable`, async () => {
         plebbit = await mockPlebbit();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.editable is up to date after creating a new subplebbit`, async () => {
         const title = "Test title" + Date.now();
         const sub = await plebbit.createSubplebbit({ title });

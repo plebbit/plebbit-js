@@ -12,6 +12,10 @@ describe(`subplebbit.delete`, async () => {
         sub = await plebbit.createSubplebbit();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Deleted sub is not listed in plebbit.subplebbits`, async () => {
         const subs = plebbit.subplebbits;
         expect(subs).to.include(sub.address);

@@ -24,6 +24,11 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
     const _createAndValidateSubArgs = async (subArgs) => {
         const newSubplebbit = await plebbit.createSubplebbit(subArgs);
         if (!("signer" in subArgs))
@@ -116,6 +121,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const endTime = timestamp();
         await createdSub.delete();
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
+        await onlinePlebbit.destroy();
     });
 
     it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {

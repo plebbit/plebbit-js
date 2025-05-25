@@ -204,6 +204,7 @@ describe(`Vote with authors as domains`, async () => {
 
         await publishWithExpectedResult(vote, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
         expect(vote.author.address).to.equal("testgibbreish.eth");
+        await tempPlebbit.destroy();
     });
 });
 

@@ -82,6 +82,7 @@ describeSkipIfRpc(`verify pages`, async () => {
         const verification = await verifyPageJsonAlongWithObject(invalidPage, tempPlebbit, subplebbit, undefined, overrideAuthorAddress); // comments[commentWithDomainAddressIndex] author address should be modified after
         expect(verification).to.deep.equal({ valid: true });
         expect(invalidPage.comments[commentWithDomainAddressIndex].comment.author.address).to.equal(signers[6].address);
+        await tempPlebbit.destroy();
     });
 
     it(`verifyPage will invalidate validate a page with comment.author.address (domain) that resolves to address different than author's (overrideAuthorAddress=false)`, async () => {
@@ -102,6 +103,7 @@ describeSkipIfRpc(`verify pages`, async () => {
         const verification = await verifyPageJsonAlongWithObject(invalidPage, tempPlebbit, subplebbit, undefined, overrideAuthorAddress); // comments[commentWithDomainAddressIndex] author address should be modified after
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
         expect(invalidPage.comments[commentWithDomainAddressIndex].comment.author.address).to.equal("plebbit.eth");
+        await tempPlebbit.destroy();
     });
 
     describe(`A sub owner changing any of comment fields in page will invalidate`, async () => {

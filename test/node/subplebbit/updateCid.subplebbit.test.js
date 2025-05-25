@@ -5,6 +5,11 @@ describe(`Subplebbit.updateCid`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.updateCid gets updated when local-subplebbit publishes a new record`, async () => {
         const sub = await plebbit.createSubplebbit({});
         expect(sub.updateCid).to.be.undefined;

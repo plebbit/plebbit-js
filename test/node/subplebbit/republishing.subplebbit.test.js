@@ -57,6 +57,12 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
             waitTillReplyInParentPages(replyOfPostWithExtraProps, remotePlebbit)
         ]);
     });
+
+    after(async () => {
+        await plebbitDifferentIpfs.destroy();
+        await remotePlebbit.destroy();
+    });
+
     it(`Subplebbit IPNS is republished`, async () => {
         const subLoaded = await remotePlebbit.getSubplebbit(subAfterMigration.address);
         expect(subLoaded).to.be.a("object");

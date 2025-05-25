@@ -16,6 +16,7 @@ describe("plebbit", () => {
         // no dataPath in brower
         expect(plebbit.dataPath).to.equal(undefined);
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 });
 
@@ -23,6 +24,7 @@ describe(`Plebbit.subplebbits in browser`, async () => {
     it(`plebbit.subplebbits = [] in browser`, async () => {
         const plebbit = await Plebbit({ httpRoutersOptions: [] });
         expect(plebbit.subplebbits).to.deep.equal([]);
+        await plebbit.destroy();
     });
 });
 

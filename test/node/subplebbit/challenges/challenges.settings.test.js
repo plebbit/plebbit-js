@@ -17,6 +17,11 @@ describe(`subplebbit.settings.challenges`, async () => {
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+        await remotePlebbit.destroy();
+    });
+
     it(`default challenge is captcha-canvas-v3`, async () => {
         // Should be set to default on subplebbit.start()
         const subplebbit = await plebbit.createSubplebbit({});
