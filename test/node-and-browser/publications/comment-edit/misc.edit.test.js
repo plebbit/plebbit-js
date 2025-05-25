@@ -19,6 +19,11 @@ getRemotePlebbitConfigs().map((config) => {
             commentToEdit = await publishRandomPost(subplebbitAddress, plebbit);
             expect(commentToEdit.cid).to.be.a("string");
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`(edit: CommentEdit) === plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)))`, async () => {
             const props = {
                 subplebbitAddress: subplebbitAddress,
@@ -101,6 +106,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`An author publishing multiple author edit fields`, async () => {
             const authorPost = await publishRandomPost(subplebbitAddress, plebbit); // random signer
 
@@ -146,6 +155,10 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
+        });
+
+        after(async () => {
+            await plebbit.destroy();
         });
 
         it(`as an author`, async () => {

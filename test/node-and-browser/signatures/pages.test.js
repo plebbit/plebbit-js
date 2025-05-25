@@ -47,6 +47,10 @@ describeSkipIfRpc(`verify pages`, async () => {
         subplebbit = await plebbit.getSubplebbit(subAddress);
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Can validate page from live subplebbit`, async () => {
         const page = subplebbit.raw.subplebbitIpfs.posts.pages.hot;
         const pageVerification = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);

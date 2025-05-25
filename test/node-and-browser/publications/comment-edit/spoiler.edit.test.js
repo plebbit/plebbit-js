@@ -145,6 +145,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         after(async () => {
             await modPost.stop();
+            await plebbit.destroy();
         });
 
         it(`Mod can mark their own comment as spoiler`, async () => {

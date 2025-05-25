@@ -30,7 +30,6 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await commentToMod.stop();
             await plebbit.destroy();
         });
 

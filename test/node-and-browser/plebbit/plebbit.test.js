@@ -17,6 +17,7 @@ describe("Plebbit options", async () => {
     before(async () => {
         const plebbit = await Plebbit({ httpRoutersOptions: [] });
         defaultIpfsGatewayUrls = plebbit.ipfsGatewayUrls;
+        await plebbit.destroy();
     });
     it("Plebbit() uses correct default plebbit options", async () => {
         const defaultPlebbit = await Plebbit({ httpRoutersOptions: [] });
@@ -33,6 +34,7 @@ describe("Plebbit options", async () => {
             expect(defaultPlebbit.dataPath).to.equal(undefined);
         }
         JSON.stringify(defaultPlebbit); // Will throw an error if circular json
+        await defaultPlebbit.destroy();
     });
 
     it("Plebbit Options is set up correctly when only kuboRpcClientsOptions is provided", async () => {
@@ -47,6 +49,7 @@ describe("Plebbit options", async () => {
 
         expect(Object.keys(testPlebbit.clients.pubsubKuboRpcClients)).to.deep.equal([url]);
         JSON.stringify(testPlebbit); // Will throw an error if circular json
+        await testPlebbit.destroy();
     });
 
     it(`Plebbit({kuboRpcClientsOptions}) uses specified node even if ipfs node is down`, async () => {
@@ -61,6 +64,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal([{ url }]);
         expect(plebbit.kuboRpcClientsOptions).to.deep.equal([{ url }]);
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 
     itIfRpc(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
@@ -75,11 +79,13 @@ describe("Plebbit options", async () => {
         expect(plebbit.clients.pubsubKuboRpcClients).to.deep.equal({});
         expect(plebbit.clients.ipfsGateways).to.deep.equal({});
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 
     it(`Plebbit({dataPath: undefined}) sets plebbit.dataPath to undefined`, async () => {
         const plebbit = await Plebbit({ dataPath: undefined, httpRoutersOptions: [] });
         expect(plebbit.dataPath).to.be.undefined;
+        await plebbit.destroy();
     });
 
     itIfRpc("Error is thrown if RPC is down", async () => {
@@ -91,6 +97,7 @@ describe("Plebbit options", async () => {
         } catch (e) {
             expect(e.code).to.equal("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"); // Use the rpc so it would detect it's not loading
         }
+        await plebbit.destroy();
     });
 
     it(`Plebbit({ipfsGateways: undefined}) uses default gateways`, async () => {
@@ -98,6 +105,7 @@ describe("Plebbit options", async () => {
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
         expect(plebbit.ipfsGatewayUrls.sort()).to.deep.equal(defaultIpfsGatewayUrls.sort());
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 
     it(`Plebbit({ipfsGateways: []}) sets plebbit instance to not use gateways`, async () => {
@@ -105,6 +113,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.clients.ipfsGateways).to.deep.equal({});
         expect(plebbit.ipfsGatewayUrls).to.be.undefined;
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 
     it(`Plebbit({pubsubKuboRpcClientsOptions: []}) sets plebbit instance to not use pubsub providers`, async () => {
@@ -112,6 +121,7 @@ describe("Plebbit options", async () => {
         expect(Object.keys(plebbit.clients.pubsubKuboRpcClients)).to.deep.equal([]);
         expect(plebbit.pubsubKuboRpcClientsOptions).to.deep.equal([]);
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 
     it(`Plebbit({pubsubKuboRpcClientsOptions: undefined}) sets Plebbit instance to use default pubsub providers`, async () => {
@@ -119,6 +129,7 @@ describe("Plebbit options", async () => {
         const defaultPubsubKuboRpcClientsOptions = ["https://pubsubprovider.xyz/api/v0", "https://plebpubsub.xyz/api/v0"];
         expect(Object.keys(plebbit.clients.pubsubKuboRpcClients).sort()).to.deep.equal(defaultPubsubKuboRpcClientsOptions.sort());
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 
     it(`Plebbit({kuboRpcClientsOptions: []}) sets plebbit instance to not use kubo providers`, async () => {
@@ -126,6 +137,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
         expect(plebbit.kuboRpcClientsOptions).to.deep.equal([]);
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
     });
 });
 
@@ -135,6 +147,10 @@ describe("plebbit.createSigner", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
         signer = await plebbit.createSigner();
+    });
+
+    after(async () => {
+        await plebbit.destroy();
     });
 
     it("without private key argument", async () => {
@@ -279,5 +295,7 @@ if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
 
             expect(ipfsCalcOptions.headers.authorization).to.equal(expectedCred);
             expect(pubsubCalcOptions.headers.authorization).to.equal(expectedCred);
+
+            await plebbit.destroy();
         });
     });

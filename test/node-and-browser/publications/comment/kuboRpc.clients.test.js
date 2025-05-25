@@ -20,6 +20,12 @@ describeSkipIfRpc(`comment.clients.kuboRpcClients`, async () => {
         plebbit = await mockRemotePlebbit();
         gatewayPlebbit = await mockGatewayPlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+        await gatewayPlebbit.destroy();
+    });
+
     it(`comment.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
         expect(mockPost.clients.kuboRpcClients).to.be.undefined;

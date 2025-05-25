@@ -43,6 +43,7 @@ getRemotePlebbitConfigs().map((config) => {
                 expect(createdComment.state).to.equal("stopped");
                 expect(createdComment.updatedAt).to.be.undefined;
                 expect(updateHasBeenEmitted).to.be.false;
+                await plebbit.destroy();
             }
         );
     });

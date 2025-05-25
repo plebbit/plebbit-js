@@ -23,6 +23,9 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
             mockResolve: true
         });
     });
+    after(async () => {
+        await plebbit.destroy();
+    });
     it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, plebbit);
         expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(1);
@@ -64,6 +67,8 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         await updatingPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
+
+        await differentPlebbit.destroy();
     });
 
     it(`Correct order of chainProviders state when updating a comment whose sub is a domain - cached`, async () => {
@@ -132,6 +137,8 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         await updatingPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
+
+        await differentPlebbit.destroy();
     });
 
     it(`Correct order of chainProviders state when updating a comment whose author address is a domain - cached`, async () => {
@@ -168,6 +175,8 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         await updatingPost.stop();
 
         expect(actualStates).to.deep.equal(expectedStates);
+
+        await differentPlebbit.destroy();
     });
 
     it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - uncached`, async () => {
@@ -190,6 +199,7 @@ describeSkipIfRpc(`comment.clients.chainProviders`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(actualStates).to.deep.equal(expectedStates);
+        await plebbit.destroy();
     });
 
     it(`correct order of chainProviders state when publishing a comment to a sub with a domain address - cached`, async () => {

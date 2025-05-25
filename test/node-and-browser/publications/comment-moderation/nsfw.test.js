@@ -25,7 +25,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await randomPost.stop();
+            await plebbit.destroy();
         });
 
         it(`Mod can mark an author comment as nsfw`, async () => {

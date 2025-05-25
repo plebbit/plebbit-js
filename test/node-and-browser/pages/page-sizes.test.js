@@ -76,6 +76,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         beforeEach(async () => {
             // Create a fresh mock subplebbit for each test
             mockSubplebbit = await plebbit.createSubplebbit({

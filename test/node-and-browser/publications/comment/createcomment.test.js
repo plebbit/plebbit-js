@@ -20,6 +20,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it.skip(`comment = await createComment(await createComment)`, async () => {
             // For now we're not supporting creating a comment instance from another instance
             const props = {

@@ -49,6 +49,10 @@ getRemotePlebbitConfigs().map((config) => {
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`Stringified subplebbit.posts still have all props`, async () => {
             const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot.comments;
 
@@ -160,6 +164,7 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(e.code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
                 }
             }
+            await plebbit.destroy();
         });
 
         it(`.getPage will throw if the first page is over 1mb`, async () => {
@@ -202,6 +207,10 @@ getRemotePlebbitConfigs().map((config) => {
                 await waitTillPostInSubplebbitPages(newPost, plebbit);
                 subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                 validPageJson = remeda.clone(subplebbit.posts.pages.hot); // PageTypeJson, not PageIpfs
+            });
+
+            after(async () => {
+                await plebbit.destroy();
             });
 
             it("validates a legitimate page correctly", async () => {
@@ -337,6 +346,7 @@ describe(`getPage`, async () => {
             expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
             expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
         }
+        await plebbit.destroy();
     });
     itSkipIfRpc(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: true });
@@ -359,5 +369,6 @@ describe(`getPage`, async () => {
             expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
             expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
         }
+        await plebbit.destroy();
     });
 });

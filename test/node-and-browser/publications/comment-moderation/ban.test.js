@@ -31,7 +31,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await commentToBeBanned.stop();
+            await plebbit.destroy();
         });
 
         it(`Mod can ban an author for a comment`, async () => {

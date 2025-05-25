@@ -8,6 +8,11 @@ describeIfRpc(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
     before(async () => {
         plebbit = await mockRpcRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.posts.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
         const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
         const rpcUrl = Object.keys(mockSub.clients.plebbitRpcClients)[0];

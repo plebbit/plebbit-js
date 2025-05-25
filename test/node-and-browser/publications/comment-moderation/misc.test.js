@@ -22,8 +22,13 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            commentToMod = await publishRandomPost(subplebbitAddress, plebbit, {});
+            commentToMod = await publishRandomPost(subplebbitAddress, plebbit);
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`(commentMod: CommentModeration) === plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentMod)))`, async () => {
             const modProps = {
                 subplebbitAddress: subplebbitAddress,
@@ -104,6 +109,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`A mod publishing multiple mod edit fields and they all should appear on the comment`, async () => {
             const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
             const fieldsToChange = {
@@ -151,6 +160,10 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
+        });
+
+        after(async () => {
+            await plebbit.destroy();
         });
 
         it(`As a mod`, async () => {

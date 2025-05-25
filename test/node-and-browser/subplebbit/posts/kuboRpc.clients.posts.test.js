@@ -18,6 +18,10 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.posts.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -111,5 +115,6 @@ describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients`, async () => {
 
         await fetchSub.posts.getPage(fetchSub.posts.pageCids.new);
         expect(actualStates).to.deep.equal(expectedStates);
+        await remotePlebbit.destroy();
     });
 });

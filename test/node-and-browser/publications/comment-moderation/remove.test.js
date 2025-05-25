@@ -31,7 +31,6 @@ getRemotePlebbitConfigs().map((config) => {
             await postToRemove.update();
         });
         after(async () => {
-            await postToRemove.stop();
             await plebbit.destroy();
         });
 
@@ -151,7 +150,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await modPost.stop();
+            await plebbit.destroy();
         });
 
         it(`Mods can remove their own posts`, async () => {
@@ -185,8 +184,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await post.stop();
-            await replyToBeRemoved.stop();
+            await plebbit.destroy();
         });
 
         it(`Mod can remove a reply`, async () => {

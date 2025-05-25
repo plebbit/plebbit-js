@@ -21,6 +21,11 @@ describe(`Client side verification`, async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(".publish() throws if publication has invalid signature", async () => {
         const mockComment = await generateMockPost(subplebbitAddress, plebbit, false, { signer: signers[0] });
         const pubsubPublication = JSON.parse(JSON.stringify(mockComment.toJSONPubsubMessagePublication()));
@@ -63,6 +68,10 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+    });
+
+    after(async () => {
+        await plebbit.destroy();
     });
 
     it(`Subplebbit reject a comment with subplebbitAddress that is not equal to its subplebbit.address`);
@@ -171,6 +180,10 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
         plebbit = await mockRemotePlebbit();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Can't publish a post to sub with signer being part of CommentPubsubMessage`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         await setExtraPropOnCommentAndSign(post, { signer: { privateKey: post.signer.privateKey } }, true);
@@ -208,6 +221,11 @@ describe("Posts with forbidden author fields are rejected", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     const forbiddenFieldsWithValue = {
         subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 },
         shortAddress: "12345"

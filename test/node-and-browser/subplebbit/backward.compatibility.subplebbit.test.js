@@ -30,6 +30,8 @@ getRemotePlebbitConfigs().map((config) => {
             const recreatedSubFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
             expect(JSON.parse(JSON.stringify(recreatedSubFromJson)).extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
             expect(recreatedSubFromJson.extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
+
+            await remotePlebbit.destroy();
         });
     });
 
@@ -55,6 +57,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(sub.extraProp).to.equal(opts.extraProps.extraProp);
 
             await sub.stop();
+            await remotePlebbit.destroy();
         });
 
         it(`subplebbit.update() emit an error if there are unknown props not included in signature.signedPropertyNames`, async () => {
@@ -91,6 +94,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(sub.updatedAt).to.be.undefined; // should not accept update
 
             await sub.stop();
+            await remotePlebbit.destroy();
         });
     });
 });

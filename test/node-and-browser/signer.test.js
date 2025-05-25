@@ -14,6 +14,10 @@ describe("signer (node and browser)", async () => {
         randomSigner = await plebbit.createSigner();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     describe("signBufferEd25519 and verifyBufferEd25519", () => {
         const string = "1111111111111111";
         const uint8array = uint8ArrayFromString(string);

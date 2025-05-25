@@ -22,6 +22,11 @@ describe("Sign Vote", async () => {
         };
         voteSignature = await signVote({ ...voteProps, signer: signers[7] }, plebbit);
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Can sign and validate Vote correctly`, async () => {
         const verification = await verifyVote(
             { ...voteProps, signature: voteSignature },
@@ -60,6 +65,11 @@ describeSkipIfRpc("Verify vote", async () => {
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Valid vote signature fixture is validated correctly`, async () => {
         const vote = remeda.clone(validVoteFixture);
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);

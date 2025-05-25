@@ -27,7 +27,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await authorPost.stop();
+            await plebbit.destroy();
         });
 
         it(`Regular author can't mark another author comment as nsfw`, async () => {
@@ -140,11 +140,11 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer });
-            modPost.update();
+            await modPost.update();
         });
 
         after(async () => {
-            await modPost.stop();
+            await plebbit.destroy();
         });
 
         it(`Mod can mark their own comment as nsfw`, async () => {

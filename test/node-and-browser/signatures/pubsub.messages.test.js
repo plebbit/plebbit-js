@@ -47,6 +47,11 @@ describeSkipIfRpc("challengerequest", async () => {
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
         const request = parsePubsubMsgFixture(remeda.clone(validChallengeRequestFixture));
         const verificaiton = await verifyChallengeRequest(request, false);
@@ -204,6 +209,11 @@ describeSkipIfRpc(`challengemessage`, async () => {
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
         const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
         const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
@@ -243,6 +253,11 @@ describeSkipIfRpc("challengeanswer", async () => {
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
         const answer = parsePubsubMsgFixture(remeda.clone(validChallengeAnswerFixture));
         const verificaiton = await verifyChallengeAnswer(answer);
@@ -344,6 +359,7 @@ describeSkipIfRpc("challengeanswer", async () => {
         });
 
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
+        await tempPlebbit.destroy();
     });
 
     it(`Sub responds with error to challenge answer whose id not registered (no challenge request with same id)`, async () => {
@@ -404,6 +420,11 @@ describeSkipIfRpc("challengeverification", async () => {
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
         const challengeVerification = parsePubsubMsgFixture(remeda.clone(validChallengeVerificationFixture));
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);

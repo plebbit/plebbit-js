@@ -20,6 +20,9 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+        after(async () => {
+            await plebbit.destroy();
+        });
 
         describe(`Comments with extra props in challengeRequest.encrypted - ${config.name}`, async () => {
             it(`An extra prop in challengeRequest.encrypted should be accepted by the sub`, async () => {
@@ -130,10 +133,17 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+        after(async () => {
+            await plebbit.destroy();
+        });
         describe(`Publishing comment with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);
-                await setExtraPropOnCommentAndSign(post, { author: { ...post.raw.pubsubMessageToPublish.author, subplebbit: "random" } }, true);
+                await setExtraPropOnCommentAndSign(
+                    post,
+                    { author: { ...post.raw.pubsubMessageToPublish.author, subplebbit: "random" } },
+                    true
+                );
 
                 const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
 

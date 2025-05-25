@@ -25,6 +25,11 @@ describeSkipIfRpc(`Publishing  and receiving pubsub messages with extra props`, 
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     describe(`ChallengeRequest with extra props`, async () => {
         it(`A challenge request with an extra prop not included in signature.signedPropertyNames will get ignored`, async () => {
             const post = await generateMockPost(signers[0].address, plebbit);

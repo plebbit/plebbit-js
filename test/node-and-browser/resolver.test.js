@@ -26,6 +26,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
+        await plebbit.destroy();
     });
 
     it.skip(`Can resolve correctly with just ethers.js`, async () => {
@@ -34,6 +35,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
+        await plebbit.destroy();
     });
     it.skip(`Can resolve correctly with custom chain provider`, async () => {
         const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
@@ -41,6 +43,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
+        await plebbit.destroy();
     });
     it.skip(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
         const plebbit = await mockRemotePlebbit({
@@ -50,6 +53,7 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/", "viem", "ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
+        await plebbit.destroy();
     });
 
     // We don't need to test resolving solana domains anymore
@@ -62,6 +66,10 @@ describeSkipIfRpc.skip(`Resolving text records`, async () => {
                 stubStorage: true,
                 mockResolve: false
             }); // Should not mock resolver
+        });
+
+        after(async () => {
+            await plebbit.destroy();
         });
 
         it(`A solana domain that has no subplebbit-address will return null when resolved`, async () => {
@@ -89,6 +97,11 @@ describe("Comments with Authors as domains", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
         // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
         const mockPost = await plebbit.createComment({
@@ -136,6 +149,7 @@ describe("Comments with Authors as domains", async () => {
 
         await publishWithExpectedResult(mockPost, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
         expect(mockPost.author.address).to.equal("testgibbreish.eth");
+        await tempPlebbit.destroy();
     });
 
     itSkipIfRpc(
@@ -152,6 +166,7 @@ describe("Comments with Authors as domains", async () => {
             await resolveWhenConditionIsTrue(comment, () => comment.author?.address);
             await comment.stop();
             expect(comment.author.address).to.equal(signers[6].address);
+            await tempPlebbit.destroy();
         }
     );
 });
@@ -162,6 +177,10 @@ describe(`Vote with authors as domains`, async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
         comment = await publishRandomPost(subplebbit.address, plebbit, {}, false);
+    });
+
+    after(async () => {
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
@@ -220,5 +239,6 @@ describeSkipIfRpc(`Resolving resiliency`, async () => {
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(address);
         expect(resolvedAuthorAddress).to.equal(subplebbitTextRecordOfAddress);
         expect(resolveHit).to.equal(4);
+        await plebbit.destroy();
     });
 });

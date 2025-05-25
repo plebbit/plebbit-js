@@ -36,6 +36,10 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     before(async () => {
         regularKuboPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+    after(async () => {
+        await regularKuboPlebbit.destroy();
+    });
+
     it(`plebbit.getSubplebbit times out if a single gateway is not responding (timeout)`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
         customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
@@ -46,6 +50,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
             expect(e.details.gatewayToError[stallingGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
             expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
         }
+        await customPlebbit.destroy();
     });
     it(`updating a subplebbit through working gateway and another gateway that is timing out`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, stallingGateway] });
@@ -54,6 +59,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         const subFromGateway = await customPlebbit.getSubplebbit(subplebbitAddress);
         const latestSub = await fetchLatestSubplebbitJson();
         expect(subFromGateway.toJSONIpfs()).to.deep.equal(latestSub);
+        await customPlebbit.destroy();
     });
     it(`updating a subplebbit through working gateway and another gateway that is throwing an error`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, errorGateway] });
@@ -61,6 +67,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit(subplebbitAddress)]);
         expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
         expect(sub.updatedAt).to.be.a("number");
+        await customPlebbit.destroy();
     });
 
     it(`all gateways are throwing an error`, async () => {
@@ -73,6 +80,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         } catch (e) {
             expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
         }
+        await customPlebbit.destroy();
     });
 
     it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
@@ -93,6 +101,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         expect(sub.updatedAt)
             .to.be.lessThanOrEqual(base + buffer)
             .greaterThanOrEqual(base - buffer);
+        await customPlebbit.destroy();
     });
 
     it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 60 min`, async () => {
@@ -106,6 +115,7 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         expect(sub.updatedAt)
             .to.greaterThanOrEqual(timestampHourAgo - bufferSeconds)
             .lessThanOrEqual(timestampHourAgo + bufferSeconds);
+        await customPlebbit.destroy();
     });
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
         // the problem here is that the normalGateway cache IPNS for 3s, and when we do getSubplebbit it's gonna use the cache
@@ -121,5 +131,6 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
         const diff = latestSub.updatedAt - gatewaySub.updatedAt;
         const buffer = 10;
         expect(diff).to.be.lessThan(buffer);
+        await customPlebbit.destroy();
     });
 });

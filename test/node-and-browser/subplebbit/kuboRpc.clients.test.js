@@ -17,10 +17,16 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
     before(async () => {
         plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`subplebbit.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         expect(mockSub.clients.kuboRpcClients).to.be.undefined;
+        await gatewayPlebbit.destroy();
     });
 
     it(`subplebbit.clients.kuboRpcClients[url] is stopped by default`, async () => {
@@ -102,6 +108,7 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
             expect(noNewUpdateStates[i]).to.equal("fetching-ipns");
             expect(noNewUpdateStates[i + 1]).to.equal("stopped");
         }
+        await customPlebbit.destroy();
     });
 
     it(`Correct order of kubo rpc client states when we attempt to update a subplebbit with invalid record`, async () => {
@@ -132,5 +139,6 @@ describeSkipIfRpc(`subplebbit.clients.kuboRpcClients`, async () => {
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped", "fetching-ipns", "fetching-ipfs", "stopped"];
 
         expect(recordedStates).to.deep.equal(expectedStates);
+        await customPlebbit.destroy();
     });
 });

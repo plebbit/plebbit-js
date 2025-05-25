@@ -16,6 +16,10 @@ describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
         plebbit = await mockRpcRemotePlebbit();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
         const mathCliSubplebbitAddress = signers[1].address;
 

@@ -20,6 +20,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
             for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
                 expect(mockSub.clients.chainProviders[chain][chainUrl].state).to.equal("stopped");
         }
+        await plebbit.destroy();
     });
 
     it(`Correct order of chainProviders state when sub pages has comments with author.address as domain - uncached`, async () => {
@@ -60,6 +61,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
         expect(commentsWithDomainAuthor.length).to.be.greaterThan(0);
         expect(recordedStates.length).to.equal(commentsWithDomainAuthor.length * 2);
         expect(recordedStates).to.deep.equal(Array(commentsWithDomainAuthor.length).fill(["resolving-author-address", "stopped"]).flat());
+        await differentPlebbit.destroy();
     });
 
     it(`Correct order of chainProviders state when sub pages has a comment with author.address as domain - cached`, async () => {
@@ -95,6 +97,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
         );
         expect(commentsWithDomainAuthor.length).to.be.greaterThan(0);
         expect(recordedStates).to.deep.equal(expectedStates);
+        await differentPlebbit.destroy();
     });
 
     it(`Correct order of chainProviders state when updating a subplebbit that was created with plebbit.createSubplebbit({address}) - uncached`, async () => {
@@ -120,6 +123,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
         await sub.stop();
 
         expect(recordedStates.slice(0, 2)).to.deep.equal(expectedStates);
+        await remotePlebbit.destroy();
     });
 
     it(`Correct order of chainProviders state when updating a subplebbit that was created with plebbit.createSubplebbit({address}) - cached`, async () => {
@@ -154,5 +158,6 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
         await sub.stop();
 
         expect(recordedStates).to.deep.equal(expectedStates); // should be empty cause it's cached
+        await plebbit.destroy();
     });
 });

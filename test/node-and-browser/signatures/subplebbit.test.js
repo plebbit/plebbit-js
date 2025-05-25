@@ -13,6 +13,11 @@ describeSkipIfRpc("Sign subplebbit", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Can sign and validate fixture subplebbit correctly`, async () => {
         const subFixture = remeda.clone(validSubplebbitFixture);
         const subFixtureClone = remeda.clone(subFixture);
@@ -49,6 +54,10 @@ describeSkipIfRpc("Verify subplebbit", async () => {
 
     before(async () => {
         plebbit = await mockRemotePlebbit();
+    });
+
+    after(async () => {
+        await plebbit.destroy();
     });
 
     it(`Can validate live subplebbit`, async () => {
@@ -93,6 +102,7 @@ describeSkipIfRpc("Verify subplebbit", async () => {
         });
         // Subplebbit posts will be invalid because the resolved address of sub will be used to validate posts
         expect(verification.valid).to.be.false;
+        await tempPlebbit.destroy();
     });
 
     it(`subplebbit signature is invalid if subplebbit.posts has an invalid comment signature `, async () => {
@@ -161,6 +171,7 @@ describeSkipIfRpc("Verify subplebbit", async () => {
 
         // The author.address should be overridden here
         expect(getLatestComment().comment.author.address).to.equal(signers[6].address);
+        await tempPlebbit.destroy();
     });
 
     it(`A subplebbit record is rejected if it includes a field not in signature.signedPropertyNames`, async () => {
@@ -189,6 +200,7 @@ describeSkipIfRpc("Verify subplebbit", async () => {
             valid: false,
             reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
         });
+        await tempPlebbit.destroy();
     });
 
     it(`A subplebbit record is accepted if it includes an extra prop as long as it's in signature.signedPropertyNames`, async () => {
@@ -213,5 +225,6 @@ describeSkipIfRpc("Verify subplebbit", async () => {
         expect(validation).to.deep.equal({
             valid: true
         });
+        await tempPlebbit.destroy();
     });
 });

@@ -355,6 +355,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
             expect(e.details.gatewayToError[error429Gateway].details.status).to.equal(429);
             expect(e.details.gatewayToError[normalIpfsGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
         }
+        await gatewayPlebbit.destroy();
     });
     it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit({
@@ -374,6 +375,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         ]);
         const post = await generateMockPost(subplebbitAddress, gatewayPlebbit);
         await publishWithExpectedResult(post, true);
+        await gatewayPlebbit.destroy();
     });
     it(`Can publish a comment when all pubsub providers are down except one`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
@@ -398,6 +400,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
 
         const post = await generateMockPost(subplebbitAddress, tempPlebbit);
         await publishWithExpectedResult(post, true);
+        await tempPlebbit.destroy();
     });
     it(`comment.publish succeeds if provider 1 is not responding and 2 is responding`, async () => {
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
@@ -429,6 +432,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         expect(mockPost.publishingState).to.equal("succeeded");
         expect(actualStates).to.deep.equal(expectedStates);
         await mockPost.stop();
+        await plebbit.destroy();
     });
     it(`comment emits and throws errors if all providers fail to publish`, async () => {
         const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
@@ -451,6 +455,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         expect(mockPost.publishingState).to.equal("failed");
         expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrls[0]].state).to.equal("stopped");
         expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrls[1]].state).to.equal("stopped");
+        await offlinePubsubPlebbit.destroy();
     });
     it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
         // First provider waits, second provider fails to publish
@@ -490,5 +495,6 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         expect(mockPost.publishingState).to.equal("failed");
         expect(actualStates).to.deep.equal(expectedStates);
         await mockPost.stop();
+        await offlinePubsubPlebbit.destroy();
     });
 });

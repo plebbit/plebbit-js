@@ -28,6 +28,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
             const originalPost = await publishRandomPost(subplebbitAddress, plebbit);
 
@@ -453,5 +457,6 @@ describeSkipIfRpc(`comment.update() emits errors for gateways that return conten
         expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
         expect(ipfsGatewayStates).to.deep.equal(["fetching-ipfs", "stopped"]);
         expect(updateHasBeenEmitted).to.be.false;
+        await plebbit.destroy();
     });
 });

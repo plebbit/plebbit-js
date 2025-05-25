@@ -18,6 +18,7 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         const plebbit = await mockRemotePlebbit();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         expect(subplebbit.updatingState).to.equal("stopped");
+        await plebbit.destroy();
     });
 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS) and plebbit.createSubplebbit()`, async () => {
@@ -88,6 +89,7 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         await gatewayPlebbit.destroy();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        await gatewayPlebbit.destroy();
     });
 
     itSkipIfRpc("updating states is in correct order upon updating with gateway, if the sub doesn't publish any updates", async () => {
@@ -195,6 +197,7 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         expect(recordedUpdatingStates).to.deep.equal(expectedUpdatingStates);
         expect(errors.length).to.equal(1);
         expect(errors[0].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+        await kuboPlebbit.destroy();
     });
 
     it(`updatingState is correct when we attempt to update a subplebbit with invalid record, if we're updating with an ipfs gateways`, async () => {
@@ -230,5 +233,6 @@ describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub)`, async 
         expect(errors.length).to.equal(1);
         expect(errors[0].code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
         expect(errors[0].details.gatewayToError["http://localhost:18080"].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+        await gatewayPlebbit.destroy();
     });
 });

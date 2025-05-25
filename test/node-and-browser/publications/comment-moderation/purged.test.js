@@ -59,9 +59,6 @@ getRemotePlebbitConfigs().map((config) => {
             }
         });
         after(async () => {
-            await postToPurge.stop();
-            await postReply.stop();
-            await replyUnderReply.stop();
             await plebbit.destroy();
         });
 

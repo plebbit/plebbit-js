@@ -17,6 +17,10 @@ describe("encryption", () => {
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     describe("encrypt and decrypt string with aes-gcm", async () => {
         describe("generated key", () => {
             let key, ciphertext, iv, tag;

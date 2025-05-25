@@ -10,6 +10,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`comment.original after publishing a comment successfully`, async () => {
             const post = await publishRandomPost(signers[0].address, plebbit, {}, false);
             expect(post.original.author.address).to.equal(post.author.address);

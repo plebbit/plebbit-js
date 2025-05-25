@@ -21,6 +21,10 @@ describe.skip(`Stress test challenge exchange`, async () => {
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Initiate ${num} challenge exchange in parallel`, async () => {
         const promises = new Array(num).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit, {}));
         await Promise.all(promises);
@@ -39,6 +43,11 @@ getRemotePlebbitConfigs().map((config) => {
                 remotePlebbit: true
             });
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it("can post after answering correctly", async function () {
             const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
             await publishWithExpectedResult(mockPost, true);

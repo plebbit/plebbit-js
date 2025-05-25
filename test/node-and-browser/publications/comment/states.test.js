@@ -10,6 +10,10 @@ describe(`comment.state`, async () => {
         comment = await generateMockPost(subplebbitAddress, plebbit);
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`state is stopped by default`, async () => {
         expect(comment.state).to.equal("stopped");
     });

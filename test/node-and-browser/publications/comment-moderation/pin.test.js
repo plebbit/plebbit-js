@@ -83,9 +83,6 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await postToPin.stop();
-            await secondPostToPin.stop();
-            await sub.stop();
             await plebbit.destroy();
         });
 

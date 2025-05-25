@@ -8,6 +8,11 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`plebbit.createComment({challengeRequest: challengeAnswers}) includes challengeAnswers in request pubsub message`, async () => {
             const challengeRequestFields = { challengeAnswers: ["12345"] };
             const comment = await generateMockPost(signers[0].address, plebbit, false, { challengeRequest: challengeRequestFields });

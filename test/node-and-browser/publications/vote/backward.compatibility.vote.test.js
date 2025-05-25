@@ -22,6 +22,10 @@ getRemotePlebbitConfigs().map((config) => {
             commentToVoteOn = await publishRandomPost(signers[0].address, plebbit);
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`Publishing vote.extraProp should fail if it's not included in vote.signature.signedPropertyNames`, async () => {
             // We skip with RPC because rpc server will check if signature is valid before publishing
             // If signature is invalid, like in this test, it will throw before publishing

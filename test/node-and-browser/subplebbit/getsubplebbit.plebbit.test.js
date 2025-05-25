@@ -13,6 +13,11 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it("Can load subplebbit via IPNS address", async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             const _subplebbitIpns = loadedSubplebbit.toJSONIpfs();
@@ -80,7 +85,11 @@ getRemotePlebbitConfigs().map((config) => {
                 await customPlebbit.getSubplebbit(doesNotExistSubplebbitAddress);
                 expect.fail("should not succeed");
             } catch (e) {
-                expect(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"]).to.include(e.code);
+                expect([
+                    "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS",
+                    "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED",
+                    "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"
+                ]).to.include(e.code);
             }
         });
     });

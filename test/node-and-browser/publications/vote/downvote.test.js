@@ -27,8 +27,7 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(replyToVote, () => typeof replyToVote.updatedAt === "number");
         });
         after(async () => {
-            await postToVote.stop();
-            await replyToVote.stop();
+            await plebbit.destroy();
         });
 
         it("Can downvote a post", async () => {

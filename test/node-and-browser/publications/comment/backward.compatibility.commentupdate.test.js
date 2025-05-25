@@ -8,7 +8,8 @@ import {
     generateMockPost,
     publishChallengeVerificationMessageWithEncryption,
     mockPostToReturnSpecificCommentUpdate,
-    itSkipIfRpc
+    itSkipIfRpc,
+    isPlebbitFetchingUsingGateways
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { _signJson } from "../../../../dist/node/signer/signatures.js";
@@ -57,7 +58,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(postToUpdate.updatedAt).to.be.undefined; // should not accept the comment update
 
-            if (postToUpdate.clients.kuboRpcClients) {
+            if (!isPlebbitFetchingUsingGateways(plebbit)) {
                 expect(error.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
                 expect(error.details.signatureValidity).to.deep.equal({
                     valid: false,

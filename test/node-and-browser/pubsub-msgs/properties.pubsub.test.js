@@ -12,11 +12,16 @@ describe("Validate props of publication Pubsub messages", async () => {
         plebbit = await mockRemotePlebbit();
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Validate props of challengerequest`, async () => {
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-        comment.publish();
-        const request = await new Promise((resolve) => comment.once("challengerequest", resolve));
+        const requestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+        await comment.publish();
+        const request = await requestPromise;
         expect(deterministicStringify(request.comment)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
         expect(request.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(request.challengeRequestId.length).to.equal(38);
@@ -50,8 +55,9 @@ describe("Validate props of publication Pubsub messages", async () => {
     it(`Validate props of challenge`, async () => {
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-        comment.publish();
-        const challenge = await new Promise((resolve) => comment.once("challenge", resolve));
+        const challengePromise = new Promise((resolve) => comment.once("challenge", resolve));
+        await comment.publish();
+        const challenge = await challengePromise;
         expect(challenge.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challenge.challengeRequestId.length).to.equal(38);
         expect(challenge.type).to.equal("CHALLENGE");
@@ -87,8 +93,9 @@ describe("Validate props of publication Pubsub messages", async () => {
     it(`Validate props of challengeanswer`, async () => {
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-        comment.publish();
-        const challengeAnswer = await new Promise((resolve) => comment.once("challengeanswer", resolve));
+        const challengeAnswerPromise = new Promise((resolve) => comment.once("challengeanswer", resolve));
+        await comment.publish();
+        const challengeAnswer = await challengeAnswerPromise;
         expect(challengeAnswer.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challengeAnswer.challengeRequestId.length).to.equal(38);
         expect(challengeAnswer.type).to.equal("CHALLENGEANSWER");
@@ -120,13 +127,12 @@ describe("Validate props of publication Pubsub messages", async () => {
     it(`Validate props of challengeverification (challengeSuccess=false)`, async () => {
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-        comment.removeAllListeners();
-
-        comment.once("challenge", async (challengeMsg) => {
-            await comment.publishChallengeAnswers(["12345"]); // wrong answer here
-        });
-        comment.publish();
-        const challengeVerifcation = await new Promise((resolve) => comment.once("challengeverification", resolve));
+        const challengePromise = new Promise((resolve) => comment.once("challenge", resolve));
+        await comment.publish();
+        await challengePromise;
+        const challengeVerificationPromise = new Promise((resolve) => comment.once("challengeverification", resolve));
+        await comment.publishChallengeAnswers(["12345"]); // wrong answer here
+        const challengeVerifcation = await challengeVerificationPromise;
         expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.challengeRequestId.length).to.equal(38);
         expect(challengeVerifcation.type).to.equal("CHALLENGEVERIFICATION");
@@ -161,8 +167,9 @@ describe("Validate props of publication Pubsub messages", async () => {
     it(`Validate props of challengeverification (challengeSuccess=true)`, async () => {
         const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-        comment.publish();
-        const challengeVerifcation = await new Promise((resolve) => comment.once("challengeverification", resolve));
+        const challengeVerificationPromise = new Promise((resolve) => comment.once("challengeverification", resolve));
+        await comment.publish();
+        const challengeVerifcation = await challengeVerificationPromise;
         expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.challengeRequestId.length).to.equal(38);
         expect(challengeVerifcation.type).to.equal("CHALLENGEVERIFICATION");

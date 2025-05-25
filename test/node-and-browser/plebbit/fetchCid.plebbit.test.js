@@ -18,6 +18,10 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`Can fetch a cid correctly`, async () => {
             const fileString = "Hello plebs";
             const cid = await addStringToIpfs(fileString);
@@ -90,6 +94,7 @@ describe("plebbit.fetchCid - IPFS Gateway", () => {
             expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
             expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
         }
+        await plebbitWithMaliciousGateway.destroy();
     });
 
     it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
@@ -108,5 +113,7 @@ describe("plebbit.fetchCid - IPFS Gateway", () => {
         expect(content).to.be.a("string");
         const timeItTookInMs = Date.now() - timeBefore;
         expect(timeItTookInMs).to.be.lessThan(9000);
+
+        await multipleGatewayPlebbit.destroy();
     });
 });

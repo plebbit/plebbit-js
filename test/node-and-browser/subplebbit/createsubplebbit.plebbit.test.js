@@ -26,6 +26,10 @@ getRemotePlebbitConfigs().map((config) =>
             plebbit = await config.plebbitInstancePromise();
         });
 
+        after(async () => {
+            await plebbit.destroy();
+        });
+
         it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
@@ -111,6 +115,11 @@ describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
     before(async () => {
         plebbit = await mockPlebbitV2({ remotePlebbit: true });
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
         try {
             await plebbit.createSubplebbit({ address: "testSub.eth" });

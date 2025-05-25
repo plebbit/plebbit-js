@@ -25,6 +25,10 @@ describe("Sign commentedit", async () => {
         editSignature = await signCommentEdit(editProps, plebbit);
     });
 
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`plebbit.createCommentEdit creates a valid CommentEdit`, async () => {
         const commentEdit = await plebbit.createCommentEdit(editProps);
         expect(commentEdit.signature).to.deep.equal(editSignature);

@@ -17,6 +17,7 @@ describe(`comment.publishingState`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const comment = await generateMockPost(subplebbitAddress, plebbit);
         expect(comment.publishingState).to.equal("stopped");
+        await plebbit.destroy();
     });
 
     it(`comment.publishingState stays as stopped after calling comment.update() - IPFS client`, async () => {
@@ -32,6 +33,7 @@ describe(`comment.publishingState`, async () => {
         await new Promise((resolve) => comment.once("update", resolve)); // comment ipfs
         await new Promise((resolve) => comment.once("update", resolve)); // comment update
         await comment.stop();
+        await plebbit.destroy();
     });
 
     it(`comment.publishingState stays as stopped after calling comment.update() - IPFS Gateway`, async () => {
@@ -47,6 +49,7 @@ describe(`comment.publishingState`, async () => {
         await new Promise((resolve) => comment.once("update", resolve)); // comment ipfs
         await new Promise((resolve) => comment.once("update", resolve)); // comment update
         await comment.stop();
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
@@ -70,6 +73,7 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
@@ -92,6 +96,7 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
@@ -113,6 +118,7 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with gateway (cached)`, async () => {
@@ -134,6 +140,7 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
+        await gatewayPlebbit.destroy();
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with gateway (uncached)`, async () => {
@@ -156,6 +163,7 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
+        await gatewayPlebbit.destroy();
     });
 
     it(`comment.publishingState = 'failed' if user provide incorrect answer`, async () => {
@@ -172,6 +180,7 @@ describe(`comment.publishingState`, async () => {
 
         expect(mockPost.publishingState).to.equal("failed");
         await mockPost.stop();
+        await plebbit.destroy();
     });
 
     itSkipIfRpc(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
@@ -191,5 +200,6 @@ describe(`comment.publishingState`, async () => {
 
         expect(mockPost.publishingState).to.equal("failed");
         expect(mockPost.clients.pubsubKuboRpcClients[offlinePubsubUrl].state).to.equal("stopped");
+        await offlinePubsubPlebbit.destroy();
     });
 });

@@ -171,6 +171,7 @@ getRemotePlebbitConfigs().map((config) => {
             };
             await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval * 2));
             expect(updatedHasBeenCalled).to.be.false;
+            await remotePlebbit.destroy();
         });
 
         it(`subplebbit.update() is working as expected after calling subplebbit.stop()`, async () => {
@@ -231,6 +232,7 @@ describeSkipIfRpc(`Subplebbit waiting-retry`, () => {
             for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways))
                 expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
         }
+        await plebbit.destroy();
     });
 
     it(`subplebbit.update() emits emits error if resolving subplebbit IPNS times out - Kubo RPC P2P`, async () => {
@@ -249,6 +251,7 @@ describeSkipIfRpc(`Subplebbit waiting-retry`, () => {
         for (const err of waitingRetryErrs) {
             expect(err.code).to.equal("ERR_IPNS_RESOLUTION_P2P_TIMEOUT");
         }
+        await plebbit.destroy();
     });
 
     it(`subplebbit.update() emits waiting-retry if fetching subplebbit CID record times out - Kubo RPC P2P`, async () => {
@@ -270,5 +273,6 @@ describeSkipIfRpc(`Subplebbit waiting-retry`, () => {
         expect(waitingRetryErrs[0].code).to.equal("ERR_IPNS_RESOLUTION_P2P_TIMEOUT");
         expect(waitingRetryErrs[1].code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
         expect(waitingRetryErrs[2].code).to.equal("ERR_FETCH_CID_P2P_TIMEOUT");
+        await plebbit.destroy();
     });
 });

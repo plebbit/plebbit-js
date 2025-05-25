@@ -32,6 +32,11 @@ describe("sign comment", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it("Can sign a comment with randomly generated key", async () => {
         const signer = await plebbit.createSigner();
 
@@ -129,6 +134,11 @@ describeSkipIfRpc("verify Comment", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
+
+    after(async () => {
+        await plebbit.destroy();
+    });
+
     it(`Valid signature fixture is validated correctly`, async () => {
         const fixtureWithSignature = { ...fixtureComment, signature: fixtureSignature };
         const verification = await verifyCommentPubsubMessage(fixtureWithSignature, plebbit);
@@ -199,6 +209,7 @@ describeSkipIfRpc(`Comment with author.address as domain`, async () => {
         );
         expect(verificaiton).to.deep.equal({ valid: true, derivedAddress: signers[1].address });
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
+        await tempPlebbit.destroy();
     });
     it(`Comment with invalid author domain address will will be invalidated (overrideAuthorAddressIfInvalid=false)`, async () => {
         const comment = remeda.clone(validCommentAuthorAddressDomainFixture);
@@ -216,6 +227,7 @@ describeSkipIfRpc(`Comment with author.address as domain`, async () => {
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
 
         expect(comment.author.address).to.equal("plebbit.eth"); // should remain the same
+        await tempPlebbit.destroy();
     });
 });
 
@@ -225,6 +237,10 @@ describeSkipIfRpc(`commentupdate`, async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
+    });
+
+    after(async () => {
+        await plebbit.destroy();
     });
 
     it(`Can validate live CommentUpdate`, async () => {

@@ -30,7 +30,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         after(async () => {
-            await commentToEdit.stop();
+            await plebbit.destroy();
         });
 
         it(`Publishing commentEdit.extraProp should fail if it's not included in commentEdit.signature.signedPropertyNames`, async () => {

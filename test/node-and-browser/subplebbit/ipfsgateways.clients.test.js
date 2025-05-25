@@ -18,6 +18,10 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
     });
 
+    after(async () => {
+        await gatewayPlebbit.destroy();
+    });
+
     it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         expect(Object.keys(mockSub.clients.ipfsGateways).length).to.equal(1);
@@ -96,6 +100,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
             expect(recordedStates[i]).to.equal("fetching-ipns");
             expect(recordedStates[i + 1]).to.equal("stopped");
         }
+        await customPlebbit.destroy();
     });
 
     it(`Correct order of ipfs gateway states when we update a subplebbit with record whose signature is invalid`, async () => {
@@ -150,5 +155,6 @@ describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
 
         expect(waitingRetryCount).to.be.greaterThan(0);
         expect(updateCount).to.equal(1); // Only the first update should succeed
+        await customPlebbit.destroy();
     });
 });
