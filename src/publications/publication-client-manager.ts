@@ -29,6 +29,7 @@ export class PublicationClientsManager extends PlebbitClientsManager {
         subplebbit: RemoteSubplebbit;
         ipfsGatewayListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["ipfsGateways"][string]["on"]>[1]>;
         kuboRpcListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["kuboRpcClients"][string]["on"]>[1]>;
+        libp2pJsListeners?: Record<string, Parameters<RemoteSubplebbit["clients"]["libp2pJsClients"][string]["on"]>[1]>;
         chainProviderListeners?: Record<
             ChainTicker,
             Record<string, Parameters<RemoteSubplebbit["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
@@ -142,6 +143,25 @@ export class PublicationClientsManager extends PlebbitClientsManager {
         if (translatedState) this.updateKuboRpcState(translatedState, kuboRpcUrl);
     }
 
+    handleLibp2pJsClientSubplebbitState(
+        subplebbitNewLibp2pJsState: RemoteSubplebbit["clients"]["libp2pJsClients"][string]["state"],
+        libp2pJsClientKey: string
+    ) {
+        const stateMapper: Record<typeof subplebbitNewLibp2pJsState, PublicationLibp2pJsClient["state"] | undefined> = {
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            stopped: "stopped",
+            "publishing-ipns": undefined,
+            "waiting-challenge-answers": undefined,
+            "waiting-challenge-requests": undefined,
+            "publishing-challenge": undefined,
+            "publishing-challenge-verification": undefined
+        };
+
+        const translatedState = stateMapper[subplebbitNewLibp2pJsState];
+        if (translatedState) this.updateLibp2pJsClientState(translatedState, libp2pJsClientKey);
+    }
+
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
         // this function will be for translating between the states of the subplebbit and its clients to publication/comment states
@@ -190,6 +210,27 @@ export class PublicationClientsManager extends PlebbitClientsManager {
                 kuboRpcListeners[kuboRpcUrl] = kuboRpcStateListener;
             }
             this._subplebbitForUpdating.kuboRpcListeners = kuboRpcListeners;
+        }
+
+        // add libp2pJs client state listeners
+        if (
+            this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients &&
+            Object.keys(this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients).length > 0
+        ) {
+            const libp2pJsListeners: Record<string, Parameters<RemoteSubplebbit["clients"]["libp2pJsClients"][string]["on"]>[1]> = {};
+
+            for (const libp2pJsClientKey of Object.keys(this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients)) {
+                const libp2pJsClientStateListener = (
+                    subplebbitNewLibp2pJsState: RemoteSubplebbit["clients"]["libp2pJsClients"][string]["state"]
+                ) => this.handleLibp2pJsClientSubplebbitState(subplebbitNewLibp2pJsState, libp2pJsClientKey);
+
+                this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients[libp2pJsClientKey].on(
+                    "statechange",
+                    libp2pJsClientStateListener
+                );
+                libp2pJsListeners[libp2pJsClientKey] = libp2pJsClientStateListener;
+            }
+            this._subplebbitForUpdating.libp2pJsListeners = libp2pJsListeners;
         }
 
         // Add chain provider state listeners
@@ -246,6 +287,17 @@ export class PublicationClientsManager extends PlebbitClientsManager {
                     this._subplebbitForUpdating.kuboRpcListeners[kuboRpcUrl]
                 );
                 this.updateKuboRpcState("stopped", kuboRpcUrl); // need to reset all Kubo RPC states
+            }
+        }
+
+        // clean up libp2pJs listeners
+        if (this._subplebbitForUpdating.libp2pJsListeners) {
+            for (const libp2pJsClientKey of Object.keys(this._subplebbitForUpdating.libp2pJsListeners)) {
+                this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients[libp2pJsClientKey].removeListener(
+                    "statechange",
+                    this._subplebbitForUpdating.libp2pJsListeners[libp2pJsClientKey]
+                );
+                this.updateLibp2pJsClientState("stopped", libp2pJsClientKey); // need to reset all libp2pJs states
             }
         }
 

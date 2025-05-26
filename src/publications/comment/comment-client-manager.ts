@@ -46,6 +46,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         comment: Comment;
         ipfsGatewayListeners?: Record<string, Parameters<Comment["clients"]["ipfsGateways"][string]["on"]>[1]>;
         kuboRpcListeners?: Record<string, Parameters<Comment["clients"]["kuboRpcClients"][string]["on"]>[1]>;
+        libp2pJsClientListeners?: Record<string, Parameters<Comment["clients"]["libp2pJsClients"][string]["on"]>[1]>;
         chainProviderListeners?: Record<
             ChainTicker,
             Record<string, Parameters<Comment["clients"]["chainProviders"][ChainTicker][string]["on"]>[1]>
@@ -707,6 +708,10 @@ export class CommentClientsManager extends PublicationClientsManager {
         this.updateKuboRpcState(newState, kuboRpcUrl);
     }
 
+    _handleLibp2pJsClientPostState(newState: Comment["clients"]["libp2pJsClients"][string]["state"], libp2pJsClientKey: string) {
+        this.updateLibp2pJsClientState(newState, libp2pJsClientKey);
+    }
+
     _handleChainProviderPostState(
         newState: Comment["clients"]["chainProviders"][ChainTicker][string]["state"],
         chainTicker: ChainTicker,
@@ -822,6 +827,22 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._postForUpdating.kuboRpcListeners = kuboRpcListeners;
         }
 
+        if (
+            this._postForUpdating.comment.clients.libp2pJsClients &&
+            Object.keys(this._postForUpdating.comment.clients.libp2pJsClients).length > 0
+        ) {
+            const libp2pJsClientListeners: Record<string, Parameters<Comment["clients"]["libp2pJsClients"][string]["on"]>[1]> = {};
+
+            for (const libp2pJsClientKey of Object.keys(this._postForUpdating.comment.clients.libp2pJsClients)) {
+                const libp2pJsStateListener = (postNewLibp2pJsState: Comment["clients"]["libp2pJsClients"][string]["state"]) =>
+                    this._handleLibp2pJsClientPostState(postNewLibp2pJsState, libp2pJsClientKey);
+
+                this._postForUpdating.comment.clients.libp2pJsClients[libp2pJsClientKey].on("statechange", libp2pJsStateListener);
+                libp2pJsClientListeners[libp2pJsClientKey] = libp2pJsStateListener;
+            }
+            this._postForUpdating.libp2pJsClientListeners = libp2pJsClientListeners;
+        }
+
         // Add chain provider state listeners
         const chainProviderListeners: Record<
             ChainTicker,
@@ -872,6 +893,17 @@ export class CommentClientsManager extends PublicationClientsManager {
                     this._postForUpdating.kuboRpcListeners[kuboRpcUrl]
                 );
                 this.updateKuboRpcState("stopped", kuboRpcUrl); // need to reset all Kubo RPC states
+            }
+        }
+
+        // Clean up libp2pJs client listeners
+        if (this._postForUpdating.libp2pJsClientListeners) {
+            for (const libp2pJsClientKey of Object.keys(this._postForUpdating.libp2pJsClientListeners)) {
+                this._postForUpdating.comment.clients.libp2pJsClients[libp2pJsClientKey].removeListener(
+                    "statechange",
+                    this._postForUpdating.libp2pJsClientListeners[libp2pJsClientKey]
+                );
+                this.updateLibp2pJsClientState("stopped", libp2pJsClientKey); // need to reset all libp2pJs client states
             }
         }
 
