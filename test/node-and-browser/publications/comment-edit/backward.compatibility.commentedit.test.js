@@ -24,7 +24,7 @@ getRemotePlebbitConfigs().map((config) => {
         let commentToEdit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            commentToEdit = await publishRandomPost(signers[0].address, plebbit, {}, false);
+            commentToEdit = await publishRandomPost(signers[0].address, plebbit);
             await commentToEdit.update();
             await resolveWhenConditionIsTrue(commentToEdit, () => typeof commentToEdit.updatedAt === "number");
         });

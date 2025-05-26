@@ -330,45 +330,52 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-describe(`getPage`, async () => {
-    itSkipIfRpc(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
-        const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
-        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl], validatePages: true });
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
+    describe(`getPage - ${config.name}`, async () => {
+        it(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
+            const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: true });
 
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
-        sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
-        try {
-            await sub.posts.getPage(invalidPageCid);
-            expect.fail("Should fail");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
-            expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
-        }
-        await plebbit.destroy();
+            const pageIpfs = { comments: sub.posts.pages.hot.comments.map((comment) => comment.raw) };
+            expect(pageIpfs).to.exist;
+
+            const invalidPageIpfs = JSON.parse(JSON.stringify(pageIpfs));
+            invalidPageIpfs.comments[0].comment.content += "invalidate signature";
+
+            const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPageIpfs));
+            sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
+
+            try {
+                await sub.posts.getPage(invalidPageCid);
+                expect.fail("should fail");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+            }
+            await plebbit.destroy();
+        });
     });
-    itSkipIfRpc(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: true });
+});
 
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+    describe(`getPage - ${config.name}`, async () => {
+        it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
+            const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
+            const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl], validatePages: true });
 
-        const pageIpfs = { comments: sub.posts.pages.hot.comments.map((comment) => comment.raw) };
-        expect(pageIpfs).to.exist;
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const invalidPageIpfs = JSON.parse(JSON.stringify(pageIpfs));
-        invalidPageIpfs.comments[0].comment.content += "invalidate signature";
-
-        const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPageIpfs));
-        sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
-
-        try {
-            await sub.posts.getPage(invalidPageCid);
-            expect.fail("should fail");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
-            expect(e.details.signatureValidity.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
-        }
-        await plebbit.destroy();
+            const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
+            sub.posts.pageCids.active = invalidPageCid; // need to hardcode it here so we can calculate max size
+            try {
+                await sub.posts.getPage(invalidPageCid);
+                expect.fail("Should fail");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
+                expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
+            }
+            await plebbit.destroy();
+        });
     });
 });

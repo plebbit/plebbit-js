@@ -22,7 +22,7 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, authorPost;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            authorPost = await publishRandomPost(subplebbitAddress, plebbit, {});
+            authorPost = await publishRandomPost(subplebbitAddress, plebbit);
             await authorPost.update();
         });
 

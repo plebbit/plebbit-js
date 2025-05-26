@@ -31,7 +31,7 @@ describe.skip(`Stress test challenge exchange`, async () => {
     });
 });
 
-getRemotePlebbitConfigs().map((config) => {
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
     describe(`math-cli - ${config.name}`, async () => {
         let plebbit;
 

@@ -7,32 +7,106 @@ import {
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
     itSkipIfRpc,
+    getRemotePlebbitConfigs,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
+
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+    describe(`comment.publishingState - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+        it(`comment.publishingState stays as stopped after calling comment.update() - IPFS client`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const commentCid = sub.posts.pages.hot.comments[0].cid;
+            const comment = await plebbit.createComment({ cid: commentCid });
+            expect(comment.publishingState).to.equal("stopped");
+            comment.on("publishingstatechange", (newState) => {
+                if (newState !== "stopped") expect.fail("Should not change publishing state");
+            });
+            await comment.update();
+            await new Promise((resolve) => comment.once("update", resolve)); // comment ipfs
+            await new Promise((resolve) => comment.once("update", resolve)); // comment update
+            await comment.stop();
+        });
+
+        it(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
+            const expectedStates = [
+                "fetching-subplebbit-ipns",
+                "fetching-subplebbit-ipfs",
+                "publishing-challenge-request",
+                "waiting-challenge",
+                "waiting-challenge-answers",
+                "publishing-challenge-answer",
+                "waiting-challenge-verification",
+                "succeeded"
+            ];
+            const recordedStates = [];
+            const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
+            mockPost._getSubplebbitCache = () => undefined;
+
+            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(recordedStates).to.deep.equal(expectedStates);
+        });
+
+        it(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
+            const expectedStates = [
+                "publishing-challenge-request",
+                "waiting-challenge",
+                "waiting-challenge-answers",
+                "publishing-challenge-answer",
+                "waiting-challenge-verification",
+                "succeeded"
+            ];
+            const recordedStates = [];
+            const mathCliSubplebbitAddress = signers[1].address;
+            await plebbit.getSubplebbit(mathCliSubplebbitAddress); // address of math cli, we fetch it here to make sure it's cached
+            const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
+
+            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(recordedStates).to.deep.equal(expectedStates);
+        });
+
+        it(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
+            const expectedStates = [
+                "resolving-subplebbit-address",
+                "fetching-subplebbit-ipns",
+                "fetching-subplebbit-ipfs",
+                "publishing-challenge-request",
+                "waiting-challenge",
+                "succeeded"
+            ];
+            const recordedStates = [];
+            const mockPost = await generateMockPost("plebbit.eth", plebbit);
+            mockPost._getSubplebbitCache = () => undefined;
+
+            mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(recordedStates).to.deep.equal(expectedStates);
+        });
+    });
+});
 
 describe(`comment.publishingState`, async () => {
     it(`publishingState is stopped by default`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const comment = await generateMockPost(subplebbitAddress, plebbit);
         expect(comment.publishingState).to.equal("stopped");
-        await plebbit.destroy();
-    });
-
-    it(`comment.publishingState stays as stopped after calling comment.update() - IPFS client`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const commentCid = sub.posts.pages.hot.comments[0].cid;
-        const comment = await plebbit.createComment({ cid: commentCid });
-        expect(comment.publishingState).to.equal("stopped");
-        comment.on("publishingstatechange", (newState) => {
-            if (newState !== "stopped") expect.fail("Should not change publishing state");
-        });
-        await comment.update();
-        await new Promise((resolve) => comment.once("update", resolve)); // comment ipfs
-        await new Promise((resolve) => comment.once("update", resolve)); // comment update
-        await comment.stop();
         await plebbit.destroy();
     });
 
@@ -49,75 +123,6 @@ describe(`comment.publishingState`, async () => {
         await new Promise((resolve) => comment.once("update", resolve)); // comment ipfs
         await new Promise((resolve) => comment.once("update", resolve)); // comment update
         await comment.stop();
-        await plebbit.destroy();
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const expectedStates = [
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs",
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "waiting-challenge-answers",
-            "publishing-challenge-answer",
-            "waiting-challenge-verification",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
-        mockPost._getSubplebbitCache = () => undefined;
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-        await plebbit.destroy();
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const expectedStates = [
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "waiting-challenge-answers",
-            "publishing-challenge-answer",
-            "waiting-challenge-verification",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mathCliSubplebbitAddress = signers[1].address;
-        await plebbit.getSubplebbit(mathCliSubplebbitAddress); // address of math cli, we fetch it here to make sure it's cached
-        const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
-        await plebbit.destroy();
-    });
-
-    itSkipIfRpc(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
-        const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-        const expectedStates = [
-            "resolving-subplebbit-address",
-            "fetching-subplebbit-ipns",
-            "fetching-subplebbit-ipfs",
-            "publishing-challenge-request",
-            "waiting-challenge",
-            "succeeded"
-        ];
-        const recordedStates = [];
-        const mockPost = await generateMockPost("plebbit.eth", plebbit);
-        mockPost._getSubplebbitCache = () => undefined;
-
-        mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
-
-        await publishWithExpectedResult(mockPost, true);
-
-        expect(recordedStates).to.deep.equal(expectedStates);
         await plebbit.destroy();
     });
 

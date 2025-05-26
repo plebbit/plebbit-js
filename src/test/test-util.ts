@@ -1068,7 +1068,7 @@ export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: Pubs
 }
 
 export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
-    const key = "Helia config default for testing(remote)";
+    const key = "Helia config default for testing(remote)" + String(mockPubsub ? "" : Math.random());
     const heliaPlebbit = await mockPlebbitV2({
         plebbitOptions: {
             libp2pJsClientOptions: [{ key }],
@@ -1557,6 +1557,13 @@ export async function mockCacheOfTextRecord(opts: { plebbit: Plebbit; domain: st
         const valueInCache = <CachedTextRecordResolve>{ timestampSeconds: timestamp(), valueOfTextRecord: opts.value };
         await opts.plebbit._storage.setItem(cacheKey, valueInCache);
     }
+}
+
+export async function getRandomPostCidFromSub(subplebbitAddress: string, plebbit: Plebbit) {
+    const sub = await plebbit.getSubplebbit(subplebbitAddress);
+    const lastPostCid = sub.lastPostCid;
+    if (!lastPostCid) throw Error("Subplebbit should have a last post cid");
+    return lastPostCid;
 }
 
 const skipFunction = (_: any) => {};
