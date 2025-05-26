@@ -134,8 +134,30 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
         });
+    });
+});
 
-        it(`Updating state is correct when we get a new update from the subplebbit, and the order of state-event-statechange is correct`, async () => {
+getRemotePlebbitConfigs().map((config) => {
+    describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+        after(async () => {
+            await plebbit.destroy();
+        });
+
+        it(`subplebbit.updatingState defaults to stopped after plebbit.createSubplebbit()`, async () => {
+            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            expect(subplebbit.updatingState).to.equal("stopped");
+        });
+
+        it(`subplebbit.updatingState defaults to stopped after plebbit.getSubplebbit()`, async () => {
+            const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+            expect(subplebbit.updatingState).to.equal("stopped");
+        });
+
+        it(`the order of state-event-statechange is correct when we get a new update from the subplebbit`, async () => {
             const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
 
             const recordedStates = [];
@@ -156,15 +178,40 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
 
             await subplebbit.stop();
         });
-    });
-});
 
-describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
-    it(`subplebbit.updatingState defaults to stopped`, async () => {
-        const plebbit = await mockRemotePlebbit();
-        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
-        expect(subplebbit.updatingState).to.equal("stopped");
-        await plebbit.destroy();
+        it(`the order of state-event-statechange is correct when we fail to load subplebbit with critical error`, async () => {
+            // Mock the subplebbit to return an invalid record
+            const invalidSubplebbitRecord = { address: "1234.eth" }; // This will fail validation
+
+            const recordedUpdatingStates = [];
+            const errors = [];
+
+            // when error is emitted, updatingState should be set to failed
+            // but it should not emit updatingstatechange event
+
+            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            subplebbit.on("updatingstatechange", (newState) => recordedUpdatingStates.push(newState));
+            subplebbit.on("error", (err) => errors.push(err));
+
+            // First update should succeed with the initial valid record
+            await subplebbit.update();
+            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number"); // wait until the subplebbit is updated
+
+            const errorPromise = new Promise((resolve, reject) =>
+                subplebbit.once("error", () => {
+                    if (subplebbit.updatingState !== "failed") reject("if it emits error, updatingState should be failed");
+                    if (recordedUpdatingStates.length === 0) reject("if it emits error, updatingStatechange should have been emitted");
+                    if (recordedUpdatingStates[recordedUpdatingStates.length - 1] === "failed")
+                        reject("if it emits error, updatingStatechange not emit yet");
+                    resolve();
+                })
+            );
+            await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbit.address, invalidSubplebbitRecord);
+
+            await errorPromise;
+
+            await subplebbit.stop();
+        });
     });
 });
 
