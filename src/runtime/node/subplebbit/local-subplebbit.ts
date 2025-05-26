@@ -13,7 +13,8 @@ import type {
     RpcInternalSubplebbitRecordAfterFirstUpdateType,
     SubplebbitUpdatingState,
     SubplebbitState,
-    SubplebbitRoleNameUnion
+    SubplebbitRoleNameUnion,
+    SubplebbitEvents
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
@@ -56,14 +57,10 @@ import type {
 
 import type {
     CommentEditsTableRow,
-    CommentEditsTableRowInsert,
-    CommentModerationsTableRowInsert,
-    CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
     CommentsTableRow,
     CommentsTableRowInsert,
     IpfsHttpClientPubsubMessage,
-    SubplebbitEvents,
     VotesTableRow,
     VotesTableRowInsert
 } from "../../../types.js";

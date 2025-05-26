@@ -1,10 +1,9 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import type { RpcRemoteSubplebbitType } from "./types.js";
+import type { RpcRemoteSubplebbitType, SubplebbitEvents } from "./types.js";
 import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
 import { parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
-import { SubplebbitEvents } from "../types.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {

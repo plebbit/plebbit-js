@@ -2,10 +2,9 @@ import { CachedTextRecordResolve, OptionsToLoadFromGateway } from "../../clients
 import { GenericChainProviderClient } from "../../clients/chain-provider-client.js";
 import type { PageIpfs } from "../../pages/types.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
-import type { ChainTicker, PublicationEvents } from "../../types.js";
+import type { ChainTicker } from "../../types.js";
 import { Comment } from "./comment.js";
 import * as remeda from "remeda";
-
 import type { CommentIpfsType, CommentUpdateType } from "./types.js";
 import {
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
@@ -27,6 +26,7 @@ import {
     CommentPlebbitRpcStateClient
 } from "./comment-clients.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
+import type { PublicationEvents } from "../types.js";
 
 type NewCommentUpdate =
     | { commentUpdate: CommentUpdateType; commentUpdateIpfsPath: NonNullable<Comment["_commentUpdateIpfsPath"]> }

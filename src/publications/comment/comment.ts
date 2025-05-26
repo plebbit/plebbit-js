@@ -2,7 +2,7 @@ import retry, { RetryOperation } from "retry";
 import { hideClassPrivateProps, removeUndefinedValuesRecursively, retryKuboIpfsAdd, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
-import type { AuthorWithOptionalCommentUpdateJson, PublicationEvents, PublicationTypeName, SubplebbitEvents } from "../../types.js";
+import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from "../../types.js";
 
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -36,9 +36,9 @@ import {
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
-import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import { CID } from "kubo-rpc-client";
+import type { PublicationEventArgs, PublicationEvents } from "../types.js";
 
 export class Comment
     extends Publication

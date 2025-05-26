@@ -2,7 +2,7 @@ import { GenericChainProviderClient } from "../clients/chain-provider-client.js"
 import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import { ChainTicker, SubplebbitEvents } from "../types.js";
+import type { ChainTicker } from "../types.js";
 import Publication from "./publication.js";
 import * as remeda from "remeda";
 import {
@@ -13,6 +13,7 @@ import {
     PublicationPlebbitRpcStateClient
 } from "./publication-clients.js";
 import { CommentIpfsGatewayClient, CommentKuboRpcClient } from "./comment/comment-clients.js";
+import type { SubplebbitEvents } from "../subplebbit/types.js";
 
 export class PublicationClientsManager extends PlebbitClientsManager {
     override clients!: {
@@ -156,6 +157,7 @@ export class PublicationClientsManager extends PlebbitClientsManager {
             updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this)
         };
 
+        // TODO need to add handling libp2pJsClients here
         if (
             this._subplebbitForUpdating.subplebbit.clients.ipfsGateways &&
             Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways).length > 0

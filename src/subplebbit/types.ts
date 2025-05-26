@@ -26,8 +26,15 @@ import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import type { JsonOfClass, SubplebbitEvents } from "../types.js";
+import type { JsonOfClass } from "../types.js";
 import type { JsonSignature } from "../signer/types.js";
+import type {
+    DecryptedChallengeAnswerMessageType,
+    DecryptedChallengeMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    DecryptedChallengeVerificationMessageType
+} from "../pubsub-messages/types.js";
+import { PlebbitError } from "../plebbit-error.js";
 
 export type ReplyStats = {
     hourReplyCount: number;
@@ -179,6 +186,24 @@ export type RpcLocalSubplebbitUpdateResultType =
 export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
         Pick<InternalSubplebbitRecordBeforeFirstUpdateType, "_usingDefaultChallenge" | "challenges" | "roles"> {}
+
+export interface SubplebbitEvents {
+    challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;
+    challenge: (challenge: DecryptedChallengeMessageType) => void;
+    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
+
+    error: (error: PlebbitError | Error) => void;
+
+    // State changes
+    statechange: (newState: RemoteSubplebbit["state"]) => void;
+    updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
+    startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
+
+    update: (updatedSubplebbit: RemoteSubplebbit) => void;
+
+    removeListener: (eventName: string, listener: Function) => void;
+}
 
 // Create a helper type to extract the parameters of each event
 export type SubplebbitEventArgs<T extends keyof SubplebbitEvents> = Parameters<SubplebbitEvents[T]>;

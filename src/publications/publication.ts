@@ -19,13 +19,7 @@ import type {
     EncodedDecryptedChallengeVerificationMessageType,
     PublicationFromDecryptedChallengeRequest
 } from "../pubsub-messages/types.js";
-import type {
-    AuthorPubsubJsonType,
-    CreatePublicationOptions,
-    IpfsHttpClientPubsubMessage,
-    PublicationEvents,
-    PublicationTypeName
-} from "../types.js";
+import type { AuthorPubsubJsonType, CreatePublicationOptions, IpfsHttpClientPubsubMessage, PublicationTypeName } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
 import { Plebbit } from "../plebbit/plebbit.js";
@@ -70,7 +64,7 @@ import {
     decodeRpcChallengeRequestPubsubMsg,
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
-import type { PublicationPublishingState, PublicationState } from "./types.js";
+import type { PublicationEvents, PublicationPublishingState, PublicationState } from "./types.js";
 import type { SignerType } from "../signer/types.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PublicationClientsManager } from "./publication-client-manager.js";

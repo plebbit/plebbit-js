@@ -1,5 +1,4 @@
 import {
-    binaryKeyToPubsubTopic,
     doesDomainAddressHaveCapitalLetter,
     hideClassPrivateProps,
     ipnsNameToIpnsOverPubsubTopic,
@@ -10,7 +9,6 @@ import {
 } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 
-import type { SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -18,7 +16,6 @@ import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebb
 import type {
     CreateRemoteSubplebbitOptions,
     SubplebbitIpfsType,
-    SubplebbitStats,
     RpcRemoteSubplebbitType,
     SubplebbitJson,
     SubplebbitUpdatingState,
@@ -27,7 +24,8 @@ import type {
     SubplebbitSettings,
     RpcInternalSubplebbitRecordAfterFirstUpdateType,
     SubplebbitEditOptions,
-    SubplebbitEventArgs
+    SubplebbitEventArgs,
+    SubplebbitEvents
 } from "./types.js";
 import * as remeda from "remeda";
 import { PostsPages } from "../pages/pages.js";

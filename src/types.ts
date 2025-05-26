@@ -94,41 +94,6 @@ export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "
 export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "rowid"> {}
 
 // Event emitter declaration
-export interface SubplebbitEvents {
-    challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;
-    challenge: (challenge: DecryptedChallengeMessageType) => void;
-    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
-
-    error: (error: PlebbitError | Error) => void;
-
-    // State changes
-    statechange: (newState: RemoteSubplebbit["state"]) => void;
-    updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
-    startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
-
-    update: (updatedSubplebbit: RemoteSubplebbit) => void;
-
-    removeListener: (eventName: string, listener: Function) => void;
-}
-
-export interface PublicationEvents {
-    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
-    challenge: (challenge: DecryptedChallengeMessageType) => void;
-    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
-    error: (error: PlebbitError | Error) => void;
-
-    // State changes
-    publishingstatechange: (newState: Publication["publishingState"]) => void;
-    statechange: (newState: Publication["state"]) => void;
-
-    // For comment only
-    update: (updatedInstance: Comment) => void;
-    updatingstatechange: (newState: Comment["updatingState"]) => void;
-
-    removeListener: (eventName: string, listener: Function) => void;
-}
 
 export interface PlebbitEvents {
     error: (error: PlebbitError | Error) => void;
