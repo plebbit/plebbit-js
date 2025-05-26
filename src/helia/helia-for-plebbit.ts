@@ -191,7 +191,6 @@ export async function createHeliaNode(
                 delete libp2pJsClients[plebbitOptions.key];
                 log("Helia/libp2p-js stopped with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
             }
-            console.log("libp2pJsClients count", Object.keys(libp2pJsClients).length, Object.keys(libp2pJsClients));
         }
     };
 
@@ -207,8 +206,6 @@ export async function createHeliaNode(
 
     await helia.start();
     log("Helia/libp2p-js started with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
-
-    console.log("libp2pJsClients count", Object.keys(libp2pJsClients).length, Object.keys(libp2pJsClients));
 
     return fullInstanceWithOptions;
 }
