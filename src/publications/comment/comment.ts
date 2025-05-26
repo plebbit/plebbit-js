@@ -603,7 +603,7 @@ export class Comment
         // this code block is only called on a sub whose update loop is already started
         // never called in a subplebbit that's mirroring a subplebbit with an update loop
         const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
-        const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this.updatingState;
+        const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this._updatingState;
         if (opts.newState) this._setStateNoEmission(opts.newState);
         if (opts.newUpdatingState) this._setUpdatingStateNoEmission(opts.newUpdatingState);
 
