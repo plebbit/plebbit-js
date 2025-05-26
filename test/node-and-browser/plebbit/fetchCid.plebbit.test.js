@@ -71,49 +71,53 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-describe("plebbit.fetchCid - IPFS Gateway", () => {
-    itSkipIfRpc(`Throws an error if malicious gateway modifies content of file`, async () => {
-        // RPC exception
-        const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
-        const cids = await Promise.all([fileString1, fileString2].map((file) => addStringToIpfs(file)));
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+    describe("plebbit.fetchCid - " + config.name, () => {
+        it(`Throws an error if malicious gateway modifies content of file`, async () => {
+            // RPC exception
+            const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
+            const cids = await Promise.all([fileString1, fileString2].map((file) => addStringToIpfs(file)));
 
-        const plebbitWithMaliciousGateway = await mockGatewayPlebbit({
-            ipfsGatewayUrls: ["http://127.0.0.1:13415"],
-            httpRoutersOptions: [],
-            dataPath: undefined
-        });
-        const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
-        expect(fileString1).to.equal(fileString1FromGateway);
+            const plebbitWithMaliciousGateway = await mockGatewayPlebbit({
+                ipfsGatewayUrls: ["http://127.0.0.1:13415"],
+                httpRoutersOptions: [],
+                dataPath: undefined
+            });
+            const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
+            expect(fileString1).to.equal(fileString1FromGateway);
 
-        // The following line should throw since the malicious gateway would send a content that differs from original content
+            // The following line should throw since the malicious gateway would send a content that differs from original content
 
-        try {
-            await plebbitWithMaliciousGateway.fetchCid(cids[1]);
-            expect.fail("Should have thrown");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
-            expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
-        }
-        await plebbitWithMaliciousGateway.destroy();
-    });
-
-    it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
-        // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
-        // RPC exception
-        const multipleGatewayPlebbit = await Plebbit({
-            ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"],
-            httpRoutersOptions: [],
-            dataPath: undefined
+            try {
+                await plebbitWithMaliciousGateway.fetchCid(cids[1]);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
+                expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal(
+                    "ERR_CALCULATED_CID_DOES_NOT_MATCH"
+                );
+            }
+            await plebbitWithMaliciousGateway.destroy();
         });
 
-        const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
+        it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
+            // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
+            // RPC exception
+            const multipleGatewayPlebbit = await Plebbit({
+                ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"],
+                httpRoutersOptions: [],
+                dataPath: undefined
+            });
 
-        const timeBefore = Date.now();
-        const content = await multipleGatewayPlebbit.fetchCid(cid);
-        expect(content).to.be.a("string");
-        const timeItTookInMs = Date.now() - timeBefore;
-        expect(timeItTookInMs).to.be.lessThan(9000);
+            const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
 
-        await multipleGatewayPlebbit.destroy();
+            const timeBefore = Date.now();
+            const content = await multipleGatewayPlebbit.fetchCid(cid);
+            expect(content).to.be.a("string");
+            const timeItTookInMs = Date.now() - timeBefore;
+            expect(timeItTookInMs).to.be.lessThan(9000);
+
+            await multipleGatewayPlebbit.destroy();
+        });
     });
 });
