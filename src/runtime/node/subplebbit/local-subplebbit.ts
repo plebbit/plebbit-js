@@ -2568,9 +2568,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     `Local Subplebbit (${this.address}) received a new update from db with updatedAt (${this.updatedAt}). Will emit an update event`
                 );
 
-                this._setUpdatingStateNoEmission("succeeded");
-                this.emit("update", this);
-                this.emit("updatingstatechange", "succeeded");
+                this._changeStateEmitEventEmitStateChangeEvent({
+                    event: { name: "update", args: [this] },
+                    newUpdatingState: "succeeded"
+                });
             }
         }
     }

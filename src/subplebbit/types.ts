@@ -26,7 +26,7 @@ import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import type { JsonOfClass } from "../types.js";
+import type { JsonOfClass, SubplebbitEvents } from "../types.js";
 import type { JsonSignature } from "../signer/types.js";
 
 export type ReplyStats = {
@@ -179,3 +179,6 @@ export type RpcLocalSubplebbitUpdateResultType =
 export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
         Pick<InternalSubplebbitRecordBeforeFirstUpdateType, "_usingDefaultChallenge" | "challenges" | "roles"> {}
+
+// Create a helper type to extract the parameters of each event
+export type SubplebbitEventArgs<T extends keyof SubplebbitEvents> = Parameters<SubplebbitEvents[T]>;

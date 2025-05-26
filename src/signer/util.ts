@@ -148,3 +148,34 @@ export function convertBase32ToBase58btc(base32String: string) {
     const peerId = PeerId.createFromBytes(test.bytes);
     return peerId.toB58String().trim();
 }
+
+export const getPlebbitAddressFromPublicKeySync = (publicKeyBase64: string): string => {
+    // plebbit address is the base58 string of the peer id of the public key
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+        throw Error(`getPlebbitAddressFromPublicKeySync publicKeyBase64 '${publicKeyBase64}' not a string`);
+    let publicKeyBuffer: Uint8Array;
+    try {
+        publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
+    } catch (e) {
+        if (e instanceof Error) e.message = `getPlebbitAddressFromPublicKeySync publicKeyBase64 invalid: ${e.message}`;
+        throw e;
+    }
+    if (publicKeyBuffer.length !== 32)
+        throw Error(
+            `getPlebbitAddressFromPublicKeySync publicKeyBase64 '${publicKeyBase64}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`
+        );
+
+    // Create the Ed25519PublicKey instance
+    const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
+    const publicKeyBytes = _makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes);
+
+    // For Ed25519 keys, create identity hash multihash
+    const multihash = new Uint8Array(2 + publicKeyBytes.length);
+    multihash[0] = 0x00; // Identity hash code
+    multihash[1] = publicKeyBytes.length; // digest length
+    multihash.set(publicKeyBytes, 2); // the public key bytes themselves
+
+    // Create PeerId from the multihash bytes and return as base58 string
+    const peerId = PeerId.createFromBytes(multihash);
+    return peerId.toB58String().trim();
+};

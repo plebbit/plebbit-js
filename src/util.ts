@@ -25,7 +25,7 @@ import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { sha256 } from "multiformats/hashes/sha2";
+import { sha256 } from "js-sha256";
 import { base32 } from "multiformats/bases/base32";
 import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -382,18 +382,21 @@ export function ipnsNameToIpnsOverPubsubTopic(ipnsName: string) {
     return pubsubTopic;
 }
 
-export async function pubsubTopicToDhtKey(pubsubTopic: string) {
-    // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
-    const string = `floodsub:${pubsubTopic}`;
+export const pubsubTopicToDhtKey = (pubsubTopic: string): string => {
+    const stringToHash = `floodsub:${pubsubTopic}`;
+    const bytes = new TextEncoder().encode(stringToHash);
 
-    // convert string to same cid as kubo https://github.com/libp2p/go-libp2p/blob/024293c77e17794b0dd9dacec3032b4c5a535f64/p2p/discovery/routing/routing.go#L70
-    const bytes = new TextEncoder().encode(string);
-    const hash = await sha256.digest(bytes);
-    const cidVersion = 1;
-    const multicodec = 0x55;
-    const cid = CID.create(cidVersion, multicodec, hash);
+    // Use synchronous sha256 from js-sha256
+    const hashBytes = sha256.array(bytes);
+
+    // Create a multiformats digest from the raw hash bytes
+    // 0x12 is the multicodec for SHA-256
+    const digest = Digest.create(0x12, new Uint8Array(hashBytes));
+
+    // Create CID with the digest
+    const cid = CID.create(1, 0x55, digest);
     return cid.toString(base32);
-}
+};
 
 export async function retryKuboIpfsAdd({
     ipfsClient: kuboRpcClient,

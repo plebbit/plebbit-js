@@ -129,12 +129,15 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     ): void {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
         if (!resolvedTextRecord && this._subplebbit.state === "updating") {
-            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("failed");
             const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });
-            this._subplebbit.emit("error", error);
+            this._subplebbit._changeStateEmitEventEmitStateChangeEvent({
+                event: { name: "error", args: [error] },
+                newUpdatingState: "failed"
+            });
+
             throw error;
         }
     }
@@ -174,9 +177,10 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                             error
                         );
 
-                        this._subplebbit._setUpdatingStateNoEmission("waiting-retry");
-                        this._subplebbit.emit("error", error);
-                        this._subplebbit.emit("updatingstatechange", "waiting-retry");
+                        this._subplebbit._changeStateEmitEventEmitStateChangeEvent({
+                            event: { name: "error", args: [error] },
+                            newUpdatingState: "waiting-retry"
+                        });
 
                         this._ipnsLoadingOperation!.retry(<Error>e);
                     }
@@ -194,11 +198,13 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
 
         if (subLoadingRes && "criticalError" in subLoadingRes) {
             log.error(
-                `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`
+                `Subplebbit ${this._subplebbit.address} encountered a non retriable error while updating, will emit an error event and mark invalid cid to not be loaded again`,
+                subLoadingRes.criticalError
             );
-            this._subplebbit._setUpdatingStateNoEmission("failed");
-            this._subplebbit.emit("error", <PlebbitError>subLoadingRes.criticalError);
-            this._subplebbit.emit("updatingstatechange", "failed");
+            this._subplebbit._changeStateEmitEventEmitStateChangeEvent({
+                event: { name: "error", args: [subLoadingRes.criticalError] },
+                newUpdatingState: "failed"
+            });
         } else if (
             subLoadingRes?.subplebbit &&
             (this._subplebbit.raw.subplebbitIpfs?.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt
@@ -214,11 +220,16 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 timestamp() - this._subplebbit.updatedAt!,
                 "seconds old"
             );
-            this._subplebbit.emit("update", this._subplebbit);
+            this._subplebbit._changeStateEmitEventEmitStateChangeEvent({
+                event: { name: "update", args: [this._subplebbit] },
+                newUpdatingState: "succeeded"
+            });
         } else if (subLoadingRes === undefined) {
             // we loaded a sub record that we already consumed
             // we will retry later
             this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("waiting-retry");
+        } else if (subLoadingRes?.subplebbit) {
+            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("succeeded");
         }
     }
 
@@ -282,8 +293,6 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
 
         if (subRes?.subplebbit) {
             // we found a new record that is verified
-            // TODO need to fix state order here
-            this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("succeeded");
             this._plebbit._memCaches.subplebbitForPublishing.set(
                 subRes.subplebbit.address,
                 remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"])
