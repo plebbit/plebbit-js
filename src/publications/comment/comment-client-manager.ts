@@ -339,9 +339,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
                 this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
-            this._comment._setUpdatingStateNoEmission("succeeded");
-            this._comment.emit("update", this._comment);
-            this._comment.emit("updatingstatechange", "succeeded");
+            this._comment._changeStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "succeeded",
+                event: { name: "update", args: [this._comment] }
+            });
             return true;
         } else return false;
     }
@@ -375,9 +376,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                     // this is a retriable error
                     // could be problems loading from the network or gateways
                     log.trace(`Post`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
-                    this._comment._setUpdatingStateNoEmission("waiting-retry");
-                    this._comment.emit("error", e);
-                    this._comment.emit("updatingstatechange", "waiting-retry");
+                    this._comment._changeStateEmitEventEmitStateChangeEvent({
+                        newUpdatingState: "waiting-retry",
+                        event: { name: "error", args: [e] }
+                    });
                 } else {
                     // non retriable error, problem with schema/signature
                     log.error(
@@ -385,9 +387,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                         this._comment.cid!,
                         e
                     );
-                    this._comment._setUpdatingStateNoEmission("failed");
-                    this._comment.emit("error", e);
-                    this._comment.emit("updatingstatechange", "failed");
+                    this._comment._changeStateEmitEventEmitStateChangeEvent({
+                        newUpdatingState: "failed",
+                        event: { name: "error", args: [e] }
+                    });
                 }
             }
             return;
@@ -527,9 +530,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub.raw.subplebbitIpfs);
         } catch (e) {
             log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
-            this._comment._setUpdatingStateNoEmission("failed");
-            this._comment.emit("error", e as PlebbitError); // could cause uncaught error
-            this._comment.emit("updatingstatechange", "failed");
+            this._comment._changeStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                event: { name: "error", args: [e as PlebbitError] }
+            });
         }
     }
 
@@ -626,7 +630,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     override async handleErrorEventFromSub(error: PlebbitError | Error) {
         // we received a non retriable error from sub instance
         if (this._comment.state === "publishing") return super.handleErrorEventFromSub(error);
-        else {
+        else if (this._subplebbitForUpdating?.subplebbit?.updatingState === "failed") {
+            // let's make sure
             // we're updating a comment
             const log = Logger("plebbit-js:comment:update");
             log.error(
@@ -635,9 +640,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                 "received a non retriable error from its subplebbit instance. Will stop comment updating",
                 error
             );
-            this._comment._setUpdatingStateNoEmission("failed");
-            this._comment.emit("error", error);
-            this._comment.emit("updatingstatechange", "failed");
+            this._comment._changeStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                event: { name: "error", args: [error] }
+            });
             await this._comment.stop();
         }
     }
@@ -735,9 +741,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                 log
             );
             if (usedUpdateFromPage) {
-                this._comment._setUpdatingStateNoEmission("succeeded");
-                this._comment.emit("update", this._comment);
-                this._comment.emit("updatingstatechange", "succeeded");
+                this._comment._changeStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "succeeded",
+                    event: { name: "update", args: [this._comment] }
+                });
                 return; // we found an update from pages, no need to do anything else
             }
         }
@@ -755,14 +762,16 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         try {
             await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
-            this._comment._setUpdatingStateNoEmission("succeeded");
-            this._comment.emit("update", this._comment);
-            this._comment.emit("updatingstatechange", "succeeded");
+            this._comment._changeStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "succeeded",
+                event: { name: "update", args: [this._comment] }
+            });
         } catch (error) {
             log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
-            this._comment._setUpdatingStateNoEmission("failed");
-            this._comment.emit("error", error as PlebbitError | Error);
-            this._comment.emit("updatingstatechange", "failed");
+            this._comment._changeStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                event: { name: "error", args: [error as PlebbitError | Error] }
+            });
         }
     }
 

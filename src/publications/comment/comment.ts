@@ -88,7 +88,7 @@ export class Comment
     override signature!: CommentPubsubMessagePublication["signature"];
     // updating states
     override state!: CommentState;
-    updatingState!: CommentUpdatingState;
+    private _updatingState!: CommentUpdatingState;
 
     // private
     override raw: {
@@ -495,9 +495,10 @@ export class Comment
                     if (this._isCommentIpfsErrorRetriable(<PlebbitError>error)) {
                         log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, error);
 
-                        this._setUpdatingStateNoEmission("waiting-retry");
-                        this.emit("error", error);
-                        this.emit("updatingstatechange", "waiting-retry");
+                        this._changeStateEmitEventEmitStateChangeEvent({
+                            newUpdatingState: "waiting-retry",
+                            event: { name: "error", args: [error] }
+                        });
                         this._commentIpfsloadingOperation!.retry(<Error>e);
                     } else {
                         // a non retriable error
@@ -521,18 +522,19 @@ export class Comment
                 );
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
-                this._setUpdatingStateNoEmission("failed");
-                this._setStateNoEmission("stopped");
-                this.emit("error", newCommentIpfsOrNonRetriableError);
-                this.emit("updatingstatechange", "failed");
-                this.emit("statechange", "stopped");
+                this._changeStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "failed",
+                    newState: "stopped",
+                    event: { name: "error", args: [newCommentIpfsOrNonRetriableError] }
+                });
                 return;
             } else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
                 this._initIpfsProps(newCommentIpfsOrNonRetriableError);
-                this._setUpdatingStateNoEmission("succeeded");
-                this.emit("update", this);
-                this.emit("updatingstatechange", "succeeded");
+                this._changeStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "succeeded",
+                    event: { name: "update", args: [this] }
+                });
             }
         }
     }
@@ -584,14 +586,37 @@ export class Comment
     }
 
     _setUpdatingStateNoEmission(newState: Comment["updatingState"]) {
-        if (newState === this.updatingState) return;
-        this.updatingState = newState;
+        if (newState === this._updatingState) return;
+        this._updatingState = newState;
+    }
+
+    get updatingState(): Comment["_updatingState"] {
+        if (this._updatingCommentInstance) return this._updatingCommentInstance.comment.updatingState;
+        return this._updatingState;
+    }
+
+    _changeStateEmitEventEmitStateChangeEvent<T extends keyof Omit<PublicationEvents, "statechange" | "updatingstatechange">>(opts: {
+        event: { name: T; args: PublicationEventArgs<T> };
+        newUpdatingState?: Comment["updatingState"];
+        newState?: Comment["state"];
+    }) {
+        // this code block is only called on a sub whose update loop is already started
+        // never called in a subplebbit that's mirroring a subplebbit with an update loop
+        const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
+        const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this.updatingState;
+        if (opts.newState) this._setStateNoEmission(opts.newState);
+        if (opts.newUpdatingState) this._setUpdatingStateNoEmission(opts.newUpdatingState);
+
+        this.emit(opts.event.name, ...opts.event.args);
+
+        if (shouldEmitStateChange) this.emit("statechange", this.state);
+        if (shouldEmitUpdatingStateChange) this.emit("updatingstatechange", this.updatingState);
     }
 
     _setUpdatingStateWithEmissionIfNewState(newState: Comment["updatingState"]) {
-        if (newState === this.updatingState) return;
-        this.updatingState = newState;
-        this.emit("updatingstatechange", this.updatingState);
+        if (newState === this._updatingState) return;
+        this._updatingState = newState;
+        this.emit("updatingstatechange", this._updatingState);
     }
     protected override _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]) {
         const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
@@ -668,11 +693,11 @@ export class Comment
         log("Received 'error' event from RPC", err);
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
-            this._setUpdatingStateNoEmission("failed");
-            this._setStateNoEmission("stopped");
-            this.emit("error", err);
-            this.emit("updatingstatechange", "failed");
-            this.emit("statechange", "stopped");
+            this._changeStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                newState: "stopped",
+                event: { name: "error", args: [err] }
+            });
             await this._stopUpdateLoop();
         } else this.emit("error", err);
     }
@@ -733,14 +758,14 @@ export class Comment
                     await this.stop();
             },
             update: () => this._useUpdatePropsFromUpdatingCommentIfPossible(),
-            updatingstatechange: (newState) => this._setUpdatingStateWithEmissionIfNewState(newState),
+            updatingstatechange: (newState) => this.emit("updatingstatechange", newState),
             error: async (err) => {
                 if (!this._isRetriableLoadingError(err)) {
-                    this._setStateNoEmission("stopped");
-                    this._setUpdatingStateNoEmission("failed");
-                    this.emit("error", err);
-                    this.emit("updatingstatechange", "failed");
-                    this.emit("statechange", "stopped");
+                    this._changeStateEmitEventEmitStateChangeEvent({
+                        newUpdatingState: "failed",
+                        newState: "stopped",
+                        event: { name: "error", args: [err] }
+                    });
                     await this._stopUpdateLoop();
                 } else this.emit("error", err);
             }
@@ -846,6 +871,7 @@ export class Comment
         if (this._updatingCommentInstance) {
             // this post|reply instance is subscribed to plebbit._updatingComments[cid]
 
+            this._updatingState = this._updatingCommentInstance.comment.updatingState; // need to capture the last updating state before stopping
             this._updatingCommentInstance.comment.removeListener("statechange", this._updatingCommentInstance.statechange);
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
@@ -875,10 +901,10 @@ export class Comment
 
     override async stop() {
         if (this.state === "publishing") await super.stop();
-        this._setUpdatingStateWithEmissionIfNewState("stopped");
         this._updateState("stopped");
         await this._stopUpdateLoop();
         this.replies._stop();
+        this._setUpdatingStateWithEmissionIfNewState("stopped");
     }
 
     private async _validateSignature() {
