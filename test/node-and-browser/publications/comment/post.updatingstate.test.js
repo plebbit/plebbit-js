@@ -9,7 +9,8 @@ import {
     mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    addStringToIpfs
 } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
@@ -130,40 +131,6 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
 
             expect(mockPost._commentUpdateIpfsPath).to.exist;
             expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        });
-
-        it(`the order of state-event-statechange is correct when we get a new update from post`, async () => {
-            const sub = await plebbit.getSubplebbit(subplebbitAddress);
-            const postCid = sub.posts.pages.hot.comments[0].cid;
-            const mockPost = await plebbit.createComment({ cid: postCid });
-            expect(mockPost.updatedAt).to.be.undefined;
-            const recordedStates = [];
-            mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
-
-            const commentIpfsUpdate = new Promise((resolve, reject) => {
-                mockPost.once("update", () => {
-                    if (mockPost.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
-                    if (recordedStates.length === 0) reject("should have emitted an event");
-                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
-                    resolve();
-                });
-            });
-
-            const commentUpdatePromise = new Promise((resolve, reject) => {
-                mockPost.on("update", () => {
-                    if (!mockPost.updatedAt) return;
-                    if (mockPost.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
-                    if (recordedStates.length === 0) reject("should have emitted an event");
-                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
-                    resolve();
-                });
-            });
-
-            await mockPost.update();
-            await commentIpfsUpdate;
-            await commentUpdatePromise;
-
-            await mockPost.stop();
         });
 
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
@@ -411,6 +378,87 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             const filteredExpectedStates = cleanupStateArray(expectedStates);
             const filteredRecordedStates = cleanupStateArray(recordedStates);
             expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+        });
+    });
+});
+
+getRemotePlebbitConfigs().map((config) => {
+    describeSkipIfRpc(`post.updatingState - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
+        it(`post.updatingState defaults to stopped after plebbit.createComment()`, async () => {
+            const comment = await plebbit.createComment({ cid: "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D" });
+            expect(comment.updatingState).to.equal("stopped");
+        });
+
+        it(`the order of state-event-statechange is correct when we get a new update from post`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const postCid = sub.posts.pages.hot.comments[0].cid;
+            const mockPost = await plebbit.createComment({ cid: postCid });
+            expect(mockPost.updatedAt).to.be.undefined;
+            const recordedStates = [];
+            mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+            const commentIpfsUpdate = new Promise((resolve, reject) => {
+                mockPost.once("update", () => {
+                    if (mockPost.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            const commentUpdatePromise = new Promise((resolve, reject) => {
+                mockPost.on("update", () => {
+                    if (!mockPost.updatedAt) return;
+                    if (mockPost.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            await mockPost.update();
+            await commentIpfsUpdate;
+            await commentUpdatePromise;
+
+            await mockPost.stop();
+        });
+
+        it(`the order of state-event-statechange is correct when we get an unretriable error from post`, async () => {
+            const cidOfInvalidJson = await addStringToIpfs("<html>something");
+            const createdComment = await plebbit.createComment({ cid: cidOfInvalidJson });
+
+            const updatingStates = [];
+            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            const errors = [];
+            createdComment.on("error", (err) => errors.push(err));
+
+            const commentErrorPromise = new Promise((resolve, reject) => {
+                createdComment.once("error", (err) => {
+                    if (err.code !== "ERR_INVALID_JSON") reject("error should be ERR_INVALID_JSON");
+                    if (createdComment.updatingState !== "failed") reject("updating state should be failed after getting error");
+                    if (updatingStates.length === 0) reject("should have emitted an event");
+                    if (updatingStates[updatingStates.length - 1] === "failed") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            // should stop updating by itself because of the critical error
+
+            await createdComment.update();
+            await commentErrorPromise;
+
+            expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
+            expect(createdComment.state).to.equal("stopped");
+            expect(createdComment.updatingState).to.equal("failed");
         });
     });
 });
