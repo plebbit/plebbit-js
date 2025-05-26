@@ -4,9 +4,7 @@ import signers from "../../fixtures/signers.js";
 import {
     publishRandomPost,
     mockRemotePlebbit,
-    mockGatewayPlebbit,
     itSkipIfRpc,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
     publishSubplebbitRecordWithExtraProp,
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue,
@@ -14,7 +12,7 @@ import {
     getRemotePlebbitConfigs
 } from "../../../dist/node/test/test-util.js";
 
-getRemotePlebbitConfigs(["remote-kubo-rpc", "remote-libp2pjs"]).map((config) => {
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -136,6 +134,28 @@ getRemotePlebbitConfigs(["remote-kubo-rpc", "remote-libp2pjs"]).map((config) => 
             expect(errors.length).to.equal(1);
             expect(errors[0].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
         });
+
+        it(`Updating state is correct when we get a new update from the subplebbit, and the order of state-event-statechange is correct`, async () => {
+            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+
+            const recordedStates = [];
+            subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+            const updatePromise = new Promise((resolve, reject) =>
+                subplebbit.once("update", () => {
+                    if (subplebbit.updatingState !== "succeeded") reject("if it emits update, updatingState should succeed");
+                    if (recordedStates.length === 0) reject("if it emits update, updatingStatechange should have been emitted");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded")
+                        reject("if it emits update, updatingStatechange not emit yet");
+                    resolve();
+                })
+            );
+            await subplebbit.update();
+
+            await updatePromise;
+
+            await subplebbit.stop();
+        });
     });
 });
 
@@ -148,7 +168,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
     });
 });
 
-getRemotePlebbitConfigs(["remote-ipfs-gateway"]).map((config) => {
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
