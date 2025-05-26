@@ -277,7 +277,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (opts.newUpdatingState) this._setUpdatingStateNoEmission(opts.newUpdatingState);
 
         this.emit(opts.event.name, ...opts.event.args);
-        // await new Promise((resolve) => setImmediate(resolve));
 
         if (shouldEmitStateChange) this.emit("statechange", this.state);
         if (shouldEmitUpdatingStateChange) this.emit("updatingstatechange", this.updatingState);
@@ -317,11 +316,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         return true;
     }
 
-    async _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
+    _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
         const log = Logger("plebbit-js:comment:_setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible");
         const updatingSub = this._plebbit._updatingSubplebbits[this.address];
         if (updatingSub?.raw?.subplebbitIpfs && (this.updatedAt || 0) < updatingSub.raw.subplebbitIpfs.updatedAt) {
-            await this.initSubplebbitIpfsPropsNoMerge(updatingSub.raw.subplebbitIpfs);
+            this.initSubplebbitIpfsPropsNoMerge(updatingSub.raw.subplebbitIpfs);
             this.updateCid = updatingSub.updateCid;
             log.trace(
                 `New Remote Subplebbit instance`,
