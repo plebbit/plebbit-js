@@ -330,3 +330,82 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
         });
     });
 });
+
+getRemotePlebbitConfigs().map((config) => {
+    describeSkipIfRpc(`reply.updatingState - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
+        it(`the order of state-event-statechange is correct when we get a new update from reply`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
+            const mockReply = await plebbit.createComment({ cid: replyCid });
+            expect(mockReply.updatedAt).to.be.undefined;
+            const recordedStates = [];
+            mockReply.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+            const commentIpfsUpdate = new Promise((resolve, reject) => {
+                mockReply.once("update", () => {
+                    if (mockReply.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            const commentUpdatePromise = new Promise((resolve, reject) => {
+                mockReply.on("update", () => {
+                    if (!mockReply.updatedAt) return;
+                    if (mockReply.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            await mockReply.update();
+            await commentIpfsUpdate;
+            await commentUpdatePromise;
+
+            await mockReply.stop();
+        });
+
+        it(`the order of state-event-statechange is correct when we retrieve a reply by loading it from its parent pageCids`, async () => {
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            await subplebbit.update();
+            const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);
+
+            const reply = await plebbit.createComment({ cid: replyInPage.cid });
+
+            expect(reply.content).to.be.undefined;
+            expect(reply.updatedAt).to.be.undefined;
+
+            const recordedStates = [];
+            reply.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+            const commentUpdatePromise = new Promise((resolve, reject) => {
+                reply.on("update", () => {
+                    if (!reply.updatedAt) return;
+                    if (reply.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            await reply.update();
+            mockReplyToUseParentPagesForUpdates(reply);
+            expect(reply.content).to.be.undefined;
+            expect(reply.updatedAt).to.be.undefined;
+            await commentUpdatePromise;
+            await reply.stop();
+            expect(reply.updatedAt).to.be.a("number"); // should load a new comment update
+        });
+    });
+});
