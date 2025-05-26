@@ -19,8 +19,11 @@ import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub, HeliaWithKuboRpcClientFunctions, Libp2pJsClient } from "./types.js";
 import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
+import { PlebbitError } from "../plebbit-error.js";
 
 const log = Logger("plebbit-js:libp2p-js");
+
+const libp2pJsClients: Record<string, Awaited<ReturnType<typeof createHeliaNode>> & { countOfUsesOfInstance: number }> = {}; // key => plebbit.clients.libp2pJsClients[key]
 
 function getDelegatedRoutingFields(routers: string[]) {
     const routersObj: Record<string, ReturnType<typeof createDelegatedRoutingV1HttpApiClient>> = {};
@@ -39,12 +42,14 @@ export async function createHeliaNode(
         NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
 ): Promise<Pick<Libp2pJsClient, "helia" | "heliaWithKuboRpcClientFunctions" | "heliaUnixfs" | "heliaIpnsRouter" | "mergedHeliaOptions">> {
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
-
     if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
+    if (libp2pJsClients[plebbitOptions.key]) {
+        libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance++;
+        return libp2pJsClients[plebbitOptions.key];
+    }
 
     const mergedHeliaInit = {
         libp2p: {
-            // peerId: peerId, // TODO use indexed db here
             addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
             services: {
                 identify: identify(),
@@ -89,26 +94,59 @@ export async function createHeliaNode(
     //@ts-expect-error
     ipnsNameResolver.routers = ipnsNameResolver.routers.slice(1); // remove gateway ipns routing and keep only pubsub
 
+    const throwIfHeliaIsStoppingOrStopped = () => {
+        if (helia.libp2p.status === "stopped" || helia.libp2p.status === "stopping")
+            throw new PlebbitError("ERR_HELIAS_STOPPING_OR_STOPPED", {
+                heliaStatus: helia.libp2p.status,
+                heliaKey: plebbitOptions.key,
+                heliaPeerId: helia.libp2p.peerId.toString(),
+                helia
+            });
+    };
+
+    const ipnsPubsubAbortController: Record<string, AbortController> = {}; // ipns name => abort signal
     const heliaWithKuboRpcClientShape: Libp2pJsClient["heliaWithKuboRpcClientFunctions"] = {
         name: {
             resolve: (ipnsName: string, options?: KuboNameResolveOptions) => {
                 // Create an async generator function
+                throwIfHeliaIsStoppingOrStopped();
                 async function* generator() {
                     const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
-                    const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), options);
-                    yield result.record.value;
-                    return;
+                    const abortSignal = new AbortController();
+                    ipnsPubsubAbortController[ipnsName] = abortSignal;
+                    try {
+                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
+                            ...options,
+                            signal: abortSignal.signal
+                        });
+                        yield result.record.value;
+                        return;
+                    } catch (err) {
+                        const error = <Error>err;
+                        if (error.name === "NotFoundError")
+                            throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
+                                heliaError: err,
+                                ipnsName,
+                                ipnsResolveOptions: options
+                            });
+                        else throw err;
+                    } finally {
+                        abortSignal.abort("IPNS name resolve either done or thrown an error, should be aborted");
+                        delete ipnsPubsubAbortController[ipnsName];
+                    }
                 }
 
                 return generator();
             }
         },
         cat(ipfsPath: string, options) {
+            throwIfHeliaIsStoppingOrStopped();
             // ipfsPath could be a string of cid or ipfs path
             if (ipfsPath.includes("/")) {
                 // it's a path <root-cid>/<path>/
                 const rootCid = ipfsPath.split("/")[0];
                 const path = ipfsPath.split("/").slice(1).join("/");
+
                 return heliaFs.cat(CID.parse(rootCid), { ...options, path });
             } else {
                 // a cid string
@@ -119,15 +157,18 @@ export async function createHeliaNode(
             ls: async () => helia.libp2p.services.pubsub.getTopics(),
             peers: async (topic, options) => helia.libp2p.services.pubsub.getSubscribers(topic),
             publish: async (topic, data, options) => {
+                throwIfHeliaIsStoppingOrStopped();
                 const res = await helia.libp2p.services.pubsub.publish(topic, data);
                 log("Published new data to topic", topic, "And the result is", res);
             },
             subscribe: async (topic, handler, options) => {
+                throwIfHeliaIsStoppingOrStopped();
                 //@ts-expect-error
                 pubsubEventHandler.on(topic, handler);
                 helia.libp2p.services.pubsub.subscribe(topic);
             },
             unsubscribe: async (topic, handler, options) => {
+                throwIfHeliaIsStoppingOrStopped();
                 //@ts-expect-error
                 pubsubEventHandler.removeListener(topic, handler);
                 if (pubsubEventHandler.listenerCount(topic) === 0) helia.libp2p.services.pubsub.unsubscribe(topic);
@@ -140,7 +181,17 @@ export async function createHeliaNode(
             throw Error("Helia 'add' is not supported");
         },
         async stop(options) {
-            await helia.stop();
+            libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance--;
+            if (libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance === 0) {
+                Object.values(ipnsPubsubAbortController).forEach((abortController) =>
+                    abortController.abort("Aborting ipns pubsub because we're stopping helia instance")
+                );
+                Object.keys(ipnsPubsubAbortController).forEach((ipnsName) => delete ipnsPubsubAbortController[ipnsName]);
+                await helia.stop();
+                delete libp2pJsClients[plebbitOptions.key];
+                log("Helia/libp2p-js stopped with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
+            }
+            console.log("libp2pJsClients count", Object.keys(libp2pJsClients).length, Object.keys(libp2pJsClients));
         }
     };
 
@@ -152,12 +203,12 @@ export async function createHeliaNode(
         mergedHeliaOptions: mergedHeliaInit
     };
 
-    helia
-        .start()
-        .then(() => log("Helia/libp2p-js started with peerId", plebbitOptions.key))
-        .catch((e) => {
-            log.error("Error starting helia/libp2p-js with key", plebbitOptions.key, e);
-        });
+    libp2pJsClients[plebbitOptions.key] = { ...fullInstanceWithOptions, countOfUsesOfInstance: 1 };
+
+    await helia.start();
+    log("Helia/libp2p-js started with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
+
+    console.log("libp2pJsClients count", Object.keys(libp2pJsClients).length, Object.keys(libp2pJsClients));
 
     return fullInstanceWithOptions;
 }

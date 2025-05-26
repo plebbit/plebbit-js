@@ -26,6 +26,7 @@ import type {
     CreateCommentOptions
 } from "../publications/comment/types.js";
 import pTimeout from "p-timeout";
+import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
 import {
     signComment,
@@ -44,7 +45,8 @@ import {
     TIMEFRAMES_TO_SECONDS
 } from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/node/util.js";
-import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
+import { getIpfsKeyFromPrivateKey, getPeerIdFromPrivateKey } from "../signer/util.js";
+import { createSigner } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 import { Buffer } from "buffer";
@@ -62,7 +64,6 @@ import { CommentModeration } from "../publications/comment-moderation/comment-mo
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
-
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
 
@@ -595,14 +596,18 @@ export async function publishWithExpectedResult(publication: Publication, expect
         });
     });
 
+    const error = new Error("Publication did not receive response");
+    //@ts-expect-error
+    error.details = {
+        publication,
+        expectedChallengeSuccess,
+        expectedReason,
+        waitTime: 90000
+    };
+
     const validateResponsePromise = pTimeout(challengeVerificationPromise, {
         milliseconds: 90000,
-        message: new PlebbitError("ERR_PUBLICATION_DID_NOT_RECEIVE_RESPONSE", {
-            publication,
-            expectedChallengeSuccess,
-            expectedReason,
-            waitTime: 90000
-        })
+        message: error
     });
 
     publication.once(
@@ -1052,49 +1057,34 @@ export async function addStringToIpfs(content: string): Promise<string> {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
     const cid = (await ipfsClient._client.add(content)).path;
+    await plebbit.destroy();
     return cid;
 }
 
 export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: PubsubMessage) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     await plebbit._clientsManager.pubsubPublish(pubsubTopic, jsonToPublish);
+    await plebbit.destroy();
 }
 
 export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
-    const libp2pJsClientOptions = [{ key: "Helia config default for testing(remote)" }];
+    const key = "Helia config default for testing(remote)";
     const heliaPlebbit = await mockPlebbitV2({
         plebbitOptions: {
-            libp2pJsClientOptions,
+            libp2pJsClientOptions: [{ key }],
             pubsubKuboRpcClientsOptions: [],
             kuboRpcClientsOptions: [],
-            httpRoutersOptions: ["http://localhost:20001"],
+            httpRoutersOptions: ["http://localhost:20001"], // this http router transmits the addresses of kubo node of test-server.js
             dataPath: undefined
         },
         forceMockPubsub: false
     });
 
-    // if (!plebbitOptions?.pubsubKuboRpcClientsOptions || forceMockPubsub)
-    //     for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubKuboRpcClients))
-    //         plebbit.clients.pubsubKuboRpcClients[pubsubUrl]._client = createMockPubsubClient();
-
     if (mockPubsub) {
         const mockedPubsubClient = createMockPubsubClient();
         const heliaLibp2pJsClient = heliaPlebbit.clients.libp2pJsClients[Object.keys(heliaPlebbit.clients.libp2pJsClients)[0]];
         heliaLibp2pJsClient.heliaWithKuboRpcClientFunctions.pubsub = mockedPubsubClient.pubsub; // that should work for publishing/subscribing
-        // we still need to deal with IPNS-Over-Pubsub
-        // heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
-        // const kuboClient = plebbitWithKubo.clients.kuboRpcClients[Object.keys(plebbitWithKubo.clients.kuboRpcClients)[0]];
-        // // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
-        // heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock]._client.name.resolve = kuboClient._client.name.resolve.bind(
-        //     kuboClient._client.name
-        // );
     }
-    // else {
-    //     //@ts-expect-error
-    //     heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
-    // }
-
-    // TODO need to get helia to connect to kubo node
 
     return heliaPlebbit;
 }
@@ -1142,7 +1132,7 @@ export function setPlebbitConfigs(configs: PlebbitTestConfigCode[]) {
     }
 }
 
-export function getRemotePlebbitConfigs(subsetConfigs?: PlebbitTestConfigCode[]) {
+export function getRemotePlebbitConfigs(opts?: { includeOnlyTheseTests?: PlebbitTestConfigCode[] }) {
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {
@@ -1159,8 +1149,8 @@ export function getRemotePlebbitConfigs(subsetConfigs?: PlebbitTestConfigCode[])
     }
     if (plebbitConfigs.length === 0)
         throw Error("No remote plebbit configs set, " + plebbitConfigsFromEnv + " " + plebbitConfigsFromWindow);
-    if (subsetConfigs) {
-        subsetConfigs.forEach((config) => {
+    if (opts?.includeOnlyTheseTests) {
+        opts.includeOnlyTheseTests.forEach((config) => {
             if (!testConfigCodeToPlebbitInstanceWithHumanName[config])
                 throw new Error(
                     `Config "${config}" does not exist in the mapper. Available configs are: ${plebbitConfigs.map((c) => c.name).join(", ")}`
@@ -1170,7 +1160,7 @@ export function getRemotePlebbitConfigs(subsetConfigs?: PlebbitTestConfigCode[])
             .strict(testConfigCodeToPlebbitInstanceWithHumanName)
             .filter(
                 (config) =>
-                    subsetConfigs.includes(config) &&
+                    opts.includeOnlyTheseTests!.includes(config) &&
                     plebbitConfigs.find((c) => c.name === testConfigCodeToPlebbitInstanceWithHumanName[config].name)
             );
         return filteredKeys.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);

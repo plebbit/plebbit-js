@@ -13,6 +13,7 @@ export enum messages {
     ERR_COMMENT_MISSING_IPFS = "Comment is missing CommentIpfs props",
     ERR_COMMENT_MISSING_UPDATE = "Comment is missing CommentUpdate props",
     ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING = "You need to stop updating the subplebbit before starting it",
+    ERR_HELIAS_STOPPING_OR_STOPPED = "Helia is stopping or stopped already. You can't use any helia functions",
     // Plebbit errors
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
