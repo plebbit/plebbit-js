@@ -137,6 +137,40 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         });
 
+        it(`the order of state-event-statechange is correct when we get a new update from post`, async () => {
+            const sub = await plebbit.getSubplebbit(subplebbitAddress);
+            const postCid = sub.posts.pages.hot.comments[0].cid;
+            const mockPost = await plebbit.createComment({ cid: postCid });
+            expect(mockPost.updatedAt).to.be.undefined;
+            const recordedStates = [];
+            mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+            const commentIpfsUpdate = new Promise((resolve, reject) => {
+                mockPost.once("update", () => {
+                    if (mockPost.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            const commentUpdatePromise = new Promise((resolve, reject) => {
+                mockPost.on("update", () => {
+                    if (!mockPost.updatedAt) return;
+                    if (mockPost.updatingState !== "succeeded") reject("updating state should be succeeded after getting comment ipfs");
+                    if (recordedStates.length === 0) reject("should have emitted an event");
+                    if (recordedStates[recordedStates.length - 1] === "succeeded") reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            await mockPost.update();
+            await commentIpfsUpdate;
+            await commentUpdatePromise;
+
+            await mockPost.stop();
+        });
+
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
             const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ resolveAuthorAddresses: false }); // set resolve to false so it wouldn't show up in states
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
