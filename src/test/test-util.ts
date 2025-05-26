@@ -1099,28 +1099,31 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
     return heliaPlebbit;
 }
 
-type PlebbitTestConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc" | "remote-libp2pjs";
+type PlebbitTestConfigCode = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc" | "remote-libp2pjs";
 
 type PlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit> };
 
+const testConfigCodeToPlebbitInstanceWithHumanName: Record<PlebbitTestConfigCode, PlebbitConfigWithName> = {
+    "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
+    "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
+    "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "Plebbit RPC Remote" },
+    "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" },
+    "remote-libp2pjs": { plebbitInstancePromise: mockPlebbitWithHeliaConfig, name: "Libp2pJS client with no datapath (remote)" }
+};
+
 let plebbitConfigs: PlebbitConfigWithName[] = [];
 
-export function setPlebbitConfigs(configs: PlebbitTestConfig[]) {
-    const mapper: Record<PlebbitTestConfig, PlebbitConfigWithName> = {
-        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
-        "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
-        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "Plebbit RPC Remote" },
-        "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" },
-        "remote-libp2pjs": { plebbitInstancePromise: mockPlebbitWithHeliaConfig, name: "Libp2pJS client with no datapath (remote)" }
-    };
+export function setPlebbitConfigs(configs: PlebbitTestConfigCode[]) {
     if (configs.length === 0) throw Error("No configs were provided");
 
     // Make sure each config exists in the mapper
     for (const config of configs)
-        if (!mapper[config])
-            throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(mapper)}`);
+        if (!testConfigCodeToPlebbitInstanceWithHumanName[config])
+            throw new Error(
+                `Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(testConfigCodeToPlebbitInstanceWithHumanName)}`
+            );
 
-    plebbitConfigs = configs.map((config) => mapper[config]);
+    plebbitConfigs = configs.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
 
     if (globalThis.window) {
         window.addEventListener("uncaughtException", (err) => {
@@ -1139,23 +1142,39 @@ export function setPlebbitConfigs(configs: PlebbitTestConfig[]) {
     }
 }
 
-export function getRemotePlebbitConfigs() {
+export function getRemotePlebbitConfigs(subsetConfigs?: PlebbitTestConfigCode[]) {
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {
-        const configs = plebbitConfigsFromEnv.split(",") as PlebbitTestConfig[];
+        const configs = plebbitConfigsFromEnv.split(",") as PlebbitTestConfigCode[];
         // Set the configs if they're coming from the environment variable
         setPlebbitConfigs(configs);
     }
     //@ts-expect-error
     const plebbitConfigsFromWindow = <string | undefined>globalThis["window"]?.["PLEBBIT_CONFIGS"];
     if (plebbitConfigsFromWindow) {
-        const configs = plebbitConfigsFromWindow.split(",") as PlebbitTestConfig[];
+        const configs = plebbitConfigsFromWindow.split(",") as PlebbitTestConfigCode[];
         // Set the configs if they're coming from the environment variable
         setPlebbitConfigs(configs);
     }
     if (plebbitConfigs.length === 0)
         throw Error("No remote plebbit configs set, " + plebbitConfigsFromEnv + " " + plebbitConfigsFromWindow);
+    if (subsetConfigs) {
+        subsetConfigs.forEach((config) => {
+            if (!testConfigCodeToPlebbitInstanceWithHumanName[config])
+                throw new Error(
+                    `Config "${config}" does not exist in the mapper. Available configs are: ${plebbitConfigs.map((c) => c.name).join(", ")}`
+                );
+        });
+        const filteredKeys = remeda.keys
+            .strict(testConfigCodeToPlebbitInstanceWithHumanName)
+            .filter(
+                (config) =>
+                    subsetConfigs.includes(config) &&
+                    plebbitConfigs.find((c) => c.name === testConfigCodeToPlebbitInstanceWithHumanName[config].name)
+            );
+        return filteredKeys.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
+    }
     return plebbitConfigs;
 }
 
