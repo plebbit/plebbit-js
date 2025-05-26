@@ -21,12 +21,9 @@ export const AuthorAddressSchema = z.string().min(1);
 
 export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)
 
-const regexSemverNumberedGroups =
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+export const ProtocolVersionSchema = z.string().min(1);
 
-export const ProtocolVersionSchema = z.string().regex(regexSemverNumberedGroups);
-
-export const UserAgentSchema = z.string(); // TODO should use regex to validate
+export const UserAgentSchema = z.string().min(1); // TODO should use regex to validate
 
 const WalletSchema = z.object({
     address: z.string(),

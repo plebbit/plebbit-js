@@ -40,9 +40,9 @@ export const SubplebbitSuggestedSchema = z
         // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
         primaryColor: z.string().optional(),
         secondaryColor: z.string().optional(),
-        avatarUrl: z.string().url().optional(),
-        bannerUrl: z.string().url().optional(),
-        backgroundUrl: z.string().url().optional(),
+        avatarUrl: z.string().min(1).optional(),
+        bannerUrl: z.string().min(1).optional(),
+        backgroundUrl: z.string().min(1).optional(),
         language: z.string().optional()
         // TODO: menu links, wiki pages, sidebar widgets
     })

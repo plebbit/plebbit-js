@@ -36,7 +36,7 @@ export const CreateCommentOptionsSchema = z
         nsfw: z.boolean().optional(),
         content: CommentContentSchema.optional(),
         title: z.string().optional(),
-        link: z.string().max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT).url().optional(),
+        link: z.string().min(1).max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT).optional(),
         linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
         linkHeight: z.number().positive().optional(),
         linkHtmlTagName: z.string().min(1).optional(),
@@ -94,7 +94,7 @@ export const CommentChallengeRequestToEncryptSchema = CreateCommentOptionsSchema
 // These are the props added by the subplebbit before adding the comment to ipfs
 export const CommentIpfsSchema = CommentPubsubMessageWithFlexibleAuthorSchema.extend({
     depth: z.number().nonnegative().int(),
-    thumbnailUrl: z.string().url().optional(),
+    thumbnailUrl: z.string().min(1).optional(),
     thumbnailUrlWidth: z.number().positive().optional(),
     thumbnailUrlHeight: z.number().positive().optional(),
     previousCid: CidStringSchema.optional()
