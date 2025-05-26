@@ -884,6 +884,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     this._updatePublishingStateNoEmission("failed");
                     this.emit("error", error); // I think this line could cause an uncaught error
                     this.emit("publishingstatechange", "failed");
+                } else if (this.state === "stopped") {
+                    log.error(`Publication is stopped, will not re-publish`);
                 } else {
                     log(
                         `Re-publishing publication after ${
