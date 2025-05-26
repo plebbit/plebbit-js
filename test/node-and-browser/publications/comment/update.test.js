@@ -433,34 +433,36 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-describeSkipIfRpc(`comment.update() emits errors for gateways that return content that does not correspond to their cids`, async () => {
-    it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID - IPFS Gateway`, async () => {
-        const gatewayUrl = "http://localhost:13415"; // This gateway responds with content that is not equivalent to its CID
-        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+    describeSkipIfRpc(`comment.update() emits errors for gateways that return content that does not correspond to their cids`, async () => {
+        it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID - IPFS Gateway`, async () => {
+            const gatewayUrl = "http://localhost:13415"; // This gateway responds with content that is not equivalent to its CID
+            const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
 
-        const cid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with random content for this cid
-        const createdComment = await plebbit.createComment({ cid });
+            const cid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with random content for this cid
+            const createdComment = await plebbit.createComment({ cid });
 
-        const ipfsGatewayStates = [];
-        const updatingStates = [];
-        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        const ipfsGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
-        createdComment.clients.ipfsGateways[ipfsGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
-        let updateHasBeenEmitted = false;
-        createdComment.once("update", () => (updateHasBeenEmitted = true));
-        await createdComment.update();
+            const ipfsGatewayStates = [];
+            const updatingStates = [];
+            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            const ipfsGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
+            createdComment.clients.ipfsGateways[ipfsGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
+            let updateHasBeenEmitted = false;
+            createdComment.once("update", () => (updateHasBeenEmitted = true));
+            await createdComment.update();
 
-        const err = await new Promise((resolve) => createdComment.once("error", resolve));
-        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
-        expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
+            const err = await new Promise((resolve) => createdComment.once("error", resolve));
+            expect(err.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
+            expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
 
-        // should stop updating by itself because of the critical error
+            // should stop updating by itself because of the critical error
 
-        expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("failed");
-        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-        expect(ipfsGatewayStates).to.deep.equal(["fetching-ipfs", "stopped"]);
-        expect(updateHasBeenEmitted).to.be.false;
-        await plebbit.destroy();
+            expect(createdComment.state).to.equal("stopped");
+            expect(createdComment.updatingState).to.equal("failed");
+            expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+            expect(ipfsGatewayStates).to.deep.equal(["fetching-ipfs", "stopped"]);
+            expect(updateHasBeenEmitted).to.be.false;
+            await plebbit.destroy();
+        });
     });
 });
