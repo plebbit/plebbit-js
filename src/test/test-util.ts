@@ -64,6 +64,15 @@ import { CommentModeration } from "../publications/comment-moderation/comment-mo
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
+
+interface MockPlebbitOptions {
+    plebbitOptions?: InputPlebbitOptions;
+    forceMockPubsub?: boolean;
+    stubStorage?: boolean;
+    mockResolve?: boolean;
+    remotePlebbit?: boolean;
+}
+
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
 
@@ -403,19 +412,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
             httpRoutersOptions: []
         };
 }
-export async function mockPlebbitV2({
-    plebbitOptions,
-    forceMockPubsub,
-    stubStorage,
-    mockResolve,
-    remotePlebbit
-}: {
-    plebbitOptions?: InputPlebbitOptions;
-    forceMockPubsub?: boolean;
-    stubStorage?: boolean;
-    mockResolve?: boolean;
-    remotePlebbit?: boolean;
-}) {
+export async function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStorage, mockResolve, remotePlebbit }: MockPlebbitOptions = {}) {
     if (remotePlebbit) plebbitOptions = { dataPath: undefined, ...plebbitOptions };
     const plebbit = await mockPlebbit(plebbitOptions, forceMockPubsub, stubStorage, mockResolve);
     return plebbit;
@@ -471,9 +468,9 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
 }
 
 // name should be changed to mockBrowserPlebbit
-export async function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
+export async function mockRemotePlebbit(opts?: MockPlebbitOptions) {
     // Mock browser environment
-    const plebbit = await mockPlebbit({ dataPath: undefined, ...plebbitOptions });
+    const plebbit = await mockPlebbitV2({ ...opts, plebbitOptions: { dataPath: undefined, ...opts?.plebbitOptions } });
     plebbit._canCreateNewLocalSub = () => false;
     return plebbit;
 }
@@ -487,12 +484,15 @@ export async function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions) 
     return plebbit;
 }
 
-export async function mockPlebbitNoDataPathWithOnlyKuboClient(plebbitOptions?: InputPlebbitOptions) {
-    const plebbit = await mockPlebbit({
-        kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
-        plebbitRpcClientsOptions: undefined,
-        dataPath: undefined,
-        ...plebbitOptions
+export async function mockPlebbitNoDataPathWithOnlyKuboClient(opts?: MockPlebbitOptions) {
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+            plebbitRpcClientsOptions: undefined,
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
     });
     return plebbit;
 }
@@ -508,10 +508,17 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
     return plebbit;
 }
 
-export async function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
+export async function mockRpcRemotePlebbit(opts?: MockPlebbitOptions) {
     if (!isRpcFlagOn()) throw Error("This function should only be used when the rpc flag is on");
     // This instance will connect to an rpc server that has no local subs
-    const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            plebbitRpcClientsOptions: ["ws://localhost:39653"],
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
+    });
     return plebbit;
 }
 
@@ -522,20 +529,21 @@ export async function mockRPCLocalPlebbit(plebbitOptions?: InputPlebbitOptions) 
     return mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
 }
 
-export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
+export async function mockGatewayPlebbit(opts?: MockPlebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit({
-        ipfsGatewayUrls: ["http://localhost:18080"],
-        plebbitRpcClientsOptions: undefined,
-        kuboRpcClientsOptions: undefined,
-        pubsubKuboRpcClientsOptions: undefined,
-        ...plebbitOptions
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            ipfsGatewayUrls: ["http://localhost:18080"],
+            plebbitRpcClientsOptions: undefined,
+            kuboRpcClientsOptions: undefined,
+            pubsubKuboRpcClientsOptions: undefined,
+            libp2pJsClientOptions: undefined,
+            ...opts?.plebbitOptions
+        },
+        remotePlebbit: true
     });
     return plebbit;
-}
-
-export async function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitOptions) {
-    return mockGatewayPlebbit({ ipfsGatewayUrls: undefined, ...plebbitOptions });
 }
 
 export async function publishRandomReply(
@@ -1067,20 +1075,23 @@ export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: Pubs
     await plebbit.destroy();
 }
 
-export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
-    const key = "Helia config default for testing(remote)" + String(mockPubsub ? "" : Math.random());
+export async function mockPlebbitWithHeliaConfig(opts?: MockPlebbitOptions) {
+    const key = "Helia config default for testing(remote)" + String(opts?.forceMockPubsub ? "" : Math.random());
+    const forceMockPubsub = typeof opts?.forceMockPubsub === "boolean" ? opts.forceMockPubsub : true;
     const heliaPlebbit = await mockPlebbitV2({
+        forceMockPubsub,
+        ...opts,
         plebbitOptions: {
             libp2pJsClientOptions: [{ key }],
             pubsubKuboRpcClientsOptions: [],
             kuboRpcClientsOptions: [],
             httpRoutersOptions: ["http://localhost:20001"], // this http router transmits the addresses of kubo node of test-server.js
-            dataPath: undefined
-        },
-        forceMockPubsub: false
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
     });
 
-    if (mockPubsub) {
+    if (forceMockPubsub) {
         const mockedPubsubClient = createMockPubsubClient();
         const heliaLibp2pJsClient = heliaPlebbit.clients.libp2pJsClients[Object.keys(heliaPlebbit.clients.libp2pJsClients)[0]];
         heliaLibp2pJsClient.heliaWithKuboRpcClientFunctions.pubsub = mockedPubsubClient.pubsub; // that should work for publishing/subscribing
@@ -1091,23 +1102,35 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
 
 type PlebbitTestConfigCode = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc" | "remote-libp2pjs";
 
-type PlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit>; testConfigCode: PlebbitTestConfigCode };
+type PlebbitConfigWithName = {
+    name: string;
+    plebbitInstancePromise: (args?: MockPlebbitOptions) => Promise<Plebbit>;
+    testConfigCode: PlebbitTestConfigCode;
+};
 
 const testConfigCodeToPlebbitInstanceWithHumanName: Record<PlebbitTestConfigCode, PlebbitConfigWithName> = {
     "remote-kubo-rpc": {
-        plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient,
+        plebbitInstancePromise: (args?: MockPlebbitOptions) => mockPlebbitNoDataPathWithOnlyKuboClient(args),
         name: "Kubo Node with no datapath (remote)",
         testConfigCode: "remote-kubo-rpc"
     },
-    "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway", testConfigCode: "remote-ipfs-gateway" },
+    "remote-ipfs-gateway": {
+        plebbitInstancePromise: (args?: MockPlebbitOptions) => mockGatewayPlebbit(args),
+        name: "IPFS Gateway",
+        testConfigCode: "remote-ipfs-gateway"
+    },
     "remote-plebbit-rpc": {
-        plebbitInstancePromise: mockRpcRemotePlebbit,
+        plebbitInstancePromise: (args?: MockPlebbitOptions) => mockRpcRemotePlebbit(args),
         name: "Plebbit RPC Remote",
         testConfigCode: "remote-plebbit-rpc"
     },
-    "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)", testConfigCode: "local-kubo-rpc" },
+    "local-kubo-rpc": {
+        plebbitInstancePromise: (args?: MockPlebbitOptions) => mockPlebbitV2(args),
+        name: "Kubo node with datapath (local)",
+        testConfigCode: "local-kubo-rpc"
+    },
     "remote-libp2pjs": {
-        plebbitInstancePromise: mockPlebbitWithHeliaConfig,
+        plebbitInstancePromise: (args?: MockPlebbitOptions) => mockPlebbitWithHeliaConfig(args),
         name: "Libp2pJS client with no datapath (remote)",
         testConfigCode: "remote-libp2pjs"
     }
@@ -1181,7 +1204,7 @@ export function getRemotePlebbitConfigs(opts?: { includeOnlyTheseTests?: Plebbit
 }
 
 export async function createNewIpns() {
-    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({});
     const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
     const signer = await plebbit.createSigner();
     signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
@@ -1369,7 +1392,7 @@ export function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Commen
 }
 
 export async function createCommentUpdateWithInvalidSignature(commentCid: string) {
-    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({});
 
     const comment = await plebbit.getComment(commentCid);
 
