@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
-import { describeIfRpc, createNewIpns, resolveWhenConditionIsTrue, mockRpcRemotePlebbit } from "../../../dist/node/test/test-util.js";
+import { describeIfRpc, createNewIpns, resolveWhenConditionIsTrue, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
 
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 

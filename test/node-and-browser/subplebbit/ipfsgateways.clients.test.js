@@ -3,6 +3,7 @@ import signers from "../../fixtures/signers.js";
 import {
     describeSkipIfRpc,
     publishRandomPost,
+    getRemotePlebbitConfigs,
     mockGatewayPlebbit,
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue

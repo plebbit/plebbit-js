@@ -8,6 +8,7 @@ import {
     describeSkipIfRpc,
     publishRandomPost,
     mockGatewayPlebbit,
+    getRemotePlebbitConfigs,
     waitTillPostInSubplebbitPages,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
