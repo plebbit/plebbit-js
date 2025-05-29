@@ -192,8 +192,6 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(comment2.updatedAt).to.be.a("number");
                     expect(comment2.state).to.equal("stopped");
                     expect(comment2.updatingState).to.equal("stopped");
-
-                    await plebbit.destroy();
                 });
 
                 it(`Calling ${replyPostConfig.commentType}FromGetComment.stop() should not stop other updating comments`, async () => {
@@ -207,8 +205,6 @@ getRemotePlebbitConfigs().map((config) => {
 
                     expect(plebbit._updatingComments[comment1.cid]).to.exist; // comment1 should still be updating
                     expect(plebbit._updatingComments[comment1.cid].listenerCount("update")).to.equal(1);
-
-                    await plebbit.destroy();
                 });
             });
         }
