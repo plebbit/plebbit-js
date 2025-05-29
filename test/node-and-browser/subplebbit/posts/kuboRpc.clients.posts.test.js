@@ -1,19 +1,18 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 
-import {
-    mockRemotePlebbit,
-    describeSkipIfRpc,
-    mockGatewayPlebbit,
-    getRemotePlebbitConfigs,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    addStringToIpfs
-} from "../../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, mockGatewayPlebbit, getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
-    describeSkipIfRpc(`subplebbit.posts.clients.kuboRpcClients - ${config.name}`, async () => {
+const clientsFieldName = {
+    "remote-kubo-rpc": "kuboRpcClients",
+    "remote-libp2pjs": "libp2pJsClients"
+};
+
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+    const clientFieldName = clientsFieldName[config.testConfigCode];
+    describeSkipIfRpc(`subplebbit.posts.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
@@ -24,21 +23,21 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             await plebbit.destroy();
         });
 
-        it(`subplebbit.posts.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
+        it(`subplebbit.posts.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
-            const sortTypes = Object.keys(mockSub.posts.clients.kuboRpcClients);
+            const sortTypes = Object.keys(mockSub.posts.clients[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
-            for (const sortType of sortTypes) expect(mockSub.posts.clients.kuboRpcClients[sortType]).to.deep.equal({});
+            for (const sortType of sortTypes) expect(mockSub.posts.clients[clientFieldName][sortType]).to.deep.equal({});
             await gatewayPlebbit.destroy();
         });
 
-        it(`subplebbit.posts.clients.kuboRpcClients[sortType][url] is stopped by default`, async () => {
+        it(`subplebbit.posts.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
-            const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
+            const key = Object.keys(mockSub.clients[clientFieldName])[0];
             // add tests here
-            expect(Object.keys(mockSub.posts.clients.kuboRpcClients["new"]).length).to.equal(1);
-            expect(mockSub.posts.clients.kuboRpcClients["new"][kuboUrl].state).to.equal("stopped");
+            expect(Object.keys(mockSub.posts.clients[clientFieldName]["new"]).length).to.equal(1);
+            expect(mockSub.posts.clients[clientFieldName]["new"][key].state).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from subplebbit.posts.pageCids.new`, async () => {
@@ -51,11 +50,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             mockSub.posts.pageCids.new = firstPageMockedCid;
 
-            const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
+            const clientKey = Object.keys(mockSub.clients[clientFieldName])[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates = [];
-            mockSub.posts.clients.kuboRpcClients["new"][kuboUrl].on("statechange", (newState) => {
+            mockSub.posts.clients[clientFieldName]["new"][clientKey].on("statechange", (newState) => {
                 actualStates.push(newState);
             });
 
@@ -65,7 +64,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
         it("Correct state of 'new' sort is updated after fetching second page of 'new' pages", async () => {
             const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
-            const kuboUrl = Object.keys(mockSub.clients.kuboRpcClients)[0];
+            const clientKey = Object.keys(mockSub.clients[clientFieldName])[0];
 
             const secondPageMocked = { comments: mockSub.posts.pages.hot.comments.slice(1, 5).map((comment) => comment.raw) }; // create a slightly different page
             const secondPageCid = await addStringToIpfs(JSON.stringify(secondPageMocked));
@@ -81,7 +80,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             const expectedStates = ["fetching-ipfs", "stopped", "fetching-ipfs", "stopped"];
             const actualStates = [];
-            mockSub.posts.clients.kuboRpcClients["new"][kuboUrl].on("statechange", (newState) => {
+            mockSub.posts.clients[clientFieldName]["new"][clientKey].on("statechange", (newState) => {
                 actualStates.push(newState);
             });
 
@@ -93,7 +92,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
         });
 
         it(`Correct state of 'new' sort is updated after fetching with a subplebbit created with plebbit.createSubplebbit({address, pageCids})`, async () => {
-            const remotePlebbit = await mockRemotePlebbit();
+            const remotePlebbit = await config.plebbitInstancePromise();
             const mockSub = await remotePlebbit.getSubplebbit(subplebbitAddress);
 
             const firstPageMocked = {
@@ -108,11 +107,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             });
             expect(fetchSub.updatedAt).to.be.undefined;
 
-            const kuboRpcUrl = Object.keys(fetchSub.clients.kuboRpcClients)[0];
+            const clientKey = Object.keys(fetchSub.clients[clientFieldName])[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates = [];
-            fetchSub.posts.clients.kuboRpcClients["new"][kuboRpcUrl].on("statechange", (newState) => {
+            fetchSub.posts.clients[clientFieldName]["new"][clientKey].on("statechange", (newState) => {
                 actualStates.push(newState);
             });
 
