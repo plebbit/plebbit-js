@@ -79,6 +79,7 @@ const PlebbitUserOptionBaseSchema = z.object({
             heliaOptions: z.custom<Partial<heliaOptions>>()
         })
         .array()
+        .max(1, "Only one libp2pJsClientOptions is allowed at the moment")
         .optional()
 });
 
