@@ -1,11 +1,7 @@
 import { expect } from "chai";
-import Plebbit from "../../../../../dist/node/index.js";
 import signers from "../../../../fixtures/signers.js";
 import {
-    mockRemotePlebbit,
     mockGatewayPlebbit,
-    describeSkipIfRpc,
-    describeIfRpc,
     getRandomPostCidFromSub,
     resolveWhenConditionIsTrue,
     addStringToIpfs,
@@ -13,8 +9,13 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
-    describe(`comment.replies.clients.kuboRpcClients - ${config.name}`, async () => {
+const clientsFieldName = {
+    "remote-libp2pjs": "libp2pJsClients",
+    "remote-kubo-rpc": "kuboRpcClients"
+};
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+    const clientFieldName = clientsFieldName[config.testConfigCode];
+    describe(`comment.replies.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -24,30 +25,30 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             await plebbit.destroy();
         });
 
-        it(`comment.replies.clients.kuboRpcClients is {} for gateway plebbit`, async () => {
+        it(`comment.replies.clients.${clientFieldName} is {} for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const comment = await gatewayPlebbit.getComment(await getRandomPostCidFromSub(subplebbitAddress, plebbit));
-            const sortTypes = Object.keys(comment.replies.clients.kuboRpcClients);
+            const sortTypes = Object.keys(comment.replies.clients[clientFieldName]);
             expect(sortTypes.length).to.be.greaterThan(0);
 
-            for (const sortType of sortTypes) expect(comment.replies.clients.kuboRpcClients[sortType]).to.deep.equal({}); // should be empty
+            for (const sortType of sortTypes) expect(comment.replies.clients[clientFieldName][sortType]).to.deep.equal({}); // should be empty
             await gatewayPlebbit.destroy();
         });
-        it(`comment.replies.clients.kuboRpcClients[sortType][url] is stopped by default`, async () => {
+        it(`comment.replies.clients.${clientFieldName}[sortType][url] is stopped by default`, async () => {
             const comment = await plebbit.getComment(await getRandomPostCidFromSub(subplebbitAddress, plebbit));
-            const ipfsUrl = Object.keys(comment.clients.kuboRpcClients)[0];
-            expect(Object.keys(comment.replies.clients.kuboRpcClients["new"]).length).to.equal(1);
-            expect(comment.replies.clients.kuboRpcClients["new"][ipfsUrl].state).to.equal("stopped");
+            const ipfsUrl = Object.keys(comment.clients[clientFieldName])[0];
+            expect(Object.keys(comment.replies.clients[clientFieldName]["new"]).length).to.equal(1);
+            expect(comment.replies.clients[clientFieldName]["new"][ipfsUrl].state).to.equal("stopped");
         });
 
         it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
             const comment = await plebbit.getComment(await getRandomPostCidFromSub(subplebbitAddress, plebbit));
             comment.replies.pageCids.new = "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"; // random cid
-            const ipfsUrl = Object.keys(comment.clients.kuboRpcClients)[0];
+            const ipfsUrl = Object.keys(comment.clients[clientFieldName])[0];
 
             const expectedStates = ["fetching-ipfs", "stopped"];
             const actualStates = [];
-            comment.replies.clients.kuboRpcClients["new"][ipfsUrl].on("statechange", (newState) => {
+            comment.replies.clients[clientFieldName]["new"][ipfsUrl].on("statechange", (newState) => {
                 actualStates.push(newState);
             });
 
