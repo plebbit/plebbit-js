@@ -524,7 +524,9 @@ export class BaseClientsManager {
         const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
 
         const performIpnsResolve = async () => {
-            const resolvedCidOfIpns: string | undefined = await last(ipfsClient.name.resolve(ipnsName, { nocache: true, recursive: true }));
+            const resolvedCidOfIpns: string | undefined = await last(
+                ipfsClient.name.resolve(ipnsName, { nocache: true, recursive: true, ...loadOpts })
+            );
 
             if (!resolvedCidOfIpns)
                 throw new PlebbitError("ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", {
