@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import {
-    describeSkipIfRpc,
     publishRandomPost,
     getRemotePlebbitConfigs,
     mockGatewayPlebbit,
@@ -12,7 +11,7 @@ import {
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describeSkipIfRpc(`subplebbit.clients.ipfsGateways - ${config.name}`, async () => {
+    describe(`subplebbit.clients.ipfsGateways - ${config.name}`, async () => {
         // All tests below use Plebbit instance that doesn't have clients.kuboRpcClients
         let gatewayPlebbit;
 

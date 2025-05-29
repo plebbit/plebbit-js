@@ -4,16 +4,20 @@ import signers from "../../fixtures/signers.js";
 import {
     publishRandomPost,
     getRemotePlebbitConfigs,
-    describeSkipIfRpc,
     mockGatewayPlebbit,
-    mockPlebbitToReturnSpecificSubplebbit,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    mockPlebbitToReturnSpecificSubplebbit
 } from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
-    describeSkipIfRpc(`subplebbit.clients.kuboRpcClients - ${config.name}`, async () => {
+const clientsFieldName = {
+    "remote-kubo-rpc": "kuboRpcClients",
+    "remote-libp2pjs": "libp2pJsClients"
+};
+
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+    const clientFieldName = clientsFieldName[config.testConfigCode];
+    describe(`subplebbit.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
@@ -24,29 +28,29 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             await plebbit.destroy();
         });
 
-        it(`subplebbit.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
+        it(`subplebbit.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
-            expect(mockSub.clients.kuboRpcClients).to.be.undefined;
+            expect(mockSub.clients[clientFieldName]).to.be.undefined;
             await gatewayPlebbit.destroy();
         });
 
-        it(`subplebbit.clients.kuboRpcClients[url] is stopped by default`, async () => {
+        it(`subplebbit.clients.${clientFieldName}[url] is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
-            expect(Object.keys(mockSub.clients.kuboRpcClients).length).to.equal(1);
-            expect(Object.values(mockSub.clients.kuboRpcClients)[0].state).to.equal("stopped");
+            expect(Object.keys(mockSub.clients[clientFieldName]).length).to.equal(1);
+            expect(Object.values(mockSub.clients[clientFieldName])[0].state).to.equal("stopped");
         });
 
-        it(`Correct order of kuboRpcClients state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
+        it(`Correct order of ${clientFieldName} state when updating a sub that was created with plebbit.createSubplebbit({address})`, async () => {
             const sub = await plebbit.createSubplebbit({ address: signers[0].address });
 
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(sub.clients.kuboRpcClients)[0];
+            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
 
-            sub.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            sub.clients[clientFieldName][clientUrl].on("statechange", (newState) => actualStates.push(newState));
 
             const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.update();
@@ -56,15 +60,15 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of kuboRpcClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
+        it(`Correct order of ${clientFieldName} state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
             const sub = await plebbit.getSubplebbit(signers[0].address);
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(sub.clients.kuboRpcClients)[0];
+            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
 
-            sub.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            sub.clients[clientFieldName][clientUrl].on("statechange", (newState) => actualStates.push(newState));
 
             const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.update();
@@ -75,14 +79,14 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of ipfs clients state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
-            const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        it(`Correct order of ${clientFieldName} state when we update a subplebbit and it's not publishing new subplebbit records`, async () => {
+            const customPlebbit = await config.plebbitInstancePromise();
 
             const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
             const recordedStates = [];
-            const kuboRpcUrl = Object.keys(sub.clients.kuboRpcClients)[0];
-            sub.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
+            sub.clients[clientFieldName][clientUrl].on("statechange", (newState) => recordedStates.push(newState));
 
             // now plebbit._updatingSubplebbits will be defined
 
@@ -113,15 +117,15 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             await customPlebbit.destroy();
         });
 
-        it(`Correct order of kubo rpc client states when we attempt to update a subplebbit with invalid record`, async () => {
-            const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        it(`Correct order of ${clientFieldName} client states when we attempt to update a subplebbit with invalid record`, async () => {
+            const customPlebbit = await config.plebbitInstancePromise();
 
             // Create a subplebbit with a valid address
             const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
             const recordedStates = [];
-            const kuboRpcUrl = Object.keys(sub.clients.kuboRpcClients)[0];
-            sub.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+            const clientUrl = Object.keys(sub.clients[clientFieldName])[0];
+            sub.clients[clientFieldName][clientUrl].on("statechange", (newState) => recordedStates.push(newState));
 
             // First update should succeed with the initial valid record
             const updatePromise = new Promise((resolve) => sub.once("update", resolve));
