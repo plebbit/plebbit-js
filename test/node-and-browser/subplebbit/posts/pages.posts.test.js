@@ -330,10 +330,10 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`getPage - ${config.name}`, async () => {
-        it(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
-            const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ validatePages: true });
+        it(`.getPage will throw if retrieved page has an invalid signature `, async () => {
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
@@ -362,7 +362,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
     describe(`getPage - ${config.name}`, async () => {
         it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
             const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
-            const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl], validatePages: true });
+            const plebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [gatewayUrl], validatePages: true } });
 
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
 
