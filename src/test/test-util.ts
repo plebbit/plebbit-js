@@ -1091,14 +1091,26 @@ export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
 
 type PlebbitTestConfigCode = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc" | "remote-libp2pjs";
 
-type PlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit> };
+type PlebbitConfigWithName = { name: string; plebbitInstancePromise: () => Promise<Plebbit>; testConfigCode: PlebbitTestConfigCode };
 
 const testConfigCodeToPlebbitInstanceWithHumanName: Record<PlebbitTestConfigCode, PlebbitConfigWithName> = {
-    "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
-    "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
-    "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "Plebbit RPC Remote" },
-    "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" },
-    "remote-libp2pjs": { plebbitInstancePromise: mockPlebbitWithHeliaConfig, name: "Libp2pJS client with no datapath (remote)" }
+    "remote-kubo-rpc": {
+        plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient,
+        name: "Kubo Node with no datapath (remote)",
+        testConfigCode: "remote-kubo-rpc"
+    },
+    "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway", testConfigCode: "remote-ipfs-gateway" },
+    "remote-plebbit-rpc": {
+        plebbitInstancePromise: mockRpcRemotePlebbit,
+        name: "Plebbit RPC Remote",
+        testConfigCode: "remote-plebbit-rpc"
+    },
+    "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)", testConfigCode: "local-kubo-rpc" },
+    "remote-libp2pjs": {
+        plebbitInstancePromise: mockPlebbitWithHeliaConfig,
+        name: "Libp2pJS client with no datapath (remote)",
+        testConfigCode: "remote-libp2pjs"
+    }
 };
 
 let plebbitConfigs: PlebbitConfigWithName[] = [];

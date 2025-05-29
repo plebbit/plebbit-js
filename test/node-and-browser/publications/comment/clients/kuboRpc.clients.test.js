@@ -2,44 +2,47 @@ import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
     generateMockPost,
-    mockRemotePlebbit,
     publishWithExpectedResult,
     getRemotePlebbitConfigs,
     mockGatewayPlebbit,
     createCommentUpdateWithInvalidSignature,
-    describeSkipIfRpc,
     mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
     mockPostToReturnSpecificCommentUpdate
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
-    describeSkipIfRpc(`comment.clients.kuboRpcClients - ${config.name}`, async () => {
+const clientsFieldName = {
+    "remote-libp2pjs": "libp2pJsClients",
+    "remote-kubo-rpc": "kuboRpcClients"
+};
+
+getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+    const clientFieldName = clientsFieldName[config.testConfigCode];
+    describe(`comment.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
-            plebbit = await mockRemotePlebbit();
+            plebbit = await config.plebbitInstancePromise();
         });
 
         after(async () => {
             await plebbit.destroy();
         });
 
-        it(`comment.clients.kuboRpcClients is undefined for gateway plebbit`, async () => {
+        it(`comment.clients.${clientFieldName} is undefined for gateway plebbit`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
-            expect(mockPost.clients.kuboRpcClients).to.be.undefined;
+            expect(mockPost.clients[clientFieldName]).to.be.undefined;
             await gatewayPlebbit.destroy();
         });
 
-        it(`comment.clients.kuboRpcClients[url] is stopped by default`, async () => {
+        it(`comment.clients.${clientFieldName}[key] is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
-            expect(Object.keys(mockPost.clients.kuboRpcClients).length).to.equal(1);
-            expect(Object.values(mockPost.clients.kuboRpcClients)[0].state).to.equal("stopped");
+            expect(Object.keys(mockPost.clients[clientFieldName]).length).to.equal(1);
+            expect(Object.values(mockPost.clients[clientFieldName])[0].state).to.equal("stopped");
         });
 
-        it(`Correct order of kuboRpcClients state when updating a post that was created with plebbit.createComment({cid})`, async () => {
+        it(`Correct order of ${clientFieldName} state when updating a post that was created with plebbit.createComment({cid})`, async () => {
             const sub = await plebbit.getSubplebbit(signers[0].address);
 
             const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
@@ -56,9 +59,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(mockPost.clients.kuboRpcClients)[0];
+            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
 
-            mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -69,7 +72,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of kuboRpcClients state when updating a reply that was created with plebbit.createComment({cid}) and the post has a single preloaded page`, async () => {
+        it(`Correct order of ${clientFieldName} state when updating a reply that was created with plebbit.createComment({cid}) and the post has a single preloaded page`, async () => {
             const sub = await plebbit.getSubplebbit(signers[0].address);
             const replyCid = sub.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
             const reply = await plebbit.createComment({ cid: replyCid });
@@ -86,9 +89,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(reply.clients.kuboRpcClients)[0];
+            const keyOfClient = Object.keys(reply.clients[clientFieldName])[0];
 
-            reply.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            reply.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
 
             await reply.update();
 
@@ -99,10 +102,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
         });
 
         it(
-            `Correct order of kuboRpcClients state when updating a reply that was created with plebbit.createComment({cid}) and the post has multiple pages`
+            `Correct order of ${clientFieldName} state when updating a reply that was created with plebbit.createComment({cid}) and the post has multiple pages`
         );
 
-        it(`Correct order of kuboRpcClients state when updating a post that was created with plebbit.getComment(cid)`, async () => {
+        it(`Correct order of ${clientFieldName} state when updating a post that was created with plebbit.getComment(cid)`, async () => {
             const sub = await plebbit.getSubplebbit(signers[0].address);
 
             const mockPost = await plebbit.getComment(sub.posts.pages.hot.comments[0].cid);
@@ -111,9 +114,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(mockPost.clients.kuboRpcClients)[0];
+            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
 
-            mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -123,42 +126,46 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             expect(actualStates).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of kuboRpcClients state when updating a reply that was created with plebbit.getComment(cid)`);
+        it(`Correct order of ${clientFieldName} state when updating a reply that was created with plebbit.getComment(cid)`);
 
-        it(`Correct order of kuboRpcClients state when publishing a comment (uncached)`, async () => {
+        it(`Correct order of ${clientFieldName} state when publishing a comment (uncached)`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
             mockPost._getSubplebbitCache = () => undefined;
             const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "stopped"];
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(mockPost.clients.kuboRpcClients)[0];
+            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
 
-            mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
-            expect(actualStates).to.deep.equal(expectedStates);
+            expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
         });
 
-        it(`Correct order of kuboRpcClients state when publishing a comment (cached)`, async () => {
+        it(`Correct order of ${clientFieldName} state when publishing a comment (cached)`, async () => {
             const mockPost = await generateMockPost(signers[0].address, plebbit);
-
-            const expectedStates = []; // Empty because we're using the cached subplebbit
 
             const actualStates = [];
 
-            const kuboRpcUrl = Object.keys(mockPost.clients.kuboRpcClients)[0];
+            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
 
-            mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => actualStates.push(newState));
+            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
-            expect(actualStates).to.deep.equal(expectedStates);
+            if (config.testConfigCode === "remote-kubo-rpc") {
+                expect(actualStates).to.deep.equal([]); // it's empty because we're not fetching anything due to caching
+            } else if (config.testConfigCode === "remote-libp2pjs") {
+                expect(actualStates).to.deep.equal(["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]); // libp2pjs will publish and include its states
+            } else {
+                expect.fail("Unexpected test config code");
+            }
         });
 
-        it(`Correct order of ipfs clients state when we update a post but its subplebbit is not publishing new subplebbit records`, async () => {
-            const customPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+        it(`Correct order of ${clientFieldName} when we update a post but its subplebbit is not publishing new subplebbit records`, async () => {
+            const customPlebbit = await config.plebbitInstancePromise();
 
             const sub = await customPlebbit.createSubplebbit({ address: signers[0].address });
 
@@ -176,9 +183,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             const recordedStates = [];
 
-            const kuboRpcUrl = Object.keys(mockPost.clients.kuboRpcClients)[0];
+            const keyOfClient = Object.keys(mockPost.clients[clientFieldName])[0];
 
-            mockPost.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+            mockPost.clients[clientFieldName][keyOfClient].on("statechange", (newState) => recordedStates.push(newState));
 
             await mockPost.update();
             mockCommentToNotUsePagesForUpdates(mockPost);
@@ -204,7 +211,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             await sub.stop();
         });
 
-        it(`Correct order of kubo rpc clients when we update a post but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
+        it(`Correct order of ${clientFieldName} when we update a post but its commentupdate is an invalid record (bad signature/schema/etc)`, async () => {
             const sub = await plebbit.getSubplebbit(signers[0].address);
 
             const commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature(
@@ -215,9 +222,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 cid: commentUpdateWithInvalidSignatureJson.cid
             });
 
-            const kuboClientStates = [];
-            const kuboRpcUrl = Object.keys(createdComment.clients.kuboRpcClients)[0];
-            createdComment.clients.kuboRpcClients[kuboRpcUrl].on("statechange", (state) => kuboClientStates.push(state));
+            const clientStates = [];
+            const keyOfClient = Object.keys(createdComment.clients[clientFieldName])[0];
+            createdComment.clients[clientFieldName][keyOfClient].on("statechange", (state) => clientStates.push(state));
 
             const createErrorPromise = () =>
                 new Promise((resolve) =>
@@ -235,7 +242,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
             expect(createdComment.updatedAt).to.be.undefined; // should not accept the comment update
 
-            const expectedKuboClientStates = [
+            const expectedIpfsClientStates = [
                 "fetching-ipfs", // fetching comment-ipfs
                 "stopped",
                 "fetching-subplebbit-ipns", // fetching subplebbit
@@ -245,9 +252,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 "stopped"
             ];
 
-            expect(kuboClientStates.slice(0, expectedKuboClientStates.length)).to.deep.equal(expectedKuboClientStates);
+            expect(clientStates.slice(0, expectedIpfsClientStates.length)).to.deep.equal(expectedIpfsClientStates);
 
-            const restOfIpfsStates = kuboClientStates.slice(expectedKuboClientStates.length);
+            const restOfIpfsStates = clientStates.slice(expectedIpfsClientStates.length);
 
             // Check the remaining states follow valid patterns
             let i = 0;
@@ -299,7 +306,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             }
 
             // Ensure the very last state is "stopped"
-            expect(kuboClientStates[kuboClientStates.length - 1]).to.equal("stopped", "The last state should be 'stopped'");
+            expect(clientStates[clientStates.length - 1]).to.equal("stopped", "The last state should be 'stopped'");
         });
     });
 });
