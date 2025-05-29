@@ -186,6 +186,7 @@ const setUpMockGateways = async () => {
             const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]);
             const sub = await plebbit.getSubplebbit(subAddress);
             res.setHeader("x-ipfs-roots", sub.updateCid);
+            res.setHeader("etag", sub.updateCid);
             res.end(JSON.stringify(sub.toJSONIpfs()));
         } else res.end(await plebbit.fetchCid(req.url));
     })
@@ -239,6 +240,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         const subRecord = await fetchLatestSubplebbit();
         res.setHeader("x-ipfs-roots", subRecord.updateCid);
+        res.setHeader("etag", subRecord.updateCid);
 
         res.end(JSON.stringify(subRecord.toJSONIpfs()));
     })
@@ -253,6 +255,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         const subRecord = await fetchLatestSubplebbit();
         res.setHeader("x-ipfs-roots", subRecord.updateCid);
+        res.setHeader("etag", subRecord.updateCid);
 
         res.end(JSON.stringify(subRecord.toJSONIpfs()));
     })
@@ -280,7 +283,9 @@ const setUpMockGateways = async () => {
         const subplebbitRecordThirtyMinuteOldIpfs = JSON.parse(JSON.stringify(subplebbitRecordThirtyMinuteOld.toJSONIpfs()));
         subplebbitRecordThirtyMinuteOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordThirtyMinuteOldIpfs.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOldIpfs, signers[0]);
-        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs)));
+        const updateCid = await calculateIpfsHash(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs));
+        res.setHeader("x-ipfs-roots", updateCid);
+        res.setHeader("etag", updateCid);
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOldIpfs));
     })
@@ -298,7 +303,9 @@ const setUpMockGateways = async () => {
 
         subplebbitRecordHourOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOldIpfs.signature = await signSubplebbit(subplebbitRecordHourOldIpfs, signers[0]);
-        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordHourOldIpfs)));
+        const updateCid = await calculateIpfsHash(JSON.stringify(subplebbitRecordHourOldIpfs));
+        res.setHeader("x-ipfs-roots", updateCid);
+        res.setHeader("etag", updateCid);
 
         res.end(JSON.stringify(subplebbitRecordHourOldIpfs));
     })
@@ -316,7 +323,9 @@ const setUpMockGateways = async () => {
 
         subplebbitRecordTwoHoursOldIpfs.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordTwoHoursOldIpfs.signature = await signSubplebbit(subplebbitRecordTwoHoursOldIpfs, signers[0]);
-        res.setHeader("x-ipfs-roots", await calculateIpfsHash(JSON.stringify(subplebbitRecordTwoHoursOldIpfs)));
+        const updateCid = await calculateIpfsHash(JSON.stringify(subplebbitRecordTwoHoursOldIpfs));
+        res.setHeader("x-ipfs-roots", updateCid);
+        res.setHeader("etag", updateCid);
 
         res.end(JSON.stringify(subplebbitRecordTwoHoursOldIpfs));
     })
