@@ -4,9 +4,7 @@ import {
     generateMockPost,
     publishRandomPost,
     publishWithExpectedResult,
-    describeIfRpc,
     getRemotePlebbitConfigs,
-    mockRpcRemotePlebbit,
     waitTillPostInSubplebbitPages
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
