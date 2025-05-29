@@ -191,7 +191,7 @@ describe(`comment.publishingState`, async () => {
     itSkipIfRpc(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
         const offlinePubsubUrl = "http://localhost:23425";
         const offlinePubsubPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({
-            pubsubKuboRpcClientsOptions: [offlinePubsubUrl]
+            plebbitOptions: { pubsubKuboRpcClientsOptions: [offlinePubsubUrl] }
         });
         offlinePubsubPlebbit.on("error", () => {});
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
