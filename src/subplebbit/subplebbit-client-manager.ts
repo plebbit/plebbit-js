@@ -75,6 +75,15 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             };
     }
 
+    protected override _initLibp2pJsClients(): void {
+        if (this._plebbit.clients.libp2pJsClients)
+            for (const libp2pJsClientUrl of remeda.keys.strict(this._plebbit.clients.libp2pJsClients))
+                this.clients.libp2pJsClients = {
+                    ...this.clients.libp2pJsClients,
+                    [libp2pJsClientUrl]: new SubplebbitLibp2pJsClient("stopped")
+                };
+    }
+
     protected _initPlebbitRpcClients() {
         for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = {
