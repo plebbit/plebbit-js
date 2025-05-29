@@ -253,6 +253,7 @@ getRemotePlebbitConfigs().map((config) => {
                 expect.fail("should fail");
             } catch (e) {
                 expect(e.code).to.be.oneOf([
+                    "ERR_IPNS_RESOLUTION_P2P_TIMEOUT", // for kubo-rpc-client
                     "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", // for ipfs gateways
                     "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED", // for kubo-rpc-client
                     "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P" // for libp2p/helia
@@ -342,7 +343,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const error429Gateway = `http://localhost:13416`; // this gateway always returns 429 status code
         const normalIpfsGateway = `http://localhost:18080`;
         const offlineSubAddress = signers[7].address; // offline sub
-        const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] });
+        const gatewayPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] } });
         const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
         gatewayPlebbit._timeouts["subplebbit-ipns"] = 1000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes
@@ -359,12 +360,14 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
     });
     it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit({
-            ipfsGatewayUrls: [
-                "http://127.0.0.1:28080", // Not working
-                "http://127.0.0.1:28081", // Not working
-                "http://127.0.0.1:18083", // Working but does not have the ipns
-                "http://127.0.0.1:18080" // Working, it has the IPNS
-            ]
+            plebbitOptions: {
+                ipfsGatewayUrls: [
+                    "http://127.0.0.1:28080", // Not working
+                    "http://127.0.0.1:28081", // Not working
+                    "http://127.0.0.1:18083", // Working but does not have the ipns
+                    "http://127.0.0.1:18080" // Working, it has the IPNS
+                ]
+            }
         });
 
         expect(Object.keys(gatewayPlebbit.clients.ipfsGateways)).to.deep.equal([
@@ -437,7 +440,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
     it(`comment emits and throws errors if all providers fail to publish`, async () => {
         const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
         const offlinePubsubPlebbit = await mockRemotePlebbit({
-            pubsubKuboRpcClientsOptions: offlinePubsubUrls
+            plebbitOptions: { pubsubKuboRpcClientsOptions: offlinePubsubUrls }
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 
@@ -464,7 +467,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
         const offlinePubsubUrl = "http://localhost:23425"; // Will throw errors; can't subscribe or publish
         const offlinePubsubPlebbit = await mockRemotePlebbit({
-            pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl]
+            plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl] }
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
         mockPost._publishToDifferentProviderThresholdSeconds = 5;
