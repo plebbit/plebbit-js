@@ -3,12 +3,9 @@ import signers from "../../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishWithExpectedResult,
-    describeSkipIfRpc,
-    mockGatewayPlebbit,
     getRemotePlebbitConfigs,
     mockCommentToNotUsePagesForUpdates,
     createCommentUpdateWithInvalidSignature,
-    mockRemotePlebbit,
     resolveWhenConditionIsTrue,
     mockPlebbitToReturnSpecificSubplebbit,
     mockPostToReturnSpecificCommentUpdate
@@ -16,7 +13,7 @@ import {
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describeSkipIfRpc(`comment.clients.ipfsGateways - ${config.name}`, async () => {
+    describe(`comment.clients.ipfsGateways - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
