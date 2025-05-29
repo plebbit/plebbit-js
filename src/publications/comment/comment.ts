@@ -377,6 +377,7 @@ export class Comment
                 expectedCidString: decryptedVerification.commentUpdate.cid,
                 expectedCid: CID.parse(decryptedVerification.commentUpdate.cid)
             });
+        else log("Added the file of comment ipfs", this.cid, "to IPFS network successfully");
     }
 
     _initCommentUpdateFromChallengeVerificationProps(commentUpdate: CommentUpdateForChallengeVerification) {
@@ -425,9 +426,9 @@ export class Comment
 
         // Add the comment to IPFS network in the background
         if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0)
-            this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification)
-                .then(() => log("Added the file of comment ipfs", this.cid, "to IPFS network successfully"))
-                .catch((err) => log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err));
+            this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification).catch((err) =>
+                log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err)
+            );
     }
 
     override getType(): PublicationTypeName {
