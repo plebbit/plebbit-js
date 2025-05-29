@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import {
-    mockPlebbitWithHeliaConfig,
     generatePostToAnswerMathQuestion,
     publishWithExpectedResult,
     getRemotePlebbitConfigs,
@@ -16,7 +15,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((con
         let plebbit, publishedPost;
 
         before(async () => {
-            plebbit = await mockPlebbitWithHeliaConfig(false);
+            plebbit = await config.plebbitInstancePromise({ forceMockPubsub: false });
         });
 
         after(async () => {
