@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { getRemotePlebbitConfigs, mockRpcRemotePlebbit, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
+import { getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
 

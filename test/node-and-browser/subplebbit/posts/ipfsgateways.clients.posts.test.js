@@ -1,12 +1,12 @@
 import { expect } from "chai";
-import { describeSkipIfRpc, getRemotePlebbitConfigs, addStringToIpfs } from "../../../dist/node/test/test-util.js";
+import { getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 
-import signers from "../../fixtures/signers.js";
+import signers from "../../../fixtures/signers.js";
 
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describeSkipIfRpc(`subplebbit.posts.clients.ipfsGateways - ${config.name}`, async () => {
+    describe(`subplebbit.posts.clients.ipfsGateways - ${config.name}`, async () => {
         let gatewayPlebbit;
         before(async () => {
             gatewayPlebbit = await config.plebbitInstancePromise();
