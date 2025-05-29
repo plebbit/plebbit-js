@@ -1241,6 +1241,8 @@ export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalS
     subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
     await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
 
+    await ipnsObj.plebbit.destroy();
+
     return { subplebbitRecord, ipnsObj };
 }
 
