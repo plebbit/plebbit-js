@@ -16,6 +16,7 @@ import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import tcpPortUsed from "tcp-port-used";
 
 import fs from "fs";
 
@@ -92,6 +93,23 @@ const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs,
 
 const startIpfsNode = async (nodeArgs) => {
     console.log("Initializing Node", nodeArgs.dir, "\n");
+
+    // Check if ports are available before starting the node
+    const apiUsed = await tcpPortUsed.check(nodeArgs.apiPort);
+    if (apiUsed) {
+        throw new Error(`API port ${nodeArgs.apiPort} for node ${path.basename(nodeArgs.dir)} is already occupied`);
+    }
+
+    const gatewayUsed = await tcpPortUsed.check(nodeArgs.gatewayPort);
+    if (gatewayUsed) {
+        throw new Error(`Gateway port ${nodeArgs.gatewayPort} for node ${path.basename(nodeArgs.dir)} is already occupied`);
+    }
+
+    const swarmUsed = await tcpPortUsed.check(nodeArgs.swarmPort);
+    if (swarmUsed) {
+        throw new Error(`Swarm port ${nodeArgs.swarmPort} for node ${path.basename(nodeArgs.dir)} is already occupied`);
+    }
+
     try {
         execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
     } catch {}
