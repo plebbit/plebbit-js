@@ -1,7 +1,4 @@
 import { expect } from "chai";
-// should connect to a kubo node and exchange pubsub messages with it
-// DO NOT MOCK PUBSUB
-
 import {
     mockPlebbitWithHeliaConfig,
     generatePostToAnswerMathQuestion,
@@ -12,6 +9,8 @@ import {
 import signers from "../../fixtures/signers.js";
 const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
 
+// should connect to a kubo node and exchange pubsub messages with it
+// DO NOT MOCK PUBSUB
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((config) => {
     describe(`Test publishing pubsub in real environment - ${config.name}`, async () => {
         let plebbit, publishedPost;
