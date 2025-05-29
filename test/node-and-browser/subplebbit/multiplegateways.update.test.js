@@ -5,7 +5,6 @@ import { messages } from "../../../dist/node/errors.js";
 const subplebbitAddress = signers[0].address;
 
 import {
-    describeSkipIfRpc,
     publishRandomPost,
     mockGatewayPlebbit,
     getRemotePlebbitConfigs,
@@ -14,7 +13,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, async () => {
+    describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         // these test gateways will be set in test-server.js
         const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond
         const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record because it's the same node running the subs

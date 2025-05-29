@@ -4,7 +4,7 @@ import signers from "../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
 getRemotePlebbitConfigs().map((config) => {
     let plebbit;
-    describe(`subplebbit.state`, () => {
+    describe(`subplebbit.state - ${config.name}`, () => {
         beforeEach(async () => {
             plebbit = await config.plebbitInstancePromise();
         });

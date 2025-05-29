@@ -1442,6 +1442,29 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, su
     }
 }
 
+export function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit) {
+    const originalFetch = plebbit._clientsManager._fetchCidP2P.bind(plebbit._clientsManager);
+    for (const ipfsClient of Object.values(plebbit.clients.kuboRpcClients)) {
+        ipfsClient._client.cat = async function* (ipfsPath, options) {
+            await new Promise((resolve) => setTimeout(resolve, 60000));
+            throw new Error("Timeout");
+        };
+    }
+
+    for (const libp2pJsClient of Object.values(plebbit.clients.libp2pJsClients)) {
+        libp2pJsClient.heliaWithKuboRpcClientFunctions.cat = async function* (ipfsPath, options) {
+            await new Promise((resolve) => setTimeout(resolve, 60000));
+            throw new Error("Timeout");
+        };
+    }
+
+    // TODO mock for gateway
+    plebbit._clientsManager._fetchCidP2P = async (...args) => {
+        await new Promise((resolve) => setTimeout(resolve, 60000));
+        throw new Error("Timeout");
+    };
+}
+
 export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     const updatingComment = comment._plebbit._updatingComments[comment.cid!];
     if (!updatingComment) throw Error("Comment should be updating before starting to mock");
