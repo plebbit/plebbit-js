@@ -134,7 +134,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
         });
 
         it(`updating state of post is set to failed if sub has an invalid Subplebbit record`, async () => {
-            const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ resolveAuthorAddresses: false }); // set resolve to false so it wouldn't show up in states
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { resolveAuthorAddresses: false } }); // set resolve to false so it wouldn't show up in states
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             const subInvalidRecord = { ...sub.toJSONIpfs(), updatedAt: 12345 + Math.round(Math.random() * 1000) }; //override updatedAt which will give us an invalid signature
             const createdPost = await plebbit.createComment({
@@ -173,6 +173,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
                 "stopped" // called post.stop()
             ];
             expect(updatingStates).to.deep.equal(expectedUpdateStates);
+            await plebbit.destroy();
         });
 
         it(`updating state is set to failed if we load an invalid CommentUpdate record from postUpdates`, async () => {

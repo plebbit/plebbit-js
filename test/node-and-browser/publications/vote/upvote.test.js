@@ -20,7 +20,7 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, postToVote, replyToVote, signer;
 
         before(async () => {
-            plebbit = await config.plebbitInstancePromise({ validatePages: false });
+            plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
             signer = await plebbit.createSigner();
             postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
             replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
