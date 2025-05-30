@@ -400,7 +400,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
         if (this._updatingSubInstanceWithListeners.subplebbit.state === "stopped") {
             this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
-            await this._updatingSubInstanceWithListeners.subplebbit._clientsManager.startUpdatingLoop();
+            this._updatingSubInstanceWithListeners.subplebbit._clientsManager
+                .startUpdatingLoop()
+                .catch((err) => log.error("Failed to start update loop of subplebbit", err));
         }
     }
 

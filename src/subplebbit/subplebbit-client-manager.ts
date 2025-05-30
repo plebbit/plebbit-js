@@ -51,7 +51,6 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
     };
     private _subplebbit: RemoteSubplebbit;
     _ipnsLoadingOperation?: RetryOperation = undefined;
-    _updateTimeout?: NodeJS.Timeout = undefined;
     _updateCidsAlreadyLoaded: LimitedSet<string> = new LimitedSet<string>(30); // we will keep track of the last 50 subplebbit update cids that we loaded
 
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
@@ -248,22 +247,22 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         const areWeConnectedToKuboOrHelia =
             Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0;
         const updateInterval = areWeConnectedToKuboOrHelia ? 1000 : this._plebbit.updateInterval; // if we're on helia or kubo we should resolve IPNS every second
-        const updateLoop = (async () => {
-            if (this._subplebbit.state === "updating")
-                this.updateOnce()
-                    .catch((e) => log.error(`Failed to update subplebbit ${this._subplebbit.address}`, e))
-                    .finally(() => setTimeout(updateLoop, updateInterval));
-        }).bind(this);
 
-        this.updateOnce()
-            .catch((e) => log.error(`Failed to update subplebbit ${this._subplebbit.address}`, e))
-            .finally(() => (this._updateTimeout = setTimeout(updateLoop, updateInterval)));
+        while (this._subplebbit.state === "updating") {
+            try {
+                await this.updateOnce();
+            } catch (e) {
+                log.error(`Failed to update subplebbit ${this._subplebbit.address} for this iteration, will retry later`, e);
+            } finally {
+                await new Promise((resolve) => setTimeout(resolve, updateInterval));
+            }
+        }
+
+        log("Subplebbit", this._subplebbit.address, "is no longer updating");
     }
 
     async stopUpdatingLoop() {
         this._ipnsLoadingOperation?.stop();
-        clearTimeout(this._updateTimeout);
-        // TODO need to abort here
         this._updateCidsAlreadyLoaded.clear();
     }
 
@@ -279,7 +278,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         // This function should fetch SubplebbitIpfs, parse it and verify its signature
         // Then return SubplebbitIpfs
 
-        // only exception is if the ipnsRecord.value (ipfs path) is the same as as curSubplebbit.updateCid
+        // only exception is if the ipnsRecord.value (ipfs path) has already been loaded and stored in this._updateCidsAlreadyLoaded
         // in that case no need to fetch the subplebbitIpfs, we will return undefined
         this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipns");
         let subRes: ResultOfFetchingSubplebbit;
@@ -511,8 +510,6 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         const promisesToIterate = <Promise<{ resText: string; res: Response } | { error: PlebbitError }>[]>(
             Object.values(gatewayFetches).map((gatewayFetch) => gatewayFetch.promise)
         );
-
-        // TODO need to handle verification of signature within subplebbit
 
         let suitableSubplebbit: { subplebbit: SubplebbitIpfsType; cid: string };
         try {
