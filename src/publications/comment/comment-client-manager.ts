@@ -54,6 +54,9 @@ export class CommentClientsManager extends PublicationClientsManager {
     } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined;
     private _comment: Comment;
     private _parentCommentCidsAlreadyLoaded: Set<string> = new Set<string>();
+    private _fetchingUpdateForReplyUsingPageCidsPromise?:
+        | ReturnType<CommentClientsManager["usePageCidsOfParentToFetchCommentUpdateForReply"]>
+        | undefined = undefined;
 
     constructor(comment: Comment) {
         super(comment);
@@ -586,6 +589,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this._comment.cid,
                 "does not have any pageCids, will wait until another update event by post"
             );
+            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
         const pageSortName = this._chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
@@ -697,7 +701,13 @@ export class CommentClientsManager extends PublicationClientsManager {
             "fetching-update-ipfs": undefined
         };
         const replyState = postUpdatingStateToReplyUpdatingState[newState];
-        if (replyState) this._comment._setUpdatingStateWithEmissionIfNewState(replyState);
+        if (replyState) {
+            if (this._fetchingUpdateForReplyUsingPageCidsPromise)
+                this._fetchingUpdateForReplyUsingPageCidsPromise.then(() =>
+                    this._comment._setUpdatingStateWithEmissionIfNewState(replyState)
+                );
+            else this._comment._setUpdatingStateWithEmissionIfNewState(replyState);
+        }
     }
 
     _handleIpfsGatewayPostState(newState: Comment["clients"]["ipfsGateways"][string]["state"], gatewayUrl: string) {
@@ -765,19 +775,18 @@ export class CommentClientsManager extends PublicationClientsManager {
             return;
         }
 
-        try {
-            await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
-            this._comment._changeStateEmitEventEmitStateChangeEvent({
-                newUpdatingState: "succeeded",
-                event: { name: "update", args: [this._comment] }
+        this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
+            .catch((error) => {
+                log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
+                this._comment._changeStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "failed",
+                    event: { name: "error", args: [error as PlebbitError | Error] }
+                });
+            })
+            .finally(() => {
+                this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
             });
-        } catch (error) {
-            log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
-            this._comment._changeStateEmitEventEmitStateChangeEvent({
-                newUpdatingState: "failed",
-                event: { name: "error", args: [error as PlebbitError | Error] }
-            });
-        }
+        await this._fetchingUpdateForReplyUsingPageCidsPromise;
     }
 
     async _createPostInstanceWithStateTranslation(): Promise<CommentClientsManager["_postForUpdating"]> {

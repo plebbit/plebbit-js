@@ -99,7 +99,7 @@ export class PublicationClientsManager extends PlebbitClientsManager {
     }
 
     handleUpdatingStateChangeEventFromSub(newUpdatingState: RemoteSubplebbit["updatingState"]) {
-        // will be overridden in comment-client-manager to provide a specific states relevant to comment updating
+        // will be overridden in comment-client-manager to provide a specific states relevant to post updating
         // below is for handling translation to publishingState
         this._translateSubUpdatingStateToPublishingState(newUpdatingState);
     }
