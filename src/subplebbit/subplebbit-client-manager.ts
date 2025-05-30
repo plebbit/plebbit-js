@@ -6,7 +6,7 @@ import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebb
 import { ChainTicker } from "../types.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import * as remeda from "remeda";
-import { SubplebbitIpfsType, SubplebbitJson } from "./types.js";
+import type { SubplebbitIpfsType, SubplebbitJson } from "./types.js";
 import Logger from "@plebbit/plebbit-logger";
 
 import { hideClassPrivateProps, timestamp } from "../util.js";
@@ -432,7 +432,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
 
             const checkResponseHeadersIfOldCid = async (gatewayRes: Response) => {
                 const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag");
-                log("cidOfIpnsFromEtagHeader", cidOfIpnsFromEtagHeader);
+                log.trace("cidOfIpnsFromEtagHeader", cidOfIpnsFromEtagHeader, "from gateway", gatewayUrl, "ipns name", ipnsName);
                 if (cidOfIpnsFromEtagHeader && this._updateCidsAlreadyLoaded.has(cidOfIpnsFromEtagHeader)) {
                     abortController.abort("Aborting subplebbit IPNS request because we already loaded this record");
                     return new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
