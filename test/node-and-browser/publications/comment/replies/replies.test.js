@@ -2,7 +2,6 @@ import { expect } from "chai";
 import {
     loadAllPages,
     publishRandomPost,
-    loadAllUniquePostsUnderSubplebbit,
     getRemotePlebbitConfigs,
     publishRandomReply,
     mockPlebbitV2,
@@ -287,7 +286,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`replies.validatePage will throw if any comment is invalid`, async () => {
-            const plebbit = await config.plebbitInstancePromise({ validatePages: false });
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
 
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
@@ -306,7 +305,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`replies.validatePage will throw if any comment is not of the same post`, async () => {
-            const plebbit = await config.plebbitInstancePromise({ validatePages: false });
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
 
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)
@@ -327,7 +326,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`replies.validatePage will throw if postCid not defined on the parent comment`, async () => {
-            const plebbit = await config.plebbitInstancePromise({ validatePages: false });
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: false } });
 
             const pageWithInvalidComment = postWithReplies.replies.pages.best.nextCid
                 ? await postWithReplies.replies.getPage(postWithReplies.replies.pageCids.new)

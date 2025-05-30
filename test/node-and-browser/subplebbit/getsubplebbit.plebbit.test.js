@@ -89,7 +89,8 @@ getRemotePlebbitConfigs().map((config) => {
                 expect([
                     "ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS",
                     "ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED",
-                    "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"
+                    "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P",
+                    "ERR_IPNS_RESOLUTION_P2P_TIMEOUT"
                 ]).to.include(e.code);
             }
             await customPlebbit.destroy();

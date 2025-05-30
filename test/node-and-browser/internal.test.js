@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import Plebbit from "../../dist/node/index.js";
 import { parseDbResponses } from "../../dist/node/util.js";
 import { describeSkipIfRpc } from "../../dist/node/test/test-util.js";
 

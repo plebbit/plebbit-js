@@ -6,7 +6,6 @@ const subplebbitAddress = signers[0].address;
 
 import {
     publishRandomPost,
-    mockGatewayPlebbit,
     getRemotePlebbitConfigs,
     waitTillPostInSubplebbitPages,
     mockPlebbitNoDataPathWithOnlyKuboClient
@@ -29,8 +28,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
         const subAddress = signers[0].address;
 
         const fetchLatestSubplebbitJson = async () => {
-            const plebbitRunningSubs = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway] });
+            const plebbitRunningSubs = await config.plebbitInstancePromise({ plebbitOptions: { ipfsGatewayUrls: [normalGateway] } });
             const subRecord = (await plebbitRunningSubs.getSubplebbit(subAddress)).toJSONIpfs();
+            await plebbitRunningSubs.destroy();
             return subRecord;
         };
         let regularKuboPlebbit;
@@ -42,11 +42,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
         });
 
         it(`plebbit.getSubplebbit times out if a single gateway is not responding (timeout)`, async () => {
-            const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
+            const customPlebbit = await config.plebbitInstancePromise({ plebbitOptions: { ipfsGatewayUrls: [stallingGateway] } });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
             try {
                 await customPlebbit.getSubplebbit(subAddress);
-                expect.fails("Should not fulfill");
+                expect.fail("Should not fulfill");
             } catch (e) {
                 expect(e.details.gatewayToError[stallingGateway].code).to.equal("ERR_GATEWAY_TIMED_OUT_OR_ABORTED");
                 expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
@@ -54,7 +54,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             await customPlebbit.destroy();
         });
         it(`updating a subplebbit through working gateway and another gateway that is timing out`, async () => {
-            const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, stallingGateway] });
+            const customPlebbit = await config.plebbitInstancePromise({
+                plebbitOptions: { ipfsGatewayUrls: [normalGateway, stallingGateway] }
+            });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
             // should succeed and return the result from normalGateway
             const subFromGateway = await customPlebbit.getSubplebbit(subplebbitAddress);
@@ -63,7 +65,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             await customPlebbit.destroy();
         });
         it(`updating a subplebbit through working gateway and another gateway that is throwing an error`, async () => {
-            const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, errorGateway] });
+            const customPlebbit = await config.plebbitInstancePromise({
+                plebbitOptions: { ipfsGatewayUrls: [normalGateway, errorGateway] }
+            });
             // should succeed and return the result from normalGateway
             const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit(subplebbitAddress)]);
             expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
@@ -72,7 +76,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
         });
 
         it(`all gateways are throwing an error`, async () => {
-            const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] });
+            const customPlebbit = await config.plebbitInstancePromise({
+                plebbitOptions: { ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] }
+            });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
             try {
@@ -93,7 +99,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             // gateway that respondes after taking sometime with updatedAt < 2 min => normalWithStallingGateway
             // should wait for normalWithStallingGateway
             // Should go with maximum updatedAt, which is normal with stalling gateway
-            const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] });
+            const customPlebbit = await config.plebbitInstancePromise({
+                plebbitOptions: { ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] }
+            });
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s
 
             const buffer = customPlebbit._timeouts["subplebbit-ipns"] * 5;
@@ -106,7 +114,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
         });
 
         it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 60 min`, async () => {
-            const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [hourLateGateway, twoHoursLateGateway] });
+            const customPlebbit = await config.plebbitInstancePromise({
+                plebbitOptions: { ipfsGatewayUrls: [hourLateGateway, twoHoursLateGateway] }
+            });
             const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
 
             // should go with the hour old, not the two hours
@@ -122,8 +132,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             // the problem here is that the normalGateway cache IPNS for 3s, and when we do getSubplebbit it's gonna use the cache
             const post = await publishRandomPost(subplebbitAddress, regularKuboPlebbit); // should publish a new record after
             await waitTillPostInSubplebbitPages(post, regularKuboPlebbit);
-            const customPlebbit = await mockGatewayPlebbit({
-                ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
+            const customPlebbit = await config.plebbitInstancePromise({
+                plebbitOptions: {
+                    ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
+                },
+                remotePlebbit: true
             });
             // await new Promise((resolve) => setTimeout(resolve, customPlebbit.publishInterval * 3)); // wait for the cache to expire
             customPlebbit._timeouts["subplebbit-ipns"] = 5 * 1000; // change timeout from 5min to 5s

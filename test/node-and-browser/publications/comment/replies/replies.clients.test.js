@@ -109,9 +109,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
                 "http://localhost:18080" // This one is immediate
             ];
             const multipleGatewayPlebbit = await mockGatewayPlebbit({
-                ipfsGatewayUrls: gateways,
-                httpRoutersOptions: [],
-                dataPath: undefined
+                plebbitOptions: {
+                    ipfsGatewayUrls: gateways,
+                    httpRoutersOptions: [],
+                    dataPath: undefined
+                }
             });
 
             const comment = await multipleGatewayPlebbit.getComment(await getRandomPostCidFromSub(subplebbitAddress, plebbit));

@@ -107,8 +107,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             it(`correct order of ${clientFieldName} state when failing to publish a comment and the error is from the pubsub provider`, async () => {
                 const offlinePubsubUrl = "http://localhost:13173"; // Should be down
                 const offlinePubsubPlebbit = await mockRemotePlebbit({
-                    kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
-                    pubsubKuboRpcClientsOptions: [offlinePubsubUrl]
+                    plebbitOptions: {
+                        kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
+                        pubsubKuboRpcClientsOptions: [offlinePubsubUrl]
+                    }
                 });
 
                 const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
@@ -134,7 +136,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
                 const offlinePubsubUrl = "http://localhost:13173"; // Should be down
                 const upPubsubUrl = "http://localhost:15002/api/v0";
                 const plebbit = await mockRemotePlebbit({
-                    pubsubKuboRpcClientsOptions: [offlinePubsubUrl, upPubsubUrl]
+                    plebbitOptions: { pubsubKuboRpcClientsOptions: [offlinePubsubUrl, upPubsubUrl] }
                 });
 
                 plebbit.clients.pubsubKuboRpcClients[upPubsubUrl]._client = createMockPubsubClient(); // Use mock pubsub to be on the same pubsub as the sub
@@ -197,7 +199,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
                 const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take pubsub msgs but not respond, never throws errors
                 const upPubsubUrl = "http://localhost:15002/api/v0";
                 const plebbit = await mockRemotePlebbit({
-                    pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+                    plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, upPubsubUrl] }
                 });
 
                 plebbit.clients.pubsubKuboRpcClients[upPubsubUrl]._client = createMockPubsubClient(); // Use mock pubsub to be on the same pubsub as the sub

@@ -3,17 +3,14 @@ import signers from "../../fixtures/signers.js";
 
 import {
     publishRandomPost,
-    mockRemotePlebbit,
-    itSkipIfRpc,
     publishSubplebbitRecordWithExtraProp,
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue,
-    describeSkipIfRpc,
     getRemotePlebbitConfigs
 } from "../../../dist/node/test/test-util.js";
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
+    describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -65,7 +62,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         });
 
-        itSkipIfRpc("updating states is in correct order upon updating with ipfs p2p, if the sub doesn't publish any updates", async () => {
+        it("updating states is in correct order upon updating with ipfs p2p, if the sub doesn't publish any updates", async () => {
             const newSub = await publishSubplebbitRecordWithExtraProp({});
 
             const subplebbit = await plebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });
@@ -138,7 +135,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
 });
 
 getRemotePlebbitConfigs().map((config) => {
-    describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
+    describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -216,7 +213,7 @@ getRemotePlebbitConfigs().map((config) => {
 });
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describeSkipIfRpc(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
+    describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
@@ -224,7 +221,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
         after(async () => {
             await plebbit.destroy();
         });
-        itSkipIfRpc(`updating states is in correct order upon updating with gateway`, async () => {
+        it(`updating states is in correct order upon updating with gateway`, async () => {
             const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
 
             const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
@@ -241,7 +238,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         });
 
-        itSkipIfRpc("updating states is in correct order upon updating with gateway, if the sub doesn't publish any updates", async () => {
+        it("updating states is in correct order upon updating with gateway, if the sub doesn't publish any updates", async () => {
             const newSub = await publishSubplebbitRecordWithExtraProp({});
 
             const subplebbit = await plebbit.createSubplebbit({ address: newSub.subplebbitRecord.address });

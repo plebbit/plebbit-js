@@ -5,7 +5,6 @@ import {
     addStringToIpfs,
     getRemotePlebbitConfigs,
     mockGatewayPlebbit,
-    itSkipIfRpc,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
 const fixtureSigner = signers[0];
@@ -79,9 +78,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             const cids = await Promise.all([fileString1, fileString2].map((file) => addStringToIpfs(file)));
 
             const plebbitWithMaliciousGateway = await mockGatewayPlebbit({
-                ipfsGatewayUrls: ["http://127.0.0.1:13415"],
-                httpRoutersOptions: [],
-                dataPath: undefined
+                plebbitOptions: {
+                    ipfsGatewayUrls: ["http://127.0.0.1:13415"],
+                    httpRoutersOptions: [],
+                    dataPath: undefined
+                }
             });
             const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
             expect(fileString1).to.equal(fileString1FromGateway);

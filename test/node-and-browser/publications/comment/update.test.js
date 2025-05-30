@@ -7,12 +7,10 @@ import {
     mockPostToFailToLoadFromPostUpdates,
     createCommentUpdateWithInvalidSignature,
     mockPostToHaveSubplebbitWithNoPostUpdates,
-    mockGatewayPlebbit,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     mockPostToReturnSpecificCommentUpdate,
-    describeSkipIfRpc,
     isPlebbitFetchingUsingGateways,
     itSkipIfRpc,
     waitTillReplyInParentPagesInstance
@@ -434,10 +432,10 @@ getRemotePlebbitConfigs().map((config) => {
 });
 
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
-    describeSkipIfRpc(`comment.update() emits errors for gateways that return content that does not correspond to their cids`, async () => {
+    describe(`comment.update() emits errors for gateways that return content that does not correspond to their cids`, async () => {
         it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID - IPFS Gateway`, async () => {
             const gatewayUrl = "http://localhost:13415"; // This gateway responds with content that is not equivalent to its CID
-            const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { ipfsGatewayUrls: [gatewayUrl] } });
 
             const cid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with random content for this cid
             const createdComment = await plebbit.createComment({ cid });
