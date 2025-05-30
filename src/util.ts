@@ -343,7 +343,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: 
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new TimeoutError(`Subplebbit ${subplebbit.address} update timed out after ${timeoutMs}ms`)
+            message: updateError || new PlebbitError("ERR_GET_SUBPLEBBIT_TIMED_OUT", { subplebbitAddress: subplebbit.address, timeoutMs })
         });
         if (updateError) throw updateError;
     } catch (e) {

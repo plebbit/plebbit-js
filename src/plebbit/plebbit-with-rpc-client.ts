@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "./plebbit.js";
-import { InputPlebbitOptions } from "../types";
+import type { InputPlebbitOptions } from "../types";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails
