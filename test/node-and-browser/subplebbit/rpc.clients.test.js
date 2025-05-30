@@ -21,6 +21,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((
             const sub = await plebbit.createSubplebbit({ address: signers[0].address });
             const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
             expect(sub.clients.plebbitRpcClients[rpcUrl].state).to.equal("stopped");
+            expect(sub.updatingState).to.equal("stopped");
         });
 
         it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with IPNS address`, async () => {
@@ -45,10 +46,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((
 
             await new Promise((resolve) => sub.once("update", resolve));
 
-            expect(recordedStates).to.deep.equal(expectedStates);
-
             await sub.stop();
+            expect(recordedStates).to.deep.equal(expectedStates);
             await newIpns.plebbit.destroy();
+            expect(sub.clients.plebbitRpcClients[rpcUrl].state).to.equal("stopped");
+            expect(sub.updatingState).to.equal("stopped");
         });
 
         it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with ENS address`, async () => {
@@ -65,6 +67,8 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((
 
             await sub.stop();
             expect(recordedStates).to.deep.equal(expectedStates);
+            expect(sub.clients.plebbitRpcClients[rpcUrl].state).to.equal("stopped");
+            expect(sub.updatingState).to.equal("stopped");
         });
     });
 });

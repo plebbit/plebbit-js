@@ -123,7 +123,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Author of post can't purge their own comment`, async () => {
-            const postToBePurged = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const postToBePurged = await publishRandomPost(subplebbitAddress, plebbit);
             const purgeCommentModeration = await plebbit.createCommentModeration({
                 subplebbitAddress: postToBePurged.subplebbitAddress,
                 commentCid: postToBePurged.cid,

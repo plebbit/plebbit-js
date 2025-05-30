@@ -70,6 +70,7 @@ describe("Plebbit options", async () => {
     itIfRpc(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
         const rpcUrl = "ws://localhost:39652";
         const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], httpRoutersOptions: [] });
+        plebbit.on("error", () => {}); // so it doesn't throw when we destroy
         expect(plebbit.plebbitRpcClientsOptions).to.deep.equal([rpcUrl]);
         expect(Object.keys(plebbit.clients.plebbitRpcClients)).to.deep.equal([rpcUrl]);
         expect(plebbit.pubsubKuboRpcClientsOptions).to.be.undefined;
@@ -77,6 +78,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.clients.chainProviders).to.deep.equal({});
         expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
         expect(plebbit.clients.pubsubKuboRpcClients).to.deep.equal({});
+        expect(plebbit.clients.libp2pJsClients).to.deep.equal({});
         expect(plebbit.clients.ipfsGateways).to.deep.equal({});
         JSON.stringify(plebbit); // Will throw an error if circular json
         await plebbit.destroy();
@@ -89,7 +91,7 @@ describe("Plebbit options", async () => {
     });
 
     itIfRpc("Error is thrown if RPC is down", async () => {
-        const plebbit = await mockRpcRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+        const plebbit = await mockRpcRemotePlebbit({ plebbitOptions: { plebbitRpcClientsOptions: ["ws://localhost:39650"] } }); // Already has RPC config
         // plebbit.subplebbits will take 20s to timeout and throw this error
         try {
             await plebbit.fetchCid("QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"); // random cid

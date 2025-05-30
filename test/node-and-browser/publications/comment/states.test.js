@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
-import { generateMockPost, getRemotePlebbitConfigs, publishWithExpectedResult } from "../../../../dist/node/test/test-util.js";
+import { generateMockPost, getRemotePlebbitConfigs } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs().map((config) => {
@@ -20,13 +20,8 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`state changes to publishing after calling .publish()`, async () => {
-            publishWithExpectedResult(comment, true);
-            if (comment.publishingState !== "publishing")
-                await new Promise((resolve) =>
-                    comment.once("statechange", (state) => {
-                        if (state === "publishing") resolve();
-                    })
-                );
+            await comment.publish();
+            expect(comment.state).to.equal("publishing");
         });
 
         it(`state changes to updating after calling .update()`, async () => {
