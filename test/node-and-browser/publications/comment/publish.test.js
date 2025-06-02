@@ -3,7 +3,6 @@ import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishRandomReply,
-    mockPlebbit,
     publishWithExpectedResult,
     publishRandomPost,
     mockRemotePlebbit,
@@ -14,9 +13,7 @@ import {
     iterateThroughPagesToFindCommentInParentPagesInstance,
     mockPlebbitV2,
     waitTillPostInSubplebbitInstancePages,
-    waitTillReplyInParentPagesInstance,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    resolveWhenConditionIsTrue
+    waitTillReplyInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import { signComment } from "../../../../dist/node/signer/signatures.js";
