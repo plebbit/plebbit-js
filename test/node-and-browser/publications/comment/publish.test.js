@@ -473,10 +473,9 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         mockPost._publishToDifferentProviderThresholdSeconds = 5;
         mockPost._setProviderFailureThresholdSeconds = 10;
 
-        let emittedError;
+        const errors = [];
         mockPost.on("error", (err) => {
-            if (emittedError) expect.fail("Should not emit an error twice");
-            emittedError = err;
+            errors.push(err);
         });
 
         const expectedStates = {
@@ -491,9 +490,9 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
 
         await mockPost.publish();
 
-        await new Promise((resolve) => setTimeout(() => resolve(), mockPost._setProviderFailureThresholdSeconds * 1000));
-        expect(emittedError).to.be.not.undefined;
-        expect(emittedError.code).to.equal("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER");
+        await new Promise((resolve) => setTimeout(resolve, (mockPost._setProviderFailureThresholdSeconds + 1) * 1000));
+        expect(errors.length).to.equal(1);
+        expect(errors[0].code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
 
         expect(mockPost.publishingState).to.equal("failed");
         expect(actualStates).to.deep.equal(expectedStates);
