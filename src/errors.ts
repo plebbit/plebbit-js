@@ -68,6 +68,7 @@ export enum messages {
     ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED = "Can't have both libp2pJsClientOptions and kuboRpcClientOptions or pubsubKuboRpcClientOptions defined. Please define only one of them",
     ERR_INVALID_PUBSUB_PROVIDER = "Couldn't find a kubo pubsub RPC with that url or a libp2pjs with that key",
     ERR_ADDED_COMMENT_IPFS_TO_IPFS_BUT_GOT_DIFFERENT_CID = "Added CommentIpfs to IPFS but we got a different cid than challengeVerification.commentUpdate.cid, should not happen",
+    ERR_NO_PUBSUB_PROVIDERS_AVAILABLE_TO_PUBLISH_OVER_PUBSUB = "No pubsub providers available to publish over pubsub",
 
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",
