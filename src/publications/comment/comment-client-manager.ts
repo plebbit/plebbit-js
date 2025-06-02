@@ -343,7 +343,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
                 this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
-            this._comment._changeStateEmitEventEmitStateChangeEvent({
+            this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                 newUpdatingState: "succeeded",
                 event: { name: "update", args: [this._comment] }
             });
@@ -380,7 +380,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     // this is a retriable error
                     // could be problems loading from the network or gateways
                     log.trace(`Post`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
-                    this._comment._changeStateEmitEventEmitStateChangeEvent({
+                    this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                         newUpdatingState: "waiting-retry",
                         event: { name: "error", args: [e] }
                     });
@@ -391,7 +391,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                         this._comment.cid!,
                         e
                     );
-                    this._comment._changeStateEmitEventEmitStateChangeEvent({
+                    this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                         newUpdatingState: "failed",
                         event: { name: "error", args: [e] }
                     });
@@ -534,7 +534,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub.raw.subplebbitIpfs);
         } catch (e) {
             log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
-            this._comment._changeStateEmitEventEmitStateChangeEvent({
+            this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                 newUpdatingState: "failed",
                 event: { name: "error", args: [e as PlebbitError] }
             });
@@ -645,7 +645,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 "received a non retriable error from its subplebbit instance. Will stop comment updating",
                 error
             );
-            this._comment._changeStateEmitEventEmitStateChangeEvent({
+            this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                 newUpdatingState: "failed",
                 event: { name: "error", args: [error] }
             });
@@ -756,7 +756,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 log
             );
             if (usedUpdateFromPage) {
-                this._comment._changeStateEmitEventEmitStateChangeEvent({
+                this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                     newUpdatingState: "succeeded",
                     event: { name: "update", args: [this._comment] }
                 });
@@ -778,7 +778,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
             .catch((error) => {
                 log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
-                this._comment._changeStateEmitEventEmitStateChangeEvent({
+                this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                     newUpdatingState: "failed",
                     event: { name: "error", args: [error as PlebbitError | Error] }
                 });

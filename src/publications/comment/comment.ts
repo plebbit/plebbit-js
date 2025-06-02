@@ -496,7 +496,7 @@ export class Comment
                     if (this._isCommentIpfsErrorRetriable(<PlebbitError>error)) {
                         log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, error);
 
-                        this._changeStateEmitEventEmitStateChangeEvent({
+                        this._changeCommentStateEmitEventEmitStateChangeEvent({
                             newUpdatingState: "waiting-retry",
                             event: { name: "error", args: [error] }
                         });
@@ -523,7 +523,7 @@ export class Comment
                 );
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
-                this._changeStateEmitEventEmitStateChangeEvent({
+                this._changeCommentStateEmitEventEmitStateChangeEvent({
                     newUpdatingState: "failed",
                     newState: "stopped",
                     event: { name: "error", args: [newCommentIpfsOrNonRetriableError] }
@@ -532,7 +532,7 @@ export class Comment
             } else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
                 this._initIpfsProps(newCommentIpfsOrNonRetriableError);
-                this._changeStateEmitEventEmitStateChangeEvent({
+                this._changeCommentStateEmitEventEmitStateChangeEvent({
                     newUpdatingState: "succeeded",
                     event: { name: "update", args: [this] }
                 });
@@ -581,11 +581,6 @@ export class Comment
         }
     }
 
-    _setStateNoEmission(newState: Comment["state"]) {
-        if (newState === this.state) return;
-        this.state = newState;
-    }
-
     _setUpdatingStateNoEmission(newState: Comment["updatingState"]) {
         if (newState === this._updatingState) return;
         this._updatingState = newState;
@@ -596,7 +591,7 @@ export class Comment
         return this._updatingState;
     }
 
-    _changeStateEmitEventEmitStateChangeEvent<T extends keyof Omit<PublicationEvents, "statechange" | "updatingstatechange">>(opts: {
+    _changeCommentStateEmitEventEmitStateChangeEvent<T extends keyof Omit<PublicationEvents, "statechange" | "updatingstatechange">>(opts: {
         event: { name: T; args: PublicationEventArgs<T> };
         newUpdatingState?: Comment["updatingState"];
         newState?: Comment["state"];
@@ -685,7 +680,7 @@ export class Comment
 
     private _handleStateChangeFromRpc(args: any) {
         const commentState: Comment["state"] = args.params.result;
-        this._updateState(commentState);
+        this._setStateWithEmission(commentState);
     }
 
     private async _handleErrorEventFromRpc(args: any) {
@@ -694,7 +689,7 @@ export class Comment
         log("Received 'error' event from RPC", err);
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
-            this._changeStateEmitEventEmitStateChangeEvent({
+            this._changeCommentStateEmitEventEmitStateChangeEvent({
                 newUpdatingState: "failed",
                 newState: "stopped",
                 event: { name: "error", args: [err] }
@@ -714,11 +709,11 @@ export class Comment
         } catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
             await this._stopUpdateLoop();
-            this._updateState("stopped");
+            this._setStateWithEmission("stopped");
             this._setUpdatingStateWithEmissionIfNewState("failed");
             throw e;
         }
-        this._updateState("updating");
+        this._setStateWithEmission("updating");
 
         this._plebbit
             ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
@@ -762,7 +757,7 @@ export class Comment
             updatingstatechange: (newState) => this.emit("updatingstatechange", newState),
             error: async (err) => {
                 if (!this._isRetriableLoadingError(err)) {
-                    this._changeStateEmitEventEmitStateChangeEvent({
+                    this._changeCommentStateEmitEventEmitStateChangeEvent({
                         newUpdatingState: "failed",
                         newState: "stopped",
                         event: { name: "error", args: [err] }
@@ -801,7 +796,7 @@ export class Comment
         this._plebbit._updatingComments[this.cid!] = updatingCommentInstance;
 
         this._useUpdatingCommentFromPlebbit(updatingCommentInstance);
-        updatingCommentInstance._updateState("updating");
+        updatingCommentInstance._setStateWithEmission("updating");
 
         if (this._plebbit._plebbitRpcClient) {
             await updatingCommentInstance._updateViaRpc();
@@ -817,7 +812,7 @@ export class Comment
         if (this.state === "updating") return; // Do nothing if it's already updating
 
         if (!this.cid) throw Error("Can't call comment.update() without defining cid");
-        this._updateState("updating");
+        this._setStateWithEmission("updating");
 
         if (this._plebbit._updatingComments[this.cid]) {
             this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]);
@@ -902,7 +897,7 @@ export class Comment
 
     override async stop() {
         if (this.state === "publishing") await super.stop();
-        this._updateState("stopped");
+        this._setStateWithEmission("stopped");
         await this._stopUpdateLoop();
         this.replies._stop();
         this._setUpdatingStateWithEmissionIfNewState("stopped");
