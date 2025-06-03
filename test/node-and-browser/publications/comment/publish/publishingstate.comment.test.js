@@ -249,10 +249,11 @@ getRemotePlebbitConfigs().map((config) => {
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(mockPost.publishingState).to.equal("failed");
-                if (!isPlebbitFetchingUsingGateways(plebbit))
-                    expect(recordedPublishingStates).to.deep.equal(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "failed"]);
-                else expect(recordedPublishingStates).to.deep.equal(["fetching-subplebbit-ipns", "failed"]);
             }
+
+            if (!isPlebbitFetchingUsingGateways(plebbit))
+                expect(recordedPublishingStates).to.deep.equal(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "failed"]);
+            else expect(recordedPublishingStates).to.deep.equal(["fetching-subplebbit-ipns", "failed"]);
 
             await ipnsObj.plebbit.destroy();
 
