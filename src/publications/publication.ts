@@ -414,9 +414,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const toEncryptAnswers = parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(<DecryptedChallengeAnswer>{
             challengeAnswers: challengeAnswers
         });
-        const challengeExchangesWithChallenge = Object.values(this._challengeExchanges).filter((exchange) => exchange.challenge);
-        if (challengeExchangesWithChallenge.length === 0) throw Error("No challenge exchanges with challenge");
-        if (challengeExchangesWithChallenge.length > 1) throw Error("We should only have one challenge exchange with challenge");
 
         if (this._plebbit._plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
             return this._plebbit._plebbitRpcClient.publishChallengeAnswers(
@@ -424,6 +421,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 toEncryptAnswers.challengeAnswers
             );
         }
+
+        const challengeExchangesWithChallenge = Object.values(this._challengeExchanges).filter((exchange) => exchange.challenge);
+        if (challengeExchangesWithChallenge.length === 0) throw Error("No challenge exchanges with challenge");
+        if (challengeExchangesWithChallenge.length > 1) throw Error("We should only have one challenge exchange with challenge");
 
         const challengeExchange = challengeExchangesWithChallenge[0];
 
