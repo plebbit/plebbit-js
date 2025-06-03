@@ -166,8 +166,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
 
     protected _handleRpcErrorEvent(args: any) {
         const error: SubplebbitRpcErrorToTransmit = args.params.result;
-        if (error.details.newUpdatingState) this._setUpdatingStateNoEmission(error.details.newUpdatingState);
-        if (error.details.newStartedState) this._setStartedStateNoEmission(error.details.newStartedState);
+        if (error.details?.newUpdatingState) this._setUpdatingStateNoEmission(error.details.newUpdatingState);
+        if (error.details?.newStartedState) this._setStartedStateNoEmission(error.details.newStartedState);
         this.emit("error", error);
     }
 

@@ -132,9 +132,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
-        const libp2pJsClientsKeys = remeda.keys.strict(this._plebbit.clients.libp2pJsClients);
-        // pubsub providers are either kubo or helia
-        // if helia, then it's list of keys, for kubo it's list of urls of kubo rpcs
 
         hideClassPrivateProps(this);
     }
@@ -705,7 +702,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private _handleIncomingErrorFromRpc(args: any) {
         const error: PublicationRpcErrorToTransmit = args.params.result;
-        if (error.details.newPublishingState) this._updatePublishingStateNoEmission(error.details.newPublishingState);
+        if (error.details?.newPublishingState) this._updatePublishingStateNoEmission(error.details.newPublishingState);
         this.emit("error", error);
     }
 

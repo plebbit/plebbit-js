@@ -211,7 +211,7 @@ export interface SubplebbitEvents {
 export type SubplebbitEventArgs<T extends keyof SubplebbitEvents> = Parameters<SubplebbitEvents[T]>;
 
 export type SubplebbitRpcErrorToTransmit = SubplebbitEventArgs<"error">[0] & {
-    details: PlebbitError["details"] & {
+    details?: PlebbitError["details"] & {
         newUpdatingState?: RemoteSubplebbit["updatingState"];
         newStartedState?: RpcLocalSubplebbit["startedState"];
     };
