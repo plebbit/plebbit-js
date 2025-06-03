@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishWithExpectedResult,
@@ -9,7 +9,7 @@ import {
     itSkipIfRpc,
     getRemotePlebbitConfigs,
     mockPlebbitNoDataPathWithOnlyKuboClient
-} from "../../../../dist/node/test/test-util.js";
+} from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 

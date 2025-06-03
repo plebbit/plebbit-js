@@ -4,7 +4,7 @@ import {
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs,
     isPlebbitFetchingUsingGateways
-} from "../../../../dist/node/test/test-util.js";
+} from "../../../../../dist/node/test/test-util.js";
 getRemotePlebbitConfigs().map((config) => {
     describe(`comment.update() waiting-retry errors - ${config.name}`, () => {
         itSkipIfRpc(

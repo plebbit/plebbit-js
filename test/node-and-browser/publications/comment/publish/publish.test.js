@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishRandomReply,
@@ -14,9 +14,9 @@ import {
     mockPlebbitV2,
     waitTillPostInSubplebbitInstancePages,
     waitTillReplyInParentPagesInstance
-} from "../../../../dist/node/test/test-util.js";
-import { messages } from "../../../../dist/node/errors.js";
-import { signComment } from "../../../../dist/node/signer/signatures.js";
+} from "../../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../../dist/node/errors.js";
+import { signComment } from "../../../../../dist/node/signer/signatures.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 const subplebbitAddress = signers[0].address;

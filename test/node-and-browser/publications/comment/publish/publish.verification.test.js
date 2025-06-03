@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../fixtures/signers.js";
 import {
     generateMockPost,
     generateMockComment,
@@ -11,9 +11,9 @@ import {
     disableValidationOfSignatureBeforePublishing,
     itSkipIfRpc,
     mockPlebbitToReturnSpecificSubplebbit
-} from "../../../../dist/node/test/test-util.js";
+} from "../../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
-import { messages } from "../../../../dist/node/errors.js";
+import { messages } from "../../../../../dist/node/errors.js";
 const subplebbitAddress = signers[0].address;
 
 describe(`Client side verification`, async () => {

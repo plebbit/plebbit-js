@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../fixtures/signers.js";
 import {
     publishRandomPost,
     mockPostToReturnSpecificCommentUpdate,
@@ -10,7 +10,7 @@ import {
     describeSkipIfRpc,
     getRemotePlebbitConfigs,
     addStringToIpfs
-} from "../../../../dist/node/test/test-util.js";
+} from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
 // Helper function to clean up state arrays by removing:

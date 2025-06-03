@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../../fixtures/signers.js";
+import signers from "../../../../fixtures/signers.js";
 import {
     publishRandomPost,
     publishRandomReply,
@@ -14,8 +14,8 @@ import {
     isPlebbitFetchingUsingGateways,
     itSkipIfRpc,
     waitTillReplyInParentPagesInstance
-} from "../../../../dist/node/test/test-util.js";
-import { cleanUpBeforePublishing } from "../../../../dist/node/signer/signatures.js";
+} from "../../../../../dist/node/test/test-util.js";
+import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatures.js";
 
 const subplebbitAddress = signers[0].address;
 
