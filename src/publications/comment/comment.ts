@@ -17,6 +17,7 @@ import type {
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessagePublication,
+    CommentRpcErrorToTransmit,
     CommentState,
     CommentUpdateForChallengeVerification,
     CommentUpdateType,
@@ -685,8 +686,9 @@ export class Comment
 
     private async _handleErrorEventFromRpc(args: any) {
         const log = Logger("plebbit-js:comment:update:_handleErrorEventFromRpc");
-        const err = <PlebbitError>args.params.result;
+        const err = <CommentRpcErrorToTransmit>args.params.result;
         log("Received 'error' event from RPC", err);
+        if (err.details.newUpdatingState) this._setUpdatingStateNoEmission(err.details.newUpdatingState);
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
             this._changeCommentStateEmitEventEmitStateChangeEvent({

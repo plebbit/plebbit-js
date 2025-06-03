@@ -41,6 +41,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     }
 
     protected _setStartedStateWithEmission(newState: RpcLocalSubplebbit["startedState"]) {
+        if (newState === this.startedState) return;
         this.startedState = newState;
         this.emit("startedstatechange", this.startedState);
     }

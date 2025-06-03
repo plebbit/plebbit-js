@@ -115,5 +115,7 @@ export interface CommentUpdateSignature extends JsonSignature {
 export type MinimumCommentFieldsToFetchPages = Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "postCid">;
 
 export type CommentRpcErrorToTransmit = PublicationRpcErrorToTransmit & {
-    newUpdatingState?: Comment["updatingState"];
+    details: PublicationRpcErrorToTransmit["details"] & {
+        newUpdatingState?: Comment["updatingState"];
+    };
 };

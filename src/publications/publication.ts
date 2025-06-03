@@ -64,7 +64,13 @@ import {
     decodeRpcChallengeRequestPubsubMsg,
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
-import type { PublicationEventArgs, PublicationEvents, PublicationPublishingState, PublicationState } from "./types.js";
+import type {
+    PublicationEventArgs,
+    PublicationEvents,
+    PublicationPublishingState,
+    PublicationRpcErrorToTransmit,
+    PublicationState
+} from "./types.js";
 import type { SignerType } from "../signer/types.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PublicationClientsManager } from "./publication-client-manager.js";
@@ -698,8 +704,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _handleIncomingErrorFromRpc(args: any) {
-        const error: Error & { newPublishingState?: Publication["publishingState"] } = args.params.result;
-        if (error.newPublishingState) this._updatePublishingStateNoEmission(error.newPublishingState);
+        const error: PublicationRpcErrorToTransmit = args.params.result;
+        if (error.details.newPublishingState) this._updatePublishingStateNoEmission(error.details.newPublishingState);
         this.emit("error", error);
     }
 

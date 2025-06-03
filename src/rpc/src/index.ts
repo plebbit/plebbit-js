@@ -571,8 +571,10 @@ class PlebbitWsServer extends EventEmitter {
 
         const errorListener = (error: PlebbitError | Error) => {
             const errorWithNewUpdatingState = error as CommentRpcErrorToTransmit;
-            if (comment.state === "publishing") errorWithNewUpdatingState.newPublishingState = comment.publishingState;
-            else if (comment.state === "updating") errorWithNewUpdatingState.newUpdatingState = comment.updatingState;
+            if (comment.state === "publishing")
+                errorWithNewUpdatingState.details = { ...errorWithNewUpdatingState.details, newPublishingState: comment.publishingState };
+            else if (comment.state === "updating")
+                errorWithNewUpdatingState.details = { ...errorWithNewUpdatingState.details, newUpdatingState: comment.updatingState };
             sendEvent("error", errorWithNewUpdatingState);
         };
         comment.on("error", errorListener);
@@ -709,10 +711,15 @@ class PlebbitWsServer extends EventEmitter {
         comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
         comment.on("statechange", () => sendEvent("statechange", comment.state));
         const errorListener = (error: PlebbitError | Error) => {
-            const errorWithNewPublishingState = error as CommentRpcErrorToTransmit;
-            if (comment.state === "publishing") errorWithNewPublishingState.newPublishingState = comment.publishingState;
-            else if (comment.state === "updating") errorWithNewPublishingState.newUpdatingState = comment.updatingState;
-            sendEvent("error", errorWithNewPublishingState);
+            const commentRpcError = error as CommentRpcErrorToTransmit;
+            if (comment.state === "publishing")
+                commentRpcError.details = {
+                    ...commentRpcError.details,
+                    newPublishingState: comment.publishingState
+                };
+            else if (comment.state === "updating")
+                commentRpcError.details = { ...commentRpcError.details, newUpdatingState: comment.updatingState };
+            sendEvent("error", commentRpcError);
         };
         comment.on("error", errorListener);
 
@@ -764,9 +771,9 @@ class PlebbitWsServer extends EventEmitter {
         vote.on("publishingstatechange", () => sendEvent("publishingstatechange", vote.publishingState));
 
         const errorListener = (error: PlebbitError | Error) => {
-            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
-            if (vote.state === "publishing") errorWithNewPublishingState.newPublishingState = vote.publishingState;
-            sendEvent("error", errorWithNewPublishingState);
+            const voteRpcError = error as PublicationRpcErrorToTransmit;
+            if (vote.state === "publishing") voteRpcError.details = { ...voteRpcError.details, newPublishingState: vote.publishingState };
+            sendEvent("error", voteRpcError);
         };
         vote.on("error", errorListener);
 
@@ -824,9 +831,10 @@ class PlebbitWsServer extends EventEmitter {
         subplebbitEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", subplebbitEdit.publishingState));
 
         const errorListener = (error: PlebbitError | Error) => {
-            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
-            if (subplebbitEdit.state === "publishing") errorWithNewPublishingState.newPublishingState = subplebbitEdit.publishingState;
-            sendEvent("error", errorWithNewPublishingState);
+            const editRpcError = error as PublicationRpcErrorToTransmit;
+            if (subplebbitEdit.state === "publishing")
+                editRpcError.details = { ...editRpcError.details, newPublishingState: subplebbitEdit.publishingState };
+            sendEvent("error", editRpcError);
         };
         subplebbitEdit.on("error", errorListener);
 
@@ -883,9 +891,13 @@ class PlebbitWsServer extends EventEmitter {
         commentEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", commentEdit.publishingState));
 
         const errorListener = (error: PlebbitError | Error) => {
-            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
-            if (commentEdit.state === "publishing") errorWithNewPublishingState.newPublishingState = commentEdit.publishingState;
-            sendEvent("error", errorWithNewPublishingState);
+            const commentEditRpcError = error as PublicationRpcErrorToTransmit;
+            if (commentEdit.state === "publishing")
+                commentEditRpcError.details = {
+                    ...commentEditRpcError.details,
+                    newPublishingState: commentEdit.publishingState
+                };
+            sendEvent("error", commentEditRpcError);
         };
         commentEdit.on("error", errorListener);
 
@@ -943,9 +955,13 @@ class PlebbitWsServer extends EventEmitter {
         commentMod.on("publishingstatechange", () => sendEvent("publishingstatechange", commentMod.publishingState));
 
         const errorListener = (error: PlebbitError | Error) => {
-            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
-            if (commentMod.state === "publishing") errorWithNewPublishingState.newPublishingState = commentMod.publishingState;
-            sendEvent("error", errorWithNewPublishingState);
+            const commentModRpcError = error as PublicationRpcErrorToTransmit;
+            if (commentMod.state === "publishing")
+                commentModRpcError.details = {
+                    ...commentModRpcError.details,
+                    newPublishingState: commentMod.publishingState
+                };
+            sendEvent("error", commentModRpcError);
         };
         commentMod.on("error", errorListener);
 
