@@ -927,18 +927,16 @@ export async function publishChallengeAnswerMessageWithExtraProps(
     // we're crafting a challenge answer from scratch here
 
     const log = Logger("plebbit-js:test-util:setExtraPropsOnChallengeAnswerMessageAndSign");
-    //@ts-expect-error
-    const signer = publication._challengeIdToPubsubSigner[publication._challenge.challengeRequestId.toString()];
+    const signer = Object.values(publication._challengeExchanges)[0].signer;
+    if (!signer) throw Error("Signer is undefined for this challenge exchange");
     const encryptedChallengeAnswers = await encryptEd25519AesGcm(
         JSON.stringify({ challengeAnswers }),
         signer.privateKey,
-        //@ts-expect-error
-        publication._subplebbit.encryption.publicKey
+        publication._subplebbit!.encryption.publicKey
     );
     const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = cleanUpBeforePublishing({
         type: "CHALLENGEANSWER",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: Object.values(publication._challengeExchanges)[0].challengeRequest.challengeRequestId,
         encrypted: encryptedChallengeAnswers,
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
@@ -967,14 +965,12 @@ export async function publishChallengeMessageWithExtraProps(
     const encryptedChallenges = await encryptEd25519AesGcmPublicKeyBuffer(
         deterministicStringify({ challenges: [] })!,
         pubsubSigner.privateKey,
-        //@ts-expect-error
-        publication._publishedChallengeRequests[0].signature.publicKey
+        Object.values(publication._challengeExchanges)[0].challengeRequest.signature.publicKey
     );
 
     const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
         type: "CHALLENGE",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: Object.values(publication._challengeExchanges)[0].challengeRequest.challengeRequestId,
         encrypted: encryptedChallenges,
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
@@ -1006,8 +1002,7 @@ export async function publishChallengeVerificationMessageWithExtraProps(
 
     const toSignChallengeVerification: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
         type: "CHALLENGEVERIFICATION",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: Object.values(publication._challengeExchanges)[0].challengeRequest.challengeRequestId,
         challengeSuccess: false,
         reason: "Random reason",
         userAgent: publication._plebbit.userAgent,
@@ -1038,10 +1033,10 @@ export async function publishChallengeVerificationMessageWithEncryption(
 ) {
     const log = Logger("plebbit-js:test-util:publishChallengeVerificationMessageWithExtraProps");
 
+    const challengeRequest = Object.values(publication._challengeExchanges)[0].challengeRequest;
     const toSignChallengeVerification: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
         type: "CHALLENGEVERIFICATION",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: challengeRequest.challengeRequestId,
         challengeSuccess: true,
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
@@ -1049,8 +1044,6 @@ export async function publishChallengeVerificationMessageWithEncryption(
         ...verificationProps
     });
 
-    //@ts-expect-error
-    const challengeRequest = publication._publishedChallengeRequests![0];
     const publicKey = Buffer.from(challengeRequest.signature.publicKey).toString("base64");
     const encrypted = await encryptEd25519AesGcm(JSON.stringify(toEncrypt), pubsubSigner.privateKey, publicKey);
 

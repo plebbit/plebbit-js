@@ -89,9 +89,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
     raw: { pubsubMessageToPublish?: PublicationFromDecryptedChallengeRequest } = {};
 
     // private
-    private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
+    _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
 
-    private _challengeExchanges: Record<
+    _challengeExchanges: Record<
         string, // challengeRequestId stringified
         {
             challengeAnswer?: DecryptedChallengeAnswerMessageType;
@@ -100,10 +100,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
             challengeVerification?: DecryptedChallengeVerificationMessageType;
             challengeRequestPublishTimestamp?: number; // in seconds
             challengeAnswerPublishTimestamp?: number; // in seconds
-            signer: Signer;
+            signer?: Signer; // could be undefined if we're publishing over an RPC
             challengeRequestPublishError?: Error;
             challengeAnswerPublishError?: Error;
-            providerUrl: string; // either kubo rpc url or libp2pjsclient key
+            providerUrl: string; // either kubo rpc url or libp2pjsclient key, or RPC url
         }
     > = {};
     private _publishToDifferentProviderThresholdSeconds: number;
@@ -207,14 +207,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
             `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
         );
 
+        const pubsubSigner = this._challengeExchanges[msg.challengeRequestId.toString()].signer;
+        if (!pubsubSigner) throw Error("Signer is undefined for this challenge exchange");
         let decryptedRawString: string;
 
         try {
-            decryptedRawString = await decryptEd25519AesGcm(
-                msg.encrypted,
-                this._challengeExchanges[msg.challengeRequestId.toString()].signer.privateKey,
-                this._subplebbit!.encryption.publicKey
-            );
+            decryptedRawString = await decryptEd25519AesGcm(msg.encrypted, pubsubSigner.privateKey, this._subplebbit!.encryption.publicKey);
         } catch (e) {
             const plebbitError = new PlebbitError("ERR_PUBLICATION_FAILED_TO_DECRYPT_CHALLENGE", { decryptErr: e });
             log.error("could not decrypt challengemessage.encrypted", plebbitError.toString());
@@ -288,10 +286,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
             if (msg.encrypted) {
                 let decryptedRawString: string;
 
+                const pubsubSigner = this._challengeExchanges[msg.challengeRequestId.toString()].signer;
+                if (!pubsubSigner) throw Error("Signer is undefined for this challenge exchange");
                 try {
                     decryptedRawString = await decryptEd25519AesGcm(
                         msg.encrypted,
-                        this._challengeExchanges[msg.challengeRequestId.toString()].signer.privateKey,
+                        pubsubSigner.privateKey,
                         this._subplebbit!.encryption.publicKey
                     );
                 } catch (e) {
@@ -430,6 +430,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         assert(this._subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
 
+        if (!challengeExchange.signer) throw Error("Signer is undefined for this challenge exchange");
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(
             JSON.stringify(toEncryptAnswers),
             challengeExchange.signer.privateKey,
@@ -652,12 +653,19 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private _handleIncomingChallengeRequestFromRpc(args: any) {
         const encodedRequest: EncodedDecryptedChallengeRequestMessageType = args.params.result;
         const request = <DecryptedChallengeRequestMessageType>decodeRpcChallengeRequestPubsubMsg(encodedRequest);
+        this._challengeExchanges[request.challengeRequestId.toString()] = {
+            challengeRequest: request,
+            challengeRequestPublishTimestamp: timestamp(),
+            providerUrl: Object.keys(this.clients.plebbitRpcClients)[0]
+        };
         this.emit("challengerequest", request);
     }
 
     private _handleIncomingChallengeFromRpc(args: any) {
         const encodedChallenge: EncodedDecryptedChallengeMessageType = args.params.result;
         const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
+        this._challengeExchanges[challenge.challengeRequestId.toString()].challenge = challenge;
+        this._challengeExchanges[challenge.challengeRequestId.toString()].challengeRequestPublishTimestamp = timestamp();
 
         this.emit("challenge", challenge);
     }
@@ -666,12 +674,15 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType = args.params.result;
 
         const challengeAnswerMsg = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
+        this._challengeExchanges[challengeAnswerMsg.challengeRequestId.toString()].challengeAnswer = challengeAnswerMsg;
+        this._challengeExchanges[challengeAnswerMsg.challengeRequestId.toString()].challengeAnswerPublishTimestamp = timestamp();
         this.emit("challengeanswer", challengeAnswerMsg);
     }
 
     private async _handleIncomingChallengeVerificationFromRpc(args: any) {
         const encoded: EncodedDecryptedChallengeVerificationMessageType = args.params.result;
         const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
+        this._challengeExchanges[decoded.challengeRequestId.toString()].challengeVerification = decoded;
         await this._handleRpcChallengeVerification(decoded);
     }
 
@@ -802,11 +813,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
             "with provider",
             providerUrl,
             "request.encrypted=",
-            this.toJSONPubsubRequestToEncrypt()
+            pubsubMsgToEncrypt
         );
 
+        const decryptedChallengeRequest = <DecryptedChallengeRequestMessageType>{ ...challengeRequest, ...pubsubMsgToEncrypt };
+
         this._challengeExchanges[challengeRequestId.toString()] = {
-            challengeRequest,
+            challengeRequest: decryptedChallengeRequest,
             signer: pubsubMessageSigner,
             providerUrl
         };
