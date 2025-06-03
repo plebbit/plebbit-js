@@ -1295,19 +1295,25 @@ export function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean {
     );
 }
 
-export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
+export function mockRpcServerForTests(plebbitWs: any) {
     const functionsToBind = [
         "_createCommentModerationInstanceFromPublishCommentModerationParams",
         "_createCommentEditInstanceFromPublishCommentEditParams",
         "_createVoteInstanceFromPublishVoteParams",
-        "_createCommentInstanceFromPublishCommentParams"
+        "_createCommentInstanceFromPublishCommentParams",
+        "_createSubplebbitEditInstanceFromPublishSubplebbitEditParams"
     ];
+
+    // disable validation of signature before publishing
+    // reduce threshold for publishing
 
     for (const funcBind of functionsToBind) {
         const originalFunc = plebbitWs[funcBind].bind(plebbitWs);
         plebbitWs[funcBind] = async (...args: any[]) => {
             const pubInstance = await originalFunc(...args);
             disableValidationOfSignatureBeforePublishing(pubInstance);
+            pubInstance._publishToDifferentProviderThresholdSeconds = 5;
+            pubInstance._setProviderFailureThresholdSeconds = 10;
             return pubInstance;
         };
     }

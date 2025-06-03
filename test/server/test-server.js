@@ -2,12 +2,7 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import {
-    startSubplebbits,
-    mockRpcServerPlebbit,
-    mockGatewayPlebbit,
-    mockRpcWsToSkipSignatureValidation
-} from "../../dist/node/test/test-util.js";
+import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit, mockRpcServerForTests } from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
 
@@ -392,7 +387,7 @@ const setupMockDelegatedRouter = async () => {
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
         plebbitWebSocketServer._createPlebbitInstanceFromSetSettings = async (newOptions) =>
             mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server"), ...newOptions });
-        mockRpcWsToSkipSignatureValidation(plebbitWebSocketServer);
+        mockRpcServerForTests(plebbitWebSocketServer);
 
         // This server will fetch subs remotely
 
@@ -407,7 +402,7 @@ const setupMockDelegatedRouter = async () => {
         plebbitWebSocketRemoteServer._createPlebbitInstanceFromSetSettings = async (newOptions) =>
             mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server"), ...newOptions });
 
-        mockRpcWsToSkipSignatureValidation(plebbitWebSocketRemoteServer);
+        mockRpcServerForTests(plebbitWebSocketRemoteServer);
 
         console.log(`test server plebbit wss listening on port ${rpcPort} and ${remotePort}`);
     }
