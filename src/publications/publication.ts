@@ -630,7 +630,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             if (exchange.challengeRequestPublishError || exchange.challengeAnswerPublishError) return true;
             const doneWaitingForChallenge =
                 typeof exchange.challengeRequestPublishTimestamp === "number" &&
-                exchange.challengeRequestPublishTimestamp + this._setProviderFailureThresholdSeconds >= timestamp();
+                exchange.challengeRequestPublishTimestamp + this._setProviderFailureThresholdSeconds <= timestamp();
             return doneWaitingForChallenge;
         });
     }
@@ -849,7 +849,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 !exchange.challengeVerification &&
                 !exchange.challenge &&
                 typeof exchange.challengeRequestPublishTimestamp === "number" &&
-                exchange.challengeRequestPublishTimestamp + this._setProviderFailureThresholdSeconds >= timestamp()
+                exchange.challengeRequestPublishTimestamp + this._setProviderFailureThresholdSeconds <= timestamp()
         }));
     }
 
@@ -920,19 +920,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                         this._challengeExchanges[challengeRequest.challengeRequestId.toString()].challengeRequestPublishError = e as
                             | Error
                             | PlebbitError;
-                        if (this._isAllAttemptsExhausted(providers.length)) {
-                            await this._postSucessOrFailurePublishing();
-                            const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
-                                challengeExchanges: this._challengeExchangesFormattedForErrors(),
-                                pubsubTopic: this._pubsubTopicWithfallback()
-                            });
-                            log.error("All attempts to publish", this.getType(), "has failed", allAttemptsFailedError);
-                            this._changePublicationStateEmitEventEmitStateChangeEvent({
-                                newPublishingState: "failed",
-                                event: { name: "error", args: [allAttemptsFailedError] }
-                            });
-                            return;
-                        } else continue;
+                        continue;
                     } finally {
                         currentPubsubProviderIndex += 1;
                     }
@@ -944,13 +932,21 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     log(`Published a challenge request of publication`, this.getType(), "with provider", providerUrl);
                     this.emit("challengerequest", decryptedRequest);
                     if (currentPubsubProviderIndex !== providers.length)
-                        this._handleNotReceivingResponseToChallengeRequest({
-                            providers,
-                            currentPubsubProviderIndex,
-                            acceptedChallengeTypes
-                        }).catch((err) => {
-                            throw err;
-                        });
+                        await new Promise((resolve) => setTimeout(resolve, this._publishToDifferentProviderThresholdSeconds * 1000));
+                }
+                await new Promise((resolve) => setTimeout(resolve, this._setProviderFailureThresholdSeconds * 1000));
+                if (this._isAllAttemptsExhausted(providers.length)) {
+                    await this._postSucessOrFailurePublishing();
+                    const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
+                        challengeExchanges: this._challengeExchangesFormattedForErrors(),
+                        pubsubTopic: this._pubsubTopicWithfallback()
+                    });
+                    log.error("All attempts to publish", this.getType(), "has failed", allAttemptsFailedError);
+                    this._changePublicationStateEmitEventEmitStateChangeEvent({
+                        newPublishingState: "failed",
+                        event: { name: "error", args: [allAttemptsFailedError] }
+                    });
+                    return;
                 }
             }
         }
