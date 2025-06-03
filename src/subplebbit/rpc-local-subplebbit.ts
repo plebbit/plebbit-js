@@ -55,7 +55,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         this._usingDefaultChallenge = undefined;
         this.start = this.start.bind(this);
         this.edit = this.edit.bind(this);
-        this._setStartedState("stopped");
+        this._setStartedStateWithEmission("stopped");
         this.on("update", () => {
             this.editable = remeda.pick(this, remeda.keys.strict(SubplebbitEditOptionsSchema.shape));
         });
@@ -78,26 +78,27 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             signer: this.signer,
             settings: this.settings,
             _usingDefaultChallenge: this._usingDefaultChallenge,
-            started: this.started
+            started: this.started,
+            startedState: this.startedState
         };
     }
 
-    async initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType) {
-        await this.initRemoteSubplebbitPropsNoMerge(newProps);
+    initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType) {
+        this.initRemoteSubplebbitPropsNoMerge(newProps);
         this.signer = newProps.signer;
         this.settings = newProps.settings;
         this._usingDefaultChallenge = newProps._usingDefaultChallenge;
         this.started = newProps.started;
     }
 
-    async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType) {
+    initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType) {
         const keysOfSubplebbitIpfs = <(keyof SubplebbitIpfsType)[]>[...newProps.signature.signedPropertyNames, "signature"];
         const subplebbitIpfsParseRes = SubplebbitIpfsSchema.passthrough().safeParse(remeda.pick(newProps, keysOfSubplebbitIpfs));
         if (subplebbitIpfsParseRes.success) {
-            await super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfsParseRes.data);
-        } else await super.initRemoteSubplebbitPropsNoMerge(newProps);
+            super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfsParseRes.data);
+        } else super.initRemoteSubplebbitPropsNoMerge(newProps);
 
-        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
+        this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
         this.updateCid = newProps.updateCid;
     }
 
@@ -114,19 +115,20 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         newClientState.forEach(this._setRpcClientState.bind(this));
     }
 
-    protected override async _processUpdateEventFromRpcUpdate(args: any) {
+    protected override _processUpdateEventFromRpcUpdate(args: any) {
         // This function is gonna be called with every update event from rpcLocalSubplebbit.update()
         const log = Logger("plebbit-js:rpc-local-subplebbit:_processUpdateEventFromRpcUpdate");
         log("Received an update event from rpc within rpcLocalSubplebbit.update for sub " + this.address);
 
         const updateRecord: RpcLocalSubplebbitUpdateResultType = args.params.result; // we're being optimistic here and hoping the rpc server sent the correct update
-        if ("updatedAt" in updateRecord) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
-        else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
+        if ("updatedAt" in updateRecord) this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
+        else this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
+        if (updateRecord.startedState) this._setStartedStateNoEmission(updateRecord.startedState);
         this.emit("update", this);
     }
 
-    private async _handleRpcUpdateEventFromStart(args: any) {
+    private _handleRpcUpdateEventFromStart(args: any) {
         // This function is gonna be called with every update event from rpcLocalSubplebbit.start()
 
         const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcUpdateEventFromStart");
@@ -134,9 +136,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         log("Received an update event from rpc within rpcLocalSubplebbit.start for sub " + this.address);
 
         if ("updatedAt" in updateRecord) {
-            await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
-        } else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
+            this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
+        } else this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
+        if (updateRecord.startedState) this._setStartedStateNoEmission(updateRecord.startedState);
         this.emit("update", this);
     }
 
@@ -146,7 +149,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         const newStartedState: RpcLocalSubplebbit["startedState"] = args.params.result; // we're being optimistic that the rpc server transmitted a valid string here
         log("Received a startedstatechange for sub " + this.address, "new started state is", newStartedState);
 
-        this._setStartedState(newStartedState);
+        this._setStartedStateWithEmission(newStartedState);
         this._updateRpcClientStateFromStartedState(newStartedState);
     }
 
@@ -197,7 +200,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         } catch (e) {
             log.error(`Failed to start subplebbit (${this.address}) from RPC due to error`, e);
             this._setState("stopped");
-            this._setStartedState("failed");
+            this._setStartedStateWithEmission("failed");
             throw e;
         }
         this._plebbit._startedSubplebbits[this.address] = this;
@@ -210,8 +213,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             .on("challenge", this._handleRpcChallengeEvent.bind(this))
             .on("challengeanswer", this._handleRpcChallengeAnswerEvent.bind(this))
             .on("challengeverification", this._handleRpcChallengeVerificationEvent.bind(this))
-
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("error", this._handleRpcErrorEvent.bind(this));
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._startRpcSubscriptionId);
     }
@@ -224,7 +226,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
                 log.error("Failed to unsubscribe from subplebbitStart", e);
             }
         }
-        this._setStartedState("stopped");
+        this._setStartedStateWithEmission("stopped");
         this._setRpcClientState("stopped");
         this.started = false;
         this._startRpcSubscriptionId = undefined;
@@ -237,7 +239,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         await this._cleanUpRpcConnection(log);
         this.posts._stop();
         this._setState("stopped");
-        this._setStartedState("stopped");
+        this._setStartedStateWithEmission("stopped");
         this._setRpcClientState("stopped");
         this.started = false;
         delete this._plebbit._startedSubplebbits[this.address];
@@ -262,8 +264,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
 
     override async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<typeof this> {
         const subPropsAfterEdit = await this._plebbit._plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
-        if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
-        else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
+        if ("updatedAt" in subPropsAfterEdit) this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
+        else this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
         this.emit("update", this);
         return this;
     }
@@ -287,6 +289,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         this.started = false;
         this._setRpcClientState("stopped");
         this._setState("stopped");
-        this._setStartedState("stopped");
+        this._setStartedStateWithEmission("stopped");
     }
 }

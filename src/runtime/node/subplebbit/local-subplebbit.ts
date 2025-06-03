@@ -286,16 +286,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     async initInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitRecordAfterFirstUpdateType) {
-        await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge({ ...newProps, started: this.started });
+        await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge({
+            ...newProps,
+            started: this.started,
+            startedState: this.startedState
+        });
         await this._initSignerProps(newProps.signer);
         this._internalStateUpdateId = newProps._internalStateUpdateId;
         if (Array.isArray(newProps._cidsToUnPin)) newProps._cidsToUnPin.forEach((cid) => this._cidsToUnPin.add(cid));
         if (Array.isArray(newProps._mfsPathsToRemove)) newProps._mfsPathsToRemove.forEach((path) => this._mfsPathsToRemove.add(path));
-        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this._updateIpnsPubsubPropsIfNeeded(newProps);
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
-        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({ ...newProps, started: this.started });
+        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({
+            ...newProps,
+            started: this.started,
+            startedState: this.startedState
+        });
         await this._initSignerProps(newProps.signer);
         this._internalStateUpdateId = newProps._internalStateUpdateId;
         await this._updateIpnsPubsubPropsIfNeeded(newProps);
@@ -644,7 +652,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
-        this._setStartedState("succeeded");
+        this._setStartedStateWithEmission("succeeded");
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
         this.emit("update", this);
     }
@@ -2088,7 +2096,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         try {
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
-            this._setStartedState("publishing-ipns");
+            this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
@@ -2098,7 +2106,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             //@ts-expect-error
             e.details = { ...e.details, subplebbitAddress: this.address };
             const errorTyped = <Error>e;
-            this._setStartedState("failed");
+            this._setStartedStateWithEmission("failed");
             this._clientsManager.updateKuboRpcState("stopped", kuboRpc.url);
 
             log.error(
@@ -2381,7 +2389,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             this._subplebbitUpdateTrigger = true;
             this._firstTimePublishingIpns = true;
-            this._setStartedState("publishing-ipns");
+            this._setStartedStateWithEmission("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
@@ -2405,7 +2413,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
 
         const startedStateChangeListener = (newState: LocalSubplebbit["startedState"]) => {
-            this._setStartedState(newState);
+            this._setStartedStateWithEmission(newState);
             updatingStateChangeListener(newState);
         };
 
@@ -2638,7 +2646,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
             const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
 
-            this._setStartedState("stopped");
+            this._setStartedStateWithEmission("stopped");
             delete this._plebbit._startedSubplebbits[this.address];
             delete this._plebbit._startedSubplebbits[this.signer.address]; // in case we changed address
             delete _startedSubplebbits[this.address];

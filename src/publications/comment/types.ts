@@ -15,8 +15,8 @@ import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
-import type { PageIpfs, RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
-import type { PublicationState } from "../types.js";
+import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
+import type { PublicationRpcErrorToTransmit, PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
@@ -113,3 +113,7 @@ export interface CommentUpdateSignature extends JsonSignature {
 }
 
 export type MinimumCommentFieldsToFetchPages = Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "postCid">;
+
+export type CommentRpcErrorToTransmit = PublicationRpcErrorToTransmit & {
+    newUpdatingState?: Comment["updatingState"];
+};

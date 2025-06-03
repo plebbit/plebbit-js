@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import type { RpcRemoteSubplebbitType, SubplebbitEvents } from "./types.js";
+import type { RpcRemoteSubplebbitType, SubplebbitEvents, SubplebbitRpcErrorToTransmit } from "./types.js";
 import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
 import { parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
@@ -29,8 +29,18 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
 
-    protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {
+    override get updatingState(): RemoteSubplebbit["updatingState"] {
+        if (this._updatingRpcSubInstanceWithListeners) {
+            return this._updatingRpcSubInstanceWithListeners.subplebbit.updatingState;
+        } else return this._updatingState;
+    }
+
+    protected _setStartedStateNoEmission(newState: RpcLocalSubplebbit["startedState"]) {
         if (newState === this.startedState) return;
+        this.startedState = newState;
+    }
+
+    protected _setStartedStateWithEmission(newState: RpcLocalSubplebbit["startedState"]) {
         this.startedState = newState;
         this.emit("startedstatechange", this.startedState);
     }
@@ -53,7 +63,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         newRpcClientState.forEach(this._setRpcClientState.bind(this));
     }
 
-    protected async _processUpdateEventFromRpcUpdate(args: any) {
+    protected _processUpdateEventFromRpcUpdate(args: any) {
         // This function is to handle "update" event emitted after calling rpcRemoteSubplebbit.update()
         // It's overidden in rpc-local-subplebbit
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_processUpdateEventFromRpcUpdate");
@@ -66,8 +76,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             throw e;
         }
 
-        await this.initSubplebbitIpfsPropsNoMerge(updateRecord.subplebbit);
+        this.initSubplebbitIpfsPropsNoMerge(updateRecord.subplebbit);
         this.updateCid = updateRecord.updateCid;
+
+        if (updateRecord.updatingState) this._setUpdatingStateNoEmission(updateRecord.updatingState);
 
         this.emit("update", this);
     }
@@ -101,7 +113,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             challengeverification: (challengeVerification) => this.emit("challengeverification", challengeVerification),
             challengeanswer: (challengeAnswer) => this.emit("challengeanswer", challengeAnswer),
             challenge: (challenge) => this.emit("challenge", challenge),
-            startedstatechange: (startedState) => this._setStartedState.bind(this)(startedState)
+            startedstatechange: (startedState) => this._setStartedStateWithEmission.bind(this)(startedState)
         };
 
         this._updatingRpcSubInstanceWithListeners.subplebbit.on("update", this._updatingRpcSubInstanceWithListeners.update);
@@ -151,6 +163,13 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         }
     }
 
+    protected _handleRpcErrorEvent(args: any) {
+        const error: SubplebbitRpcErrorToTransmit = args.params.result;
+        if (error.details.newUpdatingState) this._setUpdatingStateNoEmission(error.details.newUpdatingState);
+        if (error.details.newStartedState) this._setStartedStateNoEmission(error.details.newStartedState);
+        this.emit("error", error);
+    }
+
     async _initRpcUpdateSubscription() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_initRpcUpdateSubscription");
         this._setState("updating");
@@ -166,7 +185,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("error", this._handleRpcErrorEvent.bind(this));
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
@@ -280,7 +299,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this._setRpcClientState("stopped");
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
-        this._setStartedState("stopped");
+        this._setStartedStateWithEmission("stopped");
         this.posts._stop();
     }
 }

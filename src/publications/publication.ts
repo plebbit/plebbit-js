@@ -686,6 +686,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._setStateWithEmission(state);
     }
 
+    private _handleIncomingErrorFromRpc(args: any) {
+        const error: Error & { newPublishingState?: Publication["publishingState"] } = args.params.result;
+        if (error.newPublishingState) this._updatePublishingStateNoEmission(error.newPublishingState);
+        this.emit("error", error);
+    }
+
     async _publishWithRpc() {
         const log = Logger("plebbit-js:publication:_publishWithRpc");
 
@@ -721,7 +727,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .on("challengeverification", this._handleIncomingChallengeVerificationFromRpc.bind(this))
             .on("publishingstatechange", this._handleIncomingPublishingStateFromRpc.bind(this))
             .on("statechange", this._handleIncomingStateFromRpc.bind(this))
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("error", this._handleIncomingErrorFromRpc.bind(this));
         this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;
     }

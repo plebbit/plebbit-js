@@ -227,7 +227,8 @@ export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(Subp
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
 export const RpcRemoteSubplebbitUpdateEventResultSchema = z.object({
     subplebbit: SubplebbitIpfsSchema.passthrough(),
-    updateCid: CidStringSchema
+    updateCid: CidStringSchema,
+    updatingState: z.custom<LocalSubplebbit["updatingState"]>().optional()
 });
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
 

@@ -43,3 +43,7 @@ export interface PublicationEvents {
 }
 
 export type PublicationEventArgs<T extends keyof PublicationEvents> = Parameters<PublicationEvents[T]>;
+
+export type PublicationRpcErrorToTransmit = PublicationEventArgs<"error">[0] & {
+    newPublishingState?: Publication["publishingState"];
+};

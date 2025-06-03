@@ -87,7 +87,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _numOfListenersForUpdatingInstance = 0;
 
     // Add a private property to store the actual updatingState value
-    private _updatingState!: SubplebbitUpdatingState;
+    protected _updatingState!: SubplebbitUpdatingState;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -241,7 +241,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (!this.updateCid) throw Error("subplebbit.updateCid should be defined before calling toJSONRpcRemote");
         return {
             subplebbit: this.toJSONIpfs(),
-            updateCid: this.updateCid
+            updateCid: this.updateCid,
+            updatingState: this.updatingState
         };
     }
 
@@ -283,7 +284,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     _setUpdatingStateNoEmission(newState: RemoteSubplebbit["updatingState"]) {
         if (newState === this.updatingState) return;
         this._updatingState = newState;
-        // TODO need to have this mirrored across all subplebbit instances
     }
 
     _setUpdatingStateWithEventEmissionIfNewState(newState: RemoteSubplebbit["updatingState"]) {

@@ -31,13 +31,14 @@ import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
-import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentRpcErrorToTransmit } from "../../publications/comment/types.js";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import type {
     RpcInternalSubplebbitRecordAfterFirstUpdateType,
     RpcInternalSubplebbitRecordBeforeFirstUpdateType,
-    RpcRemoteSubplebbitType
+    RpcRemoteSubplebbitType,
+    SubplebbitRpcErrorToTransmit
 } from "../../subplebbit/types.js";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
@@ -58,6 +59,7 @@ import type { CommentEditChallengeRequestToEncryptType } from "../../publication
 import type { CommentModerationChallengeRequestToEncrypt } from "../../publications/comment-moderation/types.js";
 import type { InputPlebbitOptions } from "../../types.js";
 import type { SubplebbitEditChallengeRequestToEncryptType } from "../../publications/subplebbit-edit/types.js";
+import { PublicationRpcErrorToTransmit } from "../../publications/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -297,7 +299,14 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
         subplebbit.on("challengeverification", challengeVerificationListener);
 
-        const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
+        const errorListener = (error: PlebbitError | Error) => {
+            const rpcError = error as SubplebbitRpcErrorToTransmit;
+            if (subplebbit.state === "started") rpcError.details = { ...rpcError.details, newStartedState: subplebbit.startedState };
+            else if (subplebbit.state === "updating")
+                rpcError.details = { ...rpcError.details, newUpdatingState: subplebbit.updatingState };
+            log("subplebbit rpc error", rpcError);
+            sendEvent("error", rpcError);
+        };
         subplebbit.on("error", errorListener);
 
         // cleanup function
@@ -308,6 +317,7 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.removeListener("challenge", challengeListener);
             subplebbit.removeListener("challengeanswer", challengeAnswerListener);
             subplebbit.removeListener("challengeverification", challengeVerificationListener);
+            subplebbit.removeListener("error", errorListener);
         };
     }
 
@@ -559,7 +569,12 @@ class PlebbitWsServer extends EventEmitter {
         const stateListener = () => sendEvent("statechange", comment.state);
         comment.on("statechange", stateListener);
 
-        const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
+        const errorListener = (error: PlebbitError | Error) => {
+            const errorWithNewUpdatingState = error as CommentRpcErrorToTransmit;
+            if (comment.state === "publishing") errorWithNewUpdatingState.newPublishingState = comment.publishingState;
+            else if (comment.state === "updating") errorWithNewUpdatingState.newUpdatingState = comment.updatingState;
+            sendEvent("error", errorWithNewUpdatingState);
+        };
         comment.on("error", errorListener);
 
         // cleanup function
@@ -626,7 +641,14 @@ class PlebbitWsServer extends EventEmitter {
         const startedStateListener = () => sendEvent("updatingstatechange", subplebbit.startedState);
         if (isSubStarted) subplebbit.on("startedstatechange", startedStateListener);
 
-        const errorListener = (error: PlebbitError | Error) => sendEvent("error", error);
+        const errorListener = (error: PlebbitError | Error) => {
+            const rpcError = error as SubplebbitRpcErrorToTransmit;
+            if (subplebbit.state === "started") rpcError.details = { ...rpcError.details, newStartedState: subplebbit.startedState };
+            else if (subplebbit.state === "updating")
+                rpcError.details = { ...rpcError.details, newUpdatingState: subplebbit.updatingState };
+            log("subplebbit rpc error", rpcError);
+            sendEvent("error", rpcError);
+        };
         subplebbit.on("error", errorListener);
 
         // cleanup function
@@ -686,7 +708,13 @@ class PlebbitWsServer extends EventEmitter {
         );
         comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
         comment.on("statechange", () => sendEvent("statechange", comment.state));
-        comment.on("error", (error) => sendEvent("error", error));
+        const errorListener = (error: PlebbitError | Error) => {
+            const errorWithNewPublishingState = error as CommentRpcErrorToTransmit;
+            if (comment.state === "publishing") errorWithNewPublishingState.newPublishingState = comment.publishingState;
+            else if (comment.state === "updating") errorWithNewPublishingState.newUpdatingState = comment.updatingState;
+            sendEvent("error", errorWithNewPublishingState);
+        };
+        comment.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -696,6 +724,7 @@ class PlebbitWsServer extends EventEmitter {
             comment.removeAllListeners("challengeverification");
             comment.removeAllListeners("publishingstatechange");
             comment.removeAllListeners("statechange");
+            comment.removeListener("error", errorListener);
             delete this.publishing[subscriptionId];
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
         };
@@ -733,7 +762,13 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         vote.on("publishingstatechange", () => sendEvent("publishingstatechange", vote.publishingState));
-        vote.on("error", (error: any) => sendEvent("error", error));
+
+        const errorListener = (error: PlebbitError | Error) => {
+            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
+            if (vote.state === "publishing") errorWithNewPublishingState.newPublishingState = vote.publishingState;
+            sendEvent("error", errorWithNewPublishingState);
+        };
+        vote.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -744,6 +779,7 @@ class PlebbitWsServer extends EventEmitter {
             vote.removeAllListeners("challengerequest");
             vote.removeAllListeners("challengeverification");
             vote.removeAllListeners("publishingstatechange");
+            vote.removeListener("error", errorListener);
         };
 
         // if fail, cleanup
@@ -786,7 +822,13 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         subplebbitEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", subplebbitEdit.publishingState));
-        subplebbitEdit.on("error", (error: any) => sendEvent("error", error));
+
+        const errorListener = (error: PlebbitError | Error) => {
+            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
+            if (subplebbitEdit.state === "publishing") errorWithNewPublishingState.newPublishingState = subplebbitEdit.publishingState;
+            sendEvent("error", errorWithNewPublishingState);
+        };
+        subplebbitEdit.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -797,6 +839,7 @@ class PlebbitWsServer extends EventEmitter {
             subplebbitEdit.removeAllListeners("challengerequest");
             subplebbitEdit.removeAllListeners("challengeverification");
             subplebbitEdit.removeAllListeners("publishingstatechange");
+            subplebbitEdit.removeListener("error", errorListener);
         };
 
         // if fail, cleanup
@@ -838,7 +881,13 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         commentEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", commentEdit.publishingState));
-        commentEdit.on("error", (error) => sendEvent("error", error));
+
+        const errorListener = (error: PlebbitError | Error) => {
+            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
+            if (commentEdit.state === "publishing") errorWithNewPublishingState.newPublishingState = commentEdit.publishingState;
+            sendEvent("error", errorWithNewPublishingState);
+        };
+        commentEdit.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -849,6 +898,7 @@ class PlebbitWsServer extends EventEmitter {
             commentEdit.removeAllListeners("challengeanswer");
             commentEdit.removeAllListeners("challengeverification");
             commentEdit.removeAllListeners("publishingstatechange");
+            commentEdit.removeListener("error", errorListener);
         };
 
         // if fail, cleanup
@@ -891,7 +941,13 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         commentMod.on("publishingstatechange", () => sendEvent("publishingstatechange", commentMod.publishingState));
-        commentMod.on("error", (error) => sendEvent("error", error));
+
+        const errorListener = (error: PlebbitError | Error) => {
+            const errorWithNewPublishingState = error as PublicationRpcErrorToTransmit;
+            if (commentMod.state === "publishing") errorWithNewPublishingState.newPublishingState = commentMod.publishingState;
+            sendEvent("error", errorWithNewPublishingState);
+        };
+        commentMod.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {

@@ -167,6 +167,7 @@ export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType
     extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_internalStateUpdateId" | "_pendingEditProps"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
     started: boolean;
+    startedState: RpcLocalSubplebbit["startedState"];
 }
 
 export interface RpcInternalSubplebbitRecordAfterFirstUpdateType
@@ -176,6 +177,7 @@ export interface RpcInternalSubplebbitRecordAfterFirstUpdateType
     > {
     started: RpcInternalSubplebbitRecordBeforeFirstUpdateType["started"];
     signer: RpcInternalSubplebbitRecordBeforeFirstUpdateType["signer"];
+    startedState: RpcLocalSubplebbit["startedState"];
 }
 
 export type RpcLocalSubplebbitUpdateResultType =
@@ -207,3 +209,10 @@ export interface SubplebbitEvents {
 
 // Create a helper type to extract the parameters of each event
 export type SubplebbitEventArgs<T extends keyof SubplebbitEvents> = Parameters<SubplebbitEvents[T]>;
+
+export type SubplebbitRpcErrorToTransmit = SubplebbitEventArgs<"error">[0] & {
+    details: PlebbitError["details"] & {
+        newUpdatingState?: RemoteSubplebbit["updatingState"];
+        newStartedState?: RpcLocalSubplebbit["startedState"];
+    };
+};
