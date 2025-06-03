@@ -217,7 +217,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             subLoadingRes?.subplebbit &&
             (this._subplebbit.raw.subplebbitIpfs?.updatedAt || 0) < subLoadingRes.subplebbit.updatedAt
         ) {
-            await this._subplebbit.initSubplebbitIpfsPropsNoMerge(subLoadingRes.subplebbit);
+            this._subplebbit.initSubplebbitIpfsPropsNoMerge(subLoadingRes.subplebbit);
             this._subplebbit.updateCid = subLoadingRes.cid;
             log(
                 `Remote Subplebbit`,
@@ -344,6 +344,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 subplebbitIpnsName: ipnsName,
                 subplebbitCid: latestSubplebbitCid
             };
+            if (e instanceof PlebbitError && e.code === "ERR_OVER_DOWNLOAD_LIMIT") this._updateCidsAlreadyLoaded.add(latestSubplebbitCid);
             throw e;
         }
 
