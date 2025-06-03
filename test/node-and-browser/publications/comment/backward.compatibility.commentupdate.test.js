@@ -230,7 +230,9 @@ getRemotePlebbitConfigs().map((config) => {
 
             const errorPromise = new Promise((resolve) => post.once("error", resolve));
 
+            const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
             await post.publish();
+            await challengeRequestPromise;
 
             await publishChallengeVerificationMessageWithEncryption(post, subWithNoResponseSigner, {
                 commentUpdate,

@@ -5,6 +5,7 @@ import {
     publishRandomPost,
     publishSubplebbitRecordWithExtraProp,
     mockPlebbitToReturnSpecificSubplebbit,
+    createNewIpns,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs
 } from "../../../dist/node/test/test-util.js";
@@ -178,7 +179,12 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`the order of state-event-statechange is correct when we fail to load subplebbit with critical error`, async () => {
             // Mock the subplebbit to return an invalid record
-            const invalidSubplebbitRecord = { address: "1234.eth" }; // This will fail validation
+
+            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) }; //2mb
+
+            const ipnsObj = await createNewIpns();
+
+            await ipnsObj.publishToIpns(JSON.stringify(twoMbObject));
 
             const recordedUpdatingStates = [];
             const errors = [];
@@ -186,16 +192,15 @@ getRemotePlebbitConfigs().map((config) => {
             // when error is emitted, updatingState should be set to failed
             // but it should not emit updatingstatechange event
 
-            const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
+            const subplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
             subplebbit.on("updatingstatechange", (newState) => recordedUpdatingStates.push(newState));
             subplebbit.on("error", (err) => errors.push(err));
 
             // First update should succeed with the initial valid record
             await subplebbit.update();
-            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number"); // wait until the subplebbit is updated
 
             const errorPromise = new Promise((resolve, reject) =>
-                subplebbit.once("error", () => {
+                subplebbit.once("error", (err) => {
                     if (subplebbit.updatingState !== "failed") reject("if it emits error, updatingState should be failed");
                     if (recordedUpdatingStates.length === 0) reject("if it emits error, updatingStatechange should have been emitted");
                     if (recordedUpdatingStates[recordedUpdatingStates.length - 1] === "failed")
@@ -203,11 +208,11 @@ getRemotePlebbitConfigs().map((config) => {
                     resolve();
                 })
             );
-            await mockPlebbitToReturnSpecificSubplebbit(plebbit, subplebbit.address, invalidSubplebbitRecord);
 
             await errorPromise;
 
             await subplebbit.stop();
+            await ipnsObj.plebbit.destroy();
         });
     });
 });
