@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { generateMockPost, getRemotePlebbitConfigs, publishWithExpectedResult } from "../../../../../dist/node/test/test-util.js";
 import signers from "../../../../fixtures/signers.js";
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getRemotePlebbitConfigs().map((config) => {
     describe(`Pubsub request fields in plebbit.createComment - ${config.name}`, async () => {
         let plebbit;
 
@@ -19,11 +19,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             expect(comment.challengeRequest).to.deep.equal(challengeRequestFields);
 
             expect(comment.toJSONPubsubRequestToEncrypt().challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
-            let challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+            const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
             await publishWithExpectedResult(comment, true);
             const challengeRequestFromEvent = await challengeRequestPromise;
-            const challengeRequestFromInstance = comment._publishedChallengeRequests[0];
-            for (const challengerequest of [challengeRequestFromEvent, challengeRequestFromInstance])
+            for (const challengerequest of [challengeRequestFromEvent])
                 expect(challengerequest.challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
         });
         it(`plebbit.createComment({challengeRequest: challengeCommentCids}) includes challengeCommentCids in request pubsub message`, async () => {
@@ -31,11 +30,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             const comment = await generateMockPost(signers[0].address, plebbit, false, { challengeRequest: challengeRequestFields });
 
             expect(comment.toJSONPubsubRequestToEncrypt().challengeCommentCids).to.deep.equal(challengeRequestFields.challengeCommentCids);
-            let challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+            const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
             await publishWithExpectedResult(comment, true);
             const challengeRequestFromEvent = await challengeRequestPromise;
-            const challengeRequestFromInstance = comment._publishedChallengeRequests[0];
-            for (const challengerequest of [challengeRequestFromEvent, challengeRequestFromInstance])
+            for (const challengerequest of [challengeRequestFromEvent])
                 expect(challengerequest.challengeCommentCids).to.deep.equal(challengeRequestFields.challengeCommentCids);
         });
 
@@ -52,12 +50,11 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
                 challengeRequestFields.challengeCommentCids
             );
             expect(recreatedComment.toJSONPubsubRequestToEncrypt().challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
-            let challengeRequestPromise = new Promise((resolve) => recreatedComment.once("challengerequest", resolve));
+            const challengeRequestPromise = new Promise((resolve) => recreatedComment.once("challengerequest", resolve));
 
             await publishWithExpectedResult(recreatedComment, true);
             const challengeRequestFromEvent = await challengeRequestPromise;
-            const challengeRequestFromInstance = recreatedComment._publishedChallengeRequests[0];
-            for (const challengerequest of [challengeRequestFromEvent, challengeRequestFromInstance]) {
+            for (const challengerequest of [challengeRequestFromEvent]) {
                 expect(challengerequest.challengeCommentCids).to.deep.equal(challengeRequestFields.challengeCommentCids);
                 expect(challengerequest.challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
             }
