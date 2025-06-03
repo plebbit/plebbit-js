@@ -975,11 +975,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._validatePublicationFields();
 
         if (this._plebbit._plebbitRpcClient) return this._publishWithRpc();
+        this._setStateWithEmission("publishing");
 
         const providers = this._getPubsubProviders();
         await this._initSubplebbit();
-
-        this._setStateWithEmission("publishing");
 
         const options = { acceptedChallengeTypes: [] };
 

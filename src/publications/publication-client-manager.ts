@@ -177,7 +177,6 @@ export class PublicationClientsManager extends PlebbitClientsManager {
             updatingstatechange: this.handleUpdatingStateChangeEventFromSub.bind(this)
         };
 
-        // TODO need to add handling libp2pJsClients here
         if (
             this._subplebbitForUpdating.subplebbit.clients.ipfsGateways &&
             Object.keys(this._subplebbitForUpdating.subplebbit.clients.ipfsGateways).length > 0
