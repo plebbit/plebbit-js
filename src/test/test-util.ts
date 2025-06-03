@@ -1222,15 +1222,15 @@ export async function createNewIpns() {
     };
 }
 
-export async function publishSubplebbitRecordWithExtraProp(opts: { includeExtraPropInSignedPropertyNames: boolean; extraProps: Object }) {
+export async function publishSubplebbitRecordWithExtraProp(opts?: { includeExtraPropInSignedPropertyNames: boolean; extraProps: Object }) {
     const ipnsObj = await createNewIpns();
     const actualSub = await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
     const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
     subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
     delete subplebbitRecord.posts;
-    Object.assign(subplebbitRecord, opts.extraProps);
+    if (opts?.extraProps) Object.assign(subplebbitRecord, opts.extraProps);
     const signedPropertyNames = subplebbitRecord.signature.signedPropertyNames;
-    if (opts.includeExtraPropInSignedPropertyNames) signedPropertyNames.push("extraProp");
+    if (opts?.includeExtraPropInSignedPropertyNames) signedPropertyNames.push("extraProp");
     subplebbitRecord.signature = await _signJson(
         signedPropertyNames,
         subplebbitRecord,
