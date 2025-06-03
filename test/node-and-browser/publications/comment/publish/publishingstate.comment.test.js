@@ -5,6 +5,7 @@ import {
     publishWithExpectedResult,
     isPlebbitFetchingUsingGateways,
     generatePostToAnswerMathQuestion,
+    publishSubplebbitRecordWithExtraProp,
     getRemotePlebbitConfigs,
     createNewIpns
 } from "../../../../../dist/node/test/test-util.js";
@@ -255,6 +256,44 @@ getRemotePlebbitConfigs().map((config) => {
 
             await ipnsObj.plebbit.destroy();
 
+            await mockPost.stop();
+        });
+
+        it(`order of publishingState-error-publishingstatechange is correct`, async () => {
+            // need to create a mock sub with pubsub topic that's not responding
+            // that way we will force the error to be thrown for both rpc and other configs
+
+            const mockedSub = await publishSubplebbitRecordWithExtraProp();
+
+            const mockPost = await generateMockPost(mockedSub.ipnsObj.signer.address, plebbit);
+            mockPost._publishToDifferentProviderThresholdSeconds = 1;
+            mockPost._setProviderFailureThresholdSeconds = 2;
+
+            const recordedPublishingStates = [];
+
+            mockPost.on("publishingstatechange", (newState) => recordedPublishingStates.push(newState));
+
+            const errorPromise = new Promise((resolve, reject) => {
+                mockPost.on("error", (e) => {
+                    if (mockPost.publishingState !== "failed") reject("publishing state should be failed after getting the error");
+                    if (recordedPublishingStates.length === 0) reject("should have emitted a publishingstatechange event");
+                    if (recordedPublishingStates[recordedPublishingStates.length - 1] === "failed")
+                        reject("should not emit an event just yet");
+                    resolve();
+                });
+            });
+
+            await mockPost.publish();
+            await errorPromise;
+
+            expect(mockPost.publishingState).to.equal("failed");
+            const expectedPublishingState = ["fetching-subplebbit-ipns"].concat(
+                ...(isPlebbitFetchingUsingGateways(plebbit) ? [] : ["fetching-subplebbit-ipfs"]),
+                ...new Array(Object.keys(mockPost._challengeExchanges).length).fill(["publishing-challenge-request", "waiting-challenge"]),
+                "failed"
+            );
+            expect(recordedPublishingStates).to.deep.equal(expectedPublishingState);
+            await mockedSub.ipnsObj.plebbit.destroy();
             await mockPost.stop();
         });
     });
