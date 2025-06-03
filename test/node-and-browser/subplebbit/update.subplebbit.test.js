@@ -3,15 +3,10 @@ import signers from "../../fixtures/signers.js";
 
 import {
     publishRandomPost,
-    mockRemotePlebbit,
     getRemotePlebbitConfigs,
     isPlebbitFetchingUsingGateways,
     createNewIpns,
-    mockPlebbitToReturnSpecificSubplebbit,
-    resolveWhenConditionIsTrue,
-    mockGatewayPlebbit,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
-    describeSkipIfRpc
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
@@ -162,12 +157,16 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`subplebbit.stop() stops subplebbit updates`, async () => {
-            const remotePlebbit = await mockRemotePlebbit();
+            const remotePlebbit = await config.plebbitInstancePromise();
             const subplebbit = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" }); // 'plebbit.eth' is part of test-server.js
             await subplebbit.update();
             await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
             await subplebbit.stop();
             let updatedHasBeenCalled = false;
+
+            subplebbit.on("update", () => {
+                updatedHasBeenCalled = true;
+            });
 
             subplebbit.updateOnce = subplebbit._setUpdatingState = async () => {
                 updatedHasBeenCalled = true;

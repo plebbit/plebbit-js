@@ -5,7 +5,6 @@ import {
     mockPostToReturnSpecificCommentUpdate,
     mockPlebbitToReturnSpecificSubplebbit,
     createCommentUpdateWithInvalidSignature,
-    mockPlebbitNoDataPathWithOnlyKuboClient,
     mockCommentToNotUsePagesForUpdates,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
