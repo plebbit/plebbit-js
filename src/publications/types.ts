@@ -49,3 +49,8 @@ export type PublicationRpcErrorToTransmit = PublicationEventArgs<"error">[0] & {
         newPublishingState?: Publication["publishingState"];
     };
 };
+
+export type RpcPublishResult = {
+    subscriptionId: number;
+    publishError?: PublicationRpcErrorToTransmit;
+};

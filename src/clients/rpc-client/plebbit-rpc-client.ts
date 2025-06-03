@@ -26,6 +26,7 @@ import { SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
 import * as z from "zod";
 import { TypedEmitter } from "tiny-typed-emitter";
 import type { PlebbitRpcClientEvents } from "../../types.js";
+import type { RpcPublishResult } from "../../publications/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -281,29 +282,29 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return subscriptionId;
     }
 
-    async publishComment(commentProps: DecryptedChallengeRequest) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishComment", [commentProps]));
-        return subscriptionId;
+    async publishComment(commentProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
+        const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishComment", [commentProps]);
+        return publishRes;
     }
 
-    async publishCommentEdit(commentEditProps: DecryptedChallengeRequest) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentEdit", [commentEditProps]));
-        return subscriptionId;
+    async publishCommentEdit(commentEditProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
+        const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
+        return publishRes;
     }
 
-    async publishCommentModeration(commentModProps: DecryptedChallengeRequest) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentModeration", [commentModProps]));
-        return subscriptionId;
+    async publishCommentModeration(commentModProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
+        const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishCommentModeration", [commentModProps]);
+        return publishRes;
     }
 
-    async publishVote(voteProps: DecryptedChallengeRequest) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [voteProps]));
-        return subscriptionId;
+    async publishVote(voteProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
+        const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishVote", [voteProps]);
+        return publishRes;
     }
 
-    async publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]));
-        return subscriptionId;
+    async publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest): Promise<RpcPublishResult> {
+        const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]);
+        return publishRes;
     }
 
     async commentUpdateSubscribe(commentCid: string) {

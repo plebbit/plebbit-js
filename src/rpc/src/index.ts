@@ -20,6 +20,7 @@ import { Plebbit } from "../../plebbit/plebbit.js";
 import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
+    DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType
 } from "../../pubsub-messages/types.js";
@@ -59,7 +60,7 @@ import type { CommentEditChallengeRequestToEncryptType } from "../../publication
 import type { CommentModerationChallengeRequestToEncrypt } from "../../publications/comment-moderation/types.js";
 import type { InputPlebbitOptions } from "../../types.js";
 import type { SubplebbitEditChallengeRequestToEncryptType } from "../../publications/subplebbit-edit/types.js";
-import { PublicationRpcErrorToTransmit } from "../../publications/types.js";
+import { PublicationRpcErrorToTransmit, RpcPublishResult } from "../../publications/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -686,7 +687,7 @@ class PlebbitWsServer extends EventEmitter {
         return comment;
     }
 
-    async publishComment(params: any, connectionId: string) {
+    async publishComment(params: any, connectionId: string): Promise<RpcPublishResult> {
         const publishOptions = parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
 
         const subscriptionId = generateSubscriptionId();
@@ -702,49 +703,62 @@ class PlebbitWsServer extends EventEmitter {
 
         const comment = await this._createCommentInstanceFromPublishCommentParams(publishOptions);
         this.publishing[subscriptionId] = comment;
-        comment.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
-        comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
-        comment.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
-        comment.on("challengeverification", (challengeVerification) =>
-            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
-        );
-        comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
-        comment.on("statechange", () => sendEvent("statechange", comment.state));
+        const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
+        comment.on("challenge", challengeListener);
+
+        const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
+            sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
+        comment.on("challengeanswer", challengeAnswerListener);
+
+        const challengeRequestListener = (request: DecryptedChallengeRequestMessageType) =>
+            sendEvent("challengerequest", encodeChallengeRequest(request));
+        comment.on("challengerequest", challengeRequestListener);
+
+        const challengeVerificationListener = (challengeVerification: DecryptedChallengeVerificationMessageType) =>
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
+        comment.on("challengeverification", challengeVerificationListener);
+
+        const publishingStateListener = () => {
+            sendEvent("publishingstatechange", comment.publishingState);
+        };
+        comment.on("publishingstatechange", publishingStateListener);
+
+        const stateListener = () => sendEvent("statechange", comment.state);
+        comment.on("statechange", stateListener);
+
         const errorListener = (error: PlebbitError | Error) => {
             const commentRpcError = error as CommentRpcErrorToTransmit;
-            if (comment.state === "publishing")
-                commentRpcError.details = {
-                    ...commentRpcError.details,
-                    newPublishingState: comment.publishingState
-                };
-            else if (comment.state === "updating")
-                commentRpcError.details = { ...commentRpcError.details, newUpdatingState: comment.updatingState };
+            commentRpcError.details = {
+                ...commentRpcError.details,
+                newPublishingState: comment.publishingState
+            };
             sendEvent("error", commentRpcError);
         };
         comment.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            comment.removeAllListeners("challenge");
-            comment.removeAllListeners("challengeanswer");
-            comment.removeAllListeners("challengerequest");
-            comment.removeAllListeners("challengeverification");
-            comment.removeAllListeners("publishingstatechange");
-            comment.removeAllListeners("statechange");
+            comment.removeListener("challenge", challengeListener);
+            comment.removeListener("challengeanswer", challengeAnswerListener);
+            comment.removeListener("challengerequest", challengeRequestListener);
+            comment.removeListener("challengeverification", challengeVerificationListener);
+            comment.removeListener("publishingstatechange", publishingStateListener);
+            comment.removeListener("statechange", stateListener);
             comment.removeListener("error", errorListener);
             delete this.publishing[subscriptionId];
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
         };
 
         // if fail, cleanup
+
         try {
             await comment.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            throw e;
+            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return subscriptionId;
+        return { subscriptionId };
     }
 
     private async _createVoteInstanceFromPublishVoteParams(params: VoteChallengeRequestToEncryptType) {
@@ -752,7 +766,7 @@ class PlebbitWsServer extends EventEmitter {
         vote.challengeRequest = remeda.omit(params, ["vote"]);
         return vote;
     }
-    async publishVote(params: any, connectionId: string) {
+    async publishVote(params: any, connectionId: string): Promise<RpcPublishResult> {
         const publishOptions = parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
 
         const subscriptionId = generateSubscriptionId();
@@ -772,7 +786,7 @@ class PlebbitWsServer extends EventEmitter {
 
         const errorListener = (error: PlebbitError | Error) => {
             const voteRpcError = error as PublicationRpcErrorToTransmit;
-            if (vote.state === "publishing") voteRpcError.details = { ...voteRpcError.details, newPublishingState: vote.publishingState };
+            voteRpcError.details = { ...voteRpcError.details, newPublishingState: vote.publishingState };
             sendEvent("error", voteRpcError);
         };
         vote.on("error", errorListener);
@@ -794,10 +808,10 @@ class PlebbitWsServer extends EventEmitter {
             await vote.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            throw e;
+            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return subscriptionId;
+        return { subscriptionId };
     }
 
     private async _createSubplebbitEditInstanceFromPublishSubplebbitEditParams(params: SubplebbitEditChallengeRequestToEncryptType) {
@@ -806,7 +820,7 @@ class PlebbitWsServer extends EventEmitter {
         return subplebbitEdit;
     }
 
-    async publishSubplebbitEdit(params: any, connectionId: string) {
+    async publishSubplebbitEdit(params: any, connectionId: string): Promise<RpcPublishResult> {
         const publishOptions = parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
 
         const subscriptionId = generateSubscriptionId();
@@ -832,8 +846,7 @@ class PlebbitWsServer extends EventEmitter {
 
         const errorListener = (error: PlebbitError | Error) => {
             const editRpcError = error as PublicationRpcErrorToTransmit;
-            if (subplebbitEdit.state === "publishing")
-                editRpcError.details = { ...editRpcError.details, newPublishingState: subplebbitEdit.publishingState };
+            editRpcError.details = { ...editRpcError.details, newPublishingState: subplebbitEdit.publishingState };
             sendEvent("error", editRpcError);
         };
         subplebbitEdit.on("error", errorListener);
@@ -855,10 +868,10 @@ class PlebbitWsServer extends EventEmitter {
             await subplebbitEdit.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            throw e;
+            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return subscriptionId;
+        return { subscriptionId };
     }
 
     private async _createCommentEditInstanceFromPublishCommentEditParams(params: CommentEditChallengeRequestToEncryptType) {
@@ -867,7 +880,7 @@ class PlebbitWsServer extends EventEmitter {
         return commentEdit;
     }
 
-    async publishCommentEdit(params: any, connectionId: string) {
+    async publishCommentEdit(params: any, connectionId: string): Promise<RpcPublishResult> {
         const publishOptions = parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
 
@@ -892,11 +905,10 @@ class PlebbitWsServer extends EventEmitter {
 
         const errorListener = (error: PlebbitError | Error) => {
             const commentEditRpcError = error as PublicationRpcErrorToTransmit;
-            if (commentEdit.state === "publishing")
-                commentEditRpcError.details = {
-                    ...commentEditRpcError.details,
-                    newPublishingState: commentEdit.publishingState
-                };
+            commentEditRpcError.details = {
+                ...commentEditRpcError.details,
+                newPublishingState: commentEdit.publishingState
+            };
             sendEvent("error", commentEditRpcError);
         };
         commentEdit.on("error", errorListener);
@@ -918,10 +930,10 @@ class PlebbitWsServer extends EventEmitter {
             await commentEdit.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            throw e;
+            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return subscriptionId;
+        return { subscriptionId };
     }
 
     private async _createCommentModerationInstanceFromPublishCommentModerationParams(params: CommentModerationChallengeRequestToEncrypt) {
@@ -930,7 +942,7 @@ class PlebbitWsServer extends EventEmitter {
         return commentModeration;
     }
 
-    async publishCommentModeration(params: any, connectionId: string) {
+    async publishCommentModeration(params: any, connectionId: string): Promise<RpcPublishResult> {
         const publishOptions = parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
 
@@ -956,11 +968,10 @@ class PlebbitWsServer extends EventEmitter {
 
         const errorListener = (error: PlebbitError | Error) => {
             const commentModRpcError = error as PublicationRpcErrorToTransmit;
-            if (commentMod.state === "publishing")
-                commentModRpcError.details = {
-                    ...commentModRpcError.details,
-                    newPublishingState: commentMod.publishingState
-                };
+            commentModRpcError.details = {
+                ...commentModRpcError.details,
+                newPublishingState: commentMod.publishingState
+            };
             sendEvent("error", commentModRpcError);
         };
         commentMod.on("error", errorListener);
@@ -981,10 +992,10 @@ class PlebbitWsServer extends EventEmitter {
             await commentMod.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            throw e;
+            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return subscriptionId;
+        return { subscriptionId };
     }
 
     async publishChallengeAnswers(params: any) {
