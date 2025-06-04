@@ -55,6 +55,7 @@
     "dependencies": {
         "@bonfida/spl-name-service": "3.0.10",
         "@chainsafe/libp2p-gossipsub": "14.1.1",
+        "@enhances/with-resolvers": "0.0.5",
         "@helia/block-brokers": "4.2.2",
         "@helia/delegated-routing-v1-http-api-client": "4.2.5",
         "@helia/ipns": "8.2.3",
