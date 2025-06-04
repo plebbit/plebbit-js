@@ -29,17 +29,20 @@ describe(`subplebbit.startedState`, async () => {
         subplebbit.on("startedstatechange", (newState) => recordedStates.push(newState));
 
         await subplebbit.start();
+
         await new Promise((resolve) => subplebbit.once("update", resolve));
         if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(recordedStates).to.deep.equal(expectedStates);
     });
 
     itSkipIfRpc(`subplebbit.startedState = failed if a failure occurs`, async () => {
+        const originalFunction = subplebbit._getDbInternalState.bind(subplebbit);
         subplebbit._getDbInternalState = async () => {
             throw Error("Failed to load sub from db ");
         };
-        publishRandomPost(subplebbit.address, plebbit);
+        await publishRandomPost(subplebbit.address, plebbit);
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.startedState === "failed", "startedstatechange");
         expect(subplebbit.startedState).to.equal("failed");
+        subplebbit._getDbInternalState = originalFunction;
     });
 });

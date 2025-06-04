@@ -25,7 +25,10 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
     });
 
-    after(async () => await plebbit.destroy());
+    after(async () => {
+        await sub.delete();
+        await plebbit.destroy();
+    });
 
     it(`subplebbit.lastPostCid and lastCommentCid reflects latest post published`, async () => {
         expect(sub.lastPostCid).to.be.undefined;

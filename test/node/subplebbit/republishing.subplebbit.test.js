@@ -47,18 +47,26 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         subAfterMigration = await createSubWithNoChallenge({ address: subBeforeMigration.address }, plebbitDifferentIpfs);
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
-        await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt !== subBeforeMigration.updatedAt);
+        await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt > subBeforeMigration.updatedAt);
+
+        expect(subAfterMigration.lastPostCid).to.equal(postWithExtraProps.cid);
+        expect(subAfterMigration.lastCommentCid).to.equal(replyOfPostWithExtraProps.cid);
 
         // remote plebbit has to be the same repo otherwise it won't find the new IPNS record
-        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({ kuboRpcClientsOptions: ["http://localhost:15004/api/v0"] });
+        remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({
+            plebbitOptions: { kuboRpcClientsOptions: ["http://localhost:15004/api/v0"] }
+        });
         // remote plebbit is connected to the old ipfs repo and has the old IPNS record, not sure how to force it to load the new one
-        await Promise.all([
-            waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit),
-            waitTillReplyInParentPages(replyOfPostWithExtraProps, remotePlebbit)
-        ]);
+
+        const remoteSubplebbit = await remotePlebbit.getSubplebbit(subAfterMigration.address);
+        expect(remoteSubplebbit.lastPostCid).to.equal(postWithExtraProps.cid);
+        expect(remoteSubplebbit.lastCommentCid).to.equal(replyOfPostWithExtraProps.cid);
+        await waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit);
+        await waitTillReplyInParentPages(replyOfPostWithExtraProps, remotePlebbit);
     });
 
     after(async () => {
+        await subAfterMigration.delete();
         await plebbitDifferentIpfs.destroy();
         await remotePlebbit.destroy();
     });

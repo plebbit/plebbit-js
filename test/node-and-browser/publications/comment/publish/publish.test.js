@@ -13,7 +13,8 @@ import {
     iterateThroughPagesToFindCommentInParentPagesInstance,
     mockPlebbitV2,
     waitTillPostInSubplebbitInstancePages,
-    waitTillReplyInParentPagesInstance
+    waitTillReplyInParentPagesInstance,
+    resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../../dist/node/errors.js";
 import { signComment } from "../../../../../dist/node/signer/signatures.js";
@@ -458,7 +459,7 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         await offlinePubsubPlebbit.destroy();
     });
     it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
-        // First provider waits, second provider fails to publish
+        // First provider waits, second provider fails to subscribe
         // second provider should update its state to be stopped, but it should not emit an error until the first provider is done with waiting
 
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
@@ -467,8 +468,8 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
             plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl] }
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
-        mockPost._publishToDifferentProviderThresholdSeconds = 5;
-        mockPost._setProviderFailureThresholdSeconds = 10;
+        mockPost._publishToDifferentProviderThresholdSeconds = 2;
+        mockPost._setProviderFailureThresholdSeconds = 5;
 
         const errors = [];
         mockPost.on("error", (err) => {
@@ -485,9 +486,13 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         for (const pubsubUrl of Object.keys(expectedStates))
             mockPost.clients.pubsubKuboRpcClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
+        const timeBeforePublish = Date.now();
         await mockPost.publish();
 
-        await new Promise((resolve) => setTimeout(resolve, (mockPost._setProviderFailureThresholdSeconds + 1) * 1000));
+        await resolveWhenConditionIsTrue(mockPost, () => errors.length >= 1, "error");
+        const timeItTookToEmitError = Date.now() - timeBeforePublish;
+        expect(timeItTookToEmitError).to.be.greaterThan(mockPost._setProviderFailureThresholdSeconds * 1000);
+
         expect(errors.length).to.equal(1);
         expect(errors[0].code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
 

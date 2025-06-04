@@ -106,16 +106,13 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
         if (config.testConfigCode === "remote-kubo-rpc")
             it(`correct order of ${clientFieldName} state when failing to publish a comment and the error is from the pubsub provider`, async () => {
                 const offlinePubsubUrl = "http://localhost:13173"; // Should be down
-                const offlinePubsubPlebbit = await mockRemotePlebbit({
+                const offlinePubsubPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: {
-                        kuboRpcClientsOptions: plebbit.kuboRpcClientsOptions,
                         pubsubKuboRpcClientsOptions: [offlinePubsubUrl]
                     }
                 });
 
                 const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
-
-                const expectedStates = ["subscribing-pubsub", "stopped", "subscribing-pubsub", "stopped"];
 
                 const actualStates = [];
 
@@ -128,6 +125,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
                     expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
                 }
 
+                const expectedStates = new Array(Object.keys(mockPost._challengeExchanges).length)
+                    .fill(null)
+                    .map(() => ["subscribing-pubsub", "stopped"])
+                    .flat();
                 expect(actualStates).to.deep.equal(expectedStates);
             });
 
