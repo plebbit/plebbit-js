@@ -64,7 +64,7 @@
             ],
             "type": "node",
             "env": {
-                "DEBUG": "plebbit-js:*, -plebbit*trace",
+                "DEBUG": "plebbit*",
                 "PLEBBIT_CONFIGS": "remote-libp2pjs,remote-kubo-rpc,remote-ipfs-gateway"
             }
         },
@@ -115,16 +115,17 @@
         {
             "args": [
                 "--no-timeouts",
-                "--parallel",
-                "--jobs",
-                "3",
                 "--recursive",
+                "--jobs",
+                "4",
+                "--parallel",
+                "--bail",
                 "--config",
                 "${workspaceFolder}/config/.mocharc.json",
                 "${workspaceFolder}/test/node-and-browser"
             ],
             "internalConsoleOptions": "openOnSessionStart",
-            "name": "Test all Node and browser tests",
+            "name": "Node and browser tests (Parallel)",
             "console": "integratedTerminal",
             "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
             "request": "launch",
@@ -140,7 +141,36 @@
             "type": "node",
             "env": {
                 "DEBUG": "plebbit-js:*, -plebbit-js*trace",
-                "PLEBBIT_CONFIGS": "remote-ipfs-gateway"
+                "PLEBBIT_CONFIGS": "remote-libp2pjs"
+            }
+        },
+        {
+            "args": [
+                "--no-timeouts",
+                "--recursive",
+                "--bail",
+                "--config",
+                "${workspaceFolder}/config/.mocharc.json",
+                "${workspaceFolder}/test/node-and-browser"
+            ],
+            "internalConsoleOptions": "openOnSessionStart",
+            "name": "Node and browser tests (Sequential)",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/mocha.js",
+            "request": "launch",
+            "outFiles": [],
+            "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
+            "runtimeArgs": ["--max-old-space-size=18192", "--trace-warnings", "--unhandled-rejections=strict"],
+            "skipFiles": [
+                "<node_internals>/**",
+                "**/node_modules/**",
+                "${workspaceFolder}/dist/browser/**",
+                "${workspaceFolder}/test-karma-webpack/**"
+            ],
+            "type": "node",
+            "env": {
+                "DEBUG": "*",
+                "PLEBBIT_CONFIGS": "remote-libp2pjs"
             }
         }
     ]
