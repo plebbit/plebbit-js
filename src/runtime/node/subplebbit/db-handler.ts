@@ -47,6 +47,7 @@ import KeyvBetterSqlite3 from "./keyv-better-sqlite3.js";
 
 import { STORAGE_KEYS } from "../../../constants.js";
 import { CommentEditPubsubMessagePublicationSchema } from "../../../publications/comment-edit/schema.js";
+import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -1120,31 +1121,60 @@ export class DbHandler {
     }
 
     querySubplebbitStats(): SubplebbitStats {
-        const nowSeconds = timestamp();
-        const buildIntervalClause = (secondsAgo: number) => `timestamp >= ${nowSeconds - secondsAgo} AND timestamp < ${nowSeconds}`; // Timestamps are already in seconds
+        const now = timestamp(); // All timestamps are in seconds
+
         const queryString = `
-            SELECT
-                (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(3600)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(3600)})) AS hourActiveUserCount,
-                (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(86400)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(86400)})) AS dayActiveUserCount,
-                (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(604800)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(604800)})) AS weekActiveUserCount,
-                (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(2629746)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(2629746)})) AS monthActiveUserCount,
-                (SELECT COUNT(DISTINCT author) FROM (SELECT authorSignerAddress AS author FROM ${TABLES.COMMENTS} c WHERE ${buildIntervalClause(31557600)} UNION SELECT authorSignerAddress AS author FROM ${TABLES.VOTES} v WHERE ${buildIntervalClause(31557600)})) AS yearActiveUserCount,
-                (SELECT COUNT(DISTINCT authorSignerAddress) FROM ${TABLES.COMMENTS} WHERE depth = 0) +
-                (SELECT COUNT(DISTINCT authorSignerAddress) FROM ${TABLES.COMMENTS} WHERE depth > 0) +
-                (SELECT COUNT(DISTINCT authorSignerAddress) FROM ${TABLES.VOTES} WHERE authorSignerAddress NOT IN (SELECT DISTINCT authorSignerAddress FROM ${TABLES.COMMENTS})) AS allActiveUserCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(3600)}) AS hourPostCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(86400)}) AS dayPostCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(604800)}) AS weekPostCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(2629746)}) AS monthPostCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0 AND ${buildIntervalClause(31557600)}) AS yearPostCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth = 0) AS allPostCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND ${buildIntervalClause(3600)}) AS hourReplyCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND ${buildIntervalClause(86400)}) AS dayReplyCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND ${buildIntervalClause(604800)}) AS weekReplyCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND ${buildIntervalClause(2629746)}) AS monthReplyCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0 AND ${buildIntervalClause(31557600)}) AS yearReplyCount,
-                (SELECT COUNT(*) FROM ${TABLES.COMMENTS} c WHERE c.depth > 0) AS allReplyCount
+            SELECT 
+                -- Active user counts from combined activity
+                COALESCE(COUNT(DISTINCT CASE WHEN hour_active > 0 THEN authorSignerAddress END), 0) as hourActiveUserCount,
+                COALESCE(COUNT(DISTINCT CASE WHEN day_active > 0 THEN authorSignerAddress END), 0) as dayActiveUserCount,
+                COALESCE(COUNT(DISTINCT CASE WHEN week_active > 0 THEN authorSignerAddress END), 0) as weekActiveUserCount,
+                COALESCE(COUNT(DISTINCT CASE WHEN month_active > 0 THEN authorSignerAddress END), 0) as monthActiveUserCount,
+                COALESCE(COUNT(DISTINCT CASE WHEN year_active > 0 THEN authorSignerAddress END), 0) as yearActiveUserCount,
+                COALESCE(COUNT(DISTINCT authorSignerAddress), 0) as allActiveUserCount,
+                
+                -- Post counts from comments only
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) as hourPostCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) as dayPostCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END), 0) as weekPostCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) as monthPostCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) as yearPostCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth = 0 THEN 1 ELSE 0 END), 0) as allPostCount,
+                
+                -- Reply counts from comments only
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END), 0) as hourReplyCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END), 0) as dayReplyCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END), 0) as weekReplyCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END), 0) as monthReplyCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 AND timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END), 0) as yearReplyCount,
+                COALESCE(SUM(CASE WHEN is_comment = 1 AND depth > 0 THEN 1 ELSE 0 END), 0) as allReplyCount
+            FROM (
+                SELECT 
+                    authorSignerAddress, 
+                    timestamp,
+                    depth,
+                    1 as is_comment,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                FROM ${TABLES.COMMENTS}
+                UNION ALL
+                SELECT 
+                    authorSignerAddress, 
+                    timestamp,
+                    NULL as depth,
+                    0 as is_comment,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.HOUR} THEN 1 ELSE 0 END as hour_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.DAY} THEN 1 ELSE 0 END as day_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.WEEK} THEN 1 ELSE 0 END as week_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.MONTH} THEN 1 ELSE 0 END as month_active,
+                    CASE WHEN timestamp >= ${now - TIMEFRAMES_TO_SECONDS.YEAR} THEN 1 ELSE 0 END as year_active
+                FROM ${TABLES.VOTES}
+            )
         `;
+
         return this._db.prepare(queryString).get() as SubplebbitStats;
     }
 
