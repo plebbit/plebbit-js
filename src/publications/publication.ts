@@ -1001,6 +1001,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 await this._clientsManager.pubsubPublishOnProvider(this._pubsubTopicWithfallback(), challengeRequest, providerUrl);
                 this._challengeExchanges[challengeRequest.challengeRequestId.toString()].challengeRequestPublishTimestamp = timestamp();
             } catch (e) {
+                this._updatePubsubState("stopped", providerUrl);
                 log.error("Failed to publish challenge request using provider ", providerUrl, e);
                 currentPubsubProviderIndex += 1;
                 this._challengeExchanges[challengeRequest.challengeRequestId.toString()].challengeRequestPublishError = e as
