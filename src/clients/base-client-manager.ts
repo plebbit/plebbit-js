@@ -252,6 +252,8 @@ export class BaseClientsManager {
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
         const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-publish");
+        if (providersSorted.length === 0)
+            throw new PlebbitError("ERR_NO_PUBSUB_PROVIDERS_AVAILABLE_TO_PUBLISH_OVER_PUBSUB", { pubsubTopic, data });
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
