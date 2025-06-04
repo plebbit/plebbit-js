@@ -63,7 +63,8 @@ const anotherOfflineNodeArgs = {
     apiPort: 15004,
     gatewayPort: 18083,
     swarmPort: 4004,
-    daemonArgs: "--offline"
+    daemonArgs: "--offline",
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const anotherPubsubNodeArgs = {
