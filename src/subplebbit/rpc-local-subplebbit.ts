@@ -112,7 +112,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
 
         const newClientState = mapper[startedState] || [startedState]; // in case rpc server transmits a startedState we don't know about, default to startedState
 
-        newClientState.forEach(this._setRpcClientState.bind(this));
+        newClientState.forEach(this._setRpcClientStateWithEmission.bind(this));
     }
 
     protected override _processUpdateEventFromRpcUpdate(args: any) {
@@ -139,7 +139,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
         } else this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
-        if (updateRecord.startedState) this._setStartedStateNoEmission(updateRecord.startedState);
+        if (updateRecord.startedState) {
+            this._setStartedStateNoEmission(updateRecord.startedState);
+        }
         this.emit("update", this);
     }
 
@@ -149,14 +151,16 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         const newStartedState: RpcLocalSubplebbit["startedState"] = args.params.result; // we're being optimistic that the rpc server transmitted a valid string here
         log("Received a startedstatechange for sub " + this.address, "new started state is", newStartedState);
 
-        this._setStartedStateWithEmission(newStartedState);
+        if (newStartedState !== this.startedState) this._setStartedStateWithEmission(newStartedState);
+        else this.emit("startedstatechange", newStartedState);
+
         this._updateRpcClientStateFromStartedState(newStartedState);
     }
 
     private _handleRpcChallengeRequestEvent(args: any) {
         const encodedRequest: EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = args.params.result;
         const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
-        this._setRpcClientState("waiting-challenge-requests");
+        this._setRpcClientStateWithEmission("waiting-challenge-requests");
         this.emit("challengerequest", request);
     }
 
@@ -164,9 +168,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         const encodedChallenge: EncodedDecryptedChallengeMessageType = args.params.result;
         const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
 
-        this._setRpcClientState("publishing-challenge");
+        this._setRpcClientStateWithEmission("publishing-challenge");
         this.emit("challenge", challenge);
-        this._setRpcClientState("waiting-challenge-answers");
+        this._setRpcClientStateWithEmission("waiting-challenge-answers");
     }
 
     private _handleRpcChallengeAnswerEvent(args: any) {
@@ -180,9 +184,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         const encodedChallengeVerification: EncodedDecryptedChallengeVerificationMessageType = args.params.result;
 
         const challengeVerification = decodeRpcChallengeVerificationPubsubMsg(encodedChallengeVerification);
-        this._setRpcClientState("publishing-challenge-verification");
+        this._setRpcClientStateWithEmission("publishing-challenge-verification");
         this.emit("challengeverification", challengeVerification);
-        this._setRpcClientState("waiting-challenge-requests");
+        this._setRpcClientStateWithEmission("waiting-challenge-requests");
     }
 
     override async start() {
@@ -227,7 +231,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             }
         }
         this._setStartedStateWithEmission("stopped");
-        this._setRpcClientState("stopped");
+        this._setRpcClientStateWithEmission("stopped");
         this.started = false;
         this._startRpcSubscriptionId = undefined;
         log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
@@ -240,7 +244,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         this.posts._stop();
         this._setState("stopped");
         this._setStartedStateWithEmission("stopped");
-        this._setRpcClientState("stopped");
+        this._setRpcClientStateWithEmission("stopped");
         this.started = false;
         delete this._plebbit._startedSubplebbits[this.address];
     }
@@ -287,7 +291,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         }
 
         this.started = false;
-        this._setRpcClientState("stopped");
+        this._setRpcClientStateWithEmission("stopped");
         this._setState("stopped");
         this._setStartedStateWithEmission("stopped");
     }

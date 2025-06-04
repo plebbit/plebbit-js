@@ -21,7 +21,14 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         | "challenge"
     > = undefined; // The plebbit._updatingSubplebbits we're subscribed to
 
-    protected _setRpcClientState(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
+    protected _setRpcClientStateWithoutEmission(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
+        const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
+        const currentState = this.clients.plebbitRpcClients[currentRpcUrl].state;
+        if (newState === currentState) return;
+        this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
+    }
+
+    protected _setRpcClientStateWithEmission(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
         const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
         const currentState = this.clients.plebbitRpcClients[currentRpcUrl].state;
         if (newState === currentState) return;
@@ -50,7 +57,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         };
 
         const newRpcClientState = mapper[updatingState] || [updatingState]; // There may be a case where the rpc server transmits a new state that is not part of mapper
-        newRpcClientState.forEach(this._setRpcClientState.bind(this));
+        newRpcClientState.forEach(this._setRpcClientStateWithEmission.bind(this));
     }
 
     protected _processUpdateEventFromRpcUpdate(args: any) {
@@ -286,7 +293,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);
             delete this._plebbit._updatingSubplebbits[this.address];
         }
-        this._setRpcClientState("stopped");
+        this._setRpcClientStateWithEmission("stopped");
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
         this._setStartedStateWithEmission("stopped");
