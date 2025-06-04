@@ -11,11 +11,11 @@ import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { AddOptions, AddResult } from "kubo-rpc-client";
+import type { AddResult } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
-import type { HeliaWithLibp2pPubsub, HeliaWithKuboRpcClientFunctions, Libp2pJsClient } from "./types.js";
+import type { HeliaWithLibp2pPubsub, Libp2pJsClient } from "./types.js";
 import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 import { PlebbitError } from "../plebbit-error.js";
@@ -39,7 +39,7 @@ function getDelegatedRoutingFields(routers: string[]) {
 export async function createHeliaNode(
     plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">> &
         NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
-): Promise<Pick<Libp2pJsClient, "helia" | "heliaWithKuboRpcClientFunctions" | "heliaUnixfs" | "heliaIpnsRouter" | "mergedHeliaOptions">> {
+): Promise<Omit<Libp2pJsClient, "libp2pJsClientOptions">> {
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
     if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
     if (libp2pJsClients[plebbitOptions.key]) {
@@ -205,6 +205,15 @@ export async function createHeliaNode(
         heliaIpnsRouter: ipnsNameResolver,
         mergedHeliaOptions: mergedHeliaInit
     };
+
+    // Make _mergedHeliaOptions non-enumerable to avoid circular reference issues during JSON.stringify
+    const propsToHide = ["_mergedHeliaOptions", "helia", "heliaIpnsRouter", "heliaUnixfs"];
+    for (const prop of propsToHide) {
+        Object.defineProperty(fullInstanceWithOptions, prop, {
+            value: fullInstanceWithOptions[prop as keyof typeof fullInstanceWithOptions],
+            enumerable: false
+        });
+    }
 
     libp2pJsClients[plebbitOptions.key] = { ...fullInstanceWithOptions, countOfUsesOfInstance: 1 };
 
