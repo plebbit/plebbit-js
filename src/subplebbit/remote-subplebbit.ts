@@ -267,18 +267,22 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         event: { name: T; args: SubplebbitEventArgs<T> };
         newUpdatingState?: RemoteSubplebbit["updatingState"];
         newState?: RemoteSubplebbit["state"];
+        newStartedState?: RemoteSubplebbit["startedState"];
     }) {
         // this code block is only called on a sub whose update loop is already started
         // never called in a subplebbit that's mirroring a subplebbit with an update loop
         const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
         const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this.updatingState;
+        const shouldEmitStartedStateChange = opts.newStartedState && opts.newStartedState !== this.startedState;
         if (opts.newState) this._setStateNoEmission(opts.newState);
         if (opts.newUpdatingState) this._setUpdatingStateNoEmission(opts.newUpdatingState);
+        if (opts.newStartedState) this._setStartedStateNoEmission(opts.newStartedState);
 
         this.emit(opts.event.name, ...opts.event.args);
 
         if (shouldEmitStateChange) this.emit("statechange", this.state);
         if (shouldEmitUpdatingStateChange) this.emit("updatingstatechange", this.updatingState);
+        if (shouldEmitStartedStateChange) this.emit("startedstatechange", this.startedState!);
     }
 
     _setUpdatingStateNoEmission(newState: RemoteSubplebbit["updatingState"]) {
@@ -290,6 +294,17 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (newState === this._updatingState) return;
         this._updatingState = newState;
         this.emit("updatingstatechange", this._updatingState);
+    }
+
+    protected _setStartedStateNoEmission(newState: SubplebbitStartedState) {
+        if (newState === this.startedState) return;
+        this.startedState = newState;
+    }
+
+    protected _setStartedStateWithEmission(newState: SubplebbitStartedState) {
+        if (newState === this.startedState) return;
+        this.startedState = newState;
+        this.emit("startedstatechange", this.startedState);
     }
 
     // Errors that retrying to load the ipns record will not help

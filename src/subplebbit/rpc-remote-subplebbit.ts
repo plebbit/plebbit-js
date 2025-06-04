@@ -35,17 +35,6 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         } else return this._updatingState;
     }
 
-    protected _setStartedStateNoEmission(newState: RpcLocalSubplebbit["startedState"]) {
-        if (newState === this.startedState) return;
-        this.startedState = newState;
-    }
-
-    protected _setStartedStateWithEmission(newState: RpcLocalSubplebbit["startedState"]) {
-        if (newState === this.startedState) return;
-        this.startedState = newState;
-        this.emit("startedstatechange", this.startedState);
-    }
-
     protected _updateRpcClientStateFromUpdatingState(updatingState: RpcRemoteSubplebbit["updatingState"]) {
         // We're deriving the the rpc state from updating state
 
