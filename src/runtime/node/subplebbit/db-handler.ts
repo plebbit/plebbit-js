@@ -492,12 +492,16 @@ export class DbHandler {
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns = this._getColumnNames(dstTable);
-        const srcRecordsRaw: any[] = this._db.prepare(`SELECT * FROM ${srcTable} ORDER BY rowid ASC`).all();
+        // Include rowid in the SELECT to preserve it
+        const srcRecordsRaw: any[] = this._db.prepare(`SELECT rowid, * FROM ${srcTable} ORDER BY rowid ASC`).all();
 
         if (srcRecordsRaw.length > 0) {
             log(`Attempting to copy ${srcRecordsRaw.length} records from ${srcTable} to ${dstTable}`);
+
+            // Add rowid to the column list for insertion
+            const columnsWithRowid = ["rowid", ...dstTableColumns];
             const insertStmt = this._db.prepare(
-                `INSERT INTO ${dstTable} (${dstTableColumns.join(", ")}) VALUES (${dstTableColumns.map(() => "?").join(", ")})`
+                `INSERT INTO ${dstTable} (${columnsWithRowid.join(", ")}) VALUES (${columnsWithRowid.map(() => "?").join(", ")})`
             );
 
             const recordsToInsert = [];
@@ -529,7 +533,13 @@ export class DbHandler {
                 // Prepare record for insertion (stringify JSONs, convert booleans)
                 const processedRecord = this._processRecordsForDbBeforeInsert([srcRecord])[0];
 
-                const finalRecordValues = dstTableColumns.map((col) => processedRecord[col]);
+                // Map values including rowid (preserve the original rowid value)
+                const finalRecordValues = columnsWithRowid.map((col) => {
+                    if (col === "rowid") {
+                        return srcRecord.rowid; // Use original rowid value
+                    }
+                    return processedRecord[col];
+                });
                 recordsToInsert.push(finalRecordValues);
             }
 
