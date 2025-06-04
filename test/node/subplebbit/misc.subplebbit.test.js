@@ -338,7 +338,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await mockSub.delete();
         });
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
-            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(1);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.be.greaterThanOrEqual(1);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))

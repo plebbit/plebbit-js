@@ -179,5 +179,50 @@ getRemotePlebbitConfigs().map((config) => {
             expect(comment.cid).to.equal(cid);
             expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
         });
+
+        it(`Can create a comment with eth and sol wallets`, async () => {
+            const fixture = {
+                subplebbitAddress,
+                content: "test comment creation with eth and sol wallets",
+                author: {
+                    address: "12D3KooWKoXpxTwfnjA5ExuFbeverNKhjKy6a4KesBSh3e6VLaW5",
+                    wallets: {
+                        eth: {
+                            address: "0x37BC48124fDf985DC3983E2e8414606D4a996ED7",
+                            timestamp: 1748048717754,
+                            signature: {
+                                signature:
+                                    "0x2812fcfb5001685eb7e7f88bee720b5c761e2e194750265b7d74d69549dd59f05ec6dc2a77afe3b14022a48dd7569f91f2d36701380c953f6769579733843cf61c",
+                                type: "eip191"
+                            }
+                        },
+                        sol: {
+                            address: "AzAfDLMxbptaq5Ppy4BK5aEsEzvTYNFAub5ffewbSdn9",
+                            timestamp: 1748048718136,
+                            signature: {
+                                signature: "3VfcyEbzrAiK7AowGgJrzjS5Y5amXEXCYhcUgd7RUZQ8uMRQvDPa12VJjMPjt47rnwGE71ZL76h7LT9qFbueZbDx",
+                                type: "sol"
+                            }
+                        }
+                    }
+                },
+                signer: {
+                    type: "ed25519",
+                    privateKey: "mV8GRU5TGScen7UYZOuNQQ1CKe2G46DCc60moM1yLF4",
+                    publicKey: "lF41sWk/JHHdfQSH5VAR55uGZp0/Cv9/xXxwS+vOOVI",
+                    address: "12D3KooWKoXpxTwfnjA5ExuFbeverNKhjKy6a4KesBSh3e6VLaW5",
+                    shortAddress: "KoXpxTwfnjA5"
+                }
+            };
+
+            const comment = await plebbit.createComment(fixture);
+            expect(comment.author.address).to.equal(fixture.author.address);
+            expect(comment.author.shortAddress).to.equal(fixture.signer.shortAddress);
+            expect(comment.author.wallets.eth.address).to.equal(fixture.author.wallets.eth.address);
+            expect(comment.author.wallets.sol.address).to.equal(fixture.author.wallets.sol.address);
+            expect(comment.signer.address).to.equal(fixture.signer.address);
+            expect(comment.signer.shortAddress).to.equal(fixture.signer.shortAddress);
+            expect(comment.subplebbitAddress).to.equal(fixture.subplebbitAddress);
+        });
     });
 });

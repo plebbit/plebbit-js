@@ -3,17 +3,17 @@ export declare const SubscriptionIdSchema: z.ZodNumber;
 export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -56,26 +56,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -86,12 +86,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -101,12 +101,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -116,12 +116,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -150,26 +150,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -180,12 +180,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -195,12 +195,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -210,12 +210,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -244,26 +244,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -274,12 +274,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -289,12 +289,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -304,12 +304,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -339,17 +339,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -392,26 +392,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -422,12 +422,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -437,12 +437,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -452,12 +452,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -486,26 +486,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -516,12 +516,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -531,12 +531,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -546,12 +546,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -580,26 +580,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -610,12 +610,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -625,12 +625,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -640,12 +640,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -675,17 +675,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -728,26 +728,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -758,12 +758,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -773,12 +773,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -788,12 +788,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -822,26 +822,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -852,12 +852,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -867,12 +867,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -882,12 +882,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -916,26 +916,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -946,12 +946,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -961,12 +961,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -976,12 +976,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -1016,17 +1016,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -1065,26 +1065,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1095,12 +1095,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1110,12 +1110,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1125,12 +1125,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1159,26 +1159,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1189,12 +1189,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1204,12 +1204,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1219,12 +1219,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1253,26 +1253,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1283,12 +1283,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1298,12 +1298,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1313,12 +1313,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1342,17 +1342,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -1391,26 +1391,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1421,12 +1421,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1436,12 +1436,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1451,12 +1451,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1485,26 +1485,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1515,12 +1515,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1530,12 +1530,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1545,12 +1545,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1579,26 +1579,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1609,12 +1609,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1624,12 +1624,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1639,12 +1639,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1668,17 +1668,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -1717,26 +1717,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1747,12 +1747,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1762,12 +1762,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1777,12 +1777,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1811,26 +1811,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1841,12 +1841,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1856,12 +1856,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1871,12 +1871,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1905,26 +1905,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1935,12 +1935,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1950,12 +1950,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1965,12 +1965,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2024,26 +2024,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2054,12 +2054,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2069,12 +2069,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2084,12 +2084,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2186,26 +2186,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2216,12 +2216,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2231,12 +2231,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2246,12 +2246,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2348,26 +2348,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2378,12 +2378,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2393,12 +2393,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2408,12 +2408,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2505,17 +2505,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2534,7 +2534,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     }>>>;
 }, "strict", z.ZodTypeAny, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2560,26 +2560,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2590,12 +2590,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2605,12 +2605,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2620,12 +2620,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2720,17 +2720,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     edit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -2769,26 +2769,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2799,12 +2799,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2814,12 +2814,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2829,12 +2829,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2863,26 +2863,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2893,12 +2893,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2908,12 +2908,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2923,12 +2923,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2957,26 +2957,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2987,12 +2987,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3002,12 +3002,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3017,12 +3017,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3055,7 +3055,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     } | undefined;
 }, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3081,26 +3081,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3111,12 +3111,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3126,12 +3126,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3141,12 +3141,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3241,17 +3241,17 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     edit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -3290,26 +3290,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3320,12 +3320,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3335,12 +3335,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3350,12 +3350,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3384,26 +3384,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3414,12 +3414,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3429,12 +3429,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3444,12 +3444,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3478,26 +3478,26 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3508,12 +3508,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3523,12 +3523,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3538,12 +3538,12 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;

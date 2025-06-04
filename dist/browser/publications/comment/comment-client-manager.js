@@ -61,21 +61,21 @@ export class CommentClientsManager extends PublicationClientsManager {
         // only get new CommentUpdates
         // not interested in CommentUpdate we already fetched before
         const attemptedPathsToLoadErrors = {};
+        const didLastPostUpdateRangeHaveSameFolderCid = timestampRanges.some((timestampRange) => {
+            if (!this._comment._commentUpdateIpfsPath)
+                return false;
+            const folderCid = subIpns.postUpdates[timestampRange];
+            const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
+            return folderCid === lastFolderCid;
+        });
+        if (didLastPostUpdateRangeHaveSameFolderCid) {
+            log("Comment", this._comment.cid, "last post update range has same folder cid", this._comment._commentUpdateIpfsPath, "will be skipping loading CommentUpdate");
+            return undefined;
+        }
+        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates[timestampRange];
             const path = this._calculatePathForPostCommentUpdate(folderCid, this._comment.postCid);
-            if (this._comment._commentUpdateIpfsPath) {
-                const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
-                if (folderCid === lastFolderCid) {
-                    log("Comment", this._comment.cid, "calculated folder cid has already been used", folderCid, "will be skipping loading CommentUpdate");
-                    return undefined;
-                }
-            }
-            if (this._comment._invalidCommentUpdateMfsPaths.has(path)) {
-                log("Comment", this._comment.cid, "calculated path is part of comment._invalidCommentUpdateMfsPaths", path, "will be skipping loading CommentUpdate");
-                return undefined;
-            }
-            this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
             this.updateIpfsState("fetching-update-ipfs");
             let res;
             const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update-ipfs"];
@@ -96,7 +96,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             try {
                 const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
                 await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate, subIpns);
-                return { commentUpdate, commentUpdateIpfsPath: path };
+                if (commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0))
+                    return { commentUpdate, commentUpdateIpfsPath: path };
+                else
+                    return undefined;
             }
             catch (e) {
                 // there's a problem with the record itself, could be signature or schema or bad json
@@ -155,6 +158,17 @@ export class CommentClientsManager extends PublicationClientsManager {
             });
     }
     async _fetchPostCommentUpdateFromGateways(subIpns, timestampRanges, log) {
+        const didLastPostUpdateRangeHaveSameFolderCid = timestampRanges.some((timestampRange) => {
+            if (!this._comment._commentUpdateIpfsPath)
+                return false;
+            const folderCid = subIpns.postUpdates[timestampRange];
+            const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
+            return folderCid === lastFolderCid;
+        });
+        if (didLastPostUpdateRangeHaveSameFolderCid) {
+            log("Comment", this._comment.cid, "last post update range has same folder cid", this._comment._commentUpdateIpfsPath, "will be skipping loading CommentUpdate");
+            return undefined;
+        }
         const attemptedPathsToLoadErrors = {};
         let commentUpdate;
         const validateCommentFromGateway = async (res) => {
@@ -164,22 +178,11 @@ export class CommentClientsManager extends PublicationClientsManager {
             await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature, subIpns);
             commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
         };
+        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         for (const timestampRange of timestampRanges) {
             // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
             const folderCid = subIpns.postUpdates[timestampRange];
             const path = this._calculatePathForPostCommentUpdate(folderCid, this._comment.postCid);
-            if (this._comment._commentUpdateIpfsPath) {
-                const lastFolderCid = this._comment._commentUpdateIpfsPath.split("/")[0];
-                if (folderCid === lastFolderCid) {
-                    log("Comment", this._comment.cid, "calculated folder cid has already been used", folderCid, "will be skipping loading CommentUpdate");
-                    return undefined;
-                }
-            }
-            if (this._comment._invalidCommentUpdateMfsPaths.has(path)) {
-                log("Comment", this._comment.cid, "calculated path is part of comment._invalidCommentUpdateMfsPaths", path, "will be skipping loading CommentUpdate");
-                return undefined;
-            }
-            this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
             try {
                 // Validate the Comment Update within the gateway fetching algo
                 // fetchFromMultipleGateways will throw if all gateways failed to load the record
@@ -195,7 +198,10 @@ export class CommentClientsManager extends PublicationClientsManager {
                 });
                 if (!commentUpdate)
                     throw Error("Failed to load comment update from gateways. This is a critical logic error");
-                return { commentUpdate, commentUpdateIpfsPath: path };
+                if (commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0))
+                    return { commentUpdate, commentUpdateIpfsPath: path };
+                else
+                    return undefined;
             }
             catch (e) {
                 // We need to find out if it's loading error, and if it is we just move on to the next timestamp range
@@ -370,6 +376,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             return findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
     }
     // will handling sub states down here
+    // this is for posts with depth === 0
     async handleUpdateEventFromSub(sub) {
         const log = Logger("plebbit-js:comment:update");
         if (!this._comment.cid) {
@@ -386,25 +393,25 @@ export class CommentClientsManager extends PublicationClientsManager {
             throw Error("Subplebbit IPFS should be defined when an update is emitted");
         // let's try to find a CommentUpdate in subplebbit pages, or _updatingComments
         // this._subplebbitForUpdating!.subplebbit.raw.subplebbitIpfs?.posts.
-        const commentInPage = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ sub });
-        if (commentInPage) {
-            const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
-            const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: commentInPage.commentUpdate }, sub.raw.subplebbitIpfs, log);
-            if (usedUpdateFromPage)
-                return; // we found an update from pages, no need to do anything else
+        const postInUpdatingSubplebbit = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ sub });
+        if (postInUpdatingSubplebbit &&
+            postInUpdatingSubplebbit.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)) {
+            const log = Logger("plebbit-js:comment:update:handleUpdateEventFromSub:find-comment-update-in-updating-sub-or-comments-pages");
+            this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: postInUpdatingSubplebbit.commentUpdate }, sub.raw.subplebbitIpfs, log);
         }
-        try {
-            // this is only for posts with depth === 0
-            await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub.raw.subplebbitIpfs);
-        }
-        catch (e) {
-            log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
-            this._comment._setUpdatingStateNoEmission("failed");
-            this._comment.emit("error", e); // could cause uncaught error
-            this._comment.emit("updatingstatechange", "failed");
-        }
+        else
+            try {
+                // this is only for posts with depth === 0
+                await this.useSubplebbitPostUpdatesToFetchCommentUpdateForPost(sub.raw.subplebbitIpfs);
+            }
+            catch (e) {
+                log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
+                this._comment._setUpdatingStateNoEmission("failed");
+                this._comment.emit("error", e); // could cause uncaught error
+                this._comment.emit("updatingstatechange", "failed");
+            }
     }
-    _chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp) {
+    _chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp) {
         // Choose which page type to search first based on our reply's timestamp
         const replyTimestamp = this._comment.timestamp;
         const currentTime = Math.floor(Date.now() / 1000);
@@ -445,7 +452,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             log("Parent comment", this._comment.parentCid, "of reply", this._comment.cid, "does not have any pageCids, will wait until another update event by post");
             return;
         }
-        const pageSortName = this._chooseWhichFlatPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
+        const pageSortName = this._chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
         let curPageCid = parentCommentInstance.replies.pageCids[pageSortName];
         if (!curPageCid)
             throw Error("Parent comment does not have any new or old pages");
@@ -453,29 +460,41 @@ export class CommentClientsManager extends PublicationClientsManager {
             // we already loaded this page before and have its comment update, no need to do anything
             return;
         }
-        let foundCommentUpdate = false;
-        let pageNum = 0;
-        while (curPageCid) {
+        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
+        let newCommentUpdate;
+        const pageCidsSearchedForNewUpdate = [];
+        while (curPageCid && !newCommentUpdate) {
             // TODO can optimize this by using _loadedUniqueCommentFromGetPage
             // TODO need to use _findCommentInPagesOfUpdatingCommentsOrSubplebbit
             const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid); // should update _loadedUniqueCommentFromGetPage
-            if (pageNum === 0)
+            if (pageCidsSearchedForNewUpdate.length === 0)
                 this._parentCommentCidsAlreadyLoaded.add(curPageCid);
-            pageNum++;
-            const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid);
+            pageCidsSearchedForNewUpdate.push(curPageCid);
+            const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid)?.raw;
+            const replyWithinUpdatingPages = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: parentCommentInstance });
             if (replyWithinParentPage) {
-                this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: replyWithinParentPage.raw.commentUpdate }, subplebbitWithSignature, log);
-                foundCommentUpdate = true;
-                break;
+                const isNewUpdate = replyWithinParentPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
+                if (isNewUpdate) {
+                    newCommentUpdate = replyWithinParentPage;
+                }
+                break; // if we found the comment in parent pages, there's no point in continuing to look for it in updating pages
+            }
+            else if (replyWithinUpdatingPages) {
+                const isNewUpdate = replyWithinUpdatingPages.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
+                if (isNewUpdate)
+                    newCommentUpdate = replyWithinUpdatingPages;
             }
             curPageCid = pageLoaded.nextCid;
         }
-        if (!foundCommentUpdate)
+        log("Searched for new comment update of comment", this._comment.cid, "in the following pageCids of parent comment:", parentCommentInstance.cid, pageCidsSearchedForNewUpdate, "and found", newCommentUpdate ? "a new comment update" : "no new comment update");
+        if (newCommentUpdate)
+            this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: newCommentUpdate.commentUpdate }, subplebbitWithSignature, log);
+        else
             throw new PlebbitError("ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS", {
-                reply: this._comment,
-                parentComment: parentCommentInstance,
+                replyCid: this._comment.cid,
+                parentCommentCid: parentCommentInstance.cid,
                 pageSortName,
-                pageLoadedCount: pageNum
+                pageCidsSearchedForNewUpdate
             });
     }
     async handleErrorEventFromSub(error) {
@@ -562,27 +581,18 @@ export class CommentClientsManager extends PublicationClientsManager {
         const repliesSubplebbit = postInstance.replies._subplebbit;
         if (!repliesSubplebbit.signature)
             throw Error("repliesSubplebbit.signature needs to be defined to fetch comment update of reply");
-        if (replyInPage) {
-            const log = Logger("plebbit-js:comment:update:find-comment-update-in-updating-sub-or-comments-pages");
-            const usedUpdateFromPage = this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: replyInPage.commentUpdate }, repliesSubplebbit, log);
-            if (usedUpdateFromPage) {
-                this._comment._setUpdatingStateNoEmission("succeeded");
-                this._comment.emit("update", this._comment);
-                this._comment.emit("updatingstatechange", "succeeded");
-                return; // we found an update from pages, no need to do anything else
-            }
+        if (replyInPage && replyInPage.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)) {
+            const log = Logger("plebbit-js:comment:update:handleUpdateEventFromPostToFetchReplyCommentUpdate:find-comment-update-in-updating-sub-or-comments-pages");
+            this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: replyInPage.commentUpdate }, repliesSubplebbit, log);
+            return; // we found an update from pages, no need to do anything else
         }
         if (Object.keys(postInstance.replies.pageCids).length === 0) {
             log("Post", postInstance.cid, "has no pageCids and we couldn't find any reply commentUpdate in its preloaded pages, therefore reply", this._comment.cid, "will wait until another update event by post");
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
-        this._comment._setUpdatingStateWithEmissionIfNewState("fetching-update-ipfs");
         try {
             await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
-            this._comment._setUpdatingStateNoEmission("succeeded");
-            this._comment.emit("update", this._comment);
-            this._comment.emit("updatingstatechange", "succeeded");
         }
         catch (error) {
             log.error("Failed to fetch reply commentUpdate update from post flat pages", error);

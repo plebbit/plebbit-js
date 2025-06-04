@@ -287,13 +287,12 @@ export class BaseClientsManager {
             return resObj;
         }
         catch (e) {
-            if (e instanceof PlebbitError)
-                e.details = { ...e.details, url };
+            //@ts-expect-error
+            e.details = { ...e.details, url, loadOpts, wasRequestAborted: loadOpts.abortController.signal.aborted };
             this.postFetchGatewayFailure(gateway, loadOpts, e);
             this._plebbit._stats
                 .recordGatewayFailure(gateway, loadOpts.recordIpfsType)
                 .catch((err) => log.error("failed to report gateway error", err));
-            delete e["stack"];
             return { error: e };
         }
     }

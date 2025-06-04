@@ -5129,17 +5129,17 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -5302,7 +5302,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     address: string;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -5562,7 +5562,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
 }, {
     address: string;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6384,17 +6384,17 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>, "many">;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -7116,17 +7116,17 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>, "many">;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -7848,17 +7848,17 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>, "many">;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -8024,7 +8024,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: {
         address: string;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -8289,7 +8289,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: {
         address: string;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -9103,17 +9103,17 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -9295,7 +9295,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -9556,7 +9556,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
 }, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -15685,17 +15685,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -15877,7 +15877,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
 }, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -16138,7 +16138,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
 }, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -16958,17 +16958,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -17690,17 +17690,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -18422,17 +18422,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -19145,17 +19145,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -19337,7 +19337,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
 }, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -19598,7 +19598,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
 }, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -20418,17 +20418,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -21150,17 +21150,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -21882,17 +21882,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -25523,17 +25523,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -25715,7 +25715,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
 }, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -25976,7 +25976,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
 }, {
     address: string;
     signature?: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -26796,17 +26796,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -27528,17 +27528,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -28260,17 +28260,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];

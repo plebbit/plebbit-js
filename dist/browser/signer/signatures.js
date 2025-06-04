@@ -333,7 +333,7 @@ function _allFieldsOfRecordInSignedPropertyNames(record) {
             return false;
     return true;
 }
-export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages }) {
+export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, validatePages, cacheIfValid }) {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     if (!_allFieldsOfRecordInSignedPropertyNames(subplebbit))
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
@@ -342,8 +342,9 @@ export async function verifySubplebbit({ subplebbit, subplebbitIpnsName, resolve
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
+    const cacheIfValidWithDefault = typeof cacheIfValid === "boolean" ? cacheIfValid : true;
     const cacheKey = sha256(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + validatePages + subplebbitIpnsName);
-    if (clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey))
+    if (cacheIfValidWithDefault && clientsManager._plebbit._memCaches.subplebbitVerificationCache.get(cacheKey))
         return { valid: true };
     if (subplebbit.posts?.pages && validatePages)
         for (const preloadedPageSortName of remeda.keys.strict(subplebbit.posts.pages)) {

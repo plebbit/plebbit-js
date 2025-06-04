@@ -10,6 +10,7 @@ import { SubplebbitKuboRpcClient } from "../clients/ipfs-client.js";
 import { SubplebbitKuboPubsubClient } from "../clients/pubsub-client.js";
 import { parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../schema/schema-util.js";
 import { verifySubplebbit } from "../signer/index.js";
+import { CID } from "kubo-rpc-client";
 import { LimitedSet } from "../general-util/limited-set.js";
 export const MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS = 1024 * 1024; // 1mb
 export class SubplebbitClientsManager extends ClientsManager {
@@ -286,8 +287,9 @@ export class SubplebbitClientsManager extends ClientsManager {
                 }
             };
             const checkResponseHeadersIfOldCid = async (gatewayRes) => {
-                const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag");
-                if (cidOfIpnsFromEtagHeader && this._updateCidsAlreadyLoaded.has(cidOfIpnsFromEtagHeader)) {
+                const cidOfIpnsFromEtagHeader = gatewayRes?.headers?.get("etag")?.toString();
+                if (cidOfIpnsFromEtagHeader && // clean up " from the etag header
+                    this._updateCidsAlreadyLoaded.has(CID.parse(cidOfIpnsFromEtagHeader.split('"').join("")).toV0().toString())) {
                     abortController.abort("Aborting subplebbit IPNS request because we already loaded this record");
                     return new PlebbitError("ERR_GATEWAY_ABORTING_LOADING_SUB_BECAUSE_WE_ALREADY_LOADED_THIS_RECORD", {
                         cidOfIpnsFromEtagHeader,

@@ -114,17 +114,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     comment: z.ZodOptional<z.ZodEffects<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -167,26 +167,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -197,12 +197,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -212,12 +212,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -227,12 +227,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -261,26 +261,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -291,12 +291,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -306,12 +306,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -321,12 +321,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -355,26 +355,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -385,12 +385,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -400,12 +400,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -415,12 +415,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -444,17 +444,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -497,26 +497,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -527,12 +527,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -542,12 +542,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -557,12 +557,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -591,26 +591,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -621,12 +621,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -636,12 +636,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -651,12 +651,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -685,26 +685,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -715,12 +715,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -730,12 +730,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -745,12 +745,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -774,17 +774,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -827,26 +827,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -857,12 +857,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -872,12 +872,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -887,12 +887,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -921,26 +921,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -951,12 +951,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -966,12 +966,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -981,12 +981,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1015,26 +1015,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1045,12 +1045,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1060,12 +1060,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1075,12 +1075,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1104,17 +1104,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -1157,26 +1157,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1187,12 +1187,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1202,12 +1202,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1217,12 +1217,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1251,26 +1251,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1281,12 +1281,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1296,12 +1296,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1311,12 +1311,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1345,26 +1345,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1375,12 +1375,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1390,12 +1390,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1405,12 +1405,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1434,17 +1434,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -1487,26 +1487,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1517,12 +1517,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1532,12 +1532,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1547,12 +1547,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1581,26 +1581,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1611,12 +1611,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1626,12 +1626,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1641,12 +1641,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1675,26 +1675,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1705,12 +1705,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1720,12 +1720,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1735,12 +1735,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1797,17 +1797,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -1821,26 +1821,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1851,12 +1851,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1866,12 +1866,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1881,12 +1881,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -1915,26 +1915,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -1945,12 +1945,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1960,12 +1960,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1975,12 +1975,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2009,26 +2009,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2039,12 +2039,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2054,12 +2054,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2069,12 +2069,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2130,17 +2130,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -2154,26 +2154,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2184,12 +2184,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2199,12 +2199,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2214,12 +2214,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2248,26 +2248,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2278,12 +2278,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2293,12 +2293,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2308,12 +2308,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2342,26 +2342,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2372,12 +2372,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2387,12 +2387,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2402,12 +2402,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2463,17 +2463,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -2487,26 +2487,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2517,12 +2517,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2532,12 +2532,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2547,12 +2547,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2581,26 +2581,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2611,12 +2611,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2626,12 +2626,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2641,12 +2641,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2675,26 +2675,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2705,12 +2705,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2720,12 +2720,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2735,12 +2735,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2765,17 +2765,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     commentEdit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -2814,26 +2814,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2844,12 +2844,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2859,12 +2859,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2874,12 +2874,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -2908,26 +2908,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -2938,12 +2938,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2953,12 +2953,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2968,12 +2968,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3002,26 +3002,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3032,12 +3032,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3047,12 +3047,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3062,12 +3062,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3091,17 +3091,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -3140,26 +3140,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3170,12 +3170,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3185,12 +3185,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3200,12 +3200,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3234,26 +3234,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3264,12 +3264,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3279,12 +3279,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3294,12 +3294,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3328,26 +3328,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3358,12 +3358,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3373,12 +3373,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3388,12 +3388,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3417,17 +3417,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -3466,26 +3466,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3496,12 +3496,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3511,12 +3511,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3526,12 +3526,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3560,26 +3560,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3590,12 +3590,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3605,12 +3605,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3620,12 +3620,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -3654,26 +3654,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -3684,12 +3684,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3699,12 +3699,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3714,12 +3714,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4049,17 +4049,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -4073,26 +4073,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4103,12 +4103,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4118,12 +4118,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4133,12 +4133,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4167,26 +4167,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4197,12 +4197,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4212,12 +4212,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4227,12 +4227,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4261,26 +4261,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4291,12 +4291,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4306,12 +4306,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4321,12 +4321,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4655,17 +4655,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -4679,26 +4679,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4709,12 +4709,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4724,12 +4724,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4739,12 +4739,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4773,26 +4773,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4803,12 +4803,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4818,12 +4818,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4833,12 +4833,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4867,26 +4867,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4897,12 +4897,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4912,12 +4912,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4927,12 +4927,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5261,17 +5261,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -5285,26 +5285,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5315,12 +5315,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5330,12 +5330,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5345,12 +5345,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5379,26 +5379,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5409,12 +5409,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5424,12 +5424,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5439,12 +5439,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5473,26 +5473,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5503,12 +5503,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5518,12 +5518,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5533,12 +5533,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7037,17 +7037,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -7061,26 +7061,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7091,12 +7091,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7106,12 +7106,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7121,12 +7121,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7155,26 +7155,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7185,12 +7185,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7200,12 +7200,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7215,12 +7215,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7249,26 +7249,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7279,12 +7279,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7294,12 +7294,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7309,12 +7309,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8812,17 +8812,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -8836,26 +8836,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8866,12 +8866,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8881,12 +8881,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8896,12 +8896,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8930,26 +8930,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8960,12 +8960,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8975,12 +8975,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8990,12 +8990,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9024,26 +9024,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9054,12 +9054,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9069,12 +9069,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9084,12 +9084,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10587,17 +10587,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -10611,26 +10611,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10641,12 +10641,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10656,12 +10656,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10671,12 +10671,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10705,26 +10705,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10735,12 +10735,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10750,12 +10750,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10765,12 +10765,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10799,26 +10799,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10829,12 +10829,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10844,12 +10844,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10859,12 +10859,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10890,17 +10890,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     commentEdit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -10939,26 +10939,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10969,12 +10969,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10984,12 +10984,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10999,12 +10999,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11033,26 +11033,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11063,12 +11063,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11078,12 +11078,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11093,12 +11093,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11127,26 +11127,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11157,12 +11157,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11172,12 +11172,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11187,12 +11187,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11249,17 +11249,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -11273,26 +11273,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11303,12 +11303,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11318,12 +11318,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11333,12 +11333,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11367,26 +11367,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11397,12 +11397,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11412,12 +11412,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11427,12 +11427,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11461,26 +11461,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11491,12 +11491,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11506,12 +11506,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11521,12 +11521,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11856,17 +11856,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -11880,26 +11880,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11910,12 +11910,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11925,12 +11925,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11940,12 +11940,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11974,26 +11974,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12004,12 +12004,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12019,12 +12019,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12034,12 +12034,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12068,26 +12068,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12098,12 +12098,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12113,12 +12113,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12128,12 +12128,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12158,17 +12158,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     comment?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -12211,26 +12211,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12241,12 +12241,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12256,12 +12256,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12271,12 +12271,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12305,26 +12305,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12335,12 +12335,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12350,12 +12350,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12365,12 +12365,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12399,26 +12399,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12429,12 +12429,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12444,12 +12444,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12459,12 +12459,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13963,17 +13963,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -13987,26 +13987,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14017,12 +14017,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14032,12 +14032,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14047,12 +14047,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14081,26 +14081,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14111,12 +14111,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14126,12 +14126,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14141,12 +14141,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14175,26 +14175,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14205,12 +14205,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14220,12 +14220,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14235,12 +14235,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14266,17 +14266,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     commentEdit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -14315,26 +14315,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14345,12 +14345,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14360,12 +14360,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14375,12 +14375,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14409,26 +14409,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14439,12 +14439,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14454,12 +14454,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14469,12 +14469,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14503,26 +14503,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14533,12 +14533,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14548,12 +14548,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14563,12 +14563,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14625,17 +14625,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -14649,26 +14649,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14679,12 +14679,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14694,12 +14694,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14709,12 +14709,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14743,26 +14743,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14773,12 +14773,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14788,12 +14788,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14803,12 +14803,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -14837,26 +14837,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -14867,12 +14867,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14882,12 +14882,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14897,12 +14897,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -15232,17 +15232,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -15256,26 +15256,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -15286,12 +15286,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15301,12 +15301,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15316,12 +15316,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -15350,26 +15350,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -15380,12 +15380,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15395,12 +15395,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15410,12 +15410,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -15444,26 +15444,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -15474,12 +15474,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15489,12 +15489,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15504,12 +15504,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -15534,17 +15534,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     comment?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -15587,26 +15587,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -15617,12 +15617,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15632,12 +15632,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15647,12 +15647,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -15681,26 +15681,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -15711,12 +15711,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15726,12 +15726,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15741,12 +15741,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -15775,26 +15775,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -15805,12 +15805,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15820,12 +15820,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15835,12 +15835,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17339,17 +17339,17 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -17363,26 +17363,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -17393,12 +17393,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -17408,12 +17408,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -17423,12 +17423,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17457,26 +17457,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -17487,12 +17487,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -17502,12 +17502,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -17517,12 +17517,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17551,26 +17551,26 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -17581,12 +17581,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -17596,12 +17596,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -17611,12 +17611,12 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17643,17 +17643,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     comment: z.ZodOptional<z.ZodEffects<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -17696,26 +17696,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -17726,12 +17726,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -17741,12 +17741,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -17756,12 +17756,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17790,26 +17790,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -17820,12 +17820,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -17835,12 +17835,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -17850,12 +17850,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17884,26 +17884,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -17914,12 +17914,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -17929,12 +17929,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -17944,12 +17944,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -17973,17 +17973,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -18026,26 +18026,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18056,12 +18056,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18071,12 +18071,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18086,12 +18086,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18120,26 +18120,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18150,12 +18150,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18165,12 +18165,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18180,12 +18180,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18214,26 +18214,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18244,12 +18244,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18259,12 +18259,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18274,12 +18274,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18303,17 +18303,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -18356,26 +18356,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18386,12 +18386,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18401,12 +18401,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18416,12 +18416,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18450,26 +18450,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18480,12 +18480,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18495,12 +18495,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18510,12 +18510,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18544,26 +18544,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18574,12 +18574,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18589,12 +18589,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18604,12 +18604,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18633,17 +18633,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -18686,26 +18686,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18716,12 +18716,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18731,12 +18731,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18746,12 +18746,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18780,26 +18780,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18810,12 +18810,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18825,12 +18825,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18840,12 +18840,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18874,26 +18874,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -18904,12 +18904,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -18919,12 +18919,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -18934,12 +18934,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -18963,17 +18963,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -19016,26 +19016,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19046,12 +19046,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19061,12 +19061,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19076,12 +19076,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19110,26 +19110,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19140,12 +19140,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19155,12 +19155,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19170,12 +19170,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19204,26 +19204,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19234,12 +19234,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19249,12 +19249,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19264,12 +19264,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19326,17 +19326,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -19350,26 +19350,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19380,12 +19380,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19395,12 +19395,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19410,12 +19410,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19444,26 +19444,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19474,12 +19474,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19489,12 +19489,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19504,12 +19504,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19538,26 +19538,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19568,12 +19568,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19583,12 +19583,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19598,12 +19598,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19659,17 +19659,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -19683,26 +19683,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19713,12 +19713,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19728,12 +19728,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19743,12 +19743,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19777,26 +19777,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19807,12 +19807,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19822,12 +19822,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19837,12 +19837,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19871,26 +19871,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -19901,12 +19901,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -19916,12 +19916,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -19931,12 +19931,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -19992,17 +19992,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -20016,26 +20016,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20046,12 +20046,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20061,12 +20061,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20076,12 +20076,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20110,26 +20110,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20140,12 +20140,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20155,12 +20155,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20170,12 +20170,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20204,26 +20204,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20234,12 +20234,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20249,12 +20249,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20264,12 +20264,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20294,17 +20294,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     commentEdit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -20343,26 +20343,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20373,12 +20373,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20388,12 +20388,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20403,12 +20403,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20437,26 +20437,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20467,12 +20467,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20482,12 +20482,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20497,12 +20497,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20531,26 +20531,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20561,12 +20561,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20576,12 +20576,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20591,12 +20591,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20620,17 +20620,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -20669,26 +20669,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20699,12 +20699,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20714,12 +20714,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20729,12 +20729,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20763,26 +20763,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20793,12 +20793,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20808,12 +20808,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20823,12 +20823,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20857,26 +20857,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -20887,12 +20887,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -20902,12 +20902,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -20917,12 +20917,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -20946,17 +20946,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -20995,26 +20995,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -21025,12 +21025,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -21040,12 +21040,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -21055,12 +21055,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -21089,26 +21089,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -21119,12 +21119,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -21134,12 +21134,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -21149,12 +21149,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -21183,26 +21183,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -21213,12 +21213,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -21228,12 +21228,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -21243,12 +21243,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -21578,17 +21578,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -21602,26 +21602,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -21632,12 +21632,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -21647,12 +21647,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -21662,12 +21662,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -21696,26 +21696,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -21726,12 +21726,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -21741,12 +21741,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -21756,12 +21756,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -21790,26 +21790,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -21820,12 +21820,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -21835,12 +21835,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -21850,12 +21850,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -22184,17 +22184,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -22208,26 +22208,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -22238,12 +22238,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -22253,12 +22253,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -22268,12 +22268,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -22302,26 +22302,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -22332,12 +22332,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -22347,12 +22347,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -22362,12 +22362,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -22396,26 +22396,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -22426,12 +22426,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -22441,12 +22441,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -22456,12 +22456,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -22790,17 +22790,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -22814,26 +22814,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -22844,12 +22844,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -22859,12 +22859,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -22874,12 +22874,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -22908,26 +22908,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -22938,12 +22938,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -22953,12 +22953,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -22968,12 +22968,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -23002,26 +23002,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -23032,12 +23032,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -23047,12 +23047,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -23062,12 +23062,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -24566,17 +24566,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -24590,26 +24590,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -24620,12 +24620,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -24635,12 +24635,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -24650,12 +24650,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -24684,26 +24684,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -24714,12 +24714,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -24729,12 +24729,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -24744,12 +24744,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -24778,26 +24778,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -24808,12 +24808,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -24823,12 +24823,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -24838,12 +24838,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -26341,17 +26341,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -26365,26 +26365,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -26395,12 +26395,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -26410,12 +26410,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -26425,12 +26425,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -26459,26 +26459,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -26489,12 +26489,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -26504,12 +26504,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -26519,12 +26519,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -26553,26 +26553,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -26583,12 +26583,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -26598,12 +26598,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -26613,12 +26613,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28116,17 +28116,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -28140,26 +28140,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28170,12 +28170,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28185,12 +28185,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28200,12 +28200,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28234,26 +28234,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28264,12 +28264,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28279,12 +28279,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28294,12 +28294,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28328,26 +28328,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28358,12 +28358,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28373,12 +28373,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28388,12 +28388,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28424,17 +28424,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     commentEdit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -28473,26 +28473,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28503,12 +28503,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28518,12 +28518,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28533,12 +28533,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28567,26 +28567,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28597,12 +28597,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28612,12 +28612,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28627,12 +28627,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28661,26 +28661,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28691,12 +28691,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28706,12 +28706,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28721,12 +28721,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28783,17 +28783,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -28807,26 +28807,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28837,12 +28837,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28852,12 +28852,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28867,12 +28867,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28901,26 +28901,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -28931,12 +28931,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -28946,12 +28946,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -28961,12 +28961,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -28995,26 +28995,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29025,12 +29025,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29040,12 +29040,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29055,12 +29055,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -29390,17 +29390,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -29414,26 +29414,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29444,12 +29444,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29459,12 +29459,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29474,12 +29474,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -29508,26 +29508,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29538,12 +29538,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29553,12 +29553,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29568,12 +29568,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -29602,26 +29602,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29632,12 +29632,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29647,12 +29647,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29662,12 +29662,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -29692,17 +29692,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     comment?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -29745,26 +29745,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29775,12 +29775,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29790,12 +29790,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29805,12 +29805,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -29839,26 +29839,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29869,12 +29869,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29884,12 +29884,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29899,12 +29899,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -29933,26 +29933,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -29963,12 +29963,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -29978,12 +29978,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -29993,12 +29993,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -31497,17 +31497,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -31521,26 +31521,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -31551,12 +31551,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -31566,12 +31566,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -31581,12 +31581,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -31615,26 +31615,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -31645,12 +31645,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -31660,12 +31660,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -31675,12 +31675,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -31709,26 +31709,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -31739,12 +31739,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -31754,12 +31754,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -31769,12 +31769,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -31802,17 +31802,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     commentEdit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -31851,26 +31851,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -31881,12 +31881,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -31896,12 +31896,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -31911,12 +31911,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -31945,26 +31945,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -31975,12 +31975,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -31990,12 +31990,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32005,12 +32005,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32039,26 +32039,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -32069,12 +32069,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -32084,12 +32084,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32099,12 +32099,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32161,17 +32161,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -32185,26 +32185,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -32215,12 +32215,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -32230,12 +32230,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32245,12 +32245,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32279,26 +32279,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -32309,12 +32309,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -32324,12 +32324,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32339,12 +32339,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32373,26 +32373,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -32403,12 +32403,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -32418,12 +32418,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32433,12 +32433,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32768,17 +32768,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -32792,26 +32792,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -32822,12 +32822,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -32837,12 +32837,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32852,12 +32852,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32886,26 +32886,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -32916,12 +32916,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -32931,12 +32931,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -32946,12 +32946,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -32980,26 +32980,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -33010,12 +33010,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -33025,12 +33025,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -33040,12 +33040,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -33070,17 +33070,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     comment?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -33123,26 +33123,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -33153,12 +33153,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -33168,12 +33168,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -33183,12 +33183,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -33217,26 +33217,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -33247,12 +33247,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -33262,12 +33262,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -33277,12 +33277,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -33311,26 +33311,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -33341,12 +33341,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -33356,12 +33356,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -33371,12 +33371,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -34875,17 +34875,17 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         protocolVersion: z.ZodString;
     } & {
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -34899,26 +34899,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -34929,12 +34929,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -34944,12 +34944,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -34959,12 +34959,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -34993,26 +34993,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35023,12 +35023,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35038,12 +35038,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -35053,12 +35053,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -35087,26 +35087,26 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35117,12 +35117,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35132,12 +35132,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -35147,12 +35147,12 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -35466,17 +35466,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     comment: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -35519,26 +35519,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35549,12 +35549,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35564,12 +35564,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -35579,12 +35579,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -35613,26 +35613,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35643,12 +35643,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35658,12 +35658,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -35673,12 +35673,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -35707,26 +35707,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35737,12 +35737,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35752,12 +35752,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -35767,12 +35767,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -35802,17 +35802,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -35855,26 +35855,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35885,12 +35885,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35900,12 +35900,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -35915,12 +35915,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -35949,26 +35949,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -35979,12 +35979,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -35994,12 +35994,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36009,12 +36009,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -36043,26 +36043,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -36073,12 +36073,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36088,12 +36088,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36103,12 +36103,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -36138,17 +36138,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -36191,26 +36191,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -36221,12 +36221,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36236,12 +36236,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36251,12 +36251,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -36285,26 +36285,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -36315,12 +36315,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36330,12 +36330,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36345,12 +36345,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -36379,26 +36379,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -36409,12 +36409,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36424,12 +36424,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36439,12 +36439,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -36480,17 +36480,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         edit: z.ZodOptional<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -36529,26 +36529,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -36559,12 +36559,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36574,12 +36574,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36589,12 +36589,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -36623,26 +36623,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -36653,12 +36653,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36668,12 +36668,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36683,12 +36683,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -36717,26 +36717,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -36747,12 +36747,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36762,12 +36762,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36777,12 +36777,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -36806,17 +36806,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -36855,26 +36855,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -36885,12 +36885,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36900,12 +36900,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -36915,12 +36915,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -36949,26 +36949,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -36979,12 +36979,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -36994,12 +36994,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37009,12 +37009,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -37043,26 +37043,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -37073,12 +37073,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37088,12 +37088,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37103,12 +37103,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -37132,17 +37132,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -37181,26 +37181,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -37211,12 +37211,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37226,12 +37226,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37241,12 +37241,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -37275,26 +37275,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -37305,12 +37305,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37320,12 +37320,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37335,12 +37335,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -37369,26 +37369,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -37399,12 +37399,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37414,12 +37414,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37429,12 +37429,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -37488,26 +37488,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -37518,12 +37518,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37533,12 +37533,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37548,12 +37548,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -37650,26 +37650,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -37680,12 +37680,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37695,12 +37695,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37710,12 +37710,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -37812,26 +37812,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -37842,12 +37842,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -37857,12 +37857,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -37872,12 +37872,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -37969,17 +37969,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -38004,17 +38004,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         edit: z.ZodOptional<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -38053,26 +38053,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38083,12 +38083,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38098,12 +38098,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38113,12 +38113,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38147,26 +38147,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38177,12 +38177,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38192,12 +38192,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38207,12 +38207,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38241,26 +38241,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38271,12 +38271,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38286,12 +38286,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38301,12 +38301,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38330,17 +38330,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -38379,26 +38379,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38409,12 +38409,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38424,12 +38424,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38439,12 +38439,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38473,26 +38473,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38503,12 +38503,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38518,12 +38518,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38533,12 +38533,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38567,26 +38567,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38597,12 +38597,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38612,12 +38612,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38627,12 +38627,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38656,17 +38656,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -38705,26 +38705,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38735,12 +38735,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38750,12 +38750,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38765,12 +38765,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38799,26 +38799,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38829,12 +38829,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38844,12 +38844,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38859,12 +38859,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -38893,26 +38893,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -38923,12 +38923,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -38938,12 +38938,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -38953,12 +38953,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -39012,26 +39012,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -39042,12 +39042,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39057,12 +39057,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39072,12 +39072,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -39174,26 +39174,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -39204,12 +39204,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39219,12 +39219,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39234,12 +39234,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -39336,26 +39336,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -39366,12 +39366,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39381,12 +39381,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39396,12 +39396,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -39493,17 +39493,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -39528,17 +39528,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         edit: z.ZodOptional<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -39577,26 +39577,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -39607,12 +39607,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39622,12 +39622,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39637,12 +39637,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -39671,26 +39671,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -39701,12 +39701,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39716,12 +39716,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39731,12 +39731,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -39765,26 +39765,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -39795,12 +39795,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39810,12 +39810,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39825,12 +39825,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -39854,17 +39854,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -39903,26 +39903,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -39933,12 +39933,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -39948,12 +39948,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -39963,12 +39963,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -39997,26 +39997,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -40027,12 +40027,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40042,12 +40042,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40057,12 +40057,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -40091,26 +40091,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -40121,12 +40121,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40136,12 +40136,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40151,12 +40151,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -40180,17 +40180,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
-                type: z.ZodEnum<["ed25519", "eip191"]>;
+                type: z.ZodString;
                 signature: z.ZodString;
                 publicKey: z.ZodString;
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
             }, {
-                type: "ed25519" | "eip191";
+                type: string;
                 publicKey: string;
                 signature: string;
                 signedPropertyNames: string[];
@@ -40229,26 +40229,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -40259,12 +40259,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40274,12 +40274,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40289,12 +40289,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -40323,26 +40323,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -40353,12 +40353,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40368,12 +40368,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40383,12 +40383,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -40417,26 +40417,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "strip", z.ZodTypeAny, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }, {
                     address: string;
                     timestamp: number;
                     signature: {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     };
                 }>>>;
@@ -40447,12 +40447,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40462,12 +40462,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40477,12 +40477,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                     timestamp: z.ZodNumber;
                     signature: z.ZodObject<{
                         signature: z.ZodString;
-                        type: z.ZodEnum<["eip191"]>;
+                        type: z.ZodString;
                     }, "strip", z.ZodTypeAny, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }, {
-                        type: "eip191";
+                        type: string;
                         signature: string;
                     }>;
                 }, z.ZodTypeAny, "passthrough">>>;
@@ -40536,26 +40536,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -40566,12 +40566,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40581,12 +40581,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40596,12 +40596,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -40698,26 +40698,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -40728,12 +40728,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40743,12 +40743,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40758,12 +40758,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -40860,26 +40860,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -40890,12 +40890,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -40905,12 +40905,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -40920,12 +40920,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -41017,17 +41017,17 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -41049,7 +41049,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     comment: {
         timestamp: number;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -41062,7 +41062,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }> | undefined;
@@ -41073,12 +41073,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -41119,7 +41119,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     };
     commentUpdate: {
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -41135,26 +41135,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -41165,12 +41165,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -41180,12 +41180,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -41195,12 +41195,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -41296,7 +41296,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     comment: {
         timestamp: number;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -41309,7 +41309,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }> | undefined;
@@ -41320,12 +41320,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -41366,7 +41366,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     };
     commentUpdate: {
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -41382,26 +41382,26 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -41412,12 +41412,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -41427,12 +41427,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -41442,12 +41442,12 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;

@@ -61,7 +61,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     _getSubplebbitCache(): Pick<{
         address: string;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];

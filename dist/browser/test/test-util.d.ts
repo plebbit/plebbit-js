@@ -117,7 +117,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
     subplebbitRecord: {
         address: string;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];

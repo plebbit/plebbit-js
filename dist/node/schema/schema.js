@@ -20,7 +20,7 @@ export const UserAgentSchema = z.string(); // TODO should use regex to validate
 const WalletSchema = z.object({
     address: z.string(),
     timestamp: PlebbitTimestampSchema,
-    signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
+    signature: z.object({ signature: z.string().min(1), type: z.string().min(1) })
 });
 export const CidStringSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
 // '/ipfs/QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1' => 'QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1'
@@ -36,7 +36,7 @@ export const AuthorAvatarNftSchema = z
     address: z.string(),
     id: z.string(),
     timestamp: PlebbitTimestampSchema,
-    signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
+    signature: z.object({ signature: z.string().min(1), type: z.string().min(1) })
 })
     .passthrough();
 export const FlairSchema = z
@@ -75,7 +75,7 @@ export const CreatePublicationUserOptionsSchema = z.object({
         .optional()
 });
 export const JsonSignatureSchema = z.object({
-    type: z.enum(["ed25519", "eip191"]),
+    type: z.string().min(1),
     signature: z.string(), // No need to validate here, it will be validated in verify signature function
     publicKey: z.string(),
     signedPropertyNames: z.string().array()

@@ -46,26 +46,26 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -76,12 +76,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -91,12 +91,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -106,12 +106,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -140,26 +140,26 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -170,12 +170,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -185,12 +185,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -200,12 +200,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -234,26 +234,26 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -264,12 +264,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -279,12 +279,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -294,12 +294,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -355,26 +355,26 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -385,12 +385,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -400,12 +400,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -415,12 +415,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -478,26 +478,26 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -508,12 +508,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -523,12 +523,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -538,12 +538,12 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -627,26 +627,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -657,12 +657,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -672,12 +672,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -687,12 +687,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -721,26 +721,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -751,12 +751,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -766,12 +766,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -781,12 +781,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -815,26 +815,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -845,12 +845,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -860,12 +860,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -875,12 +875,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -936,26 +936,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -966,12 +966,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -981,12 +981,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -996,12 +996,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1059,26 +1059,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1089,12 +1089,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1104,12 +1104,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1119,12 +1119,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1182,26 +1182,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1212,12 +1212,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1227,12 +1227,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1242,12 +1242,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1305,26 +1305,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1335,12 +1335,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1350,12 +1350,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1365,12 +1365,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1428,26 +1428,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1458,12 +1458,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1473,12 +1473,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1488,12 +1488,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1551,26 +1551,26 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>>;
@@ -1581,12 +1581,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1596,12 +1596,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1611,12 +1611,12 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>>;
@@ -1720,26 +1720,26 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -1750,12 +1750,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -1765,12 +1765,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -1780,12 +1780,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -1813,7 +1813,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1824,12 +1824,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -1847,7 +1847,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1858,12 +1858,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -1877,17 +1877,17 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     protocolVersion: z.ZodString;
 } & {
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -1895,7 +1895,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
 }, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -1908,7 +1908,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1919,12 +1919,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -1956,7 +1956,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -1969,7 +1969,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -1980,12 +1980,12 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -2018,17 +2018,17 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
 export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2071,26 +2071,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2101,12 +2101,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2116,12 +2116,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2131,12 +2131,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2165,26 +2165,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2195,12 +2195,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2210,12 +2210,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2225,12 +2225,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2259,26 +2259,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2289,12 +2289,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2304,12 +2304,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2319,12 +2319,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2348,7 +2348,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2361,7 +2361,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -2372,12 +2372,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -2411,7 +2411,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2424,7 +2424,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -2435,12 +2435,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -2475,17 +2475,17 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
 export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.ZodEffects<z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2528,26 +2528,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2558,12 +2558,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2573,12 +2573,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2588,12 +2588,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2622,26 +2622,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2652,12 +2652,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2667,12 +2667,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2682,12 +2682,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2716,26 +2716,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2746,12 +2746,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2761,12 +2761,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2776,12 +2776,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2805,17 +2805,17 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -2858,26 +2858,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2888,12 +2888,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2903,12 +2903,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -2918,12 +2918,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -2952,26 +2952,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -2982,12 +2982,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -2997,12 +2997,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3012,12 +3012,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3046,26 +3046,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3076,12 +3076,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3091,12 +3091,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3106,12 +3106,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3135,17 +3135,17 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3188,26 +3188,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3218,12 +3218,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3233,12 +3233,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3248,12 +3248,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3282,26 +3282,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3312,12 +3312,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3327,12 +3327,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3342,12 +3342,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3376,26 +3376,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3406,12 +3406,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3421,12 +3421,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3436,12 +3436,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3465,17 +3465,17 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3518,26 +3518,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3548,12 +3548,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3563,12 +3563,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3578,12 +3578,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3612,26 +3612,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3642,12 +3642,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3657,12 +3657,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3672,12 +3672,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3706,26 +3706,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3736,12 +3736,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3751,12 +3751,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3766,12 +3766,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3795,17 +3795,17 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -3848,26 +3848,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3878,12 +3878,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3893,12 +3893,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -3908,12 +3908,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -3942,26 +3942,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -3972,12 +3972,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -3987,12 +3987,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4002,12 +4002,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -4036,26 +4036,26 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -4066,12 +4066,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4081,12 +4081,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4096,12 +4096,12 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -4189,26 +4189,26 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -4219,12 +4219,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4234,12 +4234,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4249,12 +4249,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -4282,7 +4282,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4293,12 +4293,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4316,7 +4316,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4327,12 +4327,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4346,17 +4346,17 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     protocolVersion: z.ZodString;
 } & {
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4364,7 +4364,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
 }, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4377,7 +4377,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4388,12 +4388,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4425,7 +4425,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4438,7 +4438,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4449,12 +4449,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4486,7 +4486,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
 }>, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4499,7 +4499,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4510,12 +4510,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4547,7 +4547,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4560,7 +4560,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4571,12 +4571,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4608,7 +4608,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
 }>, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4621,7 +4621,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4632,12 +4632,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4669,7 +4669,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -4682,7 +4682,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -4693,12 +4693,12 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -4735,17 +4735,17 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     comment: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -4788,26 +4788,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4818,12 +4818,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4833,12 +4833,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4848,12 +4848,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4882,26 +4882,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -4912,12 +4912,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -4927,12 +4927,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -4942,12 +4942,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -4976,26 +4976,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5006,12 +5006,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5021,12 +5021,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5036,12 +5036,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5065,17 +5065,17 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -5118,26 +5118,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5148,12 +5148,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5163,12 +5163,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5178,12 +5178,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5212,26 +5212,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5242,12 +5242,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5257,12 +5257,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5272,12 +5272,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5306,26 +5306,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5336,12 +5336,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5351,12 +5351,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5366,12 +5366,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5395,17 +5395,17 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -5448,26 +5448,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5478,12 +5478,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5493,12 +5493,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5508,12 +5508,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5542,26 +5542,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5572,12 +5572,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5587,12 +5587,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5602,12 +5602,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5636,26 +5636,26 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -5666,12 +5666,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5681,12 +5681,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5696,12 +5696,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -5727,7 +5727,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     comment: {
         timestamp: number;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -5740,7 +5740,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }> | undefined;
@@ -5751,12 +5751,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -5796,7 +5796,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     comment: {
         timestamp: number;
         signature: {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -5809,7 +5809,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }> | undefined;
@@ -5820,12 +5820,12 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -5865,17 +5865,17 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
 export declare const CommentIpfsSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -5918,26 +5918,26 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -5948,12 +5948,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -5963,12 +5963,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -5978,12 +5978,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -6012,26 +6012,26 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -6042,12 +6042,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -6057,12 +6057,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -6072,12 +6072,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -6106,26 +6106,26 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -6136,12 +6136,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -6151,12 +6151,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -6166,12 +6166,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -6201,7 +6201,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6214,7 +6214,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -6225,12 +6225,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -6269,7 +6269,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6282,7 +6282,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -6293,12 +6293,12 @@ export declare const CommentIpfsSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -6338,17 +6338,17 @@ export declare const CommentIpfsSchema: z.ZodObject<{
 export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6391,26 +6391,26 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -6421,12 +6421,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -6436,12 +6436,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -6451,12 +6451,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -6485,26 +6485,26 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -6515,12 +6515,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -6530,12 +6530,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -6545,12 +6545,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -6579,26 +6579,26 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -6609,12 +6609,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -6624,12 +6624,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -6639,12 +6639,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -6674,7 +6674,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6687,7 +6687,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -6698,12 +6698,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -6742,7 +6742,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6755,7 +6755,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -6766,12 +6766,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -6810,7 +6810,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
 }>, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6823,7 +6823,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -6834,12 +6834,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -6878,7 +6878,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -6891,7 +6891,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -6902,12 +6902,12 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -6953,26 +6953,26 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, "strip", z.ZodTypeAny, {
         address: string;
         timestamp: number;
         signature: {
-            type: "eip191";
+            type: string;
             signature: string;
         };
     }, {
         address: string;
         timestamp: number;
         signature: {
-            type: "eip191";
+            type: string;
             signature: string;
         };
     }>>>;
@@ -6983,12 +6983,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -6998,12 +6998,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7013,12 +7013,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, z.ZodTypeAny, "passthrough">>>;
@@ -7115,26 +7115,26 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, "strip", z.ZodTypeAny, {
         address: string;
         timestamp: number;
         signature: {
-            type: "eip191";
+            type: string;
             signature: string;
         };
     }, {
         address: string;
         timestamp: number;
         signature: {
-            type: "eip191";
+            type: string;
             signature: string;
         };
     }>>>;
@@ -7145,12 +7145,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7160,12 +7160,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7175,12 +7175,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, z.ZodTypeAny, "passthrough">>>;
@@ -7277,26 +7277,26 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, "strip", z.ZodTypeAny, {
         address: string;
         timestamp: number;
         signature: {
-            type: "eip191";
+            type: string;
             signature: string;
         };
     }, {
         address: string;
         timestamp: number;
         signature: {
-            type: "eip191";
+            type: string;
             signature: string;
         };
     }>>>;
@@ -7307,12 +7307,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7322,12 +7322,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7337,12 +7337,12 @@ export declare const AuthorWithCommentUpdateSchema: z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             signature: z.ZodString;
-            type: z.ZodEnum<["eip191"]>;
+            type: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            type: "eip191";
+            type: string;
             signature: string;
         }, {
-            type: "eip191";
+            type: string;
             signature: string;
         }>;
     }, z.ZodTypeAny, "passthrough">>>;
@@ -7439,17 +7439,17 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -7488,26 +7488,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7518,12 +7518,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7533,12 +7533,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7548,12 +7548,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7582,26 +7582,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7612,12 +7612,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7627,12 +7627,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7642,12 +7642,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7676,26 +7676,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7706,12 +7706,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7721,12 +7721,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7736,12 +7736,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7765,17 +7765,17 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -7814,26 +7814,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7844,12 +7844,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7859,12 +7859,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7874,12 +7874,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -7908,26 +7908,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -7938,12 +7938,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -7953,12 +7953,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -7968,12 +7968,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8002,26 +8002,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8032,12 +8032,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8047,12 +8047,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8062,12 +8062,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8091,17 +8091,17 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -8140,26 +8140,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8170,12 +8170,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8185,12 +8185,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8200,12 +8200,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8234,26 +8234,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8264,12 +8264,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8279,12 +8279,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8294,12 +8294,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8328,26 +8328,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -8358,12 +8358,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8373,12 +8373,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8388,12 +8388,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -8447,26 +8447,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -8477,12 +8477,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8492,12 +8492,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8507,12 +8507,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -8609,26 +8609,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -8639,12 +8639,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8654,12 +8654,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8669,12 +8669,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -8771,26 +8771,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -8801,12 +8801,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -8816,12 +8816,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -8831,12 +8831,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -8928,17 +8928,17 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -8946,7 +8946,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     protocolVersion: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -8972,26 +8972,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -9002,12 +9002,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9017,12 +9017,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9032,12 +9032,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -9132,17 +9132,17 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     edit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -9181,26 +9181,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9211,12 +9211,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9226,12 +9226,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9241,12 +9241,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9275,26 +9275,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9305,12 +9305,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9320,12 +9320,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9335,12 +9335,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9369,26 +9369,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9399,12 +9399,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9414,12 +9414,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9429,12 +9429,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9463,7 +9463,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     lastReplyTimestamp?: number | undefined;
 }, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -9489,26 +9489,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -9519,12 +9519,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9534,12 +9534,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9549,12 +9549,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -9649,17 +9649,17 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     edit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -9698,26 +9698,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9728,12 +9728,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9743,12 +9743,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9758,12 +9758,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9792,26 +9792,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9822,12 +9822,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9837,12 +9837,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9852,12 +9852,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9886,26 +9886,26 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -9916,12 +9916,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -9931,12 +9931,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -9946,12 +9946,12 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -9987,17 +9987,17 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -10036,26 +10036,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10066,12 +10066,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10081,12 +10081,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10096,12 +10096,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10130,26 +10130,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10160,12 +10160,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10175,12 +10175,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10190,12 +10190,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10224,26 +10224,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10254,12 +10254,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10269,12 +10269,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10284,12 +10284,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10313,17 +10313,17 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -10362,26 +10362,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10392,12 +10392,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10407,12 +10407,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10422,12 +10422,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10456,26 +10456,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10486,12 +10486,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10501,12 +10501,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10516,12 +10516,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10550,26 +10550,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10580,12 +10580,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10595,12 +10595,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10610,12 +10610,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10639,17 +10639,17 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -10688,26 +10688,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10718,12 +10718,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10733,12 +10733,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10748,12 +10748,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10782,26 +10782,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10812,12 +10812,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10827,12 +10827,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10842,12 +10842,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10876,26 +10876,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -10906,12 +10906,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -10921,12 +10921,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -10936,12 +10936,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -10995,26 +10995,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -11025,12 +11025,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11040,12 +11040,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11055,12 +11055,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -11157,26 +11157,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -11187,12 +11187,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11202,12 +11202,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11217,12 +11217,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -11319,26 +11319,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -11349,12 +11349,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11364,12 +11364,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11379,12 +11379,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -11476,17 +11476,17 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -11505,7 +11505,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     }>>>;
 }, "strict", z.ZodTypeAny, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -11531,26 +11531,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -11561,12 +11561,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11576,12 +11576,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11591,12 +11591,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -11691,17 +11691,17 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     edit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -11740,26 +11740,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11770,12 +11770,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11785,12 +11785,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11800,12 +11800,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11834,26 +11834,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11864,12 +11864,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11879,12 +11879,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11894,12 +11894,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -11928,26 +11928,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -11958,12 +11958,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -11973,12 +11973,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -11988,12 +11988,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12026,7 +12026,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     } | undefined;
 }, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -12052,26 +12052,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -12082,12 +12082,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12097,12 +12097,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12112,12 +12112,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -12212,17 +12212,17 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     edit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -12261,26 +12261,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12291,12 +12291,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12306,12 +12306,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12321,12 +12321,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12355,26 +12355,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12385,12 +12385,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12400,12 +12400,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12415,12 +12415,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12449,26 +12449,26 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12479,12 +12479,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12494,12 +12494,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12509,12 +12509,12 @@ export declare const CommentUpdateSchema: z.ZodObject<{
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12555,17 +12555,17 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -12604,26 +12604,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12634,12 +12634,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12649,12 +12649,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12664,12 +12664,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12698,26 +12698,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12728,12 +12728,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12743,12 +12743,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12758,12 +12758,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12792,26 +12792,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12822,12 +12822,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12837,12 +12837,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12852,12 +12852,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -12881,17 +12881,17 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -12930,26 +12930,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -12960,12 +12960,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -12975,12 +12975,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -12990,12 +12990,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13024,26 +13024,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -13054,12 +13054,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13069,12 +13069,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13084,12 +13084,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13118,26 +13118,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -13148,12 +13148,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13163,12 +13163,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13178,12 +13178,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13207,17 +13207,17 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
-            type: z.ZodEnum<["ed25519", "eip191"]>;
+            type: z.ZodString;
             signature: z.ZodString;
             publicKey: z.ZodString;
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
         }, {
-            type: "ed25519" | "eip191";
+            type: string;
             publicKey: string;
             signature: string;
             signedPropertyNames: string[];
@@ -13256,26 +13256,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -13286,12 +13286,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13301,12 +13301,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13316,12 +13316,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13350,26 +13350,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -13380,12 +13380,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13395,12 +13395,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13410,12 +13410,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13444,26 +13444,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "strip", z.ZodTypeAny, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }, {
                 address: string;
                 timestamp: number;
                 signature: {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 };
             }>>>;
@@ -13474,12 +13474,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13489,12 +13489,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13504,12 +13504,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
                 timestamp: z.ZodNumber;
                 signature: z.ZodObject<{
                     signature: z.ZodString;
-                    type: z.ZodEnum<["eip191"]>;
+                    type: z.ZodString;
                 }, "strip", z.ZodTypeAny, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }, {
-                    type: "eip191";
+                    type: string;
                     signature: string;
                 }>;
             }, z.ZodTypeAny, "passthrough">>>;
@@ -13563,26 +13563,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -13593,12 +13593,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13608,12 +13608,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13623,12 +13623,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -13725,26 +13725,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -13755,12 +13755,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13770,12 +13770,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13785,12 +13785,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -13887,26 +13887,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -13917,12 +13917,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -13932,12 +13932,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -13947,12 +13947,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14044,17 +14044,17 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
     lastChildCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     lastReplyTimestamp: z.ZodOptional<z.ZodNumber>;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -14073,7 +14073,7 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
     }>>>;
 }, "signature" | "author" | "protocolVersion" | "cid">, "strict", z.ZodTypeAny, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -14089,26 +14089,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -14119,12 +14119,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14134,12 +14134,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14149,12 +14149,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14245,7 +14245,7 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
     }, "subplebbit">, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -14261,26 +14261,26 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -14291,12 +14291,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14306,12 +14306,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14321,12 +14321,12 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14420,17 +14420,17 @@ export declare const CommentUpdateForChallengeVerificationSignedPropertyNames: (
 export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject<Pick<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -14473,26 +14473,26 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -14503,12 +14503,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14518,12 +14518,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14533,12 +14533,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14567,26 +14567,26 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -14597,12 +14597,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14612,12 +14612,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14627,12 +14627,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14661,26 +14661,26 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -14691,12 +14691,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14706,12 +14706,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14721,12 +14721,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14756,7 +14756,7 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -14767,12 +14767,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -14804,7 +14804,7 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -14815,12 +14815,12 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -14847,17 +14847,17 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
 export declare const CommentsTableRowSchema: z.ZodObject<{
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
-        type: z.ZodEnum<["ed25519", "eip191"]>;
+        type: z.ZodString;
         signature: z.ZodString;
         publicKey: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -14898,26 +14898,26 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -14928,12 +14928,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -14943,12 +14943,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -14958,12 +14958,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -14992,26 +14992,26 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -15022,12 +15022,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15037,12 +15037,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15052,12 +15052,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -15086,26 +15086,26 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "strip", z.ZodTypeAny, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }, {
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }>>>;
@@ -15116,12 +15116,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -15131,12 +15131,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -15146,12 +15146,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough">>>;
@@ -15187,7 +15187,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -15200,7 +15200,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -15211,12 +15211,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
@@ -15260,7 +15260,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
 }, {
     timestamp: number;
     signature: {
-        type: "ed25519" | "eip191";
+        type: string;
         publicKey: string;
         signature: string;
         signedPropertyNames: string[];
@@ -15273,7 +15273,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             address: string;
             timestamp: number;
             signature: {
-                type: "eip191";
+                type: string;
                 signature: string;
             };
         }> | undefined;
@@ -15284,12 +15284,12 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
                 signature: z.ZodString;
-                type: z.ZodEnum<["eip191"]>;
+                type: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }, {
-                type: "eip191";
+                type: string;
                 signature: string;
             }>;
         }, z.ZodTypeAny, "passthrough"> | undefined;
