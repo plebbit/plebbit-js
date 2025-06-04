@@ -141,6 +141,21 @@ describe("Plebbit options", async () => {
         JSON.stringify(plebbit); // Will throw an error if circular json
         await plebbit.destroy();
     });
+
+    it(`Plebbit({libp2pJsClientOptions: [{key}]}) sets plebbit instance to use default libp2pjs options`, async () => {
+        const plebbit = await Plebbit({
+            libp2pJsClientOptions: [{ key: "random" }],
+            httpRoutersOptions: ["https://notexist.com"],
+            dataPath: undefined,
+            pubsubKuboRpcClientsOptions: []
+        });
+        expect(Object.keys(plebbit.clients.libp2pJsClients).sort()).to.deep.equal(["random"]);
+        expect(Object.keys(plebbit.clients.plebbitRpcClients)).to.deep.equal([]);
+        expect(plebbit.clients.kuboRpcClients).to.deep.equal({});
+        expect(plebbit.clients.pubsubKuboRpcClients).to.deep.equal({});
+        JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
+    });
 });
 
 describe("plebbit.createSigner", async () => {
