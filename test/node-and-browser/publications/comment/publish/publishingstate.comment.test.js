@@ -7,7 +7,8 @@ import {
     generatePostToAnswerMathQuestion,
     publishSubplebbitRecordWithExtraProp,
     getRemotePlebbitConfigs,
-    createNewIpns
+    createNewIpns,
+    resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
@@ -286,6 +287,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await mockPost.publish();
             await errorPromise;
+            await resolveWhenConditionIsTrue(mockPost, () => mockPost.publishingState === "failed", "publishingstatechange");
 
             expect(mockPost.publishingState).to.equal("failed");
             const expectedPublishingState = ["fetching-subplebbit-ipns"].concat(
