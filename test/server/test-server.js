@@ -172,6 +172,15 @@ const setUpMockGateways = async () => {
     // Will return valid content for one cid and invalid content for another
     // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
 
+    const gatewayPorts = [13415, 13416, 13417, 13418, 14000, 14002, 14003, 14004, 14005, 14006];
+
+    for (const gatewayPort of gatewayPorts) {
+        const gatewayUsed = await tcpPortUsed.check(gatewayPort);
+        if (gatewayUsed) {
+            throw new Error(`Gateway port ${gatewayPort} is already occupied`);
+        }
+    }
+
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         if (req.url === "/ipfs/bafybeigdypsgdcm2ddvyh2y2gnltw3zi5iphzzwdlpie3jfxpmer7frknu")
@@ -334,6 +343,13 @@ const setUpMockGateways = async () => {
 const setupMockDelegatedRouter = async () => {
     // This router will just return the offlineNodeArgs IPFS addresses whenever it's queried
 
+    const routerPorts = [20001];
+    for (const routerPort of routerPorts) {
+        const routerUsed = await tcpPortUsed.check(routerPort);
+        if (routerUsed) {
+            throw new Error(`Router port ${routerPort} is already occupied`);
+        }
+    }
     http.createServer(async (req, res) => {
         console.log("Received a request for mock http router", req.url);
         res.setHeader("Access-Control-Allow-Origin", "*");
