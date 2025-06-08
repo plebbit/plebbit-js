@@ -29,10 +29,10 @@ import {
     isLinkOfMedia,
     isStringDomain,
     pubsubTopicToDhtKey,
-    removeUndefinedValuesRecursively,
     retryKuboIpfsAdd,
     throwWithErrorCode,
-    timestamp
+    timestamp,
+    getErrorCodeFromMessage
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -77,7 +77,6 @@ import {
     importSignerIntoKuboNode,
     moveSubplebbitDbToDeletedDirectory
 } from "../util.js";
-import { getErrorCodeFromMessage } from "../../../util.js";
 import {
     SignerWithPublicKeyAddress,
     decryptEd25519AesGcmPublicKeyBuffer,

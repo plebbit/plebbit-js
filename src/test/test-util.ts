@@ -15,7 +15,6 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
-import { v4 as uuidV4 } from "uuid";
 import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
@@ -420,7 +419,7 @@ export async function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStora
 
 export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
-    const mockEthResolver = `https://mockEthRpc${uuidV4()}.com`;
+    const mockEthResolver = `https://mockEthRpc${uuidv4()}.com`;
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,

@@ -11,12 +11,11 @@ import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { AddResult } from "kubo-rpc-client";
+import type { AddResult , NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub } from "./types.js";
-import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 import { PlebbitError } from "../plebbit-error.js";
 import { Libp2pJsClient } from "./libp2pjsClient.js";
