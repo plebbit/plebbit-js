@@ -31,7 +31,7 @@ describe(`subplebbit.startedState`, async () => {
         await subplebbit.start();
 
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
-        await resolveWhenConditionIsTrue(subplebbit, () => expectedStates.length === 2, "startedstatechange");
+        await resolveWhenConditionIsTrue(subplebbit, () => recordedStates.length === 2, "startedstatechange");
         expect(recordedStates).to.deep.equal(expectedStates);
     });
 
