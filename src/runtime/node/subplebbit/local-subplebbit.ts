@@ -2151,14 +2151,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _publishLoop(syncIntervalMs: number) {
         const log = Logger("plebbit-js:local-subplebbit:_publishLoop");
         // we need to continue the loop if there's at least one pending edit
-        const calculateSyncIntervalMs = () => {
-            this._calculateLatestUpdateTrigger(); // will update this._subplebbitUpdateTrigger
-            // if stop has been called, we need to stop the loop
-            return this._subplebbitUpdateTrigger || this._stopHasBeenCalled ? 0 : syncIntervalMs;
-        };
 
         const shouldStopPublishLoop = () => {
             return this.state !== "started" || (this._stopHasBeenCalled && this._pendingEditProps.length === 0);
+        };
+
+        const waitUntilNextSync = async () => {
+            const doneWithLoopTime = Date.now();
+            await new Promise((resolve) => {
+                const checkInterval = setInterval(() => {
+                    const syncIntervalMsPassedSinceDoneWithLoop = Date.now() - doneWithLoopTime >= syncIntervalMs;
+                    this._calculateLatestUpdateTrigger(); // will update this._subplebbitUpdateTrigger
+                    if (this._subplebbitUpdateTrigger || shouldStopPublishLoop() || syncIntervalMsPassedSinceDoneWithLoop) {
+                        clearInterval(checkInterval);
+                        resolve(1);
+                    }
+                }, 100);
+            });
         };
 
         while (!shouldStopPublishLoop()) {
@@ -2166,13 +2175,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 await this.syncIpnsWithDb();
             } catch (e) {
                 this.emit("error", e as Error);
-                //@ts-expect-error
-                if (e.message.includes("after JSON at")) {
-                    log.error("Encountered critical error with keyv", e, "stopping the sub");
-                    await this.stop();
-                }
             } finally {
-                await new Promise((resolve) => setTimeout(resolve, calculateSyncIntervalMs()));
+                await waitUntilNextSync();
             }
         }
         log("Stopping the publishing loop of subplebbit", this.address);
