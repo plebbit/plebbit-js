@@ -53,7 +53,7 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
                 // call @libp2p/fetch here,
                 for (const pubsubPeer of peersToFetchFrom) {
                     try {
-                        ipnsRecordFromFetch = await libp2pFetchService.fetch(pubsubPeer, routingKey);
+                        ipnsRecordFromFetch = await libp2pFetchService.fetch(pubsubPeer, routingKey, options);
                         if (!ipnsRecordFromFetch) throw Error("Fetch for IPNS-Over-Pubsub returned undefined");
                         log("Fetched IPNS record of topic", topic, "from peer", pubsubPeer.toString());
                         break;
