@@ -25,7 +25,6 @@ import type {
     CreateCommentOptions
 } from "../publications/comment/types.js";
 import pTimeout from "p-timeout";
-import { generateKeyPairFromSeed } from "@libp2p/crypto/keys";
 
 import {
     signComment,
@@ -1487,7 +1486,7 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
     const content = "x".repeat(1024 * 30); //30kb
-    const replies = await Promise.all(
+    await Promise.all(
         new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
             return publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content });
         })

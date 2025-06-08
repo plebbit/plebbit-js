@@ -22,7 +22,7 @@ import type {
 import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/schema.js";
 import EventEmitter from "events";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
-import pTimeout, { TimeoutError } from "p-timeout";
+import pTimeout from "p-timeout";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { sha256 } from "js-sha256";
