@@ -1,14 +1,4 @@
-import {
-    existsSync,
-    mkdir as mkdirSync,
-    readdirSync,
-    openSync,
-    readSync,
-    closeSync,
-    rm as rmSync,
-    watch as fsWatch,
-    promises as fsPromises
-} from "node:fs";
+import { existsSync, readdirSync, openSync, readSync, closeSync, rm as rmSync, watch as fsWatch, promises as fsPromises } from "node:fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import path from "path";
@@ -36,18 +26,16 @@ import Database from "better-sqlite3";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
-export const getDefaultSubplebbitDbConfig = (
+export const getDefaultSubplebbitDbConfig = async (
     subplebbitAddress: SubplebbitIpfsType["address"],
     plebbit: Plebbit
-): DbHandler["_dbConfig"] => {
+): Promise<DbHandler["_dbConfig"]> => {
     let filename: string;
     if (plebbit.noData) filename = ":memory:";
     else {
         assert(typeof plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
         filename = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
-        mkdirSync(path.dirname(filename), { recursive: true }, (err, path) => {
-            if (err) throw err;
-        });
+        await fsPromises.mkdir(path.dirname(filename), { recursive: true });
     }
 
     return {
@@ -299,9 +287,7 @@ export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: stri
     const newPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbitAddress);
 
     // Create the deleted directory if it doesn't exist
-    await mkdirSync(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true }, (err, path) => {
-        if (err) throw err;
-    });
+    await fsPromises.mkdir(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true });
 
     // Check if the source file exists
     if (!existsSync(oldPath)) {
