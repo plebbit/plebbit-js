@@ -160,7 +160,8 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
         });
 
-        it(`Updating states is in correct upon updating a reply from its parent pageCids`, async () => {
+        for (let i = 0; i < 50; i++) 
+        it.only(`Updating states is in correct upon updating a reply from its parent pageCids`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             await subplebbit.update();
             const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);
