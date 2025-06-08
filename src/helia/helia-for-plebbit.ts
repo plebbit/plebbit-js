@@ -11,12 +11,11 @@ import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
 import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { AddResult , NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
+import type { AddResult, NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub } from "./types.js";
-import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 import { PlebbitError } from "../plebbit-error.js";
 import { Libp2pJsClient } from "./libp2pjsClient.js";
 
@@ -41,7 +40,6 @@ export async function createLibp2pJsClientOrUseExistingOne(
         NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
 ): Promise<Libp2pJsClient> {
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
-    if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
     if (libp2pJsClients[plebbitOptions.key]) {
         libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance++;
         return libp2pJsClients[plebbitOptions.key];
