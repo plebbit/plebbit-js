@@ -277,6 +277,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this.suggested = newProps.suggested;
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
+        if (newProps.settings) this.settings = newProps.settings;
     }
 
     async initInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitRecordAfterFirstUpdateType) {
@@ -293,17 +294,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
-        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({
+        this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({
             ...newProps,
             started: this.started,
             startedState: this.startedState
         });
         await this._initSignerProps(newProps.signer);
         this._internalStateUpdateId = newProps._internalStateUpdateId;
-        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this._updateIpnsPubsubPropsIfNeeded(newProps);
         this.ipnsName = newProps.signer.address;
         this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-        this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
     }
 
     private async initDbHandlerIfNeeded() {

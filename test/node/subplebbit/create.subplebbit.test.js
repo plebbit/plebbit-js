@@ -71,6 +71,17 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await _createAndValidateSubArgs({ signer: { privateKey: signer.privateKey, type: signer.type } });
     });
 
+    it(`createSubplebbit({roles, settings})`, async () => {
+        const newEditProps = {
+            roles: { ["hello.eth"]: { role: "admin" } },
+            settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] }
+        };
+        const sub = await plebbit.createSubplebbit(newEditProps);
+        expect(sub.roles).to.deep.equal(newEditProps.roles);
+        expect(sub.settings).to.deep.equal(newEditProps.settings);
+        await sub.delete();
+    });
+
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
         const props = { title: "subplebbit = await createSubplebbit(await createSubplebbit)" };
         const firstSub = await plebbit.createSubplebbit(props);
