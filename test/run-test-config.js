@@ -101,6 +101,9 @@ if (environment === "node") {
             // Set a default value to avoid errors
             env.CHROME_BIN = "chrome";
         }
+
+        // Unset Firefox to ensure only Chrome runs
+        delete env.FIREFOX_BIN;
     } else if (environment.toLowerCase().includes("firefox")) {
         // Try to find Firefox executable
         const possibleFirefoxPaths = [
@@ -123,6 +126,9 @@ if (environment === "node") {
             // Set a default value to avoid errors
             env.FIREFOX_BIN = "firefox";
         }
+
+        // Unset Chrome to ensure only Firefox runs
+        delete env.CHROME_BIN;
     }
 
     console.log(`Running karma with environment: ${environment}`);
