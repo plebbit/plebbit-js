@@ -20,13 +20,92 @@ const CustomChrome = {
     debug: true
 };
 
+const CustomFirefox = {
+    base: "FirefoxHeadless",
+    flags: ["-no-remote"],
+    prefs: {
+        // Disable various security features
+        "security.tls.insecure_fallback_hosts": "localhost,127.0.0.1",
+        "security.fileuri.strict_origin_policy": false,
+        "security.mixed_content.block_active_content": false,
+        "security.mixed_content.block_display_content": false,
+
+        // Network and WebRTC settings
+        "media.peerconnection.enabled": true,
+        "media.peerconnection.ice.default_address_only": false,
+        "media.peerconnection.ice.no_host": false,
+        "media.navigator.enabled": true,
+
+        // CORS and origin policies
+        "security.fileuri.origin_policy": 3,
+        "privacy.file_unique_origin": false,
+
+        // WebSocket and networking
+        "network.websocket.allowInsecureFromHTTPS": true,
+        "network.websocket.timeout.ping.request": 120,
+        "network.websocket.timeout.ping.response": 120,
+        "network.http.connection-timeout": 120,
+        "network.http.response.timeout": 120,
+
+        // DNS and connectivity
+        "network.dns.disableIPv6": true,
+        "network.proxy.type": 0,
+
+        // Disable some Firefox-specific networking features that might interfere
+        "network.http.speculative-parallel-limit": 0,
+        "network.http.spdy.enabled": false,
+        "network.http.http2.enabled": false,
+
+        // Disable content blocking
+        "browser.contentblocking.enabled": false,
+        "privacy.trackingprotection.enabled": false,
+        "privacy.trackingprotection.pbmode.enabled": false,
+
+        // Allow local file access
+        "capability.policy.policynames": "localfilelinks",
+        "capability.policy.localfilelinks.sites": "http://localhost:9876",
+        "capability.policy.localfilelinks.checkloaduri.enabled": "allAccess",
+
+        // Additional preferences for P2P networking
+        "dom.webnotifications.enabled": false,
+        "dom.push.enabled": false,
+        "media.peerconnection.ice.tcp": true,
+        "media.peerconnection.ice.relay_only": false,
+        "dom.serviceWorkers.enabled": true,
+        "dom.serviceWorkers.testing.enabled": true,
+
+        // Disable security restrictions that might block P2P
+        "security.csp.enable": false,
+        "security.sandbox.content.level": 0,
+
+        // Network optimizations for P2P
+        "network.http.max-connections": 100,
+        "network.http.max-connections-per-server": 20,
+
+        // Additional preferences for P2P networking
+        "dom.webnotifications.enabled": false,
+        "dom.push.enabled": false,
+        "media.peerconnection.ice.tcp": true,
+        "media.peerconnection.ice.relay_only": false,
+        "dom.serviceWorkers.enabled": true,
+        "dom.serviceWorkers.testing.enabled": true,
+
+        // Disable security restrictions that might block P2P
+        "security.csp.enable": false,
+        "security.sandbox.content.level": 0,
+
+        // Network optimizations for P2P
+        "network.http.max-connections": 100,
+        "network.http.max-connections-per-server": 20
+    }
+};
+
 // choose which browser you prefer
 const [browsers, browserPlugins] = [[], []];
 if (process.env["CHROME_BIN"]) browsers.push("CustomChrome") && browserPlugins.push(require("karma-chrome-launcher"));
 if (process.env["FIREFOX_BIN"]) {
-    browsers.push("FirefoxHeadless");
+    browsers.push("CustomFirefox");
     browserPlugins.push(require("karma-firefox-launcher"));
-    mochaConfig["retries"] = 2;
 }
 
 if (browsers.length === 0) throw Error("No chrome or firefox path set when calling karma.conf.js");
@@ -98,7 +177,10 @@ module.exports = function (config) {
         },
 
         // chrome with disabled security
-        customLaunchers: { CustomChrome },
+        customLaunchers: {
+            CustomChrome,
+            CustomFirefox
+        },
 
         // list of browsers to run the tests in
         browsers,
