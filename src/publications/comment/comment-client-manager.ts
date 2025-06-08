@@ -135,7 +135,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         newState: CommentKuboRpcClient["state"] | CommentLibp2pJsClient["state"],
         kuboRpcOrHelia: Plebbit["clients"]["kuboRpcClients"][string] | Plebbit["clients"]["libp2pJsClients"][string]
     ) {
-        if ("helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState(newState, kuboRpcOrHelia.libp2pJsClientOptions.key);
+        if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientOptions.key);
         else this.updateKuboRpcState(newState as CommentKuboRpcClient["state"], kuboRpcOrHelia.url);
     }
 

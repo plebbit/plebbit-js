@@ -11,11 +11,10 @@ import type {
     SortProps
 } from "../../../pages/types.js";
 import * as remeda from "remeda";
-import type { CommentUpdateType } from "../../../publications/comment/types.js";
+import type { CommentsTableRow, CommentUpdateType } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
-import type { CommentsTableRow } from "../../../types.js";
 import { PlebbitError } from "../../../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 
@@ -57,8 +56,7 @@ export class PageGenerator {
     ): Promise<AddedPageChunksToIpfsRes> {
         assert(chunks.length > 0);
 
-        const heliaOrKubo = this._subplebbit._clientsManager.getDefaultKuboRpcClientOrHelia();
-        const ipfsClient = "helia" in heliaOrKubo ? heliaOrKubo.heliaWithKuboRpcClientFunctions : heliaOrKubo._client;
+        const ipfsClient = this._subplebbit._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: string[] = new Array(chunks.length);
         let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
@@ -91,8 +89,7 @@ export class PageGenerator {
     ): Promise<AddedPreloadedPageChunksToIpfs> {
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: PageCidUndefinedIfPreloadedPage = [undefined]; // pageCids will never have the cid of preloaded page
-        const heliaOrKubo = this._subplebbit._clientsManager.getDefaultKuboRpcClientOrHelia();
-        const ipfsClient = "helia" in heliaOrKubo ? heliaOrKubo.heliaWithKuboRpcClientFunctions : heliaOrKubo._client;
+        const ipfsClient = this._subplebbit._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
         for (let i = chunks.length - 1; i >= 1; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid) delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol

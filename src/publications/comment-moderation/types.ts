@@ -7,7 +7,7 @@ import {
     CommentModerationsTableRowSchema
 } from "./schema";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import { CommentModeration } from "./comment-moderation";
+import type { CommentModeration } from "./comment-moderation";
 import type { JsonSignature, SignerType } from "../../signer/types";
 
 export type CreateCommentModerationOptions = z.infer<typeof CreateCommentModerationOptionsSchema>;
@@ -31,3 +31,5 @@ export interface CommentModerationPubsubMessagePublicationWithSubplebbitAuthor e
 }
 
 export type CommentModerationTableRow = z.infer<typeof CommentModerationsTableRowSchema>;
+
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "rowid"> {}

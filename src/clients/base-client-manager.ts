@@ -130,6 +130,17 @@ export class BaseClientsManager {
         });
     }
 
+    getIpfsClientWithKuboRpcClientFunctions() {
+        const defaultKuboRpcClient = remeda.keys.strict(this._plebbit.clients.kuboRpcClients)[0];
+        if (defaultKuboRpcClient) return this._plebbit.clients.kuboRpcClients[defaultKuboRpcClient]._client;
+        const defaultLibp2pJsClient = remeda.keys.strict(this._plebbit.clients.libp2pJsClients)[0];
+        if (defaultLibp2pJsClient) return this._plebbit.clients.libp2pJsClients[defaultLibp2pJsClient].heliaWithKuboRpcClientFunctions;
+        throw new PlebbitError("ERR_NO_DEFAULT_IPFS_PROVIDER", {
+            kuboRpcClients: this._plebbit.clients.kuboRpcClients,
+            libp2pJsClients: this._plebbit.clients.libp2pJsClients
+        });
+    }
+
     // Pubsub methods
 
     async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, kuboPubsubRpcUrlOrLibp2pJsKey: string) {
@@ -523,7 +534,7 @@ export class BaseClientsManager {
     async resolveIpnsToCidP2P(ipnsName: string, loadOpts: { timeoutMs: number }): Promise<string> {
         const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
 
-        const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
+        const ipfsClient = this.getIpfsClientWithKuboRpcClientFunctions();
 
         const performIpnsResolve = async () => {
             const resolvedCidOfIpns: string | undefined = await last(
@@ -568,7 +579,7 @@ export class BaseClientsManager {
     async _fetchCidP2P(cidV0: string, loadOpts: { maxFileSizeBytes: number; timeoutMs: number }): Promise<string> {
         const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
 
-        const ipfsClient = "helia" in kuboRpcOrHelia ? kuboRpcOrHelia.heliaWithKuboRpcClientFunctions : kuboRpcOrHelia._client;
+        const ipfsClient = this.getIpfsClientWithKuboRpcClientFunctions();
 
         const fetchPromise = async () => {
             const rawData = await all(ipfsClient.cat(cidV0, { length: loadOpts.maxFileSizeBytes, timeout: `${loadOpts.timeoutMs}ms` }));

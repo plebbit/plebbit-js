@@ -15,14 +15,15 @@ import type { AddResult } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
 
 import { EventEmitter } from "events";
-import type { HeliaWithLibp2pPubsub, Libp2pJsClient } from "./types.js";
+import type { HeliaWithLibp2pPubsub } from "./types.js";
 import type { NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import { CustomEvent as CustomEventFromLibp2p } from "@libp2p/interfaces/events";
 import { PlebbitError } from "../plebbit-error.js";
+import { Libp2pJsClient } from "./libp2pjsClient.js";
 
 const log = Logger("plebbit-js:libp2p-js");
 
-const libp2pJsClients: Record<string, Awaited<ReturnType<typeof createHeliaNode>> & { countOfUsesOfInstance: number }> = {}; // key => plebbit.clients.libp2pJsClients[key]
+const libp2pJsClients: Record<string, Libp2pJsClient> = {}; // key => plebbit.clients.libp2pJsClients[key]
 
 function getDelegatedRoutingFields(routers: string[]) {
     const routersObj: Record<string, ReturnType<typeof createDelegatedRoutingV1HttpApiClient>> = {};
@@ -36,10 +37,10 @@ function getDelegatedRoutingFields(routers: string[]) {
     return routersObj;
 }
 
-export async function createHeliaNode(
+export async function createLibp2pJsClientOrUseExistingOne(
     plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">> &
         NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
-): Promise<Omit<Libp2pJsClient, "libp2pJsClientOptions">> {
+): Promise<Libp2pJsClient> {
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
     if (!global.CustomEvent) global.CustomEvent = CustomEventFromLibp2p;
     if (libp2pJsClients[plebbitOptions.key]) {
@@ -63,7 +64,7 @@ export async function createHeliaNode(
         blockBrokers: [bitswap()],
         start: false,
         ...plebbitOptions.heliaOptions
-    } as Libp2pJsClient["mergedHeliaOptions"];
+    } as Libp2pJsClient["_mergedHeliaOptions"];
 
     const helia = <HeliaWithLibp2pPubsub>await createHelia(mergedHeliaInit);
 
@@ -203,22 +204,16 @@ export async function createHeliaNode(
         heliaWithKuboRpcClientFunctions: heliaWithKuboRpcClientShape,
         heliaUnixfs: heliaFs,
         heliaIpnsRouter: ipnsNameResolver,
-        mergedHeliaOptions: mergedHeliaInit
+        mergedHeliaOptions: mergedHeliaInit,
+        countOfUsesOfInstance: 1,
+        libp2pJsClientOptions: plebbitOptions,
+        key: plebbitOptions.key
     };
 
-    // Make _mergedHeliaOptions non-enumerable to avoid circular reference issues during JSON.stringify
-    const propsToHide = ["_mergedHeliaOptions", "helia", "heliaIpnsRouter", "heliaUnixfs"];
-    for (const prop of propsToHide) {
-        Object.defineProperty(fullInstanceWithOptions, prop, {
-            value: fullInstanceWithOptions[prop as keyof typeof fullInstanceWithOptions],
-            enumerable: false
-        });
-    }
-
-    libp2pJsClients[plebbitOptions.key] = { ...fullInstanceWithOptions, countOfUsesOfInstance: 1 };
+    libp2pJsClients[plebbitOptions.key] = new Libp2pJsClient(fullInstanceWithOptions);
 
     await helia.start();
     log("Helia/libp2p-js started with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
 
-    return fullInstanceWithOptions;
+    return libp2pJsClients[plebbitOptions.key];
 }

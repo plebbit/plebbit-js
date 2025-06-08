@@ -4,6 +4,7 @@ import {
     CommentIpfsSchema,
     CommentPubsubMessagePublicationSchema,
     CommentSignedPropertyNames,
+    CommentsTableRowSchema,
     CommentUpdateForChallengeVerificationSchema,
     CommentUpdateForChallengeVerificationSignedPropertyNames,
     CommentUpdateNoRepliesSchema,
@@ -119,3 +120,20 @@ export type CommentRpcErrorToTransmit = PublicationRpcErrorToTransmit & {
         newUpdatingState?: Comment["updatingState"];
     };
 };
+
+// DB Table
+
+export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
+
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> {}
+
+// CommentUpdates table
+
+export interface CommentUpdatesRow extends CommentUpdateType {
+    insertedAt: number;
+    postUpdatesBucket: number | undefined; // the post updates bucket of post CommentUpdate, not applicable to replies
+    publishedToPostUpdatesMFS: boolean; // whether the comment latest update has been published
+    postCommentUpdateCid: string | undefined; // the cid of the post comment update, cid v0. Not applicable to replies
+}
+
+export type CommentUpdatesTableRowInsert = CommentUpdatesRow;

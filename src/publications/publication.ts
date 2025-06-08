@@ -408,7 +408,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private _updatePubsubState(pubsubState: Publication["clients"]["pubsubKuboRpcClients"][string]["state"], keyOrUrl: string) {
         const kuboOrHelia = this._clientsManager.getDefaultPubsubKuboRpcClientOrHelia();
-        if ("helia" in kuboOrHelia) this._clientsManager.updateLibp2pJsClientState(pubsubState, keyOrUrl);
+        if ("_helia" in kuboOrHelia) this._clientsManager.updateLibp2pJsClientState(pubsubState, keyOrUrl);
         else this._clientsManager.updateKuboRpcPubsubState(pubsubState, keyOrUrl);
     }
 

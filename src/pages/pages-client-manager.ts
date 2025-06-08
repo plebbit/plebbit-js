@@ -179,7 +179,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         kuboRpcOrHelia: Plebbit["clients"]["kuboRpcClients"][string] | Plebbit["clients"]["libp2pJsClients"][string],
         sortTypes: string[] | undefined
     ) {
-        if ("helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState(newState, kuboRpcOrHelia.libp2pJsClientOptions.key, sortTypes);
+        if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientOptions.key, sortTypes);
         else this.updateKuboRpcState(newState, kuboRpcOrHelia.url, sortTypes);
     }
 

@@ -4,11 +4,12 @@ import {
     CommentEditChallengeRequestToEncryptSchema,
     CreateCommentEditOptionsSchema,
     CommentEditPubsubMessagePublicationSchema,
-    CommentEditSignedPropertyNames
+    CommentEditSignedPropertyNames,
+    CommentEditsTableRowSchema
 } from "./schema";
 import { CommentAuthorSchema } from "../../schema/schema";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
-import { CommentEdit } from "./comment-edit";
+import type { CommentEdit } from "./comment-edit";
 import type { JsonSignature, SignerType } from "../../signer/types";
 
 export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
@@ -36,3 +37,6 @@ export type CommentEditPubsubMessagePublication = z.infer<typeof CommentEditPubs
 export interface CommentEditPubsubMessagePublicationWithSubplebbitAuthor extends CommentEditPubsubMessagePublication {
     author: AuthorTypeWithCommentUpdate;
 }
+
+export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "rowid"> {}

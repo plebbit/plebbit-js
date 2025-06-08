@@ -130,8 +130,8 @@ import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 import type { PageTypeJson } from "../pages/types.js";
-import { Libp2pJsClient } from "../helia/types.js";
-import { createHeliaNode } from "../helia/helia-for-plebbit.js";
+import { createLibp2pJsClientOrUseExistingOne } from "../helia/helia-for-plebbit.js";
+import { Libp2pJsClient } from "../helia/libp2pjsClient.js";
 
 export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -307,13 +307,11 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         if (!this.libp2pJsClientOptions) return;
         if (!this.httpRoutersOptions) throw Error("httpRoutersOptions is required for libp2pJsClient");
         for (const clientOptions of this.libp2pJsClientOptions) {
-            this.clients.libp2pJsClients[clientOptions.key] = {
-                ...(await createHeliaNode({
-                    ...clientOptions,
-                    httpRoutersOptions: this.httpRoutersOptions
-                })),
-                libp2pJsClientOptions: clientOptions
-            };
+            const heliaNode = await createLibp2pJsClientOrUseExistingOne({
+                ...clientOptions,
+                httpRoutersOptions: this.httpRoutersOptions
+            });
+            this.clients.libp2pJsClients[clientOptions.key] = heliaNode;
         }
     }
 

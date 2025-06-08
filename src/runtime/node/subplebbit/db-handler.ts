@@ -3,17 +3,6 @@ import path from "path";
 import assert from "assert";
 import fs from "fs";
 import os from "os";
-import type {
-    CommentEditsTableRow,
-    CommentEditsTableRowInsert,
-    CommentModerationsTableRowInsert,
-    CommentsTableRow,
-    CommentsTableRowInsert,
-    CommentUpdatesRow,
-    CommentUpdatesTableRowInsert,
-    VotesTableRow,
-    VotesTableRowInsert
-} from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
@@ -30,10 +19,18 @@ import type {
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
-import type { CommentEditPubsubMessagePublication, CommentEditSignature } from "../../../publications/comment-edit/types.js";
+import type {
+    CommentEditPubsubMessagePublication,
+    CommentEditSignature,
+    CommentEditsTableRow,
+    CommentEditsTableRowInsert
+} from "../../../publications/comment-edit/types.js";
 import type {
     CommentIpfsType,
-    CommentPubsubMessagPublicationSignature,
+    CommentsTableRow,
+    CommentsTableRowInsert,
+    CommentUpdatesRow,
+    CommentUpdatesTableRowInsert,
     CommentUpdateType,
     SubplebbitAuthor
 } from "../../../publications/comment/types.js";
@@ -41,13 +38,14 @@ import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/co
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs, RepliesPagesIpfsDefinedManuallyType } from "../../../pages/types.js";
-import type { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
+import type { CommentModerationsTableRowInsert, CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import KeyvBetterSqlite3 from "./keyv-better-sqlite3.js";
 
 import { STORAGE_KEYS } from "../../../constants.js";
 import { CommentEditPubsubMessagePublicationSchema } from "../../../publications/comment-edit/schema.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import type { VotesTableRow, VotesTableRowInsert } from "../../../publications/vote/types.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",

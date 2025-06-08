@@ -1,10 +1,7 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
-import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
 import type { Plebbit } from "./plebbit/plebbit.js";
-import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
-import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import {
     AuthorAvatarNftSchema,
     AuthorPubsubSchema,
@@ -13,23 +10,11 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentUpdateType } from "./publications/comment/types.js";
-import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
-import type {
-    DecryptedChallengeAnswerMessageType,
-    DecryptedChallengeMessageType,
-    DecryptedChallengeRequestMessageType,
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeRequestPublication,
-    DecryptedChallengeVerificationMessageType
-} from "./pubsub-messages/types.js";
+import type { DecryptedChallengeRequestPublication } from "./pubsub-messages/types.js";
 import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
-import { VoteTablesRowSchema } from "./publications/vote/schema.js";
-import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.js";
 import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
-import { CommentModerationTableRow } from "./publications/comment-moderation/types.js";
 import { LRUCache } from "lru-cache";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import type { PageIpfs } from "./pages/types.js";
@@ -63,35 +48,6 @@ export type PublicationTypeName = keyof DecryptedChallengeRequestPublication; //
 export type NativeFunctions = {
     fetch: typeof fetch;
 };
-
-// Define database tables and fields here
-
-export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
-
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> {}
-
-// CommentUpdates table
-
-export interface CommentUpdatesRow extends CommentUpdateType {
-    insertedAt: number;
-    postUpdatesBucket: number | undefined; // the post updates bucket of post CommentUpdate, not applicable to replies
-    publishedToPostUpdatesMFS: boolean; // whether the comment latest update has been published
-    postCommentUpdateCid: string | undefined; // the cid of the post comment update, cid v0. Not applicable to replies
-}
-
-export type CommentUpdatesTableRowInsert = CommentUpdatesRow;
-
-// Votes table
-
-export type VotesTableRow = z.infer<typeof VoteTablesRowSchema>;
-
-export type VotesTableRowInsert = VotesTableRow;
-
-// Comment edits table
-
-export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "rowid"> {}
-export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "rowid"> {}
 
 // Event emitter declaration
 

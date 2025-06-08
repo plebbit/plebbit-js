@@ -55,15 +55,7 @@ import type {
     DecryptedChallengeAnswer
 } from "../../../pubsub-messages/types.js";
 
-import type {
-    CommentEditsTableRow,
-    CommentUpdatesTableRowInsert,
-    CommentsTableRow,
-    CommentsTableRowInsert,
-    IpfsHttpClientPubsubMessage,
-    VotesTableRow,
-    VotesTableRowInsert
-} from "../../../types.js";
+import type { IpfsHttpClientPubsubMessage } from "../../../types.js";
 import {
     ValidationResult,
     cleanUpBeforePublishing,
@@ -107,17 +99,19 @@ import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyF
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
-import type { CommentEditPubsubMessagePublication } from "../../../publications/comment-edit/types.js";
+import type { CommentEditPubsubMessagePublication, CommentEditsTableRow } from "../../../publications/comment-edit/types.js";
 import {
     CommentEditPubsubMessagePublicationSchema,
     CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema,
     CommentEditReservedFields
 } from "../../../publications/comment-edit/schema.js";
-import type { VotePubsubMessagePublication } from "../../../publications/vote/types.js";
+import type { VotePubsubMessagePublication, VotesTableRow } from "../../../publications/vote/types.js";
 import type {
     CommentIpfsType,
     CommentPubsubMessagePublication,
     CommentPubsubMessagPublicationSignature,
+    CommentsTableRow,
+    CommentUpdatesTableRowInsert,
     CommentUpdateType,
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
@@ -947,8 +941,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
         };
 
-        const heliaOrKubo = this._clientsManager.getDefaultKuboRpcClientOrHelia();
-        const ipfsClient = "helia" in heliaOrKubo ? heliaOrKubo.heliaWithKuboRpcClientFunctions : heliaOrKubo._client;
+        const ipfsClient = this._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
         const file = await retryKuboIpfsAdd({
             ipfsClient: ipfsClient,
             log,
@@ -1897,8 +1890,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 }
 
                 // TODO move this to addAll method
-                const kuboOrHelia = this._clientsManager.getDefaultKuboRpcClientOrHelia();
-                const ipfsClient = "helia" in kuboOrHelia ? kuboOrHelia.heliaWithKuboRpcClientFunctions : kuboOrHelia._client;
+                const ipfsClient = this._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
                 const addRes = await retryKuboIpfsAdd({
                     ipfsClient: ipfsClient,
                     log,
