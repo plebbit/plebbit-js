@@ -754,11 +754,14 @@ class PlebbitWsServer extends EventEmitter {
         try {
             await comment.publish();
         } catch (e) {
+            const error = e as PublicationRpcErrorToTransmit;
+            error.details = { ...error.details, publishThrowError: true };
+            errorListener(error);
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
+            return subscriptionId;
         }
 
-        return { subscriptionId };
+        return subscriptionId;
     }
 
     private async _createVoteInstanceFromPublishVoteParams(params: VoteChallengeRequestToEncryptType) {
@@ -807,11 +810,13 @@ class PlebbitWsServer extends EventEmitter {
         try {
             await vote.publish();
         } catch (e) {
+            const error = e as PublicationRpcErrorToTransmit;
+            error.details = { ...error.details, publishThrowError: true };
+            errorListener(error);
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return { subscriptionId };
+        return subscriptionId;
     }
 
     private async _createSubplebbitEditInstanceFromPublishSubplebbitEditParams(params: SubplebbitEditChallengeRequestToEncryptType) {
@@ -867,11 +872,13 @@ class PlebbitWsServer extends EventEmitter {
         try {
             await subplebbitEdit.publish();
         } catch (e) {
+            const error = e as PublicationRpcErrorToTransmit;
+            error.details = { ...error.details, publishThrowError: true };
+            errorListener(error);
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return { subscriptionId };
+        return subscriptionId;
     }
 
     private async _createCommentEditInstanceFromPublishCommentEditParams(params: CommentEditChallengeRequestToEncryptType) {
@@ -929,11 +936,13 @@ class PlebbitWsServer extends EventEmitter {
         try {
             await commentEdit.publish();
         } catch (e) {
+            const error = e as PublicationRpcErrorToTransmit;
+            error.details = { ...error.details, publishThrowError: true };
+            errorListener(error);
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return { subscriptionId };
+        return subscriptionId;
     }
 
     private async _createCommentModerationInstanceFromPublishCommentModerationParams(params: CommentModerationChallengeRequestToEncrypt) {
@@ -991,11 +1000,13 @@ class PlebbitWsServer extends EventEmitter {
         try {
             await commentMod.publish();
         } catch (e) {
+            const error = e as PublicationRpcErrorToTransmit;
+            error.details = { ...error.details, publishThrowError: true };
+            errorListener(error);
             this.subscriptionCleanups[connectionId][subscriptionId]();
-            return { subscriptionId, publishError: e as PublicationRpcErrorToTransmit };
         }
 
-        return { subscriptionId };
+        return subscriptionId;
     }
 
     async publishChallengeAnswers(params: any) {

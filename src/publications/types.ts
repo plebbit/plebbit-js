@@ -47,10 +47,8 @@ export type PublicationEventArgs<T extends keyof PublicationEvents> = Parameters
 export type PublicationRpcErrorToTransmit = PublicationEventArgs<"error">[0] & {
     details?: PlebbitError["details"] & {
         newPublishingState?: Publication["publishingState"];
+        publishThrowError?: boolean; // if true, the error was thrown by publish() not emitted by the publication instance
     };
 };
 
-export type RpcPublishResult = {
-    subscriptionId: number;
-    publishError?: PublicationRpcErrorToTransmit;
-};
+export type RpcPublishResult = number; // subscriptionId

@@ -702,15 +702,18 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._setStateWithEmission(state);
     }
 
-    private _handleIncomingErrorFromRpc(args: any) {
+    private async _handleIncomingErrorFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:publish:_publishWithRpc:_handleIncomingErrorFromRpc");
         const error: PublicationRpcErrorToTransmit = args.params.result;
         if (error.details?.newPublishingState) this._updatePublishingStateNoEmission(error.details.newPublishingState);
+        if (error.details?.publishThrowError) {
+            log.error("RPC server threw an error on publish(), will stop publication", error);
+            await this._postSucessOrFailurePublishing();
+        }
         this.emit("error", error);
     }
 
     async _publishWithRpc() {
-        const log = Logger("plebbit-js:publication:_publishWithRpc");
-
         if (!this._plebbit._plebbitRpcClient)
             throw Error("Can't publish to RPC without publication.plebbit.plebbitRpcClient being defined");
         this._setStateWithEmission("publishing");
@@ -723,36 +726,26 @@ class Publication extends TypedEmitter<PublicationEvents> {
             subplebbitEdit: this._plebbit._plebbitRpcClient.publishSubplebbitEdit
         };
 
-        let rpcPublishResult: RpcPublishResult;
-        try {
-            // PlebbitRpcClient will take care of zod parsing for us
-            rpcPublishResult = await pubNameToPublishFunction[this.getType()].bind(this._plebbit._plebbitRpcClient)(
-                this.toJSONPubsubRequestToEncrypt()
-            );
-            this._rpcPublishSubscriptionId = rpcPublishResult.subscriptionId;
-            if (typeof this._rpcPublishSubscriptionId !== "number") throw Error("Failed to find the type of publication");
-        } catch (e) {
-            throw e;
-        }
-        if (typeof this._rpcPublishSubscriptionId === "number") {
-            this._plebbit._plebbitRpcClient
-                .getSubscription(this._rpcPublishSubscriptionId)
-                .on("challengerequest", this._handleIncomingChallengeRequestFromRpc.bind(this))
-                .on("challenge", this._handleIncomingChallengeFromRpc.bind(this))
-                .on("challengeanswer", this._handleIncomingChallengeAnswerFromRpc.bind(this))
-                .on("challengeverification", this._handleIncomingChallengeVerificationFromRpc.bind(this))
-                .on("publishingstatechange", this._handleIncomingPublishingStateFromRpc.bind(this))
-                .on("statechange", this._handleIncomingStateFromRpc.bind(this))
-                .on("error", this._handleIncomingErrorFromRpc.bind(this));
-            this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
-        }
-        if (rpcPublishResult.publishError) {
-            log.error("Failed to publish to RPC due to error", rpcPublishResult);
-            this._setStateWithEmission("stopped");
+        // PlebbitRpcClient will take care of zod parsing for us
+        this._rpcPublishSubscriptionId = await pubNameToPublishFunction[this.getType()].bind(this._plebbit._plebbitRpcClient)(
+            this.toJSONPubsubRequestToEncrypt()
+        );
+        if (typeof this._rpcPublishSubscriptionId !== "number") {
             this._updatePublishingStateWithEmission("failed");
             await this._postSucessOrFailurePublishing();
-            throw rpcPublishResult;
+            throw Error("Failed to find the type of publication");
         }
+
+        this._plebbit._plebbitRpcClient
+            .getSubscription(this._rpcPublishSubscriptionId)
+            .on("challengerequest", this._handleIncomingChallengeRequestFromRpc.bind(this))
+            .on("challenge", this._handleIncomingChallengeFromRpc.bind(this))
+            .on("challengeanswer", this._handleIncomingChallengeAnswerFromRpc.bind(this))
+            .on("challengeverification", this._handleIncomingChallengeVerificationFromRpc.bind(this))
+            .on("publishingstatechange", this._handleIncomingPublishingStateFromRpc.bind(this))
+            .on("statechange", this._handleIncomingStateFromRpc.bind(this))
+            .on("error", this._handleIncomingErrorFromRpc.bind(this));
+        this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
     }
 
     private _changePublicationStateEmitEventEmitStateChangeEvent<
