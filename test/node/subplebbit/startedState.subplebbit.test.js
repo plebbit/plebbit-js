@@ -30,8 +30,8 @@ describe(`subplebbit.startedState`, async () => {
 
         await subplebbit.start();
 
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+        await resolveWhenConditionIsTrue(subplebbit, () => expectedStates.length === 2, "startedstatechange");
         expect(recordedStates).to.deep.equal(expectedStates);
     });
 
