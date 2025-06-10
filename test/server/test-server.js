@@ -401,7 +401,8 @@ const setupMockDelegatedRouter = async () => {
         // run RPC server here
         // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
-        plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
+
+        plebbitWebSocketServer._initPlebbit(await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") }));
         plebbitWebSocketServer._createPlebbitInstanceFromSetSettings = async (newOptions) =>
             mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server"), ...newOptions });
         mockRpcServerForTests(plebbitWebSocketServer);
@@ -413,9 +414,9 @@ const setupMockDelegatedRouter = async () => {
             port: remotePort,
             authKey: rpcAuthKey
         });
-        plebbitWebSocketRemoteServer.plebbit = await mockRpcServerPlebbit({
-            dataPath: path.join(process.cwd(), ".plebbit-rpc-server-remote")
-        });
+        plebbitWebSocketRemoteServer._initPlebbit(
+            await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server-remote") })
+        );
         plebbitWebSocketRemoteServer._createPlebbitInstanceFromSetSettings = async (newOptions) =>
             mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server"), ...newOptions });
 

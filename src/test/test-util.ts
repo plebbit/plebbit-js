@@ -503,6 +503,7 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
         remotePlebbit: false,
         stubStorage: true // we want storage to force new resolve-subplebbit-address states
     });
+    plebbit.removeAllListeners("error"); // for rpc server, we want to test the error handling
     return plebbit;
 }
 
