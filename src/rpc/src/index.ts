@@ -76,8 +76,8 @@ const getStartedSubplebbit = async (address: string): Promise<LocalSubplebbit> =
 
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 
-class PlebbitWsServer extends EventEmitter {
-    plebbit: Plebbit;
+class PlebbitWsServer {
+    plebbit!: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
     ws: RpcWebsocketsServer["wss"];
     connections: { [connectionId: string]: WebSocket } = {};
@@ -90,11 +90,10 @@ class PlebbitWsServer extends EventEmitter {
     private _onSettingsChange: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
-        super();
         const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
-        this.plebbit = plebbit;
+        this._initPlebbit(plebbit);
         this.rpcWebsockets = new RpcWebsocketsServer({
             port,
             server,
@@ -129,14 +128,7 @@ class PlebbitWsServer extends EventEmitter {
 
         // forward errors to PlebbitWsServer
         this.rpcWebsockets.on("error", (error) => {
-            this.emit("error", error);
-        });
-        this.plebbit.on("error", (error: any) => {
-            this.emit("error", error);
-        });
-
-        this.on("error", (err) => {
-            log.error(err);
+            log.error("RPC server", "Received an error on rpc-websockets", error);
         });
 
         // save connections to send messages to them later
@@ -491,6 +483,11 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
+    private _initPlebbit(plebbit: Plebbit) {
+        this.plebbit = plebbit;
+        plebbit.on("error", (error: any) => log.error("RPC server", "Received an error on plebbit instance", error));
+    }
+
     private async _createPlebbitInstanceFromSetSettings(newOptions: InputPlebbitOptions) {
         return PlebbitJs.Plebbit(newOptions);
     }
@@ -505,10 +502,8 @@ class PlebbitWsServer extends EventEmitter {
         log(`RPC client called setSettings, the clients need to call all subscription methods again`);
         await this.plebbit.destroy(); // make sure to destroy previous fs watcher before changing the instance
 
-        this.plebbit = await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions);
-        this.plebbit.on("error", (error: any) => {
-            this.emit("error", error);
-        });
+        this._initPlebbit(await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions));
+
         // restart all started subplebbits with new plebbit options
         for (const address in startedSubplebbits) {
             const startedSubplebbit = await getStartedSubplebbit(address);
