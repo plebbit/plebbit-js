@@ -23,6 +23,10 @@ export const monitorSubplebbitsDirectory = () => {
     throw Error("monitorSubplebbitsDirectory should not be called in browser");
 };
 
+export const trytoDeleteSubsThatFailedToBeDeletedBefore = () => {
+    throw Error("trytoDeleteSubsThatFailedToBeDeletedBefore should not be called in browser");
+};
+
 export async function importSignerIntoKuboNode(ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: KuboRpcClient["_clientOptions"]) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
