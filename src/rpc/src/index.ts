@@ -388,7 +388,12 @@ class PlebbitWsServer {
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         let subplebbit: LocalSubplebbit;
         if (startedSubplebbits[address] instanceof LocalSubplebbit) subplebbit = <LocalSubplebbit>startedSubplebbits[address];
-        else subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+        else {
+            subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+            subplebbit.once("error", (error: PlebbitError | Error) => {
+                log.error("RPC server Received an error on subplebbit", subplebbit.address, "edit", error);
+            });
+        }
 
         await subplebbit.edit(editSubplebbitOptions);
         if (editSubplebbitOptions.address && startedSubplebbits[address]) {
