@@ -620,7 +620,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         log(
             "Searched for new comment update of comment",
             this._comment.cid,
-            "in the following pageCids of page",
+            "in the following pageCids of page sort",
             pageSortName,
             "of parent comment:",
             parentCommentInstance.cid,
@@ -773,6 +773,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
+        if (this._fetchingUpdateForReplyUsingPageCidsPromise) await this._fetchingUpdateForReplyUsingPageCidsPromise;
 
         this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
             .catch((error) => {
