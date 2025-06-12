@@ -127,7 +127,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._initClients();
         this._handleChallengeExchange = this._handleChallengeExchange.bind(this);
         this.publish = this.publish.bind(this);
-        this.on("error", (...args) => this._plebbit.emit("error", ...args));
+        this.on("error", (...args) => this.listenerCount("error") === 1 && this._plebbit.emit("error", ...args)); // only bubble up to plebbit if no other listeners are attached
+
         this._publishToDifferentProviderThresholdSeconds = 10;
         this._setProviderFailureThresholdSeconds = 60 * 2; // Two minutes
 

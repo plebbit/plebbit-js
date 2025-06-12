@@ -99,7 +99,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
 
-        this.on("error", (...args) => this._plebbit.emit("error", ...args));
+        this.on("error", (...args) => this.listenerCount("error") === 1 && this._plebbit.emit("error", ...args)); // only bubble up to plebbit if no other listeners are attached
 
         this._clientsManager = new SubplebbitClientsManager(this);
         this.clients = this._clientsManager.clients;
