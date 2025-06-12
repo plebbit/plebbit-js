@@ -350,6 +350,8 @@ const setupMockDelegatedRouter = async () => {
             throw new Error(`Router port ${routerPort} is already occupied`);
         }
     }
+
+    let providers;
     http.createServer(async (req, res) => {
         console.log("Received a request for mock http router", req.url);
         res.setHeader("Access-Control-Allow-Origin", "*");
@@ -358,18 +360,22 @@ const setupMockDelegatedRouter = async () => {
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");
 
-        const providerList = { Providers: [] };
-        for (const ipfsNode of [offlineNodeArgs, pubsubNodeArgs]) {
-            const idRes = await fetch(`http://localhost:${ipfsNode.apiPort}/api/v0/id`, { method: "POST" }).then((res) => res.json());
-            providerList.Providers.push({
-                Schema: "peer",
-                Addrs: idRes["Addresses"],
-                ID: idRes["ID"],
-                Protocols: ["transport-bitswap"]
-            });
+        if (!providers) {
+            const providerList = { Providers: [] };
+            for (const ipfsNode of [offlineNodeArgs, pubsubNodeArgs]) {
+                const idRes = await fetch(`http://localhost:${ipfsNode.apiPort}/api/v0/id`, { method: "POST" }).then((res) => res.json());
+                providerList.Providers.push({
+                    Schema: "peer",
+                    Addrs: idRes["Addresses"],
+                    ID: idRes["ID"],
+                    Protocols: ["transport-bitswap"]
+                });
+            }
+
+            providers = providerList;
         }
 
-        res.end(JSON.stringify(providerList));
+        res.end(JSON.stringify(providers));
     })
         .listen(20001, hostName)
         .on("error", (err) => {
