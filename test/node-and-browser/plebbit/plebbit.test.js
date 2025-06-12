@@ -172,6 +172,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.chainProviders.eth.urls.length).to.be.greaterThan(0);
         expect(plebbit.chainProviders.sol).to.exist;
         expect(plebbit.chainProviders.sol.urls.length).to.be.greaterThan(0);
+        await plebbit.destroy();
     });
 });
 
