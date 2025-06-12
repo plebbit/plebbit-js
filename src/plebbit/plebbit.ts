@@ -2,7 +2,8 @@ import {
     getDefaultDataPath,
     listSubplebbitsSync as nodeListSubplebbits,
     createKuboRpcClient,
-    monitorSubplebbitsDirectory
+    monitorSubplebbitsDirectory,
+    trytoDeleteSubsThatFailedToBeDeletedBefore
 } from "../runtime/node/util.js";
 import type {
     StorageInterface,
@@ -364,6 +365,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         // plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
         if (this._canCreateNewLocalSub() && !this.plebbitRpcClientsOptions) {
+            await trytoDeleteSubsThatFailedToBeDeletedBefore(this, log);
             this._subplebbitFsWatchAbort = await monitorSubplebbitsDirectory(this);
             await this._waitForSubplebbitsToBeDefined();
         } else {

@@ -155,9 +155,7 @@ export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pic
     const subAddress = path.basename(subPath);
     await new Promise((resolve) => setTimeout(resolve, 10000)); // give windows time to release the file
     try {
-        rmSync(subPath, (err) => {
-            if (err) throw err;
-        });
+        await fsPromises.rm(subPath, { force: true });
         log(`Succeeded in deleting old subplebbit (${subAddress})`);
     } catch (e) {
         // Assume it's because of EBUSY
@@ -174,7 +172,7 @@ export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pic
     }
 };
 
-async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
+export async function trytoDeleteSubsThatFailedToBeDeletedBefore(plebbit: Plebbit, log: Logger) {
     const deletedPersistentSubs = <string[] | undefined>(
         await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])
     );
@@ -190,9 +188,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
         for (const subAddress of deletedPersistentSubs) {
             const subPath = path.join(<string>plebbit.dataPath, "subplebbits", subAddress);
             try {
-                rmSync(subPath, (err) => {
-                    if (err) throw err;
-                });
+                await fsPromises.rm(subPath, { force: true });
                 log(`Succeeded in deleting old db path (${subAddress})`);
                 subsThatWereDeletedSuccessfully.push(subAddress);
             } catch (e) {
