@@ -17,6 +17,13 @@ import type { CreateCommentEditOptions } from "../publications/comment-edit/type
 import type { ChallengeVerificationMessageType, PubsubMessage } from "../pubsub-messages/types.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type { PageTypeJson } from "../pages/types.js";
+interface MockPlebbitOptions {
+    plebbitOptions?: InputPlebbitOptions;
+    forceMockPubsub?: boolean;
+    stubStorage?: boolean;
+    mockResolve?: boolean;
+    remotePlebbit?: boolean;
+}
 export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockComment(parentPostOrComment: CommentIpfsWithCidDefined, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockVote(parentPostOrComment: CommentIpfsWithCidDefined, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
@@ -44,22 +51,15 @@ export declare function startSubplebbits(props: {
 }): Promise<TestServerSubs>;
 export declare function fetchTestServerSubs(): Promise<TestServerSubs>;
 export declare function mockDefaultOptionsForNodeAndBrowserTests(): Pick<InputPlebbitOptions, "plebbitRpcClientsOptions" | "kuboRpcClientsOptions" | "ipfsGatewayUrls" | "pubsubKuboRpcClientsOptions" | "httpRoutersOptions">;
-export declare function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStorage, mockResolve, remotePlebbit }: {
-    plebbitOptions?: InputPlebbitOptions;
-    forceMockPubsub?: boolean;
-    stubStorage?: boolean;
-    mockResolve?: boolean;
-    remotePlebbit?: boolean;
-}): Promise<Plebbit>;
+export declare function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStorage, mockResolve, remotePlebbit }?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub?: boolean, stubStorage?: boolean, mockResolve?: boolean): Promise<Plebbit>;
-export declare function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
+export declare function mockRemotePlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
-export declare function mockPlebbitNoDataPathWithOnlyKuboClient(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
+export declare function mockPlebbitNoDataPathWithOnlyKuboClient(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
-export declare function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
+export declare function mockRpcRemotePlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function mockRPCLocalPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
-export declare function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
-export declare function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
+export declare function mockGatewayPlebbit(opts?: MockPlebbitOptions): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: CommentIpfsWithCidDefined, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishVote(commentCid: string, subplebbitAddress: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<CreateVoteOptions>): Promise<Vote>;
@@ -89,20 +89,23 @@ export declare function publishChallengeVerificationMessageWithExtraProps(public
 export declare function publishChallengeVerificationMessageWithEncryption(publication: Publication, pubsubSigner: SignerType, toEncrypt: Object, verificationProps?: Partial<ChallengeVerificationMessageType>): Promise<void>;
 export declare function addStringToIpfs(content: string): Promise<string>;
 export declare function publishOverPubsub(pubsubTopic: string, jsonToPublish: PubsubMessage): Promise<void>;
-export declare function mockPlebbitWithHeliaConfig(mockPubsub?: boolean): Promise<Plebbit>;
-type PlebbitTestConfig = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc";
+export declare function mockPlebbitWithHeliaConfig(opts?: MockPlebbitOptions): Promise<Plebbit>;
+type PlebbitTestConfigCode = "remote-kubo-rpc" | "remote-ipfs-gateway" | "remote-plebbit-rpc" | "local-kubo-rpc" | "remote-libp2pjs";
 type PlebbitConfigWithName = {
     name: string;
-    plebbitInstancePromise: () => Promise<Plebbit>;
+    plebbitInstancePromise: (args?: MockPlebbitOptions) => Promise<Plebbit>;
+    testConfigCode: PlebbitTestConfigCode;
 };
-export declare function setPlebbitConfigs(configs: PlebbitTestConfig[]): void;
-export declare function getRemotePlebbitConfigs(): PlebbitConfigWithName[];
+export declare function setPlebbitConfigs(configs: PlebbitTestConfigCode[]): void;
+export declare function getRemotePlebbitConfigs(opts?: {
+    includeOnlyTheseTests?: PlebbitTestConfigCode[];
+}): PlebbitConfigWithName[];
 export declare function createNewIpns(): Promise<{
     signer: import("../signer/index.js").SignerWithPublicKeyAddress;
     publishToIpns: (content: string) => Promise<void>;
     plebbit: Plebbit;
 }>;
-export declare function publishSubplebbitRecordWithExtraProp(opts: {
+export declare function publishSubplebbitRecordWithExtraProp(opts?: {
     includeExtraPropInSignedPropertyNames: boolean;
     extraProps: Object;
 }): Promise<{
@@ -118,8 +121,8 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
         address: string;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         protocolVersion: string;
@@ -149,7 +152,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -208,7 +211,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -267,7 +270,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -309,15 +312,15 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
             caseInsensitive: import("zod").ZodOptional<import("zod").ZodBoolean>;
         }, import("zod").ZodTypeAny, "passthrough">[];
         encryption: {
-            type: "ed25519-aes-gcm";
+            type: string;
             publicKey: string;
         } & {
             [k: string]: unknown;
         };
         createdAt: number;
         statsCid: string;
-        lastCommentCid?: string | undefined;
         title?: string | undefined;
+        lastCommentCid?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
@@ -326,7 +329,7 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough">> | undefined;
         rules?: string[] | undefined;
         lastPostCid?: string | undefined;
@@ -383,16 +386,16 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
 }>;
 export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "settings" | "startedState" | "editable" | "updatingState" | "started">;
 export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit): Omit<{
-    address: SubplebbitIpfsType["address"];
-    shortAddress: string;
-    signature?: SubplebbitIpfsType["signature"] | undefined;
     signer: import("../signer/index.js").SignerWithPublicKeyAddress;
+    address: SubplebbitIpfsType["address"];
+    signature?: SubplebbitIpfsType["signature"] | undefined;
     protocolVersion: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
-    lastCommentCid?: string | undefined;
     state: import("../subplebbit/types.js").SubplebbitState;
     clients: import("../subplebbit/subplebbit-client-manager.js").SubplebbitClientsManager["clients"];
     title?: string | undefined;
     updatedAt?: SubplebbitIpfsType["updatedAt"] | undefined;
+    lastCommentCid?: string | undefined;
+    shortAddress: string;
     posts: PostsPages;
     challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
     description?: string | undefined;
@@ -402,7 +405,7 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     statsCid?: SubplebbitIpfsType["statsCid"] | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, import("zod").objectOutputType<{
-        role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+        role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
     }, import("zod").ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -451,15 +454,15 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
         expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
     }, import("zod").ZodTypeAny, "passthrough">[]> | undefined;
     settings: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
-    ipnsName?: string | undefined;
     raw: {
         subplebbitIpfs?: SubplebbitIpfsType;
     };
     updateCid?: string | undefined;
     startedState: import("../subplebbit/types.js").SubplebbitStartedState;
     editable: Pick<RpcLocalSubplebbit, keyof import("../subplebbit/types.js").SubplebbitEditOptions>;
-    updatingState: import("../subplebbit/types.js").SubplebbitUpdatingState;
+    readonly updatingState: RemoteSubplebbit["updatingState"];
     started: boolean;
+    ipnsName?: string | undefined;
     ipnsPubsubTopic?: string | undefined;
     ipnsPubsubTopicDhtKey?: string | undefined;
     pubsubTopicPeersCid?: string | undefined;
@@ -467,17 +470,18 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
 export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): Omit<any, "state" | "publishingState" | "clients" | "raw" | "updatingState">;
 export declare function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string): Promise<void>;
 export declare function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean;
-export declare function mockRpcWsToSkipSignatureValidation(plebbitWs: any): void;
+export declare function mockRpcServerForTests(plebbitWs: any): void;
 export declare function mockPostToReturnSpecificCommentUpdate(commentToBeMocked: Comment, commentUpdateRecordString: string): void;
 export declare function mockPostToFailToLoadFromPostUpdates(postToBeMocked: Comment): void;
 export declare function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked: Comment): void;
 export declare function createCommentUpdateWithInvalidSignature(commentCid: string): Promise<import("../publications/comment/types.js").CommentUpdateType>;
 export declare function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, subAddress: string, subplebbitRecord: any): Promise<void>;
+export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): void;
 export declare function mockCommentToNotUsePagesForUpdates(comment: Comment): void;
 export declare function forceSubplebbitToGenerateAllRepliesPages(comment: Comment): Promise<void>;
 export declare function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit): Promise<void>;
-export declare function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<Comment | CommentWithinPageJson>;
-export declare function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<Comment | CommentWithinPageJson>;
+export declare function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson | Comment>;
+export declare function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson | Comment>;
 export declare function mockReplyToUseParentPagesForUpdates(reply: Comment): void;
 export declare function mockUpdatingCommentResolvingAuthor(comment: Comment, mockFunction: Comment["_clientsManager"]["resolveAuthorAddressIfNeeded"]): void;
 export declare function mockCacheOfTextRecord(opts: {
@@ -486,6 +490,7 @@ export declare function mockCacheOfTextRecord(opts: {
     textRecord: string;
     value: string;
 }): Promise<void>;
+export declare function getRandomPostCidFromSub(subplebbitAddress: string, plebbit: Plebbit): Promise<string>;
 export declare const describeSkipIfRpc: Mocha.SuiteFunction | {
     (_: any): void;
     skip(): void;

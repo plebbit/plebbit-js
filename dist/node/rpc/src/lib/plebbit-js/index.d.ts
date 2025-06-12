@@ -35,7 +35,7 @@ declare const PlebbitJs: {
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -94,7 +94,7 @@ declare const PlebbitJs: {
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -161,7 +161,7 @@ declare const PlebbitJs: {
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -220,7 +220,7 @@ declare const PlebbitJs: {
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -261,16 +261,16 @@ declare const PlebbitJs: {
             }, args_1: import("../../../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("../../../../runtime/node/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args: unknown[]) => Promise<{
                 success: true;
             } | {
-                error: string;
                 success: false;
+                error: string;
             } | {
                 type: string;
                 challenge: string;
                 verify: (args_0: string, ...args: unknown[]) => Promise<{
                     success: true;
                 } | {
-                    error: string;
                     success: false;
+                    error: string;
                 }>;
                 caseInsensitive?: boolean | undefined;
             }>;

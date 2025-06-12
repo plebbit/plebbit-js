@@ -1,6 +1,7 @@
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
+import Logger from "@plebbit/plebbit-logger";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
 import type { CommentUpdateType } from "../../publications/comment/types.js";
 import { DbHandler } from "./subplebbit/db-handler.js";
@@ -14,7 +15,8 @@ export declare function getThumbnailPropsOfLink(url: string, subplebbit: RemoteS
 export declare const nativeFunctions: NativeFunctions;
 export declare const setNativeFunctions: (newNativeFunctions: Partial<NativeFunctions>) => void;
 export declare const deleteOldSubplebbitInWindows: (subPath: string, plebbit: Pick<Plebbit, "_storage">) => Promise<void>;
-export declare function listSubplebbits(plebbit: Plebbit): Promise<string[]>;
+export declare function trytoDeleteSubsThatFailedToBeDeletedBefore(plebbit: Plebbit, log: Logger): Promise<string[] | undefined>;
+export declare function listSubplebbitsSync(plebbit: Plebbit): string[];
 export declare function importSignerIntoKuboNode(ipnsKeyName: string, ipfsKey: Uint8Array, kuboRpcClientOptions: KuboRpcClient["_clientOptions"]): Promise<{
     id: string;
     name: string;

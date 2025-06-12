@@ -469,7 +469,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -528,7 +528,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -587,7 +587,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -651,7 +651,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -710,7 +710,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -775,7 +775,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -834,7 +834,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -899,7 +899,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -958,7 +958,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1023,7 +1023,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1082,7 +1082,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1149,7 +1149,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1208,7 +1208,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1277,7 +1277,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1336,7 +1336,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1379,11 +1379,11 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
             fetchThumbnailUrlsProxyUrl?: string | undefined;
         }>>>;
         roles: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodUnion<[import("zod").ZodObject<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
     }, "strict", import("zod").ZodTypeAny, {
         address?: string | undefined;
@@ -1391,7 +1391,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectOutputType<{
@@ -1466,7 +1466,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1525,7 +1525,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1573,7 +1573,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectInputType<{
@@ -1648,7 +1648,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1707,7 +1707,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1762,7 +1762,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectOutputType<{
@@ -1837,7 +1837,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -1896,7 +1896,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2052,7 +2052,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectInputType<{
@@ -2127,7 +2127,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2186,7 +2186,7 @@ export declare const CreateSubplebbitEditPublicationOptionsSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2507,7 +2507,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2566,7 +2566,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2625,7 +2625,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2689,7 +2689,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2748,7 +2748,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2813,7 +2813,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2872,7 +2872,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2937,7 +2937,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -2996,7 +2996,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3061,7 +3061,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3120,7 +3120,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3187,7 +3187,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3246,7 +3246,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3315,7 +3315,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3374,7 +3374,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3417,11 +3417,11 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
             fetchThumbnailUrlsProxyUrl?: string | undefined;
         }>>>;
         roles: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodUnion<[import("zod").ZodObject<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
     }, "strict", import("zod").ZodTypeAny, {
         address?: string | undefined;
@@ -3429,7 +3429,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectOutputType<{
@@ -3504,7 +3504,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3563,7 +3563,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3611,7 +3611,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectInputType<{
@@ -3686,7 +3686,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3745,7 +3745,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -3815,13 +3815,13 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
     }, "strip", import("zod").ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     author: import("zod").ZodObject<{
@@ -4111,8 +4111,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4160,7 +4160,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectOutputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectOutputType<{
@@ -4235,7 +4235,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4294,7 +4294,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4341,8 +4341,8 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4390,7 +4390,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, import("zod").objectInputType<{
-            role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+            role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
         }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: import("zod").objectInputType<{
@@ -4465,7 +4465,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4524,7 +4524,7 @@ export declare const SubplebbitEditPubsubMessagePublicationSchema: import("zod")
                     replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                     firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                     challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                     address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4747,7 +4747,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4806,7 +4806,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4865,7 +4865,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4929,7 +4929,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -4988,7 +4988,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5053,7 +5053,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5112,7 +5112,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5177,7 +5177,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5236,7 +5236,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5301,7 +5301,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5360,7 +5360,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5427,7 +5427,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5486,7 +5486,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5555,7 +5555,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5614,7 +5614,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5657,11 +5657,11 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodUnion<[import("zod").ZodObject<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
@@ -5669,7 +5669,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectOutputType<{
@@ -5744,7 +5744,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5803,7 +5803,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5851,7 +5851,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectInputType<{
@@ -5926,7 +5926,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -5985,7 +5985,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6055,13 +6055,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -6522,7 +6522,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6581,7 +6581,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6640,7 +6640,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6704,7 +6704,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6763,7 +6763,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6828,7 +6828,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6887,7 +6887,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -6952,7 +6952,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7011,7 +7011,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7076,7 +7076,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7135,7 +7135,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7202,7 +7202,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7261,7 +7261,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7330,7 +7330,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7389,7 +7389,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7432,11 +7432,11 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodUnion<[import("zod").ZodObject<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
@@ -7444,7 +7444,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectOutputType<{
@@ -7519,7 +7519,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7578,7 +7578,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7626,7 +7626,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectInputType<{
@@ -7701,7 +7701,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7760,7 +7760,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -7830,13 +7830,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -8297,7 +8297,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8356,7 +8356,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8415,7 +8415,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8479,7 +8479,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8538,7 +8538,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8603,7 +8603,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8662,7 +8662,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8727,7 +8727,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8786,7 +8786,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8851,7 +8851,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8910,7 +8910,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -8977,7 +8977,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9036,7 +9036,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9105,7 +9105,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9164,7 +9164,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9207,11 +9207,11 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: import("zod").ZodOptional<import("zod").ZodOptional<import("zod").ZodRecord<import("zod").ZodString, import("zod").ZodUnion<[import("zod").ZodObject<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough">>, import("zod").ZodUndefined]>>>>;
         }, "strict", import("zod").ZodTypeAny, {
             address?: string | undefined;
@@ -9219,7 +9219,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectOutputType<{
@@ -9294,7 +9294,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9353,7 +9353,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9401,7 +9401,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectInputType<{
@@ -9476,7 +9476,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9535,7 +9535,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -9605,13 +9605,13 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             signedPropertyNames: import("zod").ZodArray<import("zod").ZodString, "many">;
         }, "strip", import("zod").ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: import("zod").ZodObject<{
@@ -9903,8 +9903,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -9952,7 +9952,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectOutputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectOutputType<{
@@ -10027,7 +10027,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -10086,7 +10086,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -10139,8 +10139,8 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -10188,7 +10188,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, import("zod").objectInputType<{
-                role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
+                role: import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>;
             }, import("zod").ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: import("zod").objectInputType<{
@@ -10263,7 +10263,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -10322,7 +10322,7 @@ export declare const SubplebbitEditPublicationChallengeRequestToEncryptSchema: i
                         replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                         firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                         challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                         address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                         rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                         rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;

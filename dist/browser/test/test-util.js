@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 import { createMockPubsubClient } from "./mock-ipfs-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
-import { v4 as uuidV4 } from "uuid";
 import pTimeout from "p-timeout";
 import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, _signPubsubMsg, signChallengeVerification, signSubplebbit } from "../signer/signatures.js";
 import { findCommentInPageInstance, findCommentInPageInstanceRecursively, mapPageIpfsCommentToPageJsonComment, TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
@@ -15,7 +14,6 @@ import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import { Buffer } from "buffer";
 import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
 import env from "../version.js";
-import { createHeliaNode } from "../helia/helia-for-plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 function generateRandomTimestamp(parentTimestamp) {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -254,7 +252,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
             httpRoutersOptions: []
         };
 }
-export async function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStorage, mockResolve, remotePlebbit }) {
+export async function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStorage, mockResolve, remotePlebbit } = {}) {
     if (remotePlebbit)
         plebbitOptions = { dataPath: undefined, ...plebbitOptions };
     const plebbit = await mockPlebbit(plebbitOptions, forceMockPubsub, stubStorage, mockResolve);
@@ -262,7 +260,7 @@ export async function mockPlebbitV2({ plebbitOptions, forceMockPubsub, stubStora
 }
 export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
-    const mockEthResolver = `https://mockEthRpc${uuidV4()}.com`;
+    const mockEthResolver = `https://mockEthRpc${uuidv4()}.com`;
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
@@ -307,9 +305,9 @@ export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubS
     return plebbit;
 }
 // name should be changed to mockBrowserPlebbit
-export async function mockRemotePlebbit(plebbitOptions) {
+export async function mockRemotePlebbit(opts) {
     // Mock browser environment
-    const plebbit = await mockPlebbit({ dataPath: undefined, ...plebbitOptions });
+    const plebbit = await mockPlebbitV2({ ...opts, plebbitOptions: { dataPath: undefined, ...opts?.plebbitOptions } });
     plebbit._canCreateNewLocalSub = () => false;
     return plebbit;
 }
@@ -321,12 +319,15 @@ export async function createOnlinePlebbit(plebbitOptions) {
     }); // use online ipfs node
     return plebbit;
 }
-export async function mockPlebbitNoDataPathWithOnlyKuboClient(plebbitOptions) {
-    const plebbit = await mockPlebbit({
-        kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
-        plebbitRpcClientsOptions: undefined,
-        dataPath: undefined,
-        ...plebbitOptions
+export async function mockPlebbitNoDataPathWithOnlyKuboClient(opts) {
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            kuboRpcClientsOptions: ["http://localhost:15001/api/v0"],
+            plebbitRpcClientsOptions: undefined,
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
     });
     return plebbit;
 }
@@ -338,13 +339,21 @@ export async function mockRpcServerPlebbit(plebbitOptions) {
         remotePlebbit: false,
         stubStorage: true // we want storage to force new resolve-subplebbit-address states
     });
+    plebbit.removeAllListeners("error"); // for rpc server, we want to test the error handling
     return plebbit;
 }
-export async function mockRpcRemotePlebbit(plebbitOptions) {
+export async function mockRpcRemotePlebbit(opts) {
     if (!isRpcFlagOn())
         throw Error("This function should only be used when the rpc flag is on");
     // This instance will connect to an rpc server that has no local subs
-    const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            plebbitRpcClientsOptions: ["ws://localhost:39653"],
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
+    });
     return plebbit;
 }
 export async function mockRPCLocalPlebbit(plebbitOptions) {
@@ -353,19 +362,21 @@ export async function mockRPCLocalPlebbit(plebbitOptions) {
     // This instance will connect to an rpc server that local subs
     return mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
 }
-export async function mockGatewayPlebbit(plebbitOptions) {
+export async function mockGatewayPlebbit(opts) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit({
-        ipfsGatewayUrls: ["http://localhost:18080"],
-        plebbitRpcClientsOptions: undefined,
-        kuboRpcClientsOptions: undefined,
-        pubsubKuboRpcClientsOptions: undefined,
-        ...plebbitOptions
+    const plebbit = await mockPlebbitV2({
+        ...opts,
+        plebbitOptions: {
+            ipfsGatewayUrls: ["http://localhost:18080"],
+            plebbitRpcClientsOptions: undefined,
+            kuboRpcClientsOptions: undefined,
+            pubsubKuboRpcClientsOptions: undefined,
+            libp2pJsClientOptions: undefined,
+            ...opts?.plebbitOptions
+        },
+        remotePlebbit: true
     });
     return plebbit;
-}
-export async function mockMultipleGatewaysPlebbit(plebbitOptions) {
-    return mockGatewayPlebbit({ ipfsGatewayUrls: undefined, ...plebbitOptions });
 }
 export async function publishRandomReply(parentComment, plebbit, commentProps) {
     const reply = await generateMockComment(parentComment, plebbit, false, {
@@ -410,14 +421,17 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
                 resolve(1);
         });
     });
+    const error = new Error("Publication did not receive response");
+    //@ts-expect-error
+    error.details = {
+        publication,
+        expectedChallengeSuccess,
+        expectedReason,
+        waitTime: 90000
+    };
     const validateResponsePromise = pTimeout(challengeVerificationPromise, {
         milliseconds: 90000,
-        message: new PlebbitError("ERR_PUBLICATION_DID_NOT_RECEIVE_RESPONSE", {
-            publication,
-            expectedChallengeSuccess,
-            expectedReason,
-            waitTime: 90000
-        })
+        message: error
     });
     publication.once("challenge", (challenge) => publication.listenerCount("challenge") === 0 &&
         console.error("Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?", challenge));
@@ -625,15 +639,13 @@ export async function setExtraPropOnChallengeRequestAndSign(publication, extraPr
 export async function publishChallengeAnswerMessageWithExtraProps(publication, challengeAnswers, extraProps, includeExtraPropsInChallengeSignedPropertyNames) {
     // we're crafting a challenge answer from scratch here
     const log = Logger("plebbit-js:test-util:setExtraPropsOnChallengeAnswerMessageAndSign");
-    //@ts-expect-error
-    const signer = publication._challengeIdToPubsubSigner[publication._challenge.challengeRequestId.toString()];
-    const encryptedChallengeAnswers = await encryptEd25519AesGcm(JSON.stringify({ challengeAnswers }), signer.privateKey, 
-    //@ts-expect-error
-    publication._subplebbit.encryption.publicKey);
+    const signer = Object.values(publication._challengeExchanges)[0].signer;
+    if (!signer)
+        throw Error("Signer is undefined for this challenge exchange");
+    const encryptedChallengeAnswers = await encryptEd25519AesGcm(JSON.stringify({ challengeAnswers }), signer.privateKey, publication._subplebbit.encryption.publicKey);
     const toSignAnswer = cleanUpBeforePublishing({
         type: "CHALLENGEANSWER",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: Object.values(publication._challengeExchanges)[0].challengeRequest.challengeRequestId,
         encrypted: encryptedChallengeAnswers,
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
@@ -650,13 +662,10 @@ export async function publishChallengeAnswerMessageWithExtraProps(publication, c
 }
 export async function publishChallengeMessageWithExtraProps(publication, pubsubSigner, extraProps, includeExtraPropsInChallengeSignedPropertyNames) {
     const log = Logger("plebbit-js:test-util:publishChallengeMessageWithExtraProps");
-    const encryptedChallenges = await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify({ challenges: [] }), pubsubSigner.privateKey, 
-    //@ts-expect-error
-    publication._publishedChallengeRequests[0].signature.publicKey);
+    const encryptedChallenges = await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify({ challenges: [] }), pubsubSigner.privateKey, Object.values(publication._challengeExchanges)[0].challengeRequest.signature.publicKey);
     const toSignChallenge = cleanUpBeforePublishing({
         type: "CHALLENGE",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: Object.values(publication._challengeExchanges)[0].challengeRequest.challengeRequestId,
         encrypted: encryptedChallenges,
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
@@ -674,8 +683,7 @@ export async function publishChallengeVerificationMessageWithExtraProps(publicat
     const log = Logger("plebbit-js:test-util:publishChallengeVerificationMessageWithExtraProps");
     const toSignChallengeVerification = cleanUpBeforePublishing({
         type: "CHALLENGEVERIFICATION",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: Object.values(publication._challengeExchanges)[0].challengeRequest.challengeRequestId,
         challengeSuccess: false,
         reason: "Random reason",
         userAgent: publication._plebbit.userAgent,
@@ -692,18 +700,16 @@ export async function publishChallengeVerificationMessageWithExtraProps(publicat
 }
 export async function publishChallengeVerificationMessageWithEncryption(publication, pubsubSigner, toEncrypt, verificationProps) {
     const log = Logger("plebbit-js:test-util:publishChallengeVerificationMessageWithExtraProps");
+    const challengeRequest = Object.values(publication._challengeExchanges)[0].challengeRequest;
     const toSignChallengeVerification = cleanUpBeforePublishing({
         type: "CHALLENGEVERIFICATION",
-        //@ts-expect-error
-        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeRequestId: challengeRequest.challengeRequestId,
         challengeSuccess: true,
         userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
         timestamp: timestamp(),
         ...verificationProps
     });
-    //@ts-expect-error
-    const challengeRequest = publication._publishedChallengeRequests[0];
     const publicKey = Buffer.from(challengeRequest.signature.publicKey).toString("base64");
     const encrypted = await encryptEd25519AesGcm(JSON.stringify(toEncrypt), pubsubSigner.privateKey, publicKey);
     toSignChallengeVerification.encrypted = encrypted;
@@ -712,53 +718,74 @@ export async function publishChallengeVerificationMessageWithEncryption(publicat
 }
 export async function addStringToIpfs(content) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
     const cid = (await ipfsClient._client.add(content)).path;
+    await plebbit.destroy();
     return cid;
 }
 export async function publishOverPubsub(pubsubTopic, jsonToPublish) {
     const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     await plebbit._clientsManager.pubsubPublish(pubsubTopic, jsonToPublish);
+    await plebbit.destroy();
 }
-export async function mockPlebbitWithHeliaConfig(mockPubsub = true) {
-    const plebbitWithKubo = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const kuboRpcClientToMock = "http://helia-client-mock.com/api/v0";
-    const heliaPlebbit = await mockPlebbit({
-        ipfsGatewayUrls: ["http://shouldfail"],
-        kuboRpcClientsOptions: [kuboRpcClientToMock],
-        pubsubKuboRpcClientsOptions: [kuboRpcClientToMock],
-        dataPath: undefined
+export async function mockPlebbitWithHeliaConfig(opts) {
+    const key = "Helia config default for testing(remote)" + String(opts?.forceMockPubsub ? "" : Math.random());
+    const forceMockPubsub = typeof opts?.forceMockPubsub === "boolean" ? opts.forceMockPubsub : true;
+    const heliaPlebbit = await mockPlebbitV2({
+        forceMockPubsub,
+        ...opts,
+        plebbitOptions: {
+            libp2pJsClientOptions: [{ key, libp2pOptions: { connectionGater: { denyDialMultiaddr: async () => false } } }],
+            pubsubKuboRpcClientsOptions: [],
+            kuboRpcClientsOptions: [],
+            httpRoutersOptions: ["http://localhost:20001"], // this http router transmits the addresses of kubo node of test-server.js
+            dataPath: undefined,
+            ...opts?.plebbitOptions
+        }
     });
-    const heliaInstance = await createHeliaNode({ httpRoutersOptions: ["http://localhost:20001"] });
-    //@ts-expect-error
-    heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock] = heliaInstance;
-    if (mockPubsub) {
-        heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock]._client = await createMockPubsubClient();
-        const kuboClient = plebbitWithKubo.clients.kuboRpcClients[Object.keys(plebbitWithKubo.clients.kuboRpcClients)[0]];
-        // override only IPNS resolving because in helia it uses pubsub which the mocked helia pubsub doesn't use
-        heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock]._client.name.resolve = kuboClient._client.name.resolve.bind(kuboClient._client.name);
-    }
-    else {
-        //@ts-expect-error
-        heliaPlebbit.clients.pubsubKuboRpcClients[kuboRpcClientToMock] = heliaPlebbit.clients.kuboRpcClients[kuboRpcClientToMock];
+    if (forceMockPubsub) {
+        const mockedPubsubClient = createMockPubsubClient();
+        const heliaLibp2pJsClient = heliaPlebbit.clients.libp2pJsClients[Object.keys(heliaPlebbit.clients.libp2pJsClients)[0]];
+        heliaLibp2pJsClient.heliaWithKuboRpcClientFunctions.pubsub = mockedPubsubClient.pubsub; // that should work for publishing/subscribing
     }
     return heliaPlebbit;
 }
+const testConfigCodeToPlebbitInstanceWithHumanName = {
+    "remote-kubo-rpc": {
+        plebbitInstancePromise: (args) => mockPlebbitNoDataPathWithOnlyKuboClient(args),
+        name: "Kubo Node with no datapath (remote)",
+        testConfigCode: "remote-kubo-rpc"
+    },
+    "remote-ipfs-gateway": {
+        plebbitInstancePromise: (args) => mockGatewayPlebbit(args),
+        name: "IPFS Gateway",
+        testConfigCode: "remote-ipfs-gateway"
+    },
+    "remote-plebbit-rpc": {
+        plebbitInstancePromise: (args) => mockRpcRemotePlebbit(args),
+        name: "Plebbit RPC Remote",
+        testConfigCode: "remote-plebbit-rpc"
+    },
+    "local-kubo-rpc": {
+        plebbitInstancePromise: (args) => mockPlebbitV2(args),
+        name: "Kubo node with datapath (local)",
+        testConfigCode: "local-kubo-rpc"
+    },
+    "remote-libp2pjs": {
+        plebbitInstancePromise: (args) => mockPlebbitWithHeliaConfig(args),
+        name: "Libp2pJS client with no datapath (remote)",
+        testConfigCode: "remote-libp2pjs"
+    }
+};
 let plebbitConfigs = [];
 export function setPlebbitConfigs(configs) {
-    const mapper = {
-        "remote-kubo-rpc": { plebbitInstancePromise: mockPlebbitNoDataPathWithOnlyKuboClient, name: "Kubo Node with no datapath (remote)" },
-        "remote-ipfs-gateway": { plebbitInstancePromise: mockGatewayPlebbit, name: "IPFS Gateway" },
-        "remote-plebbit-rpc": { plebbitInstancePromise: mockRpcRemotePlebbit, name: "RPC Remote" },
-        "local-kubo-rpc": { plebbitInstancePromise: mockPlebbit, name: "Kubo node with datapath (local)" }
-    };
     if (configs.length === 0)
         throw Error("No configs were provided");
     // Make sure each config exists in the mapper
     for (const config of configs)
-        if (!mapper[config])
-            throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(mapper)}`);
-    plebbitConfigs = configs.map((config) => mapper[config]);
+        if (!testConfigCodeToPlebbitInstanceWithHumanName[config])
+            throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${Object.keys(testConfigCodeToPlebbitInstanceWithHumanName)}`);
+    plebbitConfigs = configs.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
     if (globalThis.window) {
         window.addEventListener("uncaughtException", (err) => {
             console.error("uncaughtException", JSON.stringify(err, ["message", "arguments", "type", "name"]));
@@ -776,7 +803,7 @@ export function setPlebbitConfigs(configs) {
         });
     }
 }
-export function getRemotePlebbitConfigs() {
+export function getRemotePlebbitConfigs(opts) {
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {
@@ -793,11 +820,22 @@ export function getRemotePlebbitConfigs() {
     }
     if (plebbitConfigs.length === 0)
         throw Error("No remote plebbit configs set, " + plebbitConfigsFromEnv + " " + plebbitConfigsFromWindow);
+    if (opts?.includeOnlyTheseTests) {
+        opts.includeOnlyTheseTests.forEach((config) => {
+            if (!testConfigCodeToPlebbitInstanceWithHumanName[config])
+                throw new Error(`Config "${config}" does not exist in the mapper. Available configs are: ${plebbitConfigs.map((c) => c.name).join(", ")}`);
+        });
+        const filteredKeys = remeda.keys
+            .strict(testConfigCodeToPlebbitInstanceWithHumanName)
+            .filter((config) => opts.includeOnlyTheseTests.includes(config) &&
+            plebbitConfigs.find((c) => c.name === testConfigCodeToPlebbitInstanceWithHumanName[config].name));
+        return filteredKeys.map((config) => testConfigCodeToPlebbitInstanceWithHumanName[config]);
+    }
     return plebbitConfigs;
 }
 export async function createNewIpns() {
-    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
-    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({});
+    const ipfsClient = plebbit._clientsManager.getDefaultKuboRpcClient();
     const signer = await plebbit.createSigner();
     signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
     await importSignerIntoKuboNode(signer.address, signer.ipfsKey, {
@@ -823,9 +861,10 @@ export async function publishSubplebbitRecordWithExtraProp(opts) {
     const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
     subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
     delete subplebbitRecord.posts;
-    Object.assign(subplebbitRecord, opts.extraProps);
+    if (opts?.extraProps)
+        Object.assign(subplebbitRecord, opts.extraProps);
     const signedPropertyNames = subplebbitRecord.signature.signedPropertyNames;
-    if (opts.includeExtraPropInSignedPropertyNames)
+    if (opts?.includeExtraPropInSignedPropertyNames)
         signedPropertyNames.push("extraProp");
     subplebbitRecord.signature = await _signJson(signedPropertyNames, subplebbitRecord, ipnsObj.signer, Logger("plebbit-js:test-util:publishSubplebbitRecordWithExtraProp"));
     await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
@@ -844,6 +883,7 @@ export async function createMockedSubplebbitIpns(subplebbitOpts) {
         delete subplebbitRecord.posts;
     subplebbitRecord.signature = await signSubplebbit(subplebbitRecord, ipnsObj.signer);
     await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+    await ipnsObj.plebbit.destroy();
     return { subplebbitRecord, ipnsObj };
 }
 export function jsonifySubplebbitAndRemoveInternalProps(sub) {
@@ -869,20 +909,27 @@ export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit, subA
     return plebbit._awaitSubplebbitsToIncludeSub(subAddress);
 }
 export function isPlebbitFetchingUsingGateways(plebbit) {
-    return !plebbit._plebbitRpcClient && Object.keys(plebbit.clients.kuboRpcClients).length === 0;
+    return (!plebbit._plebbitRpcClient &&
+        Object.keys(plebbit.clients.kuboRpcClients).length === 0 &&
+        Object.keys(plebbit.clients.libp2pJsClients).length === 0);
 }
-export function mockRpcWsToSkipSignatureValidation(plebbitWs) {
+export function mockRpcServerForTests(plebbitWs) {
     const functionsToBind = [
         "_createCommentModerationInstanceFromPublishCommentModerationParams",
         "_createCommentEditInstanceFromPublishCommentEditParams",
         "_createVoteInstanceFromPublishVoteParams",
-        "_createCommentInstanceFromPublishCommentParams"
+        "_createCommentInstanceFromPublishCommentParams",
+        "_createSubplebbitEditInstanceFromPublishSubplebbitEditParams"
     ];
+    // disable validation of signature before publishing
+    // reduce threshold for publishing
     for (const funcBind of functionsToBind) {
         const originalFunc = plebbitWs[funcBind].bind(plebbitWs);
         plebbitWs[funcBind] = async (...args) => {
             const pubInstance = await originalFunc(...args);
             disableValidationOfSignatureBeforePublishing(pubInstance);
+            pubInstance._publishToDifferentProviderThresholdSeconds = 5;
+            pubInstance._setProviderFailureThresholdSeconds = 10;
             return pubInstance;
         };
     }
@@ -956,7 +1003,7 @@ export function mockPostToHaveSubplebbitWithNoPostUpdates(postToBeMocked) {
     };
 }
 export async function createCommentUpdateWithInvalidSignature(commentCid) {
-    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient({});
     const comment = await plebbit.getComment(commentCid);
     await comment.update();
     await resolveWhenConditionIsTrue(comment, async () => typeof comment.updatedAt === "number");
@@ -1000,6 +1047,26 @@ export async function mockPlebbitToReturnSpecificSubplebbit(plebbit, subAddress,
         sub._clientsManager.resolveIpnsToCidP2P = async () => subplebbitRecordCid;
     }
 }
+export function mockPlebbitToTimeoutFetchingCid(plebbit) {
+    const originalFetch = plebbit._clientsManager._fetchCidP2P.bind(plebbit._clientsManager);
+    for (const ipfsClient of Object.values(plebbit.clients.kuboRpcClients)) {
+        ipfsClient._client.cat = async function* (ipfsPath, options) {
+            await new Promise((resolve) => setTimeout(resolve, 60000));
+            throw new Error("Timeout");
+        };
+    }
+    for (const libp2pJsClient of Object.values(plebbit.clients.libp2pJsClients)) {
+        libp2pJsClient.heliaWithKuboRpcClientFunctions.cat = async function* (ipfsPath, options) {
+            await new Promise((resolve) => setTimeout(resolve, 60000));
+            throw new Error("Timeout");
+        };
+    }
+    // TODO mock for gateway
+    plebbit._clientsManager._fetchCidP2P = async (...args) => {
+        await new Promise((resolve) => setTimeout(resolve, 60000));
+        throw new Error("Timeout");
+    };
+}
 export function mockCommentToNotUsePagesForUpdates(comment) {
     const updatingComment = comment._plebbit._updatingComments[comment.cid];
     if (!updatingComment)
@@ -1021,7 +1088,7 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
     const maxCommentSize = 30000;
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
     const content = "x".repeat(1024 * 30); //30kb
-    const replies = await Promise.all(new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
+    await Promise.all(new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
         return publishRandomReply(comment, comment._plebbit, { content });
     }));
     const lastPublishedReply = await publishRandomReply(comment, comment._plebbit, { content });
@@ -1130,6 +1197,13 @@ export async function mockCacheOfTextRecord(opts) {
         const valueInCache = { timestampSeconds: timestamp(), valueOfTextRecord: opts.value };
         await opts.plebbit._storage.setItem(cacheKey, valueInCache);
     }
+}
+export async function getRandomPostCidFromSub(subplebbitAddress, plebbit) {
+    const sub = await plebbit.getSubplebbit(subplebbitAddress);
+    const lastPostCid = sub.lastPostCid;
+    if (!lastPostCid)
+        throw Error("Subplebbit should have a last post cid");
+    return lastPostCid;
 }
 const skipFunction = (_) => { };
 skipFunction.skip = () => { };

@@ -12,6 +12,7 @@ import { parseRawPages } from "../../pages/util.js";
 import { CommentIpfsSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
+import { CID } from "kubo-rpc-client";
 export class Comment extends Publication {
     constructor(plebbit) {
         super(plebbit);
@@ -233,19 +234,30 @@ export class Comment extends Publication {
     }
     async _addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification) {
         // Will add and pin our own comment to IPFS
-        // only if we're connected to kubo
+        // only if we're connected to kubo or helia/libp2p
+        const log = Logger("plebbit-js:comment:publish:_addOwnCommentToIpfsIfConnectedToIpfsClient");
         if (!this.raw.comment)
             throw Error("comment.raw.commentIpfs should be defined after challenge verification");
-        const kuboRpcClient = this._clientsManager.getDefaultIpfs()._client;
+        if (Object.keys(this._plebbit.clients.kuboRpcClients).length === 0) {
+            log("No kubo rpc client found, will not add newly published comment", this.cid, "to ipfs");
+            return;
+        }
+        const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
         // use p-retry here, 3 times maybe?
         const addRes = await retryKuboIpfsAdd({
-            kuboRpcClient,
+            ipfsClient: kuboRpcClient._client,
             log: Logger("plebbit-js:comment:publish:_addOwnCommentToIpfsIfConnectedToIpfsClient"),
             content: JSON.stringify(this.raw.comment),
             options: { pin: true }
         });
-        if (addRes.path !== decryptedVerification.commentUpdate.cid)
-            throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
+        if (!addRes.cid.equals(CID.parse(decryptedVerification.commentUpdate.cid)))
+            throw new PlebbitError("ERR_ADDED_COMMENT_IPFS_TO_IPFS_BUT_GOT_DIFFERENT_CID", {
+                addedCidToIpfs: addRes.cid,
+                expectedCidString: decryptedVerification.commentUpdate.cid,
+                expectedCid: CID.parse(decryptedVerification.commentUpdate.cid)
+            });
+        else
+            log("Added the file of comment ipfs", this.cid, "to IPFS network successfully");
     }
     _initCommentUpdateFromChallengeVerificationProps(commentUpdate) {
         this._setOriginalFieldBeforeModifying();
@@ -279,10 +291,8 @@ export class Comment extends Publication {
         }
         this._updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification);
         // Add the comment to IPFS network in the background
-        if (this._clientsManager._defaultIpfsProviderUrl)
-            this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification)
-                .then(() => log("Added the file of comment ipfs", this.cid, "to IPFS network successfully"))
-                .catch((err) => log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err));
+        if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0)
+            this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification).catch((err) => log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err));
     }
     getType() {
         return "comment";
@@ -344,9 +354,10 @@ export class Comment extends Publication {
                         error.details = { ...error.details, commentCid: this.cid, retryCount: curAttempt };
                     if (this._isCommentIpfsErrorRetriable(error)) {
                         log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, error);
-                        this._setUpdatingStateNoEmission("waiting-retry");
-                        this.emit("error", error);
-                        this.emit("updatingstatechange", "waiting-retry");
+                        this._changeCommentStateEmitEventEmitStateChangeEvent({
+                            newUpdatingState: "waiting-retry",
+                            event: { name: "error", args: [error] }
+                        });
                         this._commentIpfsloadingOperation.retry(e);
                     }
                     else {
@@ -366,19 +377,20 @@ export class Comment extends Publication {
                 log.error(`Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`, newCommentIpfsOrNonRetriableError);
                 // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
-                this._setUpdatingStateNoEmission("failed");
-                this._setStateNoEmission("stopped");
-                this.emit("error", newCommentIpfsOrNonRetriableError);
-                this.emit("updatingstatechange", "failed");
-                this.emit("statechange", "stopped");
+                this._changeCommentStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "failed",
+                    newState: "stopped",
+                    event: { name: "error", args: [newCommentIpfsOrNonRetriableError] }
+                });
                 return;
             }
             else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
                 this._initIpfsProps(newCommentIpfsOrNonRetriableError);
-                this._setUpdatingStateNoEmission("succeeded");
-                this.emit("update", this);
-                this.emit("updatingstatechange", "succeeded");
+                this._changeCommentStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "succeeded",
+                    event: { name: "update", args: [this] }
+                });
             }
         }
     }
@@ -423,21 +435,36 @@ export class Comment extends Publication {
             log.error("Failed to start comment update subscription to subplebbit", e);
         }
     }
-    _setStateNoEmission(newState) {
-        if (newState === this.state)
-            return;
-        this.state = newState;
-    }
     _setUpdatingStateNoEmission(newState) {
-        if (newState === this.updatingState)
+        if (newState === this._updatingState)
             return;
-        this.updatingState = newState;
+        this._updatingState = newState;
+    }
+    get updatingState() {
+        if (this._updatingCommentInstance)
+            return this._updatingCommentInstance.comment.updatingState;
+        return this._updatingState;
+    }
+    _changeCommentStateEmitEventEmitStateChangeEvent(opts) {
+        // this code block is only called on a sub whose update loop is already started
+        // never called in a subplebbit that's mirroring a subplebbit with an update loop
+        const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
+        const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this._updatingState;
+        if (opts.newState)
+            this._setStateNoEmission(opts.newState);
+        if (opts.newUpdatingState)
+            this._setUpdatingStateNoEmission(opts.newUpdatingState);
+        this.emit(opts.event.name, ...opts.event.args);
+        if (shouldEmitStateChange)
+            this.emit("statechange", this.state);
+        if (shouldEmitUpdatingStateChange)
+            this.emit("updatingstatechange", this.updatingState);
     }
     _setUpdatingStateWithEmissionIfNewState(newState) {
-        if (newState === this.updatingState)
+        if (newState === this._updatingState)
             return;
-        this.updatingState = newState;
-        this.emit("updatingstatechange", this.updatingState);
+        this._updatingState = newState;
+        this.emit("updatingstatechange", this._updatingState);
     }
     _setRpcClientState(newState) {
         const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
@@ -500,19 +527,21 @@ export class Comment extends Publication {
     }
     _handleStateChangeFromRpc(args) {
         const commentState = args.params.result;
-        this._updateState(commentState);
+        this._setStateWithEmission(commentState);
     }
     async _handleErrorEventFromRpc(args) {
         const log = Logger("plebbit-js:comment:update:_handleErrorEventFromRpc");
         const err = args.params.result;
         log("Received 'error' event from RPC", err);
+        if (err.details?.newUpdatingState)
+            this._setUpdatingStateNoEmission(err.details.newUpdatingState);
         if (!this._isRetriableLoadingError(err)) {
             log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
-            this._setUpdatingStateNoEmission("failed");
-            this._setStateNoEmission("stopped");
-            this.emit("error", err);
-            this.emit("updatingstatechange", "failed");
-            this.emit("statechange", "stopped");
+            this._changeCommentStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                newState: "stopped",
+                event: { name: "error", args: [err] }
+            });
             await this._stopUpdateLoop();
         }
         else
@@ -531,11 +560,11 @@ export class Comment extends Publication {
         catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
             await this._stopUpdateLoop();
-            this._updateState("stopped");
+            this._setStateWithEmission("stopped");
             this._setUpdatingStateWithEmissionIfNewState("failed");
             throw e;
         }
-        this._updateState("updating");
+        this._setStateWithEmission("updating");
         this._plebbit
             ._plebbitRpcClient.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._handleUpdateEventFromRpc.bind(this))
@@ -570,14 +599,14 @@ export class Comment extends Publication {
                     await this.stop();
             },
             update: () => this._useUpdatePropsFromUpdatingCommentIfPossible(),
-            updatingstatechange: (newState) => this._setUpdatingStateWithEmissionIfNewState(newState),
+            updatingstatechange: (newState) => this.emit("updatingstatechange", newState),
             error: async (err) => {
                 if (!this._isRetriableLoadingError(err)) {
-                    this._setStateNoEmission("stopped");
-                    this._setUpdatingStateNoEmission("failed");
-                    this.emit("error", err);
-                    this.emit("updatingstatechange", "failed");
-                    this.emit("statechange", "stopped");
+                    this._changeCommentStateEmitEventEmitStateChangeEvent({
+                        newUpdatingState: "failed",
+                        newState: "stopped",
+                        event: { name: "error", args: [err] }
+                    });
                     await this._stopUpdateLoop();
                 }
                 else
@@ -606,7 +635,7 @@ export class Comment extends Publication {
         const updatingCommentInstance = await this._plebbit.createComment(this);
         this._plebbit._updatingComments[this.cid] = updatingCommentInstance;
         this._useUpdatingCommentFromPlebbit(updatingCommentInstance);
-        updatingCommentInstance._updateState("updating");
+        updatingCommentInstance._setStateWithEmission("updating");
         if (this._plebbit._plebbitRpcClient) {
             await updatingCommentInstance._updateViaRpc();
         }
@@ -622,7 +651,7 @@ export class Comment extends Publication {
             return; // Do nothing if it's already updating
         if (!this.cid)
             throw Error("Can't call comment.update() without defining cid");
-        this._updateState("updating");
+        this._setStateWithEmission("updating");
         if (this._plebbit._updatingComments[this.cid]) {
             this._useUpdatingCommentFromPlebbit(this._plebbit._updatingComments[this.cid]);
         }
@@ -671,6 +700,7 @@ export class Comment extends Publication {
         }
         if (this._updatingCommentInstance) {
             // this post|reply instance is subscribed to plebbit._updatingComments[cid]
+            this._updatingState = this._updatingCommentInstance.comment.updatingState; // need to capture the last updating state before stopping
             this._updatingCommentInstance.comment.removeListener("statechange", this._updatingCommentInstance.statechange);
             this._updatingCommentInstance.comment.removeListener("updatingstatechange", this._updatingCommentInstance.updatingstatechange);
             this._updatingCommentInstance.comment.removeListener("update", this._updatingCommentInstance.update);
@@ -696,10 +726,10 @@ export class Comment extends Publication {
     async stop() {
         if (this.state === "publishing")
             await super.stop();
-        this._setUpdatingStateWithEmissionIfNewState("stopped");
-        this._updateState("stopped");
+        this._setStateWithEmission("stopped");
         await this._stopUpdateLoop();
         this.replies._stop();
+        this._setUpdatingStateWithEmissionIfNewState("stopped");
     }
     async _validateSignature() {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub

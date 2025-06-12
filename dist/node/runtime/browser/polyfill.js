@@ -34,6 +34,8 @@ if (window && !window?.crypto?.subtle) {
         }
     };
 }
+// Add Promise.withResolvers polyfill for Node.js < 22
+import "@enhances/with-resolvers";
 // must export a function and call it or this file isn't read
 export default () => { };
 //# sourceMappingURL=polyfill.js.map

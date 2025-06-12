@@ -1,6 +1,6 @@
-import { parsePageIpfs } from "../pages/util.js";
+import { parsePageIpfs } from "./util.js";
 import { verifyPage } from "../signer/signatures.js";
-import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
+import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import * as remeda from "remeda";
 import { hideClassPrivateProps } from "../util.js";

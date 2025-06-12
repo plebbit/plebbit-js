@@ -7,7 +7,7 @@ import { PostsPages } from "../pages/pages.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
 import { SubplebbitClientsManager } from "./subplebbit-client-manager.js";
-import { getPeerIdFromPublicKey } from "../signer/util.js";
+import { getPlebbitAddressFromPublicKeySync } from "../signer/util.js";
 export class RemoteSubplebbit extends TypedEmitter {
     constructor(plebbit) {
         super();
@@ -18,11 +18,11 @@ export class RemoteSubplebbit extends TypedEmitter {
         this._numOfListenersForUpdatingInstance = 0;
         this._plebbit = plebbit;
         this._setState("stopped");
-        this._setUpdatingStateWithEventEmissionIfNewState("stopped");
+        this._updatingState = "stopped";
         // these functions might get separated from their `this` when used
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
-        this.on("error", (...args) => this._plebbit.emit("error", ...args));
+        this.on("error", (...args) => this.listenerCount("error") === 1 && this._plebbit.emit("error", ...args)); // only bubble up to plebbit if no other listeners are attached
         this._clientsManager = new SubplebbitClientsManager(this);
         this.clients = this._clientsManager.clients;
         this.posts = new PostsPages({
@@ -33,7 +33,7 @@ export class RemoteSubplebbit extends TypedEmitter {
         });
         hideClassPrivateProps(this);
     }
-    async _updateLocalPostsInstance(newPosts) {
+    _updateLocalPostsInstance(newPosts) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
         const postsPagesCreationTimestamp = this.updatedAt;
         this.posts._subplebbit = this;
@@ -72,37 +72,36 @@ export class RemoteSubplebbit extends TypedEmitter {
             });
         }
     }
-    async initSubplebbitIpfsPropsNoMerge(newProps) {
+    initSubplebbitIpfsPropsNoMerge(newProps) {
         const log = Logger("plebbit-js:remote-subplebbit:initSubplebbitIpfsPropsNoMerge");
         this.raw.subplebbitIpfs = newProps;
-        await this.initRemoteSubplebbitPropsNoMerge(newProps);
+        this.initRemoteSubplebbitPropsNoMerge(newProps);
         const unknownProps = remeda.difference(remeda.keys.strict(this.raw.subplebbitIpfs), remeda.keys.strict(SubplebbitIpfsSchema.shape));
         if (unknownProps.length > 0) {
             log(`Found unknown props on subplebbit (${this.raw.subplebbitIpfs.address}) ipfs record`, unknownProps);
             Object.assign(this, remeda.pick(this.raw.subplebbitIpfs, unknownProps));
         }
     }
-    async _updateIpnsPubsubPropsIfNeeded(newProps) {
+    _updateIpnsPubsubPropsIfNeeded(newProps) {
         if ("ipnsName" in newProps && newProps.ipnsName) {
             this.ipnsName = newProps.ipnsName;
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+            this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
         else if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
             // The signature public key has changed, we need to update the ipns name and pubsub topic
-            const signaturePeerId = await getPeerIdFromPublicKey(newProps.signature.publicKey);
-            this.ipnsName = signaturePeerId.toB58String();
+            this.ipnsName = getPlebbitAddressFromPublicKeySync(newProps.signature.publicKey);
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = await pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+            this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
         if (!this.pubsubTopicPeersCid) {
             if ("pubsubTopicPeersCid" in newProps)
                 this.pubsubTopicPeersCid = newProps.pubsubTopicPeersCid;
             else
-                this.pubsubTopicPeersCid = await pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+                this.pubsubTopicPeersCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
         }
     }
-    async initRemoteSubplebbitPropsNoMerge(newProps) {
+    initRemoteSubplebbitPropsNoMerge(newProps) {
         // This function is not strict, and will assume all props can be undefined, except address
         this.title = newProps.title;
         this.description = newProps.description;
@@ -120,11 +119,11 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.createdAt = newProps.createdAt;
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
-        await this._updateIpnsPubsubPropsIfNeeded(newProps);
+        this._updateIpnsPubsubPropsIfNeeded(newProps);
         this.pubsubTopic = newProps.pubsubTopic;
         this.signature = newProps.signature;
         this.setAddress(newProps.address);
-        await this._updateLocalPostsInstance(newProps.posts);
+        this._updateLocalPostsInstance(newProps.posts);
         // Exclusive Instance props
         if (newProps.updateCid)
             this.updateCid = newProps.updateCid;
@@ -155,8 +154,16 @@ export class RemoteSubplebbit extends TypedEmitter {
             throw Error("subplebbit.updateCid should be defined before calling toJSONRpcRemote");
         return {
             subplebbit: this.toJSONIpfs(),
-            updateCid: this.updateCid
+            updateCid: this.updateCid,
+            updatingState: this.updatingState
         };
+    }
+    get updatingState() {
+        if (this._updatingSubInstanceWithListeners) {
+            return this._updatingSubInstanceWithListeners.subplebbit.updatingState;
+        }
+        else
+            return this._updatingState;
     }
     _setState(newState) {
         if (newState === this.state)
@@ -164,16 +171,52 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.state = newState;
         this.emit("statechange", this.state);
     }
+    _setStateNoEmission(newState) {
+        if (newState === this.state)
+            return;
+        this.state = newState;
+    }
+    _changeStateEmitEventEmitStateChangeEvent(opts) {
+        // this code block is only called on a sub whose update loop is already started
+        // never called in a subplebbit that's mirroring a subplebbit with an update loop
+        const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
+        const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this.updatingState;
+        const shouldEmitStartedStateChange = opts.newStartedState && opts.newStartedState !== this.startedState;
+        if (opts.newState)
+            this._setStateNoEmission(opts.newState);
+        if (opts.newUpdatingState)
+            this._setUpdatingStateNoEmission(opts.newUpdatingState);
+        if (opts.newStartedState)
+            this._setStartedStateNoEmission(opts.newStartedState);
+        this.emit(opts.event.name, ...opts.event.args);
+        if (shouldEmitStateChange)
+            this.emit("statechange", this.state);
+        if (shouldEmitUpdatingStateChange)
+            this.emit("updatingstatechange", this.updatingState);
+        if (shouldEmitStartedStateChange)
+            this.emit("startedstatechange", this.startedState);
+    }
     _setUpdatingStateNoEmission(newState) {
         if (newState === this.updatingState)
             return;
-        this.updatingState = newState;
+        this._updatingState = newState;
     }
     _setUpdatingStateWithEventEmissionIfNewState(newState) {
-        if (newState === this.updatingState)
+        if (newState === this._updatingState)
             return;
-        this.updatingState = newState;
-        this.emit("updatingstatechange", this.updatingState);
+        this._updatingState = newState;
+        this.emit("updatingstatechange", this._updatingState);
+    }
+    _setStartedStateNoEmission(newState) {
+        if (newState === this.startedState)
+            return;
+        this.startedState = newState;
+    }
+    _setStartedStateWithEmission(newState) {
+        if (newState === this.startedState)
+            return;
+        this.startedState = newState;
+        this.emit("startedstatechange", this.startedState);
     }
     // Errors that retrying to load the ipns record will not help
     // Instead we should abort the retries, and emit an error event to notify the user to do something about it
@@ -195,11 +238,11 @@ export class RemoteSubplebbit extends TypedEmitter {
         }
         return true;
     }
-    async _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
+    _setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible() {
         const log = Logger("plebbit-js:comment:_setSubplebbitIpfsPropsFromUpdatingSubplebbitsIfPossible");
         const updatingSub = this._plebbit._updatingSubplebbits[this.address];
         if (updatingSub?.raw?.subplebbitIpfs && (this.updatedAt || 0) < updatingSub.raw.subplebbitIpfs.updatedAt) {
-            await this.initSubplebbitIpfsPropsNoMerge(updatingSub.raw.subplebbitIpfs);
+            this.initSubplebbitIpfsPropsNoMerge(updatingSub.raw.subplebbitIpfs);
             this.updateCid = updatingSub.updateCid;
             log.trace(`New Remote Subplebbit instance`, this.address, `will use SubplebbitIpfs from plebbit._updatingSubplebbits[${this.address}] with updatedAt`, this.updatedAt, "that's", timestamp() - this.updatedAt, "seconds old");
             this.emit("update", this);
@@ -212,8 +255,8 @@ export class RemoteSubplebbit extends TypedEmitter {
         const subInstance = this._plebbit._updatingSubplebbits[this.address];
         return {
             subplebbit: subInstance,
-            update: async () => {
-                await this.initSubplebbitIpfsPropsNoMerge(subInstance.toJSONIpfs());
+            update: () => {
+                this.initSubplebbitIpfsPropsNoMerge(subInstance.toJSONIpfs());
                 this.updateCid = subInstance.updateCid;
                 log(`Remote Subplebbit instance`, this.address, `received update event from plebbit._updatingSubplebbits[${this.address}] with updatedAt`, this.updatedAt, "that's", timestamp() - this.updatedAt, "seconds old");
                 this.emit("update", this);
@@ -222,7 +265,7 @@ export class RemoteSubplebbit extends TypedEmitter {
                 this.emit("error", error);
             },
             updatingstatechange: (newUpdatingState) => {
-                this._setUpdatingStateWithEventEmissionIfNewState(newUpdatingState);
+                this.emit("updatingstatechange", newUpdatingState);
             },
             statechange: async (newState) => {
                 if (newState === "stopped" && this.state !== "stopped")
@@ -254,7 +297,9 @@ export class RemoteSubplebbit extends TypedEmitter {
         this._updatingSubInstanceWithListeners.subplebbit._numOfListenersForUpdatingInstance++;
         if (this._updatingSubInstanceWithListeners.subplebbit.state === "stopped") {
             this._updatingSubInstanceWithListeners.subplebbit._setState("updating");
-            await this._updatingSubInstanceWithListeners.subplebbit._clientsManager.startUpdatingLoop();
+            this._updatingSubInstanceWithListeners.subplebbit._clientsManager
+                .startUpdatingLoop()
+                .catch((err) => log.error("Failed to start update loop of subplebbit", err));
         }
     }
     async update() {
@@ -270,6 +315,7 @@ export class RemoteSubplebbit extends TypedEmitter {
         if (!this._updatingSubInstanceWithListeners)
             throw Error("should be defined at this stage");
         const log = Logger("plebbit-js:remote-subplebbit:stop:cleanUpUpdatingSubInstanceWithListeners");
+        this._updatingState = this._updatingSubInstanceWithListeners.subplebbit.updatingState; // need to capture latest updating state before removing listeners
         // this instance is subscribed to plebbit._updatingSubplebbit[address]
         // removing listeners should reset plebbit._updatingSubplebbit by itself when there are no subscribers
         this._updatingSubInstanceWithListeners.subplebbit.removeListener("statechange", this._updatingSubInstanceWithListeners.statechange);

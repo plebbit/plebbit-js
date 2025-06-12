@@ -1360,13 +1360,13 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     author: z.ZodObject<{
@@ -1656,8 +1656,8 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -1744,8 +1744,8 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -2143,13 +2143,13 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     author: z.ZodObject<{
@@ -2444,8 +2444,8 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<Pick<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     id: number;
@@ -2536,8 +2536,8 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<Pick<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     id: number;
@@ -2943,13 +2943,13 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -3549,13 +3549,13 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -4155,13 +4155,13 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -4453,8 +4453,8 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -4547,8 +4547,8 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {

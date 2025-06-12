@@ -1,17 +1,18 @@
 import { RetryOperation } from "retry";
 import { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import { GenericChainProviderClient } from "../clients/chain-provider-client.js";
-import { ClientsManager, ResultOfFetchingSubplebbit } from "../clients/client-manager.js";
-import { CommentIpfsGatewayClient, SubplebbitIpfsGatewayClient } from "../clients/ipfs-gateway-client.js";
-import { SubplebbitPlebbitRpcStateClient } from "../clients/rpc-client/plebbit-rpc-state-client.js";
+import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { ChainTicker } from "../types.js";
-import { SubplebbitIpfsType } from "./types.js";
-import { SubplebbitKuboRpcClient } from "../clients/ipfs-client.js";
-import { SubplebbitKuboPubsubClient } from "../clients/pubsub-client.js";
+import type { SubplebbitIpfsType } from "./types.js";
 import { LimitedSet } from "../general-util/limited-set.js";
+import { SubplebbitIpfsGatewayClient, SubplebbitKuboPubsubClient, SubplebbitKuboRpcClient, SubplebbitLibp2pJsClient, SubplebbitPlebbitRpcStateClient } from "./subplebbit-clients.js";
+type ResultOfFetchingSubplebbit = {
+    subplebbit: SubplebbitIpfsType;
+    cid: string;
+} | undefined;
 export declare const MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS: number;
-export declare class SubplebbitClientsManager extends ClientsManager {
+export declare class SubplebbitClientsManager extends PlebbitClientsManager {
     clients: {
         ipfsGateways: {
             [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient;
@@ -26,18 +27,22 @@ export declare class SubplebbitClientsManager extends ClientsManager {
             [chainProviderUrl: string]: GenericChainProviderClient;
         }>;
         plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
+        libp2pJsClients: {
+            [libp2pJsClientUrl: string]: SubplebbitLibp2pJsClient;
+        };
     };
     private _subplebbit;
     _ipnsLoadingOperation?: RetryOperation;
-    _updateTimeout?: NodeJS.Timeout;
     _updateCidsAlreadyLoaded: LimitedSet<string>;
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]);
     protected _initKuboRpcClients(): void;
     protected _initPubsubKuboRpcClients(): void;
+    protected _initLibp2pJsClients(): void;
     protected _initPlebbitRpcClients(): void;
-    updateIpfsState(newState: SubplebbitKuboRpcClient["state"]): void;
-    updatePubsubState(newState: SubplebbitKuboPubsubClient["state"], pubsubProvider: string | undefined): void;
-    updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void;
+    updateKuboRpcState(newState: SubplebbitKuboRpcClient["state"], kuboRpcClientUrl: string): void;
+    updateKuboRpcPubsubState(newState: SubplebbitKuboPubsubClient["state"], pubsubProvider: string): void;
+    updateGatewayState(newState: SubplebbitIpfsGatewayClient["state"], gateway: string): void;
+    updateLibp2pJsClientState(newState: SubplebbitLibp2pJsClient["state"], libp2pJsClientUrl: string): void;
     emitError(e: PlebbitError): void;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedTextRecordResolve): void;
@@ -52,3 +57,4 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     private _fetchSubplebbitFromGateways;
     private _findErrorInSubplebbitRecord;
 }
+export {};

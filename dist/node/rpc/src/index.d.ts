@@ -1,6 +1,5 @@
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import { setPlebbitJs } from "./lib/plebbit-js/index.js";
-import { EventEmitter } from "events";
 import type { PlebbitWsServerClassOptions, JsonRpcSendNotificationOptions, CreatePlebbitWsServerOptions } from "./types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import WebSocket from "ws";
@@ -8,7 +7,8 @@ import Publication from "../../publications/publication.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
 import type { RpcInternalSubplebbitRecordBeforeFirstUpdateType } from "../../subplebbit/types.js";
-declare class PlebbitWsServer extends EventEmitter {
+import { RpcPublishResult } from "../../publications/types.js";
+declare class PlebbitWsServer {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
     ws: RpcWebsocketsServer["wss"];
@@ -43,20 +43,21 @@ declare class PlebbitWsServer extends EventEmitter {
     fetchCid(params: any): Promise<string>;
     private _getCurrentSettings;
     settingsSubscribe(params: any, connectionId: string): Promise<number>;
+    private _initPlebbit;
     private _createPlebbitInstanceFromSetSettings;
     setSettings(params: any): Promise<boolean>;
     commentUpdateSubscribe(params: any, connectionId: string): Promise<number>;
     subplebbitUpdateSubscribe(params: any, connectionId: string): Promise<number>;
     private _createCommentInstanceFromPublishCommentParams;
-    publishComment(params: any, connectionId: string): Promise<number>;
+    publishComment(params: any, connectionId: string): Promise<RpcPublishResult>;
     private _createVoteInstanceFromPublishVoteParams;
-    publishVote(params: any, connectionId: string): Promise<number>;
+    publishVote(params: any, connectionId: string): Promise<RpcPublishResult>;
     private _createSubplebbitEditInstanceFromPublishSubplebbitEditParams;
-    publishSubplebbitEdit(params: any, connectionId: string): Promise<number>;
+    publishSubplebbitEdit(params: any, connectionId: string): Promise<RpcPublishResult>;
     private _createCommentEditInstanceFromPublishCommentEditParams;
-    publishCommentEdit(params: any, connectionId: string): Promise<number>;
+    publishCommentEdit(params: any, connectionId: string): Promise<RpcPublishResult>;
     private _createCommentModerationInstanceFromPublishCommentModerationParams;
-    publishCommentModeration(params: any, connectionId: string): Promise<number>;
+    publishCommentModeration(params: any, connectionId: string): Promise<RpcPublishResult>;
     publishChallengeAnswers(params: any): Promise<boolean>;
     resolveAuthorAddress(params: any): Promise<string | null>;
     unsubscribe(params: any, connectionId: string): Promise<boolean>;

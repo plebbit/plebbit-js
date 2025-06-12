@@ -8,6 +8,7 @@ import { SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
 import * as z from "zod";
 import { TypedEmitter } from "tiny-typed-emitter";
 import type { PlebbitRpcClientEvents } from "../../types.js";
+import type { RpcPublishResult } from "../../publications/types.js";
 export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvents> {
     state: "stopped" | "connecting" | "failed" | "connected";
     subplebbits: string[];
@@ -23,7 +24,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     _init(): Promise<void>;
     destroy(): Promise<void>;
     toJSON(): undefined;
-    getSubscription(subscriptionId: number): EventEmitter;
+    getSubscription(subscriptionId: number): EventEmitter<[never]>;
     unsubscribe(subscriptionId: number): Promise<void>;
     emitAllPendingMessages(subscriptionId: number): void;
     getComment(parsedCommentCid: string): Promise<CommentIpfsType>;
@@ -36,11 +37,11 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     editSubplebbit(subplebbitAddress: string, subplebbitEditOptions: SubplebbitEditOptions): Promise<RpcLocalSubplebbitUpdateResultType>;
     deleteSubplebbit(subplebbitAddress: string): Promise<void>;
     subplebbitUpdateSubscribe(subplebbitAddress: string): Promise<number>;
-    publishComment(commentProps: DecryptedChallengeRequest): Promise<number>;
-    publishCommentEdit(commentEditProps: DecryptedChallengeRequest): Promise<number>;
-    publishCommentModeration(commentModProps: DecryptedChallengeRequest): Promise<number>;
-    publishVote(voteProps: DecryptedChallengeRequest): Promise<number>;
-    publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest): Promise<number>;
+    publishComment(commentProps: DecryptedChallengeRequest): Promise<RpcPublishResult>;
+    publishCommentEdit(commentEditProps: DecryptedChallengeRequest): Promise<RpcPublishResult>;
+    publishCommentModeration(commentModProps: DecryptedChallengeRequest): Promise<RpcPublishResult>;
+    publishVote(voteProps: DecryptedChallengeRequest): Promise<RpcPublishResult>;
+    publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest): Promise<RpcPublishResult>;
     commentUpdateSubscribe(commentCid: string): Promise<number>;
     publishChallengeAnswers(subscriptionId: number, challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"]): Promise<true>;
     resolveAuthorAddress(parsedAuthorAddress: string): Promise<string | null>;

@@ -226,12 +226,5 @@ export class KeyvBetterSqlite3 extends EventEmitter {
         // The database is managed externally, so we don't close it here
     }
 }
-/**
- * Create a new Keyv instance with a KeyvBetterSqlite3 adapter
- */
-import Keyv from "keyv";
-export const createKeyv = (db, options) => {
-    return new Keyv({ store: new KeyvBetterSqlite3(db, options) });
-};
 export default KeyvBetterSqlite3;
 //# sourceMappingURL=keyv-better-sqlite3.js.map

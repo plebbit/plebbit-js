@@ -43,7 +43,7 @@ export type EncryptedEncoded = {
     ciphertext: string;
     iv: string;
     tag: string;
-    type: "ed25519-aes-gcm";
+    type: string;
 };
 export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
     signature: string;

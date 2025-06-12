@@ -7,13 +7,14 @@ import { nonNegativeIntStringSchema } from "../schema.js";
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
     .object({
-    type: z.enum(["ed25519-aes-gcm"]), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
+    type: z.string().min(1), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
     publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
 })
     .passthrough();
+export const SubplebbitRoleNames = z.enum(["owner", "admin", "moderator"]);
 export const SubplebbitRoleSchema = z
     .object({
-    role: z.enum(["owner", "admin", "moderator"])
+    role: SubplebbitRoleNames.or(z.string().min(1))
 })
     .passthrough();
 export const PubsubTopicSchema = z.string().min(1);
@@ -22,9 +23,9 @@ export const SubplebbitSuggestedSchema = z
     // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
     primaryColor: z.string().optional(),
     secondaryColor: z.string().optional(),
-    avatarUrl: z.string().url().optional(),
-    bannerUrl: z.string().url().optional(),
-    backgroundUrl: z.string().url().optional(),
+    avatarUrl: z.string().min(1).optional(),
+    bannerUrl: z.string().min(1).optional(),
+    backgroundUrl: z.string().min(1).optional(),
     language: z.string().optional()
     // TODO: menu links, wiki pages, sidebar widgets
 })
@@ -189,7 +190,8 @@ export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(Subp
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
 export const RpcRemoteSubplebbitUpdateEventResultSchema = z.object({
     subplebbit: SubplebbitIpfsSchema.passthrough(),
-    updateCid: CidStringSchema
+    updateCid: CidStringSchema,
+    updatingState: z.custom().optional()
 });
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
 export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial()

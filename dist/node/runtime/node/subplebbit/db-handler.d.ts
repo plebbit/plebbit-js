@@ -1,9 +1,11 @@
-import type { CommentEditsTableRow, CommentEditsTableRowInsert, CommentModerationsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdatesRow, CommentUpdatesTableRowInsert, VotesTableRow, VotesTableRowInsert } from "../../../types.js";
 import Database from "better-sqlite3";
 import type { PageOptions } from "./page-generator.js";
 import type { InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitStats } from "../../../subplebbit/types.js";
-import type { CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import type { CommentEditsTableRow, CommentEditsTableRowInsert } from "../../../publications/comment-edit/types.js";
+import type { CommentsTableRow, CommentsTableRowInsert, CommentUpdatesRow, CommentUpdatesTableRowInsert, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import type { PageIpfs } from "../../../pages/types.js";
+import type { CommentModerationsTableRowInsert } from "../../../publications/comment-moderation/types.js";
+import type { VotesTableRow, VotesTableRowInsert } from "../../../publications/vote/types.js";
 export declare class DbHandler {
     private _db;
     private _subplebbit;
@@ -64,7 +66,7 @@ export declare class DbHandler {
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
@@ -123,7 +125,7 @@ export declare class DbHandler {
                 replyScore: import("zod").ZodOptional<import("zod").ZodNumber>;
                 firstCommentTimestamp: import("zod").ZodOptional<import("zod").ZodNumber>;
                 challenges: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodNumber, "many">>;
-                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodUnion<[import("zod").ZodEnum<["owner", "admin", "moderator"]>, import("zod").ZodString]>, "many">>;
                 address: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodString, "many">>;
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;

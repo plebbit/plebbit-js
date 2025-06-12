@@ -31,8 +31,8 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
         address: string;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         protocolVersion: string;
@@ -62,7 +62,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -121,7 +121,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -180,7 +180,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -222,15 +222,15 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
         encryption: {
-            type: "ed25519-aes-gcm";
+            type: string;
             publicKey: string;
         } & {
             [k: string]: unknown;
         };
         createdAt: number;
         statsCid: string;
-        lastCommentCid?: string | undefined;
         title?: string | undefined;
+        lastCommentCid?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
@@ -239,7 +239,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">> | undefined;
         rules?: string[] | undefined;
         lastPostCid?: string | undefined;
@@ -291,6 +291,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
         [k: string]: unknown;
     };
     updateCid: string;
+    updatingState?: import("../subplebbit/types.js").SubplebbitUpdatingState | undefined;
 };
 export declare function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: z.infer<typeof CidStringSchema>): string;
 export declare function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: z.infer<typeof RpcCommentUpdateResultSchema>): CommentIpfsType | CommentUpdateType;
@@ -298,8 +299,8 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -347,7 +348,7 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: z.objectOutputType<{
@@ -422,7 +423,7 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
                     replyScore: z.ZodOptional<z.ZodNumber>;
                     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                     rateLimit: z.ZodOptional<z.ZodNumber>;
                     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -481,7 +482,7 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
                     replyScore: z.ZodOptional<z.ZodNumber>;
                     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                     rateLimit: z.ZodOptional<z.ZodNumber>;
                     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -537,7 +538,7 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
         description?: string | undefined;
         pubsubTopic?: string | undefined;
         roles?: Record<string, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
         rules?: string[] | undefined;
         features?: z.objectOutputType<{
@@ -612,7 +613,7 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
                     replyScore: z.ZodOptional<z.ZodNumber>;
                     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                     rateLimit: z.ZodOptional<z.ZodNumber>;
                     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -671,7 +672,7 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
                     replyScore: z.ZodOptional<z.ZodNumber>;
                     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                     rateLimit: z.ZodOptional<z.ZodNumber>;
                     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -979,8 +980,8 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -1179,8 +1180,8 @@ export declare function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorI
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -1349,8 +1350,8 @@ export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbi
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -1439,7 +1440,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1498,7 +1499,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1557,7 +1558,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1622,7 +1623,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1681,7 +1682,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1740,7 +1741,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1805,7 +1806,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1864,7 +1865,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1923,7 +1924,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1971,23 +1972,23 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -2000,11 +2001,11 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -2144,7 +2145,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -2219,7 +2220,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2278,7 +2279,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2324,14 +2325,14 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -2363,7 +2364,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2422,7 +2423,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2481,7 +2482,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2524,7 +2525,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -2532,7 +2533,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -2613,6 +2614,11 @@ export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(a
     kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
+    libp2pJsClientOptions?: {
+        key: string;
+        libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+        heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+    }[] | undefined;
 };
 export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>): z.objectOutputType<{
     posts: z.ZodOptional<z.ZodObject<{
@@ -2650,7 +2656,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2709,7 +2715,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2768,7 +2774,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2833,7 +2839,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2892,7 +2898,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2951,7 +2957,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3016,7 +3022,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3075,7 +3081,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3134,7 +3140,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3182,23 +3188,23 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -3211,11 +3217,11 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -3355,7 +3361,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -3430,7 +3436,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3489,7 +3495,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3535,14 +3541,14 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -3574,7 +3580,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3633,7 +3639,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3692,7 +3698,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3735,7 +3741,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -3743,7 +3749,7 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -3797,8 +3803,8 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -3851,7 +3857,7 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 };
@@ -3975,7 +3981,7 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 };

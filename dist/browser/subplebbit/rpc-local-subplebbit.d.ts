@@ -16,10 +16,10 @@ export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements R
     constructor(plebbit: Plebbit);
     toJSONInternalRpcAfterFirstUpdate(): RpcInternalSubplebbitRecordAfterFirstUpdateType;
     toJSONInternalRpcBeforeFirstUpdate(): RpcInternalSubplebbitRecordBeforeFirstUpdateType;
-    initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType): Promise<void>;
-    initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType): Promise<void>;
+    initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType): void;
+    initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType): void;
     protected _updateRpcClientStateFromStartedState(startedState: RpcLocalSubplebbit["startedState"]): void;
-    protected _processUpdateEventFromRpcUpdate(args: any): Promise<void>;
+    protected _processUpdateEventFromRpcUpdate(args: any): void;
     private _handleRpcUpdateEventFromStart;
     private _handleRpcStartedStateChangeEvent;
     private _handleRpcChallengeRequestEvent;

@@ -217,24 +217,24 @@ export default class PlebbitRpcClient extends TypedEmitter {
         return subscriptionId;
     }
     async publishComment(commentProps) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishComment", [commentProps]));
-        return subscriptionId;
+        const publishRes = await this._webSocketClient.call("publishComment", [commentProps]);
+        return publishRes;
     }
     async publishCommentEdit(commentEditProps) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentEdit", [commentEditProps]));
-        return subscriptionId;
+        const publishRes = await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
+        return publishRes;
     }
     async publishCommentModeration(commentModProps) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentModeration", [commentModProps]));
-        return subscriptionId;
+        const publishRes = await this._webSocketClient.call("publishCommentModeration", [commentModProps]);
+        return publishRes;
     }
     async publishVote(voteProps) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [voteProps]));
-        return subscriptionId;
+        const publishRes = await this._webSocketClient.call("publishVote", [voteProps]);
+        return publishRes;
     }
     async publishSubplebbitEdit(subplebbitEdit) {
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]));
-        return subscriptionId;
+        const publishRes = await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]);
+        return publishRes;
     }
     async commentUpdateSubscribe(commentCid) {
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);

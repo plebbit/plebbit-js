@@ -810,13 +810,13 @@ export declare const JsonSignatureSchema: z.ZodObject<{
     signedPropertyNames: z.ZodArray<z.ZodString, "many">;
 }, "strip", z.ZodTypeAny, {
     type: string;
-    publicKey: string;
     signature: string;
+    publicKey: string;
     signedPropertyNames: string[];
 }, {
     type: string;
-    publicKey: string;
     signature: string;
+    publicKey: string;
     signedPropertyNames: string[];
 }>;
 export declare const PublicationBaseBeforeSigning: z.ZodObject<{
@@ -1003,13 +1003,13 @@ export declare const PublicationBaseBeforeSigning: z.ZodObject<{
     }>;
     protocolVersion: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    timestamp: number;
     signer: {
         type: "ed25519";
         privateKey: string;
         address: string;
         publicKey: string;
     };
+    timestamp: number;
     author: {
         address: string;
         previousCommentCid?: string | undefined;
@@ -1047,13 +1047,13 @@ export declare const PublicationBaseBeforeSigning: z.ZodObject<{
     };
     protocolVersion: string;
 }, {
-    timestamp: number;
     signer: {
         type: "ed25519";
         privateKey: string;
         address: string;
         publicKey: string;
     };
+    timestamp: number;
     author: {
         address: string;
         previousCommentCid?: string | undefined;

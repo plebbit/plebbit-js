@@ -5,9 +5,9 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
     plebbitOptions: z.ZodOptional<z.ZodType<{
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -19,12 +19,17 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     }, z.ZodTypeDef, {
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -36,6 +41,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     }>>;
     authKey: z.ZodOptional<z.ZodString>;
 } & {
@@ -45,9 +55,9 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
     plebbitOptions: z.ZodOptional<z.ZodType<{
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -59,12 +69,17 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     }, z.ZodTypeDef, {
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -76,6 +91,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     }>>;
     authKey: z.ZodOptional<z.ZodString>;
 } & {
@@ -85,9 +105,9 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
     plebbitOptions: z.ZodOptional<z.ZodType<{
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -99,12 +119,17 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     }, z.ZodTypeDef, {
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -116,6 +141,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     }>>;
     authKey: z.ZodOptional<z.ZodString>;
 } & {
@@ -124,12 +154,25 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
 }, z.ZodTypeAny, "passthrough">>;
 export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
     plebbitOptions: z.ZodObject<{
-        kuboRpcClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
+        kuboRpcClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]>>;
         plebbitRpcClientsOptions: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
         dataPath: z.ZodOptional<z.ZodString>;
+        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
+        }, "strip", z.ZodTypeAny, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }>, "many">>;
     } & {
         ipfsGatewayUrls: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>, string[], string[] | undefined>;
-        pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+        pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]>>>;
         httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
         chainProviders: z.ZodEffects<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
@@ -168,12 +211,25 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         validatePages: z.ZodDefault<z.ZodBoolean>;
         userAgent: z.ZodDefault<z.ZodString>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        kuboRpcClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
+        kuboRpcClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]>>;
         plebbitRpcClientsOptions: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
         dataPath: z.ZodOptional<z.ZodString>;
+        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
+        }, "strip", z.ZodTypeAny, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }>, "many">>;
     } & {
         ipfsGatewayUrls: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>, string[], string[] | undefined>;
-        pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+        pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]>>>;
         httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
         chainProviders: z.ZodEffects<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
@@ -212,12 +268,25 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         validatePages: z.ZodDefault<z.ZodBoolean>;
         userAgent: z.ZodDefault<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        kuboRpcClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
+        kuboRpcClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]>>;
         plebbitRpcClientsOptions: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
         dataPath: z.ZodOptional<z.ZodString>;
+        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
+        }, "strip", z.ZodTypeAny, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }>, "many">>;
     } & {
         ipfsGatewayUrls: z.ZodEffects<z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>, string[], string[] | undefined>;
-        pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+        pubsubKuboRpcClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]>>>;
         httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
         chainProviders: z.ZodEffects<z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
@@ -288,6 +357,11 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -295,9 +369,9 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
     plebbitOptions: {
         userAgent?: string | undefined;
         ipfsGatewayUrls?: string[] | undefined;
-        kuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        kuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         httpRoutersOptions?: string[] | undefined;
-        pubsubKuboRpcClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+        pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
         chainProviders?: Record<string, {
@@ -309,6 +383,11 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -335,6 +414,19 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
+        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
+        }, "strip", z.ZodTypeAny, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }>, "many">>;
     } & {
         kuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
         pubsubKuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
@@ -359,6 +451,19 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
+        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
+        }, "strip", z.ZodTypeAny, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }>, "many">>;
     } & {
         kuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
         pubsubKuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
@@ -383,6 +488,19 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
+        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+            key: z.ZodString;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
+        }, "strip", z.ZodTypeAny, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }, {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }>, "many">>;
     } & {
         kuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
         pubsubKuboRpcClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
@@ -442,7 +560,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -501,7 +619,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -560,7 +678,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -624,7 +742,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -683,7 +801,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -748,7 +866,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -807,7 +925,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -872,7 +990,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -931,7 +1049,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -996,7 +1114,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1055,7 +1173,7 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1105,11 +1223,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 success: z.ZodLiteral<false>;
                 error: z.ZodString;
             }, "strip", z.ZodTypeAny, {
-                error: string;
                 success: false;
+                error: string;
             }, {
-                error: string;
                 success: false;
+                error: string;
             }>]>>>;
             type: z.ZodString;
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
@@ -1119,8 +1237,8 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             verify: (args_0: string, ...args: unknown[]) => Promise<{
                 success: true;
             } | {
-                error: string;
                 success: false;
+                error: string;
             }>;
             caseInsensitive?: boolean | undefined;
         }, {
@@ -1129,8 +1247,8 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             verify: (args_0: string, ...args: unknown[]) => Promise<{
                 success: true;
             } | {
-                error: string;
                 success: false;
+                error: string;
             }>;
             caseInsensitive?: boolean | undefined;
         }>, z.ZodUnion<[z.ZodObject<{
@@ -1143,11 +1261,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             success: z.ZodLiteral<false>;
             error: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            error: string;
             success: false;
+            error: string;
         }, {
-            error: string;
             success: false;
+            error: string;
         }>]>]>>>;
     }, "getChallenge">, "strict", z.ZodTypeAny, {
         type: string;
@@ -1229,6 +1347,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     } & {
         [k: string]: unknown;
     };
@@ -1271,6 +1394,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
+        libp2pJsClientOptions?: {
+            key: string;
+            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
+        }[] | undefined;
     } & {
         [k: string]: unknown;
     };

@@ -26,21 +26,19 @@ export type OptionsToLoadFromGateway = {
 };
 export declare class BaseClientsManager {
     _plebbit: Plebbit;
-    _defaultPubsubProviderUrl: string;
-    _defaultIpfsProviderUrl: string | undefined;
-    providerSubscriptions: Record<string, string[]>;
+    pubsubProviderSubscriptions: Record<string, string[]>;
     constructor(plebbit: Plebbit);
     toJSON(): undefined;
-    getDefaultPubsub(): import("../types.js").PubsubClient;
-    getDefaultIpfs(): import("../types.js").KuboRpcClient;
-    pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string): Promise<void>;
+    getDefaultPubsubKuboRpcClientOrHelia(): import("../types.js").PubsubClient | import("../helia/libp2pjsClient.js").Libp2pJsClient;
+    getDefaultKuboRpcClientOrHelia(): Plebbit["clients"]["kuboRpcClients"][string] | Plebbit["clients"]["libp2pJsClients"][string];
+    getDefaultKuboRpcClient(): import("../types.js").KuboRpcClient;
+    getDefaultKuboPubsubClient(): import("../types.js").PubsubClient;
+    getIpfsClientWithKuboRpcClientFunctions(): import("../helia/types.js").HeliaWithKuboRpcClientFunctions;
+    pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, kuboPubsubRpcUrlOrLibp2pJsKey: string): Promise<void>;
     pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler): Promise<void>;
-    pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler): Promise<void>;
+    pubsubUnsubscribeOnProvider(pubsubTopic: string, kuboPubsubRpcUrlOrLibp2pJsKey: string, handler?: PubsubSubscriptionHandler): Promise<void>;
     pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler): Promise<void>;
-    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
-    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;
-    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError): void;
-    pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string): Promise<void>;
+    pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, kuboPubsubRpcUrlOrLibp2pJsKey: string): Promise<void>;
     pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void>;
     _fetchWithLimit(url: string, options: {
         cache: RequestCache;

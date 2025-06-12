@@ -43,7 +43,11 @@ export default class Stats {
         const gatewayType = type === "ipfs" || type === "ipns"
             ? "ipfsGateways"
             : type === "pubsub-publish" || type === "pubsub-subscribe"
-                ? "pubsubKuboRpcClients"
+                ? remeda.keys.strict(this._plebbit.clients.pubsubKuboRpcClients).length > 0
+                    ? "pubsubKuboRpcClients"
+                    : remeda.keys.strict(this._plebbit.clients.libp2pJsClients).length > 0
+                        ? "libp2pJsClients"
+                        : undefined
                 : "chainProviders";
         assert(gatewayType, "Can't find the gateway type to sort");
         const gateways = gatewayType === "chainProviders"

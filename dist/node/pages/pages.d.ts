@@ -1,5 +1,5 @@
 import type { PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
-import { BasePagesClientsManager, SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
+import { BasePagesClientsManager, SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
 import { Comment } from "../publications/comment/comment.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { Plebbit } from "../plebbit/plebbit.js";

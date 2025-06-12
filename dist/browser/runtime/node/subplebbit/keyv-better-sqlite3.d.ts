@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
 import { Database as BetterSqlite3Database } from "better-sqlite3";
-import { KeyvStoreAdapter } from "keyv";
 export interface KeyvBetterSqlite3Options {
     /**
      * Table name for storage (defaults to 'keyv')
@@ -18,7 +17,7 @@ export interface KeyvBetterSqlite3Options {
 /**
  * A KeyvStoreAdapter implementation using better-sqlite3 directly
  */
-export declare class KeyvBetterSqlite3 extends EventEmitter implements KeyvStoreAdapter {
+export declare class KeyvBetterSqlite3 extends EventEmitter {
     ttlSupport: boolean;
     opts: KeyvBetterSqlite3Options & {
         dialect: string;
@@ -66,9 +65,4 @@ export declare class KeyvBetterSqlite3 extends EventEmitter implements KeyvStore
      */
     disconnect(): Promise<void>;
 }
-/**
- * Create a new Keyv instance with a KeyvBetterSqlite3 adapter
- */
-import Keyv from "keyv";
-export declare const createKeyv: (db: BetterSqlite3Database, options?: KeyvBetterSqlite3Options) => Keyv<any>;
 export default KeyvBetterSqlite3;
