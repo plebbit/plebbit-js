@@ -287,7 +287,11 @@ getRemotePlebbitConfigs().map((config) => {
 
             await mockPost.publish();
             await errorPromise;
-            await resolveWhenConditionIsTrue(mockPost, () => mockPost.publishingState === "failed", "publishingstatechange");
+            await resolveWhenConditionIsTrue(
+                mockPost,
+                () => recordedPublishingStates[recordedPublishingStates.length - 1] === "failed",
+                "publishingstatechange"
+            );
 
             expect(mockPost.publishingState).to.equal("failed");
             const expectedPublishingState = ["fetching-subplebbit-ipns"].concat(
