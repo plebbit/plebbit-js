@@ -1644,7 +1644,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const storedCommentUpdate = this._dbHandler.queryStoredCommentUpdate(comment);
         const calculatedCommentUpdate = this._dbHandler.queryCalculatedCommentUpdate(comment);
-        log.trace("Calculated comment update for comment", comment.cid, "on subplebbit", this.address);
+        log.trace(
+            "Calculated comment update for comment",
+            comment.cid,
+            "on subplebbit",
+            this.address,
+            "with reply count",
+            calculatedCommentUpdate.replyCount
+        );
 
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
