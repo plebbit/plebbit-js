@@ -620,7 +620,9 @@ export class CommentClientsManager extends PublicationClientsManager {
         log(
             "Searched for new comment update of comment",
             this._comment.cid,
-            "in the following pageCids of parent comment:",
+            "in the following pageCids of page",
+            pageSortName,
+            "of parent comment:",
             parentCommentInstance.cid,
             pageCidsSearchedForNewUpdate,
             "and found",
