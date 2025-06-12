@@ -38,13 +38,7 @@ const offlineNodeArgs = {
     gatewayPort: 18080,
     daemonArgs: " --enable-namesys-pubsub",
     swarmPort: 4001,
-    extraCommands: [
-        "bootstrap rm --all",
-        "config --json Discovery.MDNS.Enabled false",
-        `config --json Addresses.Swarm '[
-            "/ip4/0.0.0.0/tcp/4001/ws"  
-          ]'`
-    ]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
@@ -52,13 +46,7 @@ const pubsubNodeArgs = {
     gatewayPort: 18081,
     swarmPort: 4002,
     daemonArgs: "--enable-namesys-pubsub",
-    extraCommands: [
-        "bootstrap rm --all",
-        "config --json Discovery.MDNS.Enabled false",
-        `config --json Addresses.Swarm '[
-            "/ip4/0.0.0.0/tcp/4002/ws"  
-          ]'`
-    ]
+    extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
 const onlineNodeArgs = {
@@ -137,7 +125,7 @@ const startIpfsNode = async (nodeArgs) => {
     ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
-    ipfsConfig.Addresses.Swarm = ipfsConfig.Addresses.Swarm.map((swarmAddr) => swarmAddr.replace("/4001", "/" + nodeArgs.swarmPort));
+    ipfsConfig["Addresses"]["Swarm"] = [`/ip4/0.0.0.0/tcp/${nodeArgs.swarmPort}/ws`];
     fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
 
     const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
