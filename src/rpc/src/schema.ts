@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "../../schema.js";
+import { PlebbitParsedOptionsSchema, PlebbitUserOptionBaseSchema } from "../../schema.js";
 import type { Server as HTTPServer } from "http";
 import type { Server as HTTPSServer } from "https";
 import { ChallengeFileSchema } from "../../subplebbit/schema.js";
@@ -24,7 +24,7 @@ export const CreatePlebbitWsServerOptionsSchema = z
 // rpc WS
 
 export const SetNewSettingsPlebbitWsServerSchema = z.object({
-    plebbitOptions: PlebbitUserOptionsSchema.passthrough()
+    plebbitOptions: PlebbitUserOptionBaseSchema.passthrough()
 });
 
 export const PlebbitWsServerSettingsSerializedSchema = z.object({

@@ -403,7 +403,7 @@ export function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfIt
     else return args;
 }
 
-export function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any): z.infer<typeof PlebbitUserOptionsSchema> {
     // normally we don't change args, but here we should use parseRes.data because PlebbitUserOptionsSchema sets a lot of defaults
     const parseRes = PlebbitUserOptionsSchema.safeParse(args);
     if (!parseRes.success)
