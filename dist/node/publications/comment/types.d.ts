@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { CommentChallengeRequestToEncryptSchema, CommentIpfsSchema, CommentPubsubMessagePublicationSchema, CommentSignedPropertyNames, CommentUpdateForChallengeVerificationSchema, CommentUpdateForChallengeVerificationSignedPropertyNames, CommentUpdateNoRepliesSchema, CommentUpdateSignedPropertyNames, CreateCommentOptionsSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import { CommentChallengeRequestToEncryptSchema, CommentIpfsSchema, CommentPubsubMessagePublicationSchema, CommentSignedPropertyNames, CommentsTableRowSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateForChallengeVerificationSignedPropertyNames, CommentUpdateNoRepliesSchema, CommentUpdateSignedPropertyNames, CreateCommentOptionsSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
 import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
-import type { PublicationState } from "../types.js";
+import type { PublicationRpcErrorToTransmit, PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 export type CreateCommentOptions = z.infer<typeof CreateCommentOptionsSchema>;
@@ -64,4 +64,19 @@ export interface CommentUpdateSignature extends JsonSignature {
     signedPropertyNames: typeof CommentUpdateSignedPropertyNames;
 }
 export type MinimumCommentFieldsToFetchPages = Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "postCid">;
+export type CommentRpcErrorToTransmit = PublicationRpcErrorToTransmit & {
+    details?: PublicationRpcErrorToTransmit["details"] & {
+        newUpdatingState?: Comment["updatingState"];
+    };
+};
+export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> {
+}
+export interface CommentUpdatesRow extends CommentUpdateType {
+    insertedAt: number;
+    postUpdatesBucket: number | undefined;
+    publishedToPostUpdatesMFS: boolean;
+    postCommentUpdateCid: string | undefined;
+}
+export type CommentUpdatesTableRowInsert = CommentUpdatesRow;
 export {};

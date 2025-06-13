@@ -8,10 +8,10 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/schema.js";
-import pTimeout, { TimeoutError } from "p-timeout";
+import pTimeout from "p-timeout";
 import { of as calculateIpfsCidV0Lib } from "typestub-ipfs-only-hash";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { sha256 } from "multiformats/hashes/sha2";
+import { sha256 } from "js-sha256";
 import { base32 } from "multiformats/bases/base32";
 import retry from "retry";
 import PeerId from "peer-id";
@@ -305,7 +305,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new TimeoutError(`Subplebbit ${subplebbit.address} update timed out after ${timeoutMs}ms`)
+            message: updateError || new PlebbitError("ERR_GET_SUBPLEBBIT_TIMED_OUT", { subplebbitAddress: subplebbit.address, timeoutMs })
         });
         if (updateError)
             throw updateError;
@@ -344,18 +344,19 @@ export function ipnsNameToIpnsOverPubsubTopic(ipnsName) {
     const pubsubTopic = "/record/" + uint8ArrayToString(ipnsNameBytesWithNamespace, "base64url");
     return pubsubTopic;
 }
-export async function pubsubTopicToDhtKey(pubsubTopic) {
-    // pubsub topic dht key used by kubo is a cid of "floodsub:topic" https://github.com/libp2p/go-libp2p-pubsub/blob/3aa9d671aec0f777a7f668ca2b2ceb37218fb6bb/discovery.go#L328
-    const string = `floodsub:${pubsubTopic}`;
-    // convert string to same cid as kubo https://github.com/libp2p/go-libp2p/blob/024293c77e17794b0dd9dacec3032b4c5a535f64/p2p/discovery/routing/routing.go#L70
-    const bytes = new TextEncoder().encode(string);
-    const hash = await sha256.digest(bytes);
-    const cidVersion = 1;
-    const multicodec = 0x55;
-    const cid = CID.create(cidVersion, multicodec, hash);
+export const pubsubTopicToDhtKey = (pubsubTopic) => {
+    const stringToHash = `floodsub:${pubsubTopic}`;
+    const bytes = new TextEncoder().encode(stringToHash);
+    // Use synchronous sha256 from js-sha256
+    const hashBytes = sha256.array(bytes);
+    // Create a multiformats digest from the raw hash bytes
+    // 0x12 is the multicodec for SHA-256
+    const digest = Digest.create(0x12, new Uint8Array(hashBytes));
+    // Create CID with the digest
+    const cid = CID.create(1, 0x55, digest);
     return cid.toString(base32);
-}
-export async function retryKuboIpfsAdd({ kuboRpcClient, log, content, inputNumOfRetries, options }) {
+};
+export async function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, options }) {
     const numOfRetries = inputNumOfRetries ?? 3;
     return new Promise((resolve, reject) => {
         const operation = retry.operation({

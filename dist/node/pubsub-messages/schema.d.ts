@@ -2,31 +2,31 @@ import { z } from "zod";
 export declare const PubsubMessageSignatureSchema: z.ZodObject<{
     signature: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
     publicKey: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-    type: z.ZodEnum<["ed25519"]>;
+    type: z.ZodString;
     signedPropertyNames: z.ZodArray<z.ZodString, "many">;
 }, "strict", z.ZodTypeAny, {
-    type: "ed25519";
-    publicKey: Uint8Array<ArrayBuffer>;
+    type: string;
     signature: Uint8Array<ArrayBuffer>;
+    publicKey: Uint8Array<ArrayBuffer>;
     signedPropertyNames: string[];
 }, {
-    type: "ed25519";
-    publicKey: Uint8Array<ArrayBuffer>;
+    type: string;
     signature: Uint8Array<ArrayBuffer>;
+    publicKey: Uint8Array<ArrayBuffer>;
     signedPropertyNames: string[];
 }>;
 export declare const EncryptedSchema: z.ZodObject<{
     ciphertext: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
     iv: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
     tag: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-    type: z.ZodEnum<["ed25519-aes-gcm"]>;
+    type: z.ZodString;
 }, "strict", z.ZodTypeAny, {
-    type: "ed25519-aes-gcm";
+    type: string;
     ciphertext: Uint8Array<ArrayBuffer>;
     iv: Uint8Array<ArrayBuffer>;
     tag: Uint8Array<ArrayBuffer>;
 }, {
-    type: "ed25519-aes-gcm";
+    type: string;
     ciphertext: Uint8Array<ArrayBuffer>;
     iv: Uint8Array<ArrayBuffer>;
     tag: Uint8Array<ArrayBuffer>;
@@ -36,36 +36,36 @@ export declare const ChallengeRequestMessageSchema: z.ZodObject<{
     signature: z.ZodObject<{
         signature: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         publicKey: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519"]>;
+        type: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
     userAgent: z.ZodString;
     timestamp: z.ZodNumber;
 } & {
-    type: z.ZodEnum<["CHALLENGEREQUEST"]>;
+    type: z.ZodLiteral<"CHALLENGEREQUEST">;
     encrypted: z.ZodObject<{
         ciphertext: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         iv: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         tag: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
     }, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -75,16 +75,16 @@ export declare const ChallengeRequestMessageSchema: z.ZodObject<{
     type: "CHALLENGEREQUEST";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
     challengeRequestId: Uint8Array<ArrayBuffer>;
     userAgent: string;
     encrypted: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -94,16 +94,16 @@ export declare const ChallengeRequestMessageSchema: z.ZodObject<{
     type: "CHALLENGEREQUEST";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
     challengeRequestId: Uint8Array<ArrayBuffer>;
     userAgent: string;
     encrypted: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -120,13 +120,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -154,7 +154,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -450,13 +450,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -484,7 +484,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -780,13 +780,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -814,7 +814,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -1110,13 +1110,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -1144,7 +1144,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -1440,13 +1440,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -1474,7 +1474,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -1803,13 +1803,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -2136,13 +2136,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -2469,13 +2469,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -2771,13 +2771,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -3097,13 +3097,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -3423,13 +3423,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -4055,13 +4055,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -4661,13 +4661,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -5267,13 +5267,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -5735,7 +5735,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5794,7 +5794,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5853,7 +5853,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5917,7 +5917,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5976,7 +5976,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6041,7 +6041,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6100,7 +6100,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6165,7 +6165,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6224,7 +6224,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6289,7 +6289,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6348,7 +6348,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6415,7 +6415,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6474,7 +6474,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6543,7 +6543,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6602,7 +6602,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6645,11 +6645,11 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -6657,7 +6657,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -6732,7 +6732,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6791,7 +6791,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6839,7 +6839,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -6914,7 +6914,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6973,7 +6973,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7043,13 +7043,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -7510,7 +7510,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7569,7 +7569,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7628,7 +7628,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7692,7 +7692,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7751,7 +7751,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7816,7 +7816,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7875,7 +7875,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7940,7 +7940,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7999,7 +7999,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8064,7 +8064,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8123,7 +8123,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8190,7 +8190,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8249,7 +8249,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8318,7 +8318,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8377,7 +8377,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8420,11 +8420,11 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -8432,7 +8432,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -8507,7 +8507,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8566,7 +8566,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8614,7 +8614,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -8689,7 +8689,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8748,7 +8748,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8818,13 +8818,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -9285,7 +9285,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9344,7 +9344,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9403,7 +9403,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9467,7 +9467,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9526,7 +9526,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9591,7 +9591,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9650,7 +9650,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9715,7 +9715,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9774,7 +9774,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9839,7 +9839,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9898,7 +9898,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9965,7 +9965,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10024,7 +10024,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10093,7 +10093,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10152,7 +10152,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10195,11 +10195,11 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -10207,7 +10207,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -10282,7 +10282,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10341,7 +10341,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10389,7 +10389,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -10464,7 +10464,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10523,7 +10523,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10593,13 +10593,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -10896,13 +10896,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -11255,13 +11255,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -11862,13 +11862,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -12164,13 +12164,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12198,7 +12198,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -12661,7 +12661,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12720,7 +12720,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12779,7 +12779,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12843,7 +12843,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12902,7 +12902,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12967,7 +12967,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13026,7 +13026,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13091,7 +13091,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13150,7 +13150,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13215,7 +13215,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13274,7 +13274,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13341,7 +13341,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13400,7 +13400,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13469,7 +13469,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13528,7 +13528,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13571,11 +13571,11 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -13583,7 +13583,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -13658,7 +13658,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13717,7 +13717,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13765,7 +13765,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -13840,7 +13840,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13899,7 +13899,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13969,13 +13969,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -14272,13 +14272,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -14631,13 +14631,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -15238,13 +15238,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -15540,13 +15540,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -15574,7 +15574,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -16037,7 +16037,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16096,7 +16096,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16155,7 +16155,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16219,7 +16219,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16278,7 +16278,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16343,7 +16343,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16402,7 +16402,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16467,7 +16467,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16526,7 +16526,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16591,7 +16591,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16650,7 +16650,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16717,7 +16717,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16776,7 +16776,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16845,7 +16845,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16904,7 +16904,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16947,11 +16947,11 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -16959,7 +16959,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -17034,7 +17034,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17093,7 +17093,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17141,7 +17141,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -17216,7 +17216,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17275,7 +17275,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17345,13 +17345,13 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -17649,13 +17649,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -17683,7 +17683,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -17979,13 +17979,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -18013,7 +18013,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -18309,13 +18309,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -18343,7 +18343,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -18639,13 +18639,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -18673,7 +18673,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -18969,13 +18969,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -19003,7 +19003,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -19332,13 +19332,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -19665,13 +19665,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -19998,13 +19998,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -20300,13 +20300,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -20626,13 +20626,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -20952,13 +20952,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -21584,13 +21584,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -22190,13 +22190,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -22796,13 +22796,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -23264,7 +23264,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23323,7 +23323,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23382,7 +23382,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23446,7 +23446,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23505,7 +23505,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23570,7 +23570,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23629,7 +23629,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23694,7 +23694,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23753,7 +23753,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23818,7 +23818,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23877,7 +23877,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23944,7 +23944,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24003,7 +24003,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24072,7 +24072,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24131,7 +24131,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24174,11 +24174,11 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -24186,7 +24186,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -24261,7 +24261,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24320,7 +24320,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24368,7 +24368,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -24443,7 +24443,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24502,7 +24502,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24572,13 +24572,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -25039,7 +25039,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25098,7 +25098,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25157,7 +25157,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25221,7 +25221,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25280,7 +25280,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25345,7 +25345,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25404,7 +25404,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25469,7 +25469,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25528,7 +25528,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25593,7 +25593,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25652,7 +25652,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25719,7 +25719,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25778,7 +25778,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25847,7 +25847,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25906,7 +25906,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25949,11 +25949,11 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -25961,7 +25961,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -26036,7 +26036,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26095,7 +26095,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26143,7 +26143,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -26218,7 +26218,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26277,7 +26277,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26347,13 +26347,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -26814,7 +26814,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26873,7 +26873,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26932,7 +26932,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26996,7 +26996,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27055,7 +27055,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27120,7 +27120,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27179,7 +27179,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27244,7 +27244,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27303,7 +27303,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27368,7 +27368,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27427,7 +27427,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27494,7 +27494,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27553,7 +27553,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27622,7 +27622,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27681,7 +27681,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27724,11 +27724,11 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -27736,7 +27736,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -27811,7 +27811,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27870,7 +27870,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27918,7 +27918,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -27993,7 +27993,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28052,7 +28052,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28122,13 +28122,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -28430,13 +28430,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -28789,13 +28789,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -29396,13 +29396,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -29698,13 +29698,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -29732,7 +29732,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -30195,7 +30195,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30254,7 +30254,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30313,7 +30313,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30377,7 +30377,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30436,7 +30436,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30501,7 +30501,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30560,7 +30560,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30625,7 +30625,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30684,7 +30684,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30749,7 +30749,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30808,7 +30808,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30875,7 +30875,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -30934,7 +30934,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31003,7 +31003,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31062,7 +31062,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31105,11 +31105,11 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -31117,7 +31117,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -31192,7 +31192,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31251,7 +31251,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31299,7 +31299,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -31374,7 +31374,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31433,7 +31433,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -31503,13 +31503,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -31808,13 +31808,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -32167,13 +32167,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -32774,13 +32774,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -33076,13 +33076,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -33110,7 +33110,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -33573,7 +33573,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -33632,7 +33632,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -33691,7 +33691,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -33755,7 +33755,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -33814,7 +33814,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -33879,7 +33879,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -33938,7 +33938,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34003,7 +34003,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34062,7 +34062,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34127,7 +34127,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34186,7 +34186,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34253,7 +34253,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34312,7 +34312,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34381,7 +34381,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34440,7 +34440,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34483,11 +34483,11 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                 fetchThumbnailUrlsProxyUrl?: string | undefined;
             }>>>;
             roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
         }, "strict", z.ZodTypeAny, {
             address?: string | undefined;
@@ -34495,7 +34495,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectOutputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectOutputType<{
@@ -34570,7 +34570,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34629,7 +34629,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34677,7 +34677,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             description?: string | undefined;
             pubsubTopic?: string | undefined;
             roles?: Record<string, z.objectInputType<{
-                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+                role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
             }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
             rules?: string[] | undefined;
             features?: z.objectInputType<{
@@ -34752,7 +34752,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34811,7 +34811,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
                         replyScore: z.ZodOptional<z.ZodNumber>;
                         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                         rateLimit: z.ZodOptional<z.ZodNumber>;
                         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -34881,13 +34881,13 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -35194,36 +35194,36 @@ export declare const ChallengeMessageSchema: z.ZodObject<{
     signature: z.ZodObject<{
         signature: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         publicKey: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519"]>;
+        type: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
     userAgent: z.ZodString;
     timestamp: z.ZodNumber;
 } & {
-    type: z.ZodEnum<["CHALLENGE"]>;
+    type: z.ZodLiteral<"CHALLENGE">;
     encrypted: z.ZodObject<{
         ciphertext: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         iv: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         tag: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
     }, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35232,16 +35232,16 @@ export declare const ChallengeMessageSchema: z.ZodObject<{
     type: "CHALLENGE";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
     challengeRequestId: Uint8Array<ArrayBuffer>;
     userAgent: string;
     encrypted: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35250,16 +35250,16 @@ export declare const ChallengeMessageSchema: z.ZodObject<{
     type: "CHALLENGE";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
     challengeRequestId: Uint8Array<ArrayBuffer>;
     userAgent: string;
     encrypted: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35298,36 +35298,36 @@ export declare const ChallengeAnswerMessageSchema: z.ZodObject<{
     signature: z.ZodObject<{
         signature: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         publicKey: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519"]>;
+        type: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
     userAgent: z.ZodString;
     timestamp: z.ZodNumber;
 } & {
-    type: z.ZodEnum<["CHALLENGEANSWER"]>;
+    type: z.ZodLiteral<"CHALLENGEANSWER">;
     encrypted: z.ZodObject<{
         ciphertext: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         iv: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         tag: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
     }, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35336,16 +35336,16 @@ export declare const ChallengeAnswerMessageSchema: z.ZodObject<{
     type: "CHALLENGEANSWER";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
     challengeRequestId: Uint8Array<ArrayBuffer>;
     userAgent: string;
     encrypted: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35354,16 +35354,16 @@ export declare const ChallengeAnswerMessageSchema: z.ZodObject<{
     type: "CHALLENGEANSWER";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
     challengeRequestId: Uint8Array<ArrayBuffer>;
     userAgent: string;
     encrypted: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35382,24 +35382,24 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
     signature: z.ZodObject<{
         signature: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         publicKey: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519"]>;
+        type: z.ZodString;
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }, {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
     userAgent: z.ZodString;
     timestamp: z.ZodNumber;
 } & {
-    type: z.ZodEnum<["CHALLENGEVERIFICATION"]>;
+    type: z.ZodLiteral<"CHALLENGEVERIFICATION">;
     challengeSuccess: z.ZodBoolean;
     challengeErrors: z.ZodOptional<z.ZodRecord<z.ZodEffects<z.ZodString, string, string>, z.ZodString>>;
     reason: z.ZodOptional<z.ZodString>;
@@ -35407,14 +35407,14 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
         ciphertext: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         iv: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
         tag: z.ZodType<Uint8Array<ArrayBuffer>, z.ZodTypeDef, Uint8Array<ArrayBuffer>>;
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
     }, "strict", z.ZodTypeAny, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
     }, {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35423,9 +35423,9 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
     type: "CHALLENGEVERIFICATION";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -35434,7 +35434,7 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
     challengeSuccess: boolean;
     reason?: string | undefined;
     encrypted?: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35444,9 +35444,9 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
     type: "CHALLENGEVERIFICATION";
     timestamp: number;
     signature: {
-        type: "ed25519";
-        publicKey: Uint8Array<ArrayBuffer>;
+        type: string;
         signature: Uint8Array<ArrayBuffer>;
+        publicKey: Uint8Array<ArrayBuffer>;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -35455,7 +35455,7 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
     challengeSuccess: boolean;
     reason?: string | undefined;
     encrypted?: {
-        type: "ed25519-aes-gcm";
+        type: string;
         ciphertext: Uint8Array<ArrayBuffer>;
         iv: Uint8Array<ArrayBuffer>;
         tag: Uint8Array<ArrayBuffer>;
@@ -35472,13 +35472,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -35506,7 +35506,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -35808,13 +35808,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -35842,7 +35842,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -36144,13 +36144,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -36178,7 +36178,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -36486,13 +36486,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -36812,13 +36812,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -37138,13 +37138,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -37975,13 +37975,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         protocolVersion: z.ZodString;
@@ -38010,13 +38010,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -38336,13 +38336,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -38662,13 +38662,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -39499,13 +39499,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         protocolVersion: z.ZodString;
@@ -39534,13 +39534,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -39860,13 +39860,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -40186,13 +40186,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signedPropertyNames: z.ZodArray<z.ZodString, "many">;
             }, "strip", z.ZodTypeAny, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }, {
                 type: string;
-                publicKey: string;
                 signature: string;
+                publicKey: string;
                 signedPropertyNames: string[];
             }>;
             flair: z.ZodOptional<z.ZodObject<{
@@ -41023,13 +41023,13 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         protocolVersion: z.ZodString;
@@ -41050,8 +41050,8 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -41107,7 +41107,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
-        linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+        linkHtmlTagName?: string | undefined;
         parentCid?: string | undefined;
         postCid?: string | undefined;
         thumbnailUrl?: string | undefined;
@@ -41120,8 +41120,8 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     commentUpdate: {
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         protocolVersion: string;
@@ -41297,8 +41297,8 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -41354,7 +41354,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
-        linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+        linkHtmlTagName?: string | undefined;
         parentCid?: string | undefined;
         postCid?: string | undefined;
         thumbnailUrl?: string | undefined;
@@ -41367,8 +41367,8 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     commentUpdate: {
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         protocolVersion: string;

@@ -1,4 +1,3 @@
-import { CommentPlebbitRpcStateClient } from "../../clients/rpc-client/plebbit-rpc-state-client.js";
 import * as remeda from "remeda";
 import { parseCommentIpfsSchemaWithPlebbitErrorIfItFails, parseCommentUpdateSchemaWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails } from "../../schema/schema-util.js";
 import { FailedToFetchCommentUpdateFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
@@ -6,14 +5,15 @@ import { verifyCommentIpfs, verifyCommentUpdate } from "../../signer/signatures.
 import Logger from "@plebbit/plebbit-logger";
 import { getPostUpdateTimestampRange, hideClassPrivateProps, resolveWhenPredicateIsTrue } from "../../util.js";
 import { PublicationClientsManager } from "../publication-client-manager.js";
-import { CommentKuboRpcClient } from "../../clients/ipfs-client.js";
 import { findCommentInPageInstance, findCommentInPageInstanceRecursively, findCommentInParsedPages } from "../../pages/util.js";
+import { CommentKuboRpcClient, CommentLibp2pJsClient, CommentPlebbitRpcStateClient } from "./comment-clients.js";
 export const MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE = 1024 * 1024;
 export class CommentClientsManager extends PublicationClientsManager {
     constructor(comment) {
         super(comment);
         this._postForUpdating = undefined;
         this._parentCommentCidsAlreadyLoaded = new Set();
+        this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
         this._comment = comment;
         hideClassPrivateProps(this);
     }
@@ -22,9 +22,25 @@ export class CommentClientsManager extends PublicationClientsManager {
             for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.kuboRpcClients))
                 this.clients.kuboRpcClients = { ...this.clients.kuboRpcClients, [ipfsUrl]: new CommentKuboRpcClient("stopped") };
     }
+    _initLibp2pJsClients() {
+        for (const libp2pJsClientKey of remeda.keys.strict(this._plebbit.clients.libp2pJsClients))
+            this.clients.libp2pJsClients = { ...this.clients.libp2pJsClients, [libp2pJsClientKey]: new CommentLibp2pJsClient("stopped") };
+    }
     _initPlebbitRpcClients() {
         for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new CommentPlebbitRpcStateClient("stopped") };
+    }
+    updateLibp2pJsClientState(newState, libp2pJsClientKey) {
+        super.updateLibp2pJsClientState(newState, libp2pJsClientKey);
+    }
+    updateKuboRpcState(newState, kuboRpcClientUrl) {
+        super.updateKuboRpcState(newState, kuboRpcClientUrl);
+    }
+    updateGatewayState(newState, ipfsGatewayClientUrl) {
+        super.updateGatewayState(newState, ipfsGatewayClientUrl);
+    }
+    updateKuboRpcPubsubState(newState, pubsubKuboRpcClientUrl) {
+        super.updateKuboRpcPubsubState(newState, pubsubKuboRpcClientUrl);
     }
     // Resolver methods here
     preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) {
@@ -57,10 +73,17 @@ export class CommentClientsManager extends PublicationClientsManager {
     _calculatePathForPostCommentUpdate(folderCid, postCid) {
         return `${folderCid}/` + postCid + "/update";
     }
+    _updateKuboRpcClientOrHeliaState(newState, kuboRpcOrHelia) {
+        if ("_helia" in kuboRpcOrHelia)
+            this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientOptions.key);
+        else
+            this.updateKuboRpcState(newState, kuboRpcOrHelia.url);
+    }
     async _fetchPostCommentUpdateIpfsP2P(subIpns, timestampRanges, log) {
         // only get new CommentUpdates
         // not interested in CommentUpdate we already fetched before
         const attemptedPathsToLoadErrors = {};
+        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
         const didLastPostUpdateRangeHaveSameFolderCid = timestampRanges.some((timestampRange) => {
             if (!this._comment._commentUpdateIpfsPath)
                 return false;
@@ -76,7 +99,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates[timestampRange];
             const path = this._calculatePathForPostCommentUpdate(folderCid, this._comment.postCid);
-            this.updateIpfsState("fetching-update-ipfs");
+            this._updateKuboRpcClientOrHeliaState("fetching-update-ipfs", kuboRpcOrHelia);
             let res;
             const commentUpdateTimeoutMs = this._plebbit._timeouts["comment-update-ipfs"];
             try {
@@ -91,7 +114,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 continue;
             }
             finally {
-                this.updateIpfsState("stopped");
+                this._updateKuboRpcClientOrHeliaState("stopped", kuboRpcOrHelia);
             }
             try {
                 const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
@@ -231,9 +254,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._initCommentUpdate(loadedCommentUpdate.commentUpdate, subplebbit);
             if ("commentUpdateIpfsPath" in loadedCommentUpdate)
                 this._comment._commentUpdateIpfsPath = loadedCommentUpdate.commentUpdateIpfsPath;
-            this._comment._setUpdatingStateNoEmission("succeeded");
-            this._comment.emit("update", this._comment);
-            this._comment.emit("updatingstatechange", "succeeded");
+            this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "succeeded",
+                event: { name: "update", args: [this._comment] }
+            });
             return true;
         }
         else
@@ -255,10 +279,13 @@ export class CommentClientsManager extends PublicationClientsManager {
             throw Error("Post has no timestamp range bucket");
         let newCommentUpdate;
         try {
-            if (this._defaultIpfsProviderUrl)
+            if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
+                Object.keys(this._plebbit.clients.libp2pJsClients).length > 0) {
                 newCommentUpdate = await this._fetchPostCommentUpdateIpfsP2P(subIpfs, timestampRanges, log);
-            else
+            }
+            else {
                 newCommentUpdate = await this._fetchPostCommentUpdateFromGateways(subIpfs, timestampRanges, log);
+            }
         }
         catch (e) {
             if (e instanceof Error) {
@@ -266,16 +293,18 @@ export class CommentClientsManager extends PublicationClientsManager {
                     // this is a retriable error
                     // could be problems loading from the network or gateways
                     log.trace(`Post`, this._comment.cid, "Failed to load CommentUpdate. Will retry later", e);
-                    this._comment._setUpdatingStateNoEmission("waiting-retry");
-                    this._comment.emit("error", e);
-                    this._comment.emit("updatingstatechange", "waiting-retry");
+                    this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
+                        newUpdatingState: "waiting-retry",
+                        event: { name: "error", args: [e] }
+                    });
                 }
                 else {
                     // non retriable error, problem with schema/signature
                     log.error("Received a non retriable error when attempting to load post commentUpdate. Will be emitting error", this._comment.cid, e);
-                    this._comment._setUpdatingStateNoEmission("failed");
-                    this._comment.emit("error", e);
-                    this._comment.emit("updatingstatechange", "failed");
+                    this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
+                        newUpdatingState: "failed",
+                        event: { name: "error", args: [e] }
+                    });
                 }
             }
             return;
@@ -289,7 +318,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
     }
     async _fetchRawCommentCidIpfsP2P(cid) {
-        this.updateIpfsState("fetching-ipfs");
+        const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
+        this._updateKuboRpcClientOrHeliaState("fetching-ipfs", kuboRpcOrHelia);
         let commentRawString;
         const commentTimeoutMs = this._plebbit._timeouts["comment-ipfs"];
         try {
@@ -301,7 +331,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             throw e;
         }
         finally {
-            this.updateIpfsState("stopped");
+            this._updateKuboRpcClientOrHeliaState("stopped", kuboRpcOrHelia);
         }
         return commentRawString;
     }
@@ -335,7 +365,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     // We're gonna fetch Comment Ipfs, and verify its signature and schema
     async fetchAndVerifyCommentCid(cid) {
         let commentRawString;
-        if (this._defaultIpfsProviderUrl) {
+        if (Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 || Object.keys(this._plebbit.clients.libp2pJsClients).length > 0) {
             commentRawString = await this._fetchRawCommentCidIpfsP2P(cid);
         }
         else
@@ -343,9 +373,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
         await this._throwIfCommentIpfsIsInvalid(commentIpfs, cid);
         return commentIpfs;
-    }
-    updateIpfsState(newState) {
-        super.updateIpfsState(newState);
     }
     _isPublishing() {
         return this._comment.state === "publishing";
@@ -406,9 +433,10 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             catch (e) {
                 log.error("Failed to use subplebbit update to fetch new CommentUpdate", e);
-                this._comment._setUpdatingStateNoEmission("failed");
-                this._comment.emit("error", e); // could cause uncaught error
-                this._comment.emit("updatingstatechange", "failed");
+                this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
+                    newUpdatingState: "failed",
+                    event: { name: "error", args: [e] }
+                });
             }
     }
     _chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp) {
@@ -450,6 +478,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             await parentCommentInstance.stop();
         if (Object.keys(parentCommentInstance.replies.pageCids).length === 0) {
             log("Parent comment", this._comment.parentCid, "of reply", this._comment.cid, "does not have any pageCids, will wait until another update event by post");
+            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
         const pageSortName = this._chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentInstance.timestamp);
@@ -486,7 +515,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             curPageCid = pageLoaded.nextCid;
         }
-        log("Searched for new comment update of comment", this._comment.cid, "in the following pageCids of parent comment:", parentCommentInstance.cid, pageCidsSearchedForNewUpdate, "and found", newCommentUpdate ? "a new comment update" : "no new comment update");
+        log("Searched for new comment update of comment", this._comment.cid, "in the following pageCids of page", pageSortName, "of parent comment:", parentCommentInstance.cid, pageCidsSearchedForNewUpdate, "and found", newCommentUpdate ? "a new comment update" : "no new comment update");
         if (newCommentUpdate)
             this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: newCommentUpdate.commentUpdate }, subplebbitWithSignature, log);
         else
@@ -501,13 +530,15 @@ export class CommentClientsManager extends PublicationClientsManager {
         // we received a non retriable error from sub instance
         if (this._comment.state === "publishing")
             return super.handleErrorEventFromSub(error);
-        else {
+        else if (this._subplebbitForUpdating?.subplebbit?.updatingState === "failed") {
+            // let's make sure
             // we're updating a comment
             const log = Logger("plebbit-js:comment:update");
             log.error(this._comment.depth === 0 ? "Post" : "Reply", this._comment.cid, "received a non retriable error from its subplebbit instance. Will stop comment updating", error);
-            this._comment._setUpdatingStateNoEmission("failed");
-            this._comment.emit("error", error);
-            this._comment.emit("updatingstatechange", "failed");
+            this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                event: { name: "error", args: [error] }
+            });
             await this._comment.stop();
         }
     }
@@ -555,15 +586,21 @@ export class CommentClientsManager extends PublicationClientsManager {
             "fetching-update-ipfs": undefined
         };
         const replyState = postUpdatingStateToReplyUpdatingState[newState];
-        if (replyState)
-            this._comment._setUpdatingStateWithEmissionIfNewState(replyState);
+        if (replyState) {
+            if (this._fetchingUpdateForReplyUsingPageCidsPromise)
+                this._fetchingUpdateForReplyUsingPageCidsPromise.then(() => this._comment._setUpdatingStateWithEmissionIfNewState(replyState));
+            else
+                this._comment._setUpdatingStateWithEmissionIfNewState(replyState);
+        }
     }
     _handleIpfsGatewayPostState(newState, gatewayUrl) {
-        //@ts-expect-error
         this.updateGatewayState(newState, gatewayUrl);
     }
     _handleKuboRpcPostState(newState, kuboRpcUrl) {
-        this.updateIpfsState(newState);
+        this.updateKuboRpcState(newState, kuboRpcUrl);
+    }
+    _handleLibp2pJsClientPostState(newState, libp2pJsClientKey) {
+        this.updateLibp2pJsClientState(newState, libp2pJsClientKey);
     }
     _handleChainProviderPostState(newState, chainTicker, providerUrl) {
         this.updateChainProviderState(newState, chainTicker, providerUrl);
@@ -591,15 +628,18 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
-        try {
-            await this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance);
-        }
-        catch (error) {
+        this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
+            .catch((error) => {
             log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
-            this._comment._setUpdatingStateNoEmission("failed");
-            this._comment.emit("error", error);
-            this._comment.emit("updatingstatechange", "failed");
-        }
+            this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
+                newUpdatingState: "failed",
+                event: { name: "error", args: [error] }
+            });
+        })
+            .finally(() => {
+            this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
+        });
+        await this._fetchingUpdateForReplyUsingPageCidsPromise;
     }
     async _createPostInstanceWithStateTranslation() {
         // this function will be for translating between the states of the post and its clients to reply states
@@ -634,6 +674,16 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             this._postForUpdating.kuboRpcListeners = kuboRpcListeners;
         }
+        if (this._postForUpdating.comment.clients.libp2pJsClients &&
+            Object.keys(this._postForUpdating.comment.clients.libp2pJsClients).length > 0) {
+            const libp2pJsClientListeners = {};
+            for (const libp2pJsClientKey of Object.keys(this._postForUpdating.comment.clients.libp2pJsClients)) {
+                const libp2pJsStateListener = (postNewLibp2pJsState) => this._handleLibp2pJsClientPostState(postNewLibp2pJsState, libp2pJsClientKey);
+                this._postForUpdating.comment.clients.libp2pJsClients[libp2pJsClientKey].on("statechange", libp2pJsStateListener);
+                libp2pJsClientListeners[libp2pJsClientKey] = libp2pJsStateListener;
+            }
+            this._postForUpdating.libp2pJsClientListeners = libp2pJsClientListeners;
+        }
         // Add chain provider state listeners
         const chainProviderListeners = {};
         for (const chainTicker of Object.keys(this._postForUpdating.comment.clients.chainProviders)) {
@@ -664,7 +714,14 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._postForUpdating.kuboRpcListeners) {
             for (const kuboRpcUrl of Object.keys(this._postForUpdating.kuboRpcListeners)) {
                 this._postForUpdating.comment.clients.kuboRpcClients[kuboRpcUrl].removeListener("statechange", this._postForUpdating.kuboRpcListeners[kuboRpcUrl]);
-                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+                this.updateKuboRpcState("stopped", kuboRpcUrl); // need to reset all Kubo RPC states
+            }
+        }
+        // Clean up libp2pJs client listeners
+        if (this._postForUpdating.libp2pJsClientListeners) {
+            for (const libp2pJsClientKey of Object.keys(this._postForUpdating.libp2pJsClientListeners)) {
+                this._postForUpdating.comment.clients.libp2pJsClients[libp2pJsClientKey].removeListener("statechange", this._postForUpdating.libp2pJsClientListeners[libp2pJsClientKey]);
+                this.updateLibp2pJsClientState("stopped", libp2pJsClientKey); // need to reset all libp2pJs client states
             }
         }
         // Clean up chain provider listeners

@@ -1,5 +1,5 @@
 import { Plebbit } from "./plebbit.js";
-import { InputPlebbitOptions } from "../types";
+import type { InputPlebbitOptions } from "../types";
 import { CreateRpcSubplebbitFunctionArgumentSchema } from "../subplebbit/schema.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";

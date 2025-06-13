@@ -6,13 +6,13 @@ export declare const encryptStringAesGcm: (plaintext: string, key: Uint8Array, i
 }>;
 export declare const decryptStringAesGcm: (ciphertext: Uint8Array, key: Uint8Array, iv: Uint8Array, tag: Uint8Array) => Promise<string>;
 export declare const encryptEd25519AesGcm: (plaintext: string, privateKeyBase64: string, publicKeyBase64: string) => Promise<{
-    type: "ed25519-aes-gcm";
+    type: string;
     ciphertext: Uint8Array<ArrayBuffer>;
     iv: Uint8Array<ArrayBuffer>;
     tag: Uint8Array<ArrayBuffer>;
 }>;
 export declare const encryptEd25519AesGcmPublicKeyBuffer: (plaintext: string, privateKeyBase64: string, publicKeyBuffer: Uint8Array) => Promise<{
-    type: "ed25519-aes-gcm";
+    type: string;
     ciphertext: Uint8Array<ArrayBuffer>;
     iv: Uint8Array<ArrayBuffer>;
     tag: Uint8Array<ArrayBuffer>;

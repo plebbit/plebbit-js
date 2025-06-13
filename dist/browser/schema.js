@@ -34,9 +34,7 @@ const defaultChainProviders = {
         chainId: -1 // no chain ID for solana
     }
 };
-const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array()
-    .nonempty()
-    .transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
+const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array().transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
 const ParsedKuboRpcClientOptionsSchema = z.custom();
 const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
@@ -52,7 +50,16 @@ const PlebbitUserOptionBaseSchema = z.object({
     updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
     noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
     validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
-    userAgent: UserAgentSchema
+    userAgent: UserAgentSchema,
+    libp2pJsClientOptions: z
+        .object({
+        key: z.string().min(1),
+        libp2pOptions: z.custom(),
+        heliaOptions: z.custom()
+    })
+        .array()
+        .max(1, "Only one libp2pJsClientOptions is allowed at the moment")
+        .optional()
 });
 const defaultPubsubKuboRpcClientsOptions = [
     { url: "https://pubsubprovider.xyz/api/v0" },

@@ -1,14 +1,15 @@
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
-import type { AuthorWithOptionalCommentUpdateJson, PublicationEvents, PublicationTypeName } from "../../types.js";
+import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from "../../types.js";
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit/plebbit.js";
-import type { CommentIpfsType, CommentIpfsWithCidPostCidDefined, CommentPubsubMessagePublication, CommentState, CommentUpdateForChallengeVerification, CommentUpdateType, CommentUpdatingState, CommentWithinPageJson, CreateCommentOptions } from "./types.js";
+import type { CommentIpfsType, CommentIpfsWithCidPostCidDefined, CommentPubsubMessagePublication, CommentState, CommentUpdateForChallengeVerification, CommentUpdateType, CommentWithinPageJson, CreateCommentOptions } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import type { SignerType } from "../../signer/types.js";
 import { CommentClientsManager } from "./comment-client-manager.js";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
+import type { PublicationEventArgs, PublicationEvents } from "../types.js";
 export declare class Comment extends Publication implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">> {
     shortCid?: CommentWithinPageJson["shortCid"];
     clients: CommentClientsManager["clients"];
@@ -46,7 +47,7 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
     signature: CommentPubsubMessagePublication["signature"];
     state: CommentState;
-    updatingState: CommentUpdatingState;
+    private _updatingState;
     raw: {
         comment?: CommentIpfsType;
         commentUpdate?: CommentUpdateType;
@@ -94,8 +95,16 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     _attemptInfintelyToLoadCommentIpfs(): Promise<void>;
     startCommentUpdateSubplebbitSubscription(): Promise<void>;
     loadCommentIpfsAndStartCommentUpdateSubscription(): Promise<void>;
-    _setStateNoEmission(newState: Comment["state"]): void;
     _setUpdatingStateNoEmission(newState: Comment["updatingState"]): void;
+    get updatingState(): Comment["_updatingState"];
+    _changeCommentStateEmitEventEmitStateChangeEvent<T extends keyof Omit<PublicationEvents, "statechange" | "updatingstatechange">>(opts: {
+        event: {
+            name: T;
+            args: PublicationEventArgs<T>;
+        };
+        newUpdatingState?: Comment["updatingState"];
+        newState?: Comment["state"];
+    }): void;
     _setUpdatingStateWithEmissionIfNewState(newState: Comment["updatingState"]): void;
     protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]): void;
     protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]): void;

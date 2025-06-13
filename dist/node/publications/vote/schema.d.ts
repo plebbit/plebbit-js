@@ -570,13 +570,13 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     author: z.ZodObject<{
@@ -866,8 +866,8 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -915,8 +915,8 @@ export declare const VotePubsubMessagePublicationSchema: z.ZodObject<Pick<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -1002,13 +1002,13 @@ export declare const VoteTablesRowSchema: z.ZodObject<Pick<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     author: z.ZodObject<{
@@ -1360,13 +1360,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -1693,13 +1693,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -2026,13 +2026,13 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         author: z.ZodObject<{
@@ -2324,8 +2324,8 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -2379,8 +2379,8 @@ export declare const VoteChallengeRequestToEncryptSchema: z.ZodObject<{
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {

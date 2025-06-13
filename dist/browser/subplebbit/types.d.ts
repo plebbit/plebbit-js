@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { FlairSchema } from "../schema/schema.js";
-import { ChallengeExcludeSchema, ChallengeFileFactorySchema, ChallengeFileSchema, ChallengeFromGetChallengeSchema, ChallengeResultSchema, CreateNewLocalSubplebbitParsedOptionsSchema, CreateNewLocalSubplebbitUserOptionsSchema, CreateRemoteSubplebbitOptionsSchema, SubplebbitChallengeSchema, SubplebbitChallengeSettingSchema, SubplebbitEditOptionsSchema, SubplebbitEncryptionSchema, SubplebbitFeaturesSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema, SubplebbitSettingsSchema, SubplebbitSuggestedSchema, RpcRemoteSubplebbitUpdateEventResultSchema, SubplebbitSignedPropertyNames } from "./schema.js";
+import { ChallengeExcludeSchema, ChallengeFileFactorySchema, ChallengeFileSchema, ChallengeFromGetChallengeSchema, ChallengeResultSchema, CreateNewLocalSubplebbitParsedOptionsSchema, CreateNewLocalSubplebbitUserOptionsSchema, CreateRemoteSubplebbitOptionsSchema, SubplebbitChallengeSchema, SubplebbitChallengeSettingSchema, SubplebbitEditOptionsSchema, SubplebbitEncryptionSchema, SubplebbitFeaturesSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema, SubplebbitSettingsSchema, SubplebbitSuggestedSchema, RpcRemoteSubplebbitUpdateEventResultSchema, SubplebbitSignedPropertyNames, SubplebbitRoleNames } from "./schema.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/browser/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import type { JsonOfClass } from "../types.js";
 import type { JsonSignature } from "../signer/types.js";
+import type { DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType } from "../pubsub-messages/types.js";
+import { PlebbitError } from "../plebbit-error.js";
 export type ReplyStats = {
     hourReplyCount: number;
     dayReplyCount: number;
@@ -34,6 +36,7 @@ export type SubplebbitSuggested = z.infer<typeof SubplebbitSuggestedSchema>;
 export type Flair = z.infer<typeof FlairSchema>;
 export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
+export type SubplebbitRoleNameUnion = z.infer<typeof SubplebbitRoleNames>;
 export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitUpdateEventResultSchema>;
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 export interface SubplebbitSignature extends JsonSignature {
@@ -83,11 +86,32 @@ export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSu
 export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_internalStateUpdateId" | "_pendingEditProps"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
     started: boolean;
+    startedState: RpcLocalSubplebbit["startedState"];
 }
 export interface RpcInternalSubplebbitRecordAfterFirstUpdateType extends Omit<InternalSubplebbitRecordAfterFirstUpdateType, "signer" | "_internalStateUpdateId" | "_cidsToUnPin" | "_mfsPathsToRemove" | "_pendingEditProps"> {
     started: RpcInternalSubplebbitRecordBeforeFirstUpdateType["started"];
     signer: RpcInternalSubplebbitRecordBeforeFirstUpdateType["signer"];
+    startedState: RpcLocalSubplebbit["startedState"];
 }
 export type RpcLocalSubplebbitUpdateResultType = RpcInternalSubplebbitRecordBeforeFirstUpdateType | RpcInternalSubplebbitRecordAfterFirstUpdateType;
 export interface ParsedSubplebbitEditOptions extends Omit<SubplebbitEditOptions, "roles">, Pick<InternalSubplebbitRecordBeforeFirstUpdateType, "_usingDefaultChallenge" | "challenges" | "roles"> {
 }
+export interface SubplebbitEvents {
+    challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;
+    challenge: (challenge: DecryptedChallengeMessageType) => void;
+    challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
+    error: (error: PlebbitError | Error) => void;
+    statechange: (newState: RemoteSubplebbit["state"]) => void;
+    updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
+    startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
+    update: (updatedSubplebbit: RemoteSubplebbit) => void;
+    removeListener: (eventName: string, listener: Function) => void;
+}
+export type SubplebbitEventArgs<T extends keyof SubplebbitEvents> = Parameters<SubplebbitEvents[T]>;
+export type SubplebbitRpcErrorToTransmit = SubplebbitEventArgs<"error">[0] & {
+    details?: PlebbitError["details"] & {
+        newUpdatingState?: RemoteSubplebbit["updatingState"];
+        newStartedState?: RpcLocalSubplebbit["startedState"];
+    };
+};

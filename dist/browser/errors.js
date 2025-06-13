@@ -14,6 +14,8 @@ export var messages;
     messages["ERR_COMMENT_MISSING_IPFS"] = "Comment is missing CommentIpfs props";
     messages["ERR_COMMENT_MISSING_UPDATE"] = "Comment is missing CommentUpdate props";
     messages["ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING"] = "You need to stop updating the subplebbit before starting it";
+    messages["ERR_HELIAS_STOPPING_OR_STOPPED"] = "Helia is stopping or stopped already. You can't use any helia functions";
+    messages["ERR_GET_SUBPLEBBIT_TIMED_OUT"] = "plebbit.getSubplebbit() timed out";
     // Plebbit errors
     messages["ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE"] = "subplebbit.stop() called without calling update() first";
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";
@@ -60,6 +62,14 @@ export var messages;
     messages["ERR_FETCH_CID_P2P_TIMEOUT"] = "Fetching CID via Kubo-rpc-client/helia P2P has timed out";
     messages["ERR_RESOLVED_IPNS_P2P_TO_UNDEFINED"] = "Resolved IPNS name to undefined. Does this IPNS name exist?";
     messages["ERR_IPNS_RESOLUTION_P2P_TIMEOUT"] = "IPNS resolution P2P timed out";
+    messages["ERR_NO_DEFAULT_IPFS_PROVIDER"] = "No default IPFS provider found. Make sure to define either kuboRpcClientOptions or libp2pJsClientOptions";
+    messages["ERR_NO_DEFAULT_PUBSUB_PROVIDER"] = "No default pubsub provider found. Make sure to define either pubsubKuboRpcClientOptions or libp2pJsClientOptions";
+    messages["ERR_NO_DEFAULT_KUBO_RPC_PUBSUB_PROVIDER"] = "No default kubo rpc pubsub provider found. Make sure to define pubsubKuboRpcClientOptions";
+    messages["ERR_NO_DEFAULT_KUBO_RPC_IPFS_PROVIDER"] = "No default kubo rpc ipfs provider found. Make sure to define kuboRpcClientOptions";
+    messages["ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED"] = "Can't have both libp2pJsClientOptions and kuboRpcClientOptions or pubsubKuboRpcClientOptions defined. Please define only one of them";
+    messages["ERR_INVALID_PUBSUB_PROVIDER"] = "Couldn't find a kubo pubsub RPC with that url or a libp2pjs with that key";
+    messages["ERR_ADDED_COMMENT_IPFS_TO_IPFS_BUT_GOT_DIFFERENT_CID"] = "Added CommentIpfs to IPFS but we got a different cid than challengeVerification.commentUpdate.cid, should not happen";
+    messages["ERR_NO_PUBSUB_PROVIDERS_AVAILABLE_TO_PUBLISH_OVER_PUBSUB"] = "No pubsub providers available to publish over pubsub";
     // Schema errors
     messages["ERR_INVALID_JSON"] = "The loaded file is not the expected json";
     messages["ERR_INVALID_COMMENT_IPFS_SCHEMA"] = "The schema of Comment ipfs file is invalid";

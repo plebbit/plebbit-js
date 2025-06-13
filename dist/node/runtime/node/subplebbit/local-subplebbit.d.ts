@@ -23,7 +23,6 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _firstTimePublishingIpns;
     private _internalStateUpdateId;
     private _mirroredStartedOrUpdatingSubplebbit?;
-    private _updateLocalSubTimeout?;
     private _pendingEditProps;
     constructor(plebbit: Plebbit);
     toJSONInternalAfterFirstUpdate(): InternalSubplebbitRecordAfterFirstUpdateType;
@@ -103,6 +102,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _initMirroringStartedOrUpdatingSubplebbit;
     private _cleanUpMirroredStartedOrUpdatingSubplebbit;
     private _updateOnce;
+    private _updateLoop;
     update(): Promise<void>;
     stop(): Promise<void>;
     delete(): Promise<void>;

@@ -1,9 +1,7 @@
-import { ClientsManager } from "../clients/client-manager.js";
-import { PublicationKuboRpcClient } from "../clients/ipfs-client.js";
-import { PublicationKuboPubsubClient } from "../clients/pubsub-client.js";
-import { PublicationPlebbitRpcStateClient } from "../clients/rpc-client/plebbit-rpc-state-client.js";
+import { PlebbitClientsManager } from "../plebbit/plebbit-client-manager.js";
 import * as remeda from "remeda";
-export class PublicationClientsManager extends ClientsManager {
+import { PublicationKuboPubsubClient, PublicationKuboRpcClient, PublicationPlebbitRpcStateClient } from "./publication-clients.js";
+export class PublicationClientsManager extends PlebbitClientsManager {
     constructor(publication) {
         super(publication._plebbit);
         this._subplebbitForUpdating = undefined;
@@ -36,11 +34,11 @@ export class PublicationClientsManager extends ClientsManager {
     emitError(e) {
         this._publication.emit("error", e);
     }
-    updateIpfsState(newState) {
-        super.updateIpfsState(newState);
+    updateKuboRpcState(newState, kuboRpcClientUrl) {
+        super.updateKuboRpcState(newState, kuboRpcClientUrl);
     }
-    updatePubsubState(newState, pubsubProvider) {
-        super.updatePubsubState(newState, pubsubProvider);
+    updateKuboRpcPubsubState(newState, pubsubProvider) {
+        super.updateKuboRpcPubsubState(newState, pubsubProvider);
     }
     updateGatewayState(newState, gateway) {
         super.updateGatewayState(newState, gateway);
@@ -57,7 +55,7 @@ export class PublicationClientsManager extends ClientsManager {
             this._publication._updatePublishingStateWithEmission(translatedState);
     }
     handleUpdatingStateChangeEventFromSub(newUpdatingState) {
-        // will be overridden in comment-client-manager to provide a specific states relevant to comment updating
+        // will be overridden in comment-client-manager to provide a specific states relevant to post updating
         // below is for handling translation to publishingState
         this._translateSubUpdatingStateToPublishingState(newUpdatingState);
     }
@@ -81,7 +79,22 @@ export class PublicationClientsManager extends ClientsManager {
         };
         const translatedState = stateMapper[subplebbitNewKuboRpcState];
         if (translatedState)
-            this.updateIpfsState(translatedState);
+            this.updateKuboRpcState(translatedState, kuboRpcUrl);
+    }
+    handleLibp2pJsClientSubplebbitState(subplebbitNewLibp2pJsState, libp2pJsClientKey) {
+        const stateMapper = {
+            "fetching-ipns": "fetching-subplebbit-ipns",
+            "fetching-ipfs": "fetching-subplebbit-ipfs",
+            stopped: "stopped",
+            "publishing-ipns": undefined,
+            "waiting-challenge-answers": undefined,
+            "waiting-challenge-requests": undefined,
+            "publishing-challenge": undefined,
+            "publishing-challenge-verification": undefined
+        };
+        const translatedState = stateMapper[subplebbitNewLibp2pJsState];
+        if (translatedState)
+            this.updateLibp2pJsClientState(translatedState, libp2pJsClientKey);
     }
     async _createSubInstanceWithStateTranslation() {
         // basically in Publication or comment we need to be fetching the subplebbit record
@@ -117,6 +130,17 @@ export class PublicationClientsManager extends ClientsManager {
             }
             this._subplebbitForUpdating.kuboRpcListeners = kuboRpcListeners;
         }
+        // add libp2pJs client state listeners
+        if (this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients &&
+            Object.keys(this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients).length > 0) {
+            const libp2pJsListeners = {};
+            for (const libp2pJsClientKey of Object.keys(this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients)) {
+                const libp2pJsClientStateListener = (subplebbitNewLibp2pJsState) => this.handleLibp2pJsClientSubplebbitState(subplebbitNewLibp2pJsState, libp2pJsClientKey);
+                this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients[libp2pJsClientKey].on("statechange", libp2pJsClientStateListener);
+                libp2pJsListeners[libp2pJsClientKey] = libp2pJsClientStateListener;
+            }
+            this._subplebbitForUpdating.libp2pJsListeners = libp2pJsListeners;
+        }
         // Add chain provider state listeners
         const chainProviderListeners = {};
         for (const chainTicker of Object.keys(this._subplebbitForUpdating.subplebbit.clients.chainProviders)) {
@@ -147,7 +171,14 @@ export class PublicationClientsManager extends ClientsManager {
         if (this._subplebbitForUpdating.kuboRpcListeners) {
             for (const kuboRpcUrl of Object.keys(this._subplebbitForUpdating.kuboRpcListeners)) {
                 this._subplebbitForUpdating.subplebbit.clients.kuboRpcClients[kuboRpcUrl].removeListener("statechange", this._subplebbitForUpdating.kuboRpcListeners[kuboRpcUrl]);
-                this.updateIpfsState("stopped"); // need to reset all Kubo RPC states
+                this.updateKuboRpcState("stopped", kuboRpcUrl); // need to reset all Kubo RPC states
+            }
+        }
+        // clean up libp2pJs listeners
+        if (this._subplebbitForUpdating.libp2pJsListeners) {
+            for (const libp2pJsClientKey of Object.keys(this._subplebbitForUpdating.libp2pJsListeners)) {
+                this._subplebbitForUpdating.subplebbit.clients.libp2pJsClients[libp2pJsClientKey].removeListener("statechange", this._subplebbitForUpdating.libp2pJsListeners[libp2pJsClientKey]);
+                this.updateLibp2pJsClientState("stopped", libp2pJsClientKey); // need to reset all libp2pJs states
             }
         }
         // Clean up chain provider listeners

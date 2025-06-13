@@ -1,4 +1,4 @@
-import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, createKuboRpcClient, monitorSubplebbitsDirectory } from "../runtime/node/util.js";
+import { getDefaultDataPath, listSubplebbitsSync as nodeListSubplebbits, createKuboRpcClient, monitorSubplebbitsDirectory, trytoDeleteSubsThatFailedToBeDeletedBefore } from "../runtime/node/util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { waitForUpdateInSubInstanceWithErrorAndTimeout, doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp, resolveWhenPredicateIsTrue } from "../util.js";
 import Vote from "../publications/vote/vote.js";
@@ -9,7 +9,7 @@ import env from "../version.js";
 import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signSubplebbitEdit, signVote, verifyCommentIpfs, verifyCommentUpdate } from "../signer/signatures.js";
 import Stats from "../stats.js";
 import Storage from "../runtime/node/storage.js";
-import { ClientsManager } from "../clients/client-manager.js";
+import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../plebbit-error.js";
 import LRUStorage from "../runtime/node/lru-storage.js";
@@ -26,6 +26,7 @@ import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
 import { LRUCache } from "lru-cache";
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
+import { createLibp2pJsClientOrUseExistingOne } from "../helia/helia-for-plebbit.js";
 export class Plebbit extends PlebbitTypedEmitter {
     constructor(options) {
         super();
@@ -62,6 +63,13 @@ export class Plebbit extends PlebbitTypedEmitter {
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
             : this.parsedPlebbitOptions.chainProviders;
+        this.libp2pJsClientOptions = this.parsedPlebbitOptions.libp2pJsClientOptions;
+        if (this.libp2pJsClientOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
+            throw new PlebbitError("ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED", {
+                libp2pJsClientOptions: this.libp2pJsClientOptions,
+                kuboRpcClientsOptions: this.kuboRpcClientsOptions,
+                pubsubKuboRpcClientsOptions: this.pubsubKuboRpcClientsOptions
+            });
         this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses;
         this.publishInterval = this.parsedPlebbitOptions.publishInterval;
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
@@ -109,7 +117,8 @@ export class Plebbit extends PlebbitTypedEmitter {
             this.clients.kuboRpcClients[clientOptions.url.toString()] = {
                 _client: kuboRpcClient,
                 _clientOptions: clientOptions,
-                peers: kuboRpcClient.swarm.peers
+                peers: kuboRpcClient.swarm.peers,
+                url: clientOptions.url.toString()
             };
         }
     }
@@ -127,8 +136,23 @@ export class Plebbit extends PlebbitTypedEmitter {
                     const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => kuboRpcClient.pubsub.peers(topic))));
                     const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                     return peers;
-                }
+                },
+                url: clientOptions.url.toString()
             };
+        }
+    }
+    async _initLibp2pJsClientsIfNeeded() {
+        this.clients.libp2pJsClients = {};
+        if (!this.libp2pJsClientOptions)
+            return;
+        if (!this.httpRoutersOptions)
+            throw Error("httpRoutersOptions is required for libp2pJsClient");
+        for (const clientOptions of this.libp2pJsClientOptions) {
+            const heliaNode = await createLibp2pJsClientOrUseExistingOne({
+                ...clientOptions,
+                httpRoutersOptions: this.httpRoutersOptions
+            });
+            this.clients.libp2pJsClients[clientOptions.key] = heliaNode;
         }
     }
     _initRpcClientsIfNeeded() {
@@ -172,9 +196,9 @@ export class Plebbit extends PlebbitTypedEmitter {
         // Init stats
         this._stats = new Stats({ _storage: this._storage, clients: this.clients });
         // Init clients manager
-        this._clientsManager = new ClientsManager(this);
         // plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
         if (this._canCreateNewLocalSub() && !this.plebbitRpcClientsOptions) {
+            await trytoDeleteSubsThatFailedToBeDeletedBefore(this, log);
             this._subplebbitFsWatchAbort = await monitorSubplebbitsDirectory(this);
             await this._waitForSubplebbitsToBeDefined();
         }
@@ -182,6 +206,8 @@ export class Plebbit extends PlebbitTypedEmitter {
             this.subplebbits = []; // subplebbits = [] on browser
         }
         await this._setupHttpRoutersWithKuboNodeInBackground();
+        await this._initLibp2pJsClientsIfNeeded();
+        this._clientsManager = new PlebbitClientsManager(this);
         hideClassPrivateProps(this);
     }
     async getSubplebbit(subplebbitAddress) {
@@ -700,6 +726,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         for (const storage of Object.values(this._storageLRUs))
             await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
+        await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))
             .filter((prop) => typeof this[prop] === "function")

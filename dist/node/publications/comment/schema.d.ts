@@ -23,7 +23,7 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -453,7 +453,7 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
@@ -576,7 +576,7 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>;
@@ -604,7 +604,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -1034,7 +1034,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
@@ -1157,7 +1157,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>, {
@@ -1280,7 +1280,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
@@ -1403,7 +1403,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>, {
@@ -1526,7 +1526,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
@@ -1649,7 +1649,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>;
@@ -1678,7 +1678,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     subplebbitAddress: z.ZodString;
@@ -1883,21 +1883,21 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
 }, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -1950,15 +1950,15 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -2011,7 +2011,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>;
@@ -2024,13 +2024,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -2058,7 +2058,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -2349,8 +2349,8 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -2405,15 +2405,15 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -2468,7 +2468,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>;
@@ -2481,13 +2481,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -2515,7 +2515,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -2811,13 +2811,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -2845,7 +2845,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -3141,13 +3141,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -3175,7 +3175,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -3471,13 +3471,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -3505,7 +3505,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -3801,13 +3801,13 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -3835,7 +3835,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -4147,7 +4147,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     subplebbitAddress: z.ZodString;
@@ -4352,21 +4352,21 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
 }, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4419,15 +4419,15 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4480,15 +4480,15 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4541,15 +4541,15 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4602,15 +4602,15 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4663,15 +4663,15 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }, {
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -4724,7 +4724,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>;
@@ -4741,13 +4741,13 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -4775,7 +4775,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -5071,13 +5071,13 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -5105,7 +5105,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -5401,13 +5401,13 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -5435,7 +5435,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
-        linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+        linkHtmlTagName: z.ZodOptional<z.ZodString>;
         parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
         postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     } & {
@@ -5728,8 +5728,8 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -5784,7 +5784,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
-        linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+        linkHtmlTagName?: string | undefined;
         parentCid?: string | undefined;
         postCid?: string | undefined;
     } & {
@@ -5797,8 +5797,8 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         timestamp: number;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         author: {
@@ -5853,7 +5853,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
-        linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+        linkHtmlTagName?: string | undefined;
         parentCid?: string | undefined;
         postCid?: string | undefined;
     } & {
@@ -5871,13 +5871,13 @@ export declare const CommentIpfsSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -5905,7 +5905,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -6202,8 +6202,8 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -6259,7 +6259,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
     thumbnailUrl?: string | undefined;
@@ -6270,8 +6270,8 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -6327,7 +6327,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
     thumbnailUrl?: string | undefined;
@@ -6344,13 +6344,13 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -6378,7 +6378,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -6675,8 +6675,8 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -6732,7 +6732,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
     thumbnailUrl?: string | undefined;
@@ -6743,8 +6743,8 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -6800,7 +6800,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
     thumbnailUrl?: string | undefined;
@@ -6811,8 +6811,8 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -6868,7 +6868,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
     thumbnailUrl?: string | undefined;
@@ -6879,8 +6879,8 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -6936,7 +6936,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
     thumbnailUrl?: string | undefined;
@@ -7445,13 +7445,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -7771,13 +7771,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -8097,13 +8097,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -8934,21 +8934,21 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
 }, "strip", z.ZodTypeAny, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -9138,13 +9138,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -9464,8 +9464,8 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
 }, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -9655,13 +9655,13 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -9993,13 +9993,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -10319,13 +10319,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -10645,13 +10645,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -11482,13 +11482,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
@@ -11506,8 +11506,8 @@ export declare const CommentUpdateSchema: z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -11697,13 +11697,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12027,8 +12027,8 @@ export declare const CommentUpdateSchema: z.ZodObject<{
 }, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -12218,13 +12218,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12561,13 +12561,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -12887,13 +12887,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -13213,13 +13213,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -14050,13 +14050,13 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
@@ -14074,8 +14074,8 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
 }, "signature" | "author" | "protocolVersion" | "cid">, "strict", z.ZodTypeAny, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -14246,8 +14246,8 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
 }, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -14426,13 +14426,13 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -14460,7 +14460,7 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -14853,13 +14853,13 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -14887,7 +14887,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     author: z.ZodObject<{
         address: z.ZodString;
@@ -15188,8 +15188,8 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -15251,7 +15251,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     thumbnailUrl?: string | undefined;
     thumbnailUrlWidth?: number | undefined;
@@ -15261,8 +15261,8 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     timestamp: number;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     author: {
@@ -15324,7 +15324,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio" | undefined;
+    linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     thumbnailUrl?: string | undefined;
     thumbnailUrlWidth?: number | undefined;

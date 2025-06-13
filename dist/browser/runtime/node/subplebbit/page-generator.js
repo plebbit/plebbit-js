@@ -12,6 +12,7 @@ export class PageGenerator {
     }
     async addCommentChunksToIpfs(chunks, sortName) {
         assert(chunks.length > 0);
+        const ipfsClient = this._subplebbit._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
         const listOfPage = new Array(chunks.length);
         const cids = new Array(chunks.length);
         let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
@@ -20,7 +21,7 @@ export class PageGenerator {
             if (!pageIpfs.nextCid)
                 delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
             const addRes = await retryKuboIpfsAdd({
-                kuboRpcClient: this._subplebbit._clientsManager.getDefaultIpfs()._client,
+                ipfsClient: ipfsClient,
                 log: Logger("plebbit-js:page-generator:addCommentChunksToIpfs"),
                 content: deterministicStringify(pageIpfs)
             });
@@ -41,12 +42,13 @@ export class PageGenerator {
     async addPreloadedCommentChunksToIpfs(chunks, sortName) {
         const listOfPage = new Array(chunks.length);
         const cids = [undefined]; // pageCids will never have the cid of preloaded page
+        const ipfsClient = this._subplebbit._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
         for (let i = chunks.length - 1; i >= 1; i--) {
             const pageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!pageIpfs.nextCid)
                 delete pageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
             const addRes = await retryKuboIpfsAdd({
-                kuboRpcClient: this._subplebbit._clientsManager.getDefaultIpfs()._client,
+                ipfsClient: ipfsClient,
                 log: Logger("plebbit-js:page-generator:addPreloadedCommentChunksToIpfs"),
                 content: deterministicStringify(pageIpfs)
             });

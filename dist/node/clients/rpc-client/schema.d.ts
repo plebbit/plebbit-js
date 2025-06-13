@@ -9,13 +9,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -43,7 +43,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -345,13 +345,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -379,7 +379,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -681,13 +681,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     flair: z.ZodOptional<z.ZodObject<{
@@ -715,7 +715,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
-    linkHtmlTagName: z.ZodOptional<z.ZodEnum<["a", "img", "video", "audio"]>>;
+    linkHtmlTagName: z.ZodOptional<z.ZodString>;
     parentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     postCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 } & {
@@ -1022,13 +1022,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -1348,13 +1348,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -1674,13 +1674,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -2511,13 +2511,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     protocolVersion: z.ZodString;
@@ -2535,8 +2535,8 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
 }, "strict", z.ZodTypeAny, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -2726,13 +2726,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{
@@ -3056,8 +3056,8 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
 }, {
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -3247,13 +3247,13 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         flair: z.ZodOptional<z.ZodObject<{

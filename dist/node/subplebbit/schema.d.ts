@@ -2,21 +2,22 @@ import { z } from "zod";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
 export declare const SubplebbitEncryptionSchema: z.ZodObject<{
-    type: z.ZodEnum<["ed25519-aes-gcm"]>;
+    type: z.ZodString;
     publicKey: z.ZodString;
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-    type: z.ZodEnum<["ed25519-aes-gcm"]>;
+    type: z.ZodString;
     publicKey: z.ZodString;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-    type: z.ZodEnum<["ed25519-aes-gcm"]>;
+    type: z.ZodString;
     publicKey: z.ZodString;
 }, z.ZodTypeAny, "passthrough">>;
+export declare const SubplebbitRoleNames: z.ZodEnum<["owner", "admin", "moderator"]>;
 export declare const SubplebbitRoleSchema: z.ZodObject<{
-    role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-    role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-    role: z.ZodEnum<["owner", "admin", "moderator"]>;
+    role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
 }, z.ZodTypeAny, "passthrough">>;
 export declare const PubsubTopicSchema: z.ZodString;
 export declare const SubplebbitSuggestedSchema: z.ZodObject<{
@@ -161,11 +162,11 @@ export declare const ChallengeResultSchema: z.ZodUnion<[z.ZodObject<{
     success: z.ZodLiteral<false>;
     error: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    error: string;
     success: false;
+    error: string;
 }, {
-    error: string;
     success: false;
+    error: string;
 }>]>;
 export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
     challenge: z.ZodString;
@@ -179,11 +180,11 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        error: string;
         success: false;
+        error: string;
     }, {
-        error: string;
         success: false;
+        error: string;
     }>]>>>;
     type: z.ZodString;
     caseInsensitive: z.ZodOptional<z.ZodBoolean>;
@@ -193,8 +194,8 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     }>;
     caseInsensitive?: boolean | undefined;
 }, {
@@ -203,8 +204,8 @@ export declare const ChallengeFromGetChallengeSchema: z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     }>;
     caseInsensitive?: boolean | undefined;
 }>;
@@ -220,11 +221,11 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        error: string;
         success: false;
+        error: string;
     }, {
-        error: string;
         success: false;
+        error: string;
     }>]>>>;
     type: z.ZodString;
     caseInsensitive: z.ZodOptional<z.ZodBoolean>;
@@ -234,8 +235,8 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     }>;
     caseInsensitive?: boolean | undefined;
 }, {
@@ -244,8 +245,8 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     verify: (args_0: string, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     }>;
     caseInsensitive?: boolean | undefined;
 }>, z.ZodUnion<[z.ZodObject<{
@@ -258,11 +259,11 @@ export declare const ResultOfGetChallengeSchema: z.ZodUnion<[z.ZodObject<{
     success: z.ZodLiteral<false>;
     error: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    error: string;
     success: false;
+    error: string;
 }, {
-    error: string;
     success: false;
+    error: string;
 }>]>]>;
 export declare const ChallengeExcludeSubplebbitSchema: z.ZodObject<{
     addresses: z.ZodArray<z.ZodString, "atleastone">;
@@ -338,7 +339,7 @@ export declare const ChallengeExcludeSchema: z.ZodObject<{
     replyScore: z.ZodOptional<z.ZodNumber>;
     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     rateLimit: z.ZodOptional<z.ZodNumber>;
     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -397,7 +398,7 @@ export declare const ChallengeExcludeSchema: z.ZodObject<{
     replyScore: z.ZodOptional<z.ZodNumber>;
     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     rateLimit: z.ZodOptional<z.ZodNumber>;
     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -456,7 +457,7 @@ export declare const ChallengeExcludeSchema: z.ZodObject<{
     replyScore: z.ZodOptional<z.ZodNumber>;
     firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
     challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-    role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+    role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
     address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     rateLimit: z.ZodOptional<z.ZodNumber>;
     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -520,7 +521,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -579,7 +580,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -638,7 +639,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -702,7 +703,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -761,7 +762,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -826,7 +827,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -885,7 +886,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -950,7 +951,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1009,7 +1010,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1074,7 +1075,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1133,7 +1134,7 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1227,7 +1228,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1286,7 +1287,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1345,7 +1346,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1409,7 +1410,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1468,7 +1469,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1533,7 +1534,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1592,7 +1593,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1657,7 +1658,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1716,7 +1717,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1781,7 +1782,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1840,7 +1841,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -1890,11 +1891,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             success: z.ZodLiteral<false>;
             error: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            error: string;
             success: false;
+            error: string;
         }, {
-            error: string;
             success: false;
+            error: string;
         }>]>>>;
         type: z.ZodString;
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
@@ -1904,8 +1905,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }, {
@@ -1914,8 +1915,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }>, z.ZodUnion<[z.ZodObject<{
@@ -1928,11 +1929,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        error: string;
         success: false;
+        error: string;
     }, {
-        error: string;
         success: false;
+        error: string;
     }>]>]>>>;
 }, "strict", z.ZodTypeAny, {
     type: string;
@@ -1963,7 +1964,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2022,7 +2023,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2063,16 +2064,16 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }>;
@@ -2123,7 +2124,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2182,7 +2183,7 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2223,16 +2224,16 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }>;
@@ -2280,7 +2281,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2339,7 +2340,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2398,7 +2399,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2463,7 +2464,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2522,7 +2523,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2581,7 +2582,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2646,7 +2647,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2705,7 +2706,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2764,7 +2765,7 @@ export declare const SubplebbitChallengeSchema: z.ZodObject<{
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2833,7 +2834,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2892,7 +2893,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -2951,7 +2952,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3015,7 +3016,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3074,7 +3075,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3139,7 +3140,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3198,7 +3199,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3263,7 +3264,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3322,7 +3323,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3387,7 +3388,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3446,7 +3447,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         replyScore: z.ZodOptional<z.ZodNumber>;
         firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
         challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
         address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3539,7 +3540,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3598,7 +3599,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3657,7 +3658,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3721,7 +3722,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3780,7 +3781,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3845,7 +3846,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3904,7 +3905,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -3969,7 +3970,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4028,7 +4029,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4093,7 +4094,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4152,7 +4153,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4202,11 +4203,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             success: z.ZodLiteral<false>;
             error: z.ZodString;
         }, "strip", z.ZodTypeAny, {
-            error: string;
             success: false;
+            error: string;
         }, {
-            error: string;
             success: false;
+            error: string;
         }>]>>>;
         type: z.ZodString;
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
@@ -4216,8 +4217,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }, {
@@ -4226,8 +4227,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }>, z.ZodUnion<[z.ZodObject<{
@@ -4240,11 +4241,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         success: z.ZodLiteral<false>;
         error: z.ZodString;
     }, "strip", z.ZodTypeAny, {
-        error: string;
         success: false;
+        error: string;
     }, {
-        error: string;
         success: false;
+        error: string;
     }>]>]>>>;
 }, "strict", z.ZodTypeAny, {
     type: string;
@@ -4275,7 +4276,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4334,7 +4335,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4375,16 +4376,16 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }>;
@@ -4435,7 +4436,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4494,7 +4495,7 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4535,16 +4536,16 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args: unknown[]) => Promise<{
         success: true;
     } | {
-        error: string;
         success: false;
+        error: string;
     } | {
         type: string;
         challenge: string;
         verify: (args_0: string, ...args: unknown[]) => Promise<{
             success: true;
         } | {
-            error: string;
             success: false;
+            error: string;
         }>;
         caseInsensitive?: boolean | undefined;
     }>;
@@ -4603,7 +4604,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4662,7 +4663,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4721,7 +4722,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4786,7 +4787,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4845,7 +4846,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4904,7 +4905,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -4969,7 +4970,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5028,7 +5029,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5087,7 +5088,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5135,23 +5136,23 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -5164,11 +5165,11 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -5303,8 +5304,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     address: string;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -5334,7 +5335,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5393,7 +5394,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5452,7 +5453,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5494,15 +5495,15 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[];
     encryption: {
-        type: "ed25519-aes-gcm";
+        type: string;
         publicKey: string;
     } & {
         [k: string]: unknown;
     };
     createdAt: number;
     statsCid: string;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -5511,7 +5512,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -5563,8 +5564,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     address: string;
     signature: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     };
     protocolVersion: string;
@@ -5594,7 +5595,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5653,7 +5654,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5712,7 +5713,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5754,15 +5755,15 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[];
     encryption: {
-        type: "ed25519-aes-gcm";
+        type: string;
         publicKey: string;
     } & {
         [k: string]: unknown;
     };
     createdAt: number;
     statsCid: string;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -5771,7 +5772,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -5820,7 +5821,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
 }>;
-export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "posts" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
+export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "title" | "updatedAt" | "lastCommentCid" | "posts" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
 export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: z.ZodObject<{
         posts: z.ZodOptional<z.ZodObject<{
@@ -5858,7 +5859,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5917,7 +5918,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -5976,7 +5977,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6041,7 +6042,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6100,7 +6101,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6159,7 +6160,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6224,7 +6225,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6283,7 +6284,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6342,7 +6343,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6390,23 +6391,23 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, z.ZodTypeAny, "passthrough">>;
         address: z.ZodString;
@@ -6419,11 +6420,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         title: z.ZodOptional<z.ZodString>;
         description: z.ZodOptional<z.ZodString>;
         roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">>>>;
         rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -6590,7 +6591,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6649,7 +6650,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6708,7 +6709,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6773,7 +6774,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6832,7 +6833,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6891,7 +6892,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -6956,7 +6957,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7015,7 +7016,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7074,7 +7075,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7122,23 +7123,23 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, z.ZodTypeAny, "passthrough">>;
         address: z.ZodString;
@@ -7151,11 +7152,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         title: z.ZodOptional<z.ZodString>;
         description: z.ZodOptional<z.ZodString>;
         roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">>>>;
         rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -7322,7 +7323,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7381,7 +7382,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7440,7 +7441,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7505,7 +7506,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7564,7 +7565,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7623,7 +7624,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7688,7 +7689,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7747,7 +7748,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7806,7 +7807,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -7854,23 +7855,23 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }, {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            type: z.ZodEnum<["ed25519-aes-gcm"]>;
+            type: z.ZodString;
             publicKey: z.ZodString;
         }, z.ZodTypeAny, "passthrough">>;
         address: z.ZodString;
@@ -7883,11 +7884,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         title: z.ZodOptional<z.ZodString>;
         description: z.ZodOptional<z.ZodString>;
         roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">>>>;
         rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
         lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -8020,13 +8021,14 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>, "many">>>;
     }, z.ZodTypeAny, "passthrough">>;
     updateCid: z.ZodEffects<z.ZodString, string, string>;
+    updatingState: z.ZodOptional<z.ZodType<import("./types.js").SubplebbitUpdatingState, z.ZodTypeDef, import("./types.js").SubplebbitUpdatingState>>;
 }, "strip", z.ZodTypeAny, {
     subplebbit: {
         address: string;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         protocolVersion: string;
@@ -8056,7 +8058,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8115,7 +8117,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8174,7 +8176,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8216,15 +8218,15 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
         encryption: {
-            type: "ed25519-aes-gcm";
+            type: string;
             publicKey: string;
         } & {
             [k: string]: unknown;
         };
         createdAt: number;
         statsCid: string;
-        lastCommentCid?: string | undefined;
         title?: string | undefined;
+        lastCommentCid?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
@@ -8233,7 +8235,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectOutputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">> | undefined;
         rules?: string[] | undefined;
         lastPostCid?: string | undefined;
@@ -8285,13 +8287,14 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         [k: string]: unknown;
     };
     updateCid: string;
+    updatingState?: import("./types.js").SubplebbitUpdatingState | undefined;
 }, {
     subplebbit: {
         address: string;
         signature: {
             type: string;
-            publicKey: string;
             signature: string;
+            publicKey: string;
             signedPropertyNames: string[];
         };
         protocolVersion: string;
@@ -8321,7 +8324,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8380,7 +8383,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8439,7 +8442,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8481,15 +8484,15 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
         encryption: {
-            type: "ed25519-aes-gcm";
+            type: string;
             publicKey: string;
         } & {
             [k: string]: unknown;
         };
         createdAt: number;
         statsCid: string;
-        lastCommentCid?: string | undefined;
         title?: string | undefined;
+        lastCommentCid?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids?: Record<string, string> | undefined;
@@ -8498,7 +8501,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectInputType<{
-            role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
         }, z.ZodTypeAny, "passthrough">> | undefined;
         rules?: string[] | undefined;
         lastPostCid?: string | undefined;
@@ -8550,6 +8553,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         [k: string]: unknown;
     };
     updateCid: string;
+    updatingState?: import("./types.js").SubplebbitUpdatingState | undefined;
 }>;
 export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     challenges: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -8577,7 +8581,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8636,7 +8640,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8695,7 +8699,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8760,7 +8764,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8819,7 +8823,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8878,7 +8882,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -8943,7 +8947,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9002,7 +9006,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9061,7 +9065,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9109,23 +9113,23 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>>;
     createdAt: z.ZodOptional<z.ZodNumber>;
@@ -9137,11 +9141,11 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     lastPostCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -9296,14 +9300,14 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -9335,7 +9339,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9394,7 +9398,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9453,7 +9457,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9496,7 +9500,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -9504,7 +9508,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -9557,14 +9561,14 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -9596,7 +9600,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9655,7 +9659,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9714,7 +9718,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9757,7 +9761,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -9765,7 +9769,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<{
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -9846,7 +9850,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9905,7 +9909,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -9964,7 +9968,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10028,7 +10032,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10087,7 +10091,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10152,7 +10156,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10211,7 +10215,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10276,7 +10280,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10335,7 +10339,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10400,7 +10404,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10459,7 +10463,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10526,7 +10530,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10585,7 +10589,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10654,7 +10658,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10713,7 +10717,7 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10918,7 +10922,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -10977,7 +10981,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11036,7 +11040,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11100,7 +11104,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11159,7 +11163,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11224,7 +11228,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11283,7 +11287,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11348,7 +11352,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11407,7 +11411,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11472,7 +11476,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11531,7 +11535,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11598,7 +11602,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11657,7 +11661,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11726,7 +11730,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11785,7 +11789,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11828,11 +11832,11 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         fetchThumbnailUrlsProxyUrl?: string | undefined;
     }>>>;
     roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
 }, "strict", z.ZodTypeAny, {
     address?: string | undefined;
@@ -11840,7 +11844,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -11915,7 +11919,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -11974,7 +11978,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12022,7 +12026,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
     rules?: string[] | undefined;
     features?: z.objectInputType<{
@@ -12097,7 +12101,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12156,7 +12160,7 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12361,7 +12365,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12420,7 +12424,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12479,7 +12483,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12543,7 +12547,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12602,7 +12606,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12667,7 +12671,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12726,7 +12730,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12791,7 +12795,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12850,7 +12854,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12915,7 +12919,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -12974,7 +12978,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13041,7 +13045,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13100,7 +13104,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13169,7 +13173,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13228,7 +13232,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13282,11 +13286,11 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
         privateKey: string;
     }>>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
 }, "strict", z.ZodTypeAny, {
     signer?: {
@@ -13297,7 +13301,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -13372,7 +13376,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13431,7 +13435,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13482,7 +13486,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectInputType<{
@@ -13557,7 +13561,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13616,7 +13620,7 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13821,7 +13825,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13880,7 +13884,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -13939,7 +13943,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14003,7 +14007,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14062,7 +14066,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14127,7 +14131,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14186,7 +14190,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14251,7 +14255,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14310,7 +14314,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14375,7 +14379,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14434,7 +14438,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14501,7 +14505,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14560,7 +14564,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14629,7 +14633,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14688,7 +14692,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14731,11 +14735,11 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         fetchThumbnailUrlsProxyUrl?: string | undefined;
     }>>>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
 } & {
     address: z.ZodString;
@@ -14757,18 +14761,18 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         publicKey: string;
     }>;
 }, "strict", z.ZodTypeAny, {
-    address: string;
     signer: {
         type: "ed25519";
         privateKey: string;
         address: string;
         publicKey: string;
     };
+    address: string;
     title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -14843,7 +14847,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14902,7 +14906,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -14945,18 +14949,18 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
         fetchThumbnailUrlsProxyUrl?: string | undefined;
     } | undefined;
 }, {
-    address: string;
     signer: {
         type: "ed25519";
         privateKey: string;
         address: string;
         publicKey: string;
     };
+    address: string;
     title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectInputType<{
@@ -15031,7 +15035,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15090,7 +15094,7 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<{
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15159,7 +15163,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15218,7 +15222,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15277,7 +15281,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15342,7 +15346,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15401,7 +15405,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15460,7 +15464,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15525,7 +15529,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15584,7 +15588,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15643,7 +15647,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15691,23 +15695,23 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>>;
     createdAt: z.ZodOptional<z.ZodNumber>;
@@ -15719,11 +15723,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     lastPostCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -15878,14 +15882,14 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -15917,7 +15921,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -15976,7 +15980,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16035,7 +16039,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16078,7 +16082,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -16086,7 +16090,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -16139,14 +16143,14 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -16178,7 +16182,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16237,7 +16241,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16296,7 +16300,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16339,7 +16343,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -16347,7 +16351,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -16432,7 +16436,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16491,7 +16495,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16550,7 +16554,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16615,7 +16619,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16674,7 +16678,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16733,7 +16737,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16798,7 +16802,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16857,7 +16861,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16916,7 +16920,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -16964,23 +16968,23 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -16993,11 +16997,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -17164,7 +17168,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17223,7 +17227,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17282,7 +17286,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17347,7 +17351,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17406,7 +17410,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17465,7 +17469,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17530,7 +17534,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17589,7 +17593,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17648,7 +17652,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17696,23 +17700,23 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -17725,11 +17729,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -17896,7 +17900,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -17955,7 +17959,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18014,7 +18018,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18079,7 +18083,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18138,7 +18142,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18197,7 +18201,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18262,7 +18266,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18321,7 +18325,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18380,7 +18384,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18428,23 +18432,23 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -18457,11 +18461,11 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -18619,7 +18623,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18678,7 +18682,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18737,7 +18741,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18802,7 +18806,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18861,7 +18865,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18920,7 +18924,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -18985,7 +18989,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19044,7 +19048,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19103,7 +19107,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19151,23 +19155,23 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>>;
     createdAt: z.ZodOptional<z.ZodNumber>;
@@ -19179,11 +19183,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     lastPostCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -19338,14 +19342,14 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -19377,7 +19381,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19436,7 +19440,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19495,7 +19499,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19538,7 +19542,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -19546,7 +19550,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -19599,14 +19603,14 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -19638,7 +19642,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19697,7 +19701,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19756,7 +19760,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19799,7 +19803,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -19807,7 +19811,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -19892,7 +19896,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -19951,7 +19955,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20010,7 +20014,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20075,7 +20079,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20134,7 +20138,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20193,7 +20197,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20258,7 +20262,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20317,7 +20321,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20376,7 +20380,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20424,23 +20428,23 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -20453,11 +20457,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -20624,7 +20628,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20683,7 +20687,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20742,7 +20746,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20807,7 +20811,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20866,7 +20870,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20925,7 +20929,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -20990,7 +20994,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21049,7 +21053,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21108,7 +21112,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21156,23 +21160,23 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -21185,11 +21189,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -21356,7 +21360,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21415,7 +21419,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21474,7 +21478,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21539,7 +21543,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21598,7 +21602,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21657,7 +21661,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21722,7 +21726,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21781,7 +21785,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21840,7 +21844,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -21888,23 +21892,23 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -21917,11 +21921,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -22214,7 +22218,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22273,7 +22277,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22332,7 +22336,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22396,7 +22400,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22455,7 +22459,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22520,7 +22524,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22579,7 +22583,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22644,7 +22648,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22703,7 +22707,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22768,7 +22772,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22827,7 +22831,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22894,7 +22898,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -22953,7 +22957,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23022,7 +23026,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23081,7 +23085,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23135,11 +23139,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         privateKey: string;
     }>>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
 }, "strict", z.ZodTypeAny, {
     signer?: {
@@ -23150,7 +23154,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -23225,7 +23229,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23284,7 +23288,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23335,7 +23339,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectInputType<{
@@ -23410,7 +23414,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23469,7 +23473,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23674,7 +23678,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23733,7 +23737,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23792,7 +23796,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23856,7 +23860,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23915,7 +23919,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -23980,7 +23984,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24039,7 +24043,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24104,7 +24108,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24163,7 +24167,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24228,7 +24232,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24287,7 +24291,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24354,7 +24358,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24413,7 +24417,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24482,7 +24486,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24541,7 +24545,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24595,11 +24599,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         privateKey: string;
     }>>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
 }, "strict", z.ZodTypeAny, {
     signer?: {
@@ -24610,7 +24614,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectOutputType<{
@@ -24685,7 +24689,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24744,7 +24748,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24795,7 +24799,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     description?: string | undefined;
     pubsubTopic?: string | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     features?: z.objectInputType<{
@@ -24870,7 +24874,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24929,7 +24933,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 replyScore: z.ZodOptional<z.ZodNumber>;
                 firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
                 challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-                role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
                 address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -24997,7 +25001,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25056,7 +25060,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25115,7 +25119,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25180,7 +25184,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25239,7 +25243,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25298,7 +25302,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25363,7 +25367,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25422,7 +25426,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25481,7 +25485,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25529,23 +25533,23 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>>;
     createdAt: z.ZodOptional<z.ZodNumber>;
@@ -25557,11 +25561,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     lastPostCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
@@ -25716,14 +25720,14 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -25755,7 +25759,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25814,7 +25818,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25873,7 +25877,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -25916,7 +25920,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -25924,7 +25928,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -25977,14 +25981,14 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     address: string;
     signature?: {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
-    lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
+    lastCommentCid?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids?: Record<string, string> | undefined;
@@ -26016,7 +26020,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26075,7 +26079,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26134,7 +26138,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26177,7 +26181,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     }, z.ZodTypeAny, "passthrough">[] | undefined;
     description?: string | undefined;
     encryption?: z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
@@ -26185,7 +26189,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
     rules?: string[] | undefined;
     lastPostCid?: string | undefined;
@@ -26270,7 +26274,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26329,7 +26333,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26388,7 +26392,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26453,7 +26457,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26512,7 +26516,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26571,7 +26575,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26636,7 +26640,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26695,7 +26699,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26754,7 +26758,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -26802,23 +26806,23 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -26831,11 +26835,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -27002,7 +27006,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27061,7 +27065,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27120,7 +27124,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27185,7 +27189,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27244,7 +27248,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27303,7 +27307,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27368,7 +27372,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27427,7 +27431,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27486,7 +27490,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27534,23 +27538,23 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -27563,11 +27567,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -27734,7 +27738,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27793,7 +27797,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27852,7 +27856,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27917,7 +27921,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -27976,7 +27980,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28035,7 +28039,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28100,7 +28104,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28159,7 +28163,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28218,7 +28222,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
             replyScore: z.ZodOptional<z.ZodNumber>;
             firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
             challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-            role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+            role: z.ZodOptional<z.ZodArray<z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>, "many">>;
             address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
@@ -28266,23 +28270,23 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }, {
         type: string;
-        publicKey: string;
         signature: string;
+        publicKey: string;
         signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        type: z.ZodEnum<["ed25519-aes-gcm"]>;
+        type: z.ZodString;
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough">>;
     address: z.ZodString;
@@ -28295,11 +28299,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     title: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
     roles: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        role: z.ZodEnum<["owner", "admin", "moderator"]>;
+        role: z.ZodUnion<[z.ZodEnum<["owner", "admin", "moderator"]>, z.ZodString]>;
     }, z.ZodTypeAny, "passthrough">>>>;
     rules: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     lastPostCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;

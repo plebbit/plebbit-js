@@ -1,7 +1,6 @@
 import type { PageIpfs, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "../../../pages/types.js";
-import type { CommentUpdateType } from "../../../publications/comment/types.js";
+import type { CommentsTableRow, CommentUpdateType } from "../../../publications/comment/types.js";
 import { POST_REPLIES_SORT_TYPES, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
-import type { CommentsTableRow } from "../../../types.js";
 export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;

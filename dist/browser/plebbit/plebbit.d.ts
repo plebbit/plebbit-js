@@ -3,7 +3,7 @@ import { Comment } from "../publications/comment/comment.js";
 import Vote from "../publications/vote/vote.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import Stats from "../stats.js";
-import { ClientsManager } from "../clients/client-manager.js";
+import { PlebbitClientsManager } from "./plebbit-client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import type { CreateRemoteSubplebbitOptions, SubplebbitJson, SubplebbitIpfsType, RemoteSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
@@ -24,11 +24,13 @@ import type { CreateSubplebbitEditPublicationOptions, SubplebbitEditJson, Subple
 import { DomainResolver } from "../domain-resolver.js";
 import { PlebbitTypedEmitter } from "../clients/plebbit-typed-emitter.js";
 import type { PageTypeJson } from "../pages/types.js";
+import { Libp2pJsClient } from "../helia/libp2pjsClient.js";
 export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
+    libp2pJsClientOptions?: ParsedPlebbitOptions["libp2pJsClientOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders: ParsedPlebbitOptions["chainProviders"];
@@ -41,7 +43,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     httpRoutersOptions: ParsedPlebbitOptions["httpRoutersOptions"];
     clients: {
         ipfsGateways: {
-            [ipfsGatewayUrl: string]: GatewayClient;
+            [ipfsGatewayUrl: NonNullable<ParsedPlebbitOptions["ipfsGatewayUrls"]>[number]]: GatewayClient;
         };
         kuboRpcClients: {
             [kuboRpcClientUrl: string]: KuboRpcClient;
@@ -53,13 +55,16 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
             [chainProviderUrl: string]: ChainProvider;
         };
         plebbitRpcClients: {
-            [plebbitRpcUrl: string]: PlebbitRpcClient;
+            [plebbitRpcUrl: NonNullable<ParsedPlebbitOptions["plebbitRpcClientsOptions"]>[number]]: PlebbitRpcClient;
+        };
+        libp2pJsClients: {
+            [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"]]: Libp2pJsClient;
         };
     };
     subplebbits: string[];
     _plebbitRpcClient?: PlebbitRpcClient;
     private _pubsubSubscriptions;
-    _clientsManager: ClientsManager;
+    _clientsManager: PlebbitClientsManager;
     _userPlebbitOptions: InputPlebbitOptions;
     _stats: Stats;
     _storage: StorageInterface;
@@ -84,6 +89,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     _initMemCaches(): void;
     private _initKuboRpcClientsIfNeeded;
     private _initKuboPubsubClientsIfNeeded;
+    private _initLibp2pJsClientsIfNeeded;
     private _initRpcClientsIfNeeded;
     private _initChainProviders;
     private _initIpfsGatewaysIfNeeded;

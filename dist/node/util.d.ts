@@ -41,9 +41,9 @@ export declare function calculateIpfsCidV0(content: string): Promise<string>;
  */
 export declare function binaryKeyToPubsubTopic(key: Uint8Array): string;
 export declare function ipnsNameToIpnsOverPubsubTopic(ipnsName: string): string;
-export declare function pubsubTopicToDhtKey(pubsubTopic: string): Promise<string>;
-export declare function retryKuboIpfsAdd({ kuboRpcClient, log, content, inputNumOfRetries, options }: {
-    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"];
+export declare const pubsubTopicToDhtKey: (pubsubTopic: string) => string;
+export declare function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, options }: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add">;
     log: Logger;
     content: string;
     inputNumOfRetries?: number;

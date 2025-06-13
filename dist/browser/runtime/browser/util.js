@@ -10,8 +10,14 @@ export const mkdir = () => {
 export const listSubplebbits = () => {
     throw Error("listSubplebbits should not be called in browser");
 };
+export const listSubplebbitsSync = () => {
+    throw Error("listSubplebbitsSync should not be called in browser");
+};
 export const monitorSubplebbitsDirectory = () => {
     throw Error("monitorSubplebbitsDirectory should not be called in browser");
+};
+export const trytoDeleteSubsThatFailedToBeDeletedBefore = () => {
+    throw Error("trytoDeleteSubsThatFailedToBeDeletedBefore should not be called in browser");
 };
 export async function importSignerIntoKuboNode(ipnsKeyName, ipfsKey, ipfsNode) {
     const data = new FormData();
