@@ -472,23 +472,23 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._plebbit._startedSubplebbits[this._comment.subplebbitAddress] ||
             this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress] ||
             opts?.sub;
-        const post: Comment | undefined = this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid!] : opts?.post;
-        if (sub && (this._comment.depth === 0 || this._comment.postCid === this._comment.cid))
-            return findCommentInPageInstance(sub.posts, this._comment.cid);
+        let updateFromSub: PageIpfs["comments"][0] | undefined;
+        if (sub) updateFromSub = findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
 
-        if (post) {
-            const commentInPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
-            if (commentInPost) return commentInPost;
-        }
+        const post: Comment | undefined = this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid!] : opts?.post;
+        let updateFromPost: PageIpfs["comments"][0] | undefined;
+        if (post) updateFromPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
+
+        let updateFromParent: PageIpfs["comments"][0] | undefined;
         if (this._comment.parentCid) {
             const parentCommentReplyPages: Comment["replies"] | undefined =
                 this._plebbit._updatingComments[this._comment.parentCid]?.replies;
-            const commentInParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
-            if (commentInParent) return commentInParent;
+            updateFromParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
         }
 
-        // need to look for comment recursively in this._subplebbitForUpdating
-        if (sub?.posts) return findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
+        const updates: PageIpfs["comments"][0][] = [updateFromSub, updateFromPost, updateFromParent].filter((update) => !!update);
+        const latestUpdate = updates.sort((a, b) => b.commentUpdate.updatedAt - a.commentUpdate.updatedAt)[0];
+        return latestUpdate;
     }
 
     // will handling sub states down here
