@@ -110,7 +110,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
                     const abortId = String(Math.random());
                     const abortSignal = new AbortController();
                     ipnsPubsubAbortControllers[abortId] = abortSignal;
-                    log("Resolving ipns name", ipnsName, "with options", options);
+                    log.trace("Resolving ipns name", ipnsName, "with options", options);
                     try {
                         const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
                             ...options,

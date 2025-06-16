@@ -14,6 +14,7 @@ export enum messages {
     ERR_COMMENT_MISSING_UPDATE = "Comment is missing CommentUpdate props",
     ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING = "You need to stop updating the subplebbit before starting it",
     ERR_HELIAS_STOPPING_OR_STOPPED = "Helia is stopping or stopped already. You can't use any helia functions",
+    ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS = "Failed to dial and connect to any IPNS-Over-Pubsub peers from delegated routers",
     ERR_GET_SUBPLEBBIT_TIMED_OUT = "plebbit.getSubplebbit() timed out",
     // Plebbit errors
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
