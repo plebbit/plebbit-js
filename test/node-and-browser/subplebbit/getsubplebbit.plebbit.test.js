@@ -2,7 +2,7 @@ import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { createNewIpns, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { createNewIpns, getRemotePlebbitConfigs, isPlebbitFetchingUsingGateways } from "../../../dist/node/test/test-util.js";
 
 const ensSubplebbitAddress = "plebbit.eth";
 const subplebbitSigner = signers[0];
@@ -60,7 +60,23 @@ getRemotePlebbitConfigs().map((config) => {
             expect(updatedHasBeenCalled).to.be.false;
         });
 
-        it(`plebbit.getSubplebbit should throw immedietly if it encounters a non retriable error`, async () => {
+        it(`plebbit.getSubplebbit should throw if it loads a record with invalid json`, async () => {
+            const ipnsObj = await createNewIpns();
+            await ipnsObj.publishToIpns("<html>hello this is not a valid json</html>");
+
+            try {
+                await plebbit.getSubplebbit(ipnsObj.signer.address);
+                expect.fail("should not succeed");
+            } catch (e) {
+                if (isPlebbitFetchingUsingGateways(plebbit)) {
+                    expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                    expect(e.details.gatewayToError[Object.keys(e.details.gatewayToError)[0]].code).to.equal("ERR_INVALID_JSON");
+                } else expect(e.code).to.equal("ERR_INVALID_JSON");
+            }
+            await ipnsObj.plebbit.destroy();
+        });
+
+        it(`plebbit.getSubplebbit should throw immedietly if it loads a record with invalid signature`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
             const ipnsObj = await createNewIpns();
             await ipnsObj.publishToIpns(JSON.stringify({ ...loadedSubplebbit.raw.subplebbitIpfs, updatedAt: 12345 })); // publish invalid signature
