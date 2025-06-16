@@ -384,23 +384,21 @@ export class CommentClientsManager extends PublicationClientsManager {
         const sub = this._plebbit._startedSubplebbits[this._comment.subplebbitAddress] ||
             this._plebbit._updatingSubplebbits[this._comment.subplebbitAddress] ||
             opts?.sub;
+        let updateFromSub;
+        if (sub)
+            updateFromSub = findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
         const post = this._comment.postCid ? this._plebbit._updatingComments[this._comment.postCid] : opts?.post;
-        if (sub && (this._comment.depth === 0 || this._comment.postCid === this._comment.cid))
-            return findCommentInPageInstance(sub.posts, this._comment.cid);
-        if (post) {
-            const commentInPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
-            if (commentInPost)
-                return commentInPost;
-        }
+        let updateFromPost;
+        if (post)
+            updateFromPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
+        let updateFromParent;
         if (this._comment.parentCid) {
             const parentCommentReplyPages = this._plebbit._updatingComments[this._comment.parentCid]?.replies;
-            const commentInParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
-            if (commentInParent)
-                return commentInParent;
+            updateFromParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
         }
-        // need to look for comment recursively in this._subplebbitForUpdating
-        if (sub?.posts)
-            return findCommentInPageInstanceRecursively(sub.posts, this._comment.cid);
+        const updates = [updateFromSub, updateFromPost, updateFromParent].filter((update) => !!update);
+        const latestUpdate = updates.sort((a, b) => b.commentUpdate.updatedAt - a.commentUpdate.updatedAt)[0];
+        return latestUpdate;
     }
     // will handling sub states down here
     // this is for posts with depth === 0
@@ -515,7 +513,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             curPageCid = pageLoaded.nextCid;
         }
-        log("Searched for new comment update of comment", this._comment.cid, "in the following pageCids of page", pageSortName, "of parent comment:", parentCommentInstance.cid, pageCidsSearchedForNewUpdate, "and found", newCommentUpdate ? "a new comment update" : "no new comment update");
+        log("Searched for new comment update of comment", this._comment.cid, "in the following pageCids of page sort", pageSortName, "of parent comment:", parentCommentInstance.cid, pageCidsSearchedForNewUpdate, "and found", newCommentUpdate ? "a new comment update" : "no new comment update");
         if (newCommentUpdate)
             this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: newCommentUpdate.commentUpdate }, subplebbitWithSignature, log);
         else
@@ -628,6 +626,8 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
             return;
         }
+        if (this._fetchingUpdateForReplyUsingPageCidsPromise)
+            await this._fetchingUpdateForReplyUsingPageCidsPromise;
         this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
             .catch((error) => {
             log.error("Failed to fetch reply commentUpdate update from post flat pages", error);

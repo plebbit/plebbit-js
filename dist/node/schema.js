@@ -36,7 +36,7 @@ const defaultChainProviders = {
 };
 const TransformKuboRpcClientOptionsSchema = KuboRpcCreateClientOptionSchema.array().transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
 const ParsedKuboRpcClientOptionsSchema = z.custom();
-const PlebbitUserOptionBaseSchema = z.object({
+export const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
     kuboRpcClientsOptions: TransformKuboRpcClientOptionsSchema.optional(),
     httpRoutersOptions: z.string().url().startsWith("http", "HTTP router URL must start with http:// or https://").array().optional(),
@@ -89,7 +89,17 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     noData: PlebbitUserOptionBaseSchema.shape.noData.default(false),
     validatePages: PlebbitUserOptionBaseSchema.shape.validatePages.default(true),
     userAgent: PlebbitUserOptionBaseSchema.shape.userAgent.default(version.USER_AGENT)
-}).strict();
+}).transform((args) => {
+    if (JSON.stringify(args.pubsubKuboRpcClientsOptions) === JSON.stringify(defaultPubsubKuboRpcClientsOptions) &&
+        args.libp2pJsClientOptions) {
+        return {
+            ...args,
+            pubsubKuboRpcClientsOptions: []
+        };
+    }
+    else
+        return args;
+});
 export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used to parse responses from rpc when calling getSettings
     kuboRpcClientsOptions: ParsedKuboRpcClientOptionsSchema.optional(),

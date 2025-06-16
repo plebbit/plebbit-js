@@ -497,7 +497,7 @@ export async function iterateThroughPagesToFindCommentInParentPagesInstance(comm
 }
 export async function waitTillReplyInParentPagesInstance(reply, parentComment) {
     const isReplyInParentPages = async () => {
-        console.log("waitTillReplyInParentPagesInstance", parentComment.cid, "replyCount", parentComment.replyCount);
+        console.log("waiting for reply", reply.cid, "in parent comment", parentComment.cid, "replyCount of parent comment", parentComment.replyCount);
         if (Object.keys(parentComment.replies.pageCids).length === 0) {
             // it's a single preloaded page
             const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);

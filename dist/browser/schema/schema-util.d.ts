@@ -16,6 +16,7 @@ import type { VoteChallengeRequestToEncryptType } from "../publications/vote/typ
 import { CreateVoteUserOptionsSchema, VoteChallengeRequestToEncryptSchema, VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
 import type { CommentEditChallengeRequestToEncryptType } from "../publications/comment-edit/types.js";
 import { CommentEditChallengeRequestToEncryptSchema, CommentEditPubsubMessagePublicationSchema, CreateCommentEditOptionsSchema } from "../publications/comment-edit/schema.js";
+import { PlebbitUserOptionsSchema } from "../schema.js";
 import { z } from "zod";
 import type { CreateSubplebbitEditPublicationOptions, SubplebbitEditChallengeRequestToEncryptType, SubplebbitEditPubsubMessagePublication } from "../publications/subplebbit-edit/types.js";
 import { SubplebbitEditPublicationChallengeRequestToEncryptSchema } from "../publications/subplebbit-edit/schema.js";
@@ -2583,43 +2584,7 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
     updateCid?: string | undefined;
 };
-export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any): {
-    userAgent: string;
-    ipfsGatewayUrls: string[];
-    httpRoutersOptions: string[];
-    pubsubKuboRpcClientsOptions: import("kubo-rpc-client").Options[];
-    chainProviders: {
-        eth: {
-            urls: string[];
-            chainId: number;
-        };
-        avax: {
-            urls: string[];
-            chainId: number;
-        };
-        matic: {
-            urls: string[];
-            chainId: number;
-        };
-        sol: {
-            urls: string[];
-            chainId: number;
-        };
-    };
-    resolveAuthorAddresses: boolean;
-    publishInterval: number;
-    updateInterval: number;
-    noData: boolean;
-    validatePages: boolean;
-    kuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
-    plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
-    dataPath?: string | undefined;
-    libp2pJsClientOptions?: {
-        key: string;
-        libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
-        heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
-    }[] | undefined;
-};
+export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any): z.infer<typeof PlebbitUserOptionsSchema>;
 export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>): z.objectOutputType<{
     posts: z.ZodOptional<z.ZodObject<{
         pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;

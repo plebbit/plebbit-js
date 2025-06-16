@@ -4,25 +4,33 @@ import Logger from "@plebbit/plebbit-logger";
 import { CID } from "multiformats/cid";
 import { peerIdFromString } from "@libp2p/peer-id";
 import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey } from "../util.js";
+import { PlebbitError } from "../plebbit-error.js";
 const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
+const maxPeersToDialOverPubsub = 2;
 async function addPubsubPeersFromDelegatedRouters(helia, ipnsPeersCid, options) {
     const pubsubPeers = [];
+    const peerDialToError = {};
     for await (const ipnsPubsubPeer of helia.libp2p.contentRouting.findProviders(CID.parse(ipnsPeersCid), options)) {
         try {
-            await helia.libp2p.dial(ipnsPubsubPeer.id); // will be a no-op if we're already connected
-            log("Succeesfully dialed", ipnsPubsubPeer.id.toString(), "To be able to connect for IPNS-OverPubsub", ipnsPeersCid);
+            await helia.libp2p.dial(ipnsPubsubPeer.id, options); // will be a no-op if we're already connected
+            log.trace("Succeesfully dialed", ipnsPubsubPeer.id.toString(), "To be able to connect for IPNS-OverPubsub", ipnsPeersCid);
             // if it succeeds, means we can connect to this peer
             pubsubPeers.push(peerIdFromString(ipnsPubsubPeer.id.toString()));
+            if (pubsubPeers.length >= maxPeersToDialOverPubsub)
+                break;
         }
         catch (e) {
-            log.error("Failed to dial IPNS-Over-Pubsub peer", ipnsPubsubPeer.id.toString(), "Due to error", e);
+            peerDialToError[ipnsPubsubPeer.id.toString()] = e;
+            log.trace("Failed to dial IPNS-Over-Pubsub peer", ipnsPubsubPeer.id.toString(), "Due to error", e);
         }
     }
     if (pubsubPeers.length === 0)
-        throw Error("Failed to find any IPNS-Over-Pubsub peers from delegated routers");
+        throw new PlebbitError("ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS", {
+            ipnsPeersCid,
+            peerDialToError
+        });
     else
         return pubsubPeers;
-    // need to add a check
 }
 export function createPubsubRouterWithFetch(helia) {
     const originalRouter = ipnsPubsubRouter(helia);

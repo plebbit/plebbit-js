@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "../../schema.js";
+import { PlebbitParsedOptionsSchema, PlebbitUserOptionBaseSchema } from "../../schema.js";
 import { ChallengeFileSchema } from "../../subplebbit/schema.js";
 // Setting up WS
 const WsServerClassOptions = z.object({
@@ -15,7 +15,7 @@ export const CreatePlebbitWsServerOptionsSchema = z
     .passthrough();
 // rpc WS
 export const SetNewSettingsPlebbitWsServerSchema = z.object({
-    plebbitOptions: PlebbitUserOptionsSchema.passthrough()
+    plebbitOptions: PlebbitUserOptionBaseSchema.passthrough()
 });
 export const PlebbitWsServerSettingsSerializedSchema = z.object({
     plebbitOptions: PlebbitParsedOptionsSchema.passthrough(),
