@@ -654,7 +654,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private shouldResolveDomainForVerification() {
-        return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
+        return this.address.includes(".") && (Math.random() < 0.005 || this._firstTimePublishingIpns); // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
     private async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
@@ -728,13 +728,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (this.shouldResolveDomainForVerification()) {
             try {
                 log(`Resolving domain ${this.address} to make sure it's the same as signer.address ${this.signer.address}`);
-                const resolvedSubAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
-                if (resolvedSubAddress !== this.signer.address)
-                    log.error(
-                        `The domain address (${this.address}) subplebbit-address text record to resolves to ${resolvedSubAddress} when it should resolve to ${this.signer.address}`
-                    );
+                await this._assertDomainResolvesCorrectly(this.address);
             } catch (e) {
-                log.error(`Failed to resolve sub domain ${this.address}`, e);
+                log.error(e);
+                this.emit("error", e as PlebbitError);
             }
         }
     }
@@ -2137,7 +2134,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     currentSubplebbitAddress: this.address,
                     newAddressAsDomain,
                     resolvedIpnsFromNewDomain,
-                    signerAddress: this.signer.address
+                    signerAddress: this.signer.address,
+                    started: this.started
                 });
         }
     }
