@@ -9,12 +9,12 @@ import {
     generateSubscriptionId
 } from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
-import { EventEmitter } from "events";
 import type {
     PlebbitWsServerClassOptions,
     JsonRpcSendNotificationOptions,
     CreatePlebbitWsServerOptions,
-    PlebbitWsServerSettingsSerialized
+    PlebbitWsServerSettingsSerialized,
+    PlebbitRpcServerEvents
 } from "./types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import type {
@@ -61,6 +61,7 @@ import type { CommentModerationChallengeRequestToEncrypt } from "../../publicati
 import type { InputPlebbitOptions } from "../../types.js";
 import type { SubplebbitEditChallengeRequestToEncryptType } from "../../publications/subplebbit-edit/types.js";
 import { PublicationRpcErrorToTransmit, RpcPublishResult } from "../../publications/types.js";
+import { TypedEmitter } from "tiny-typed-emitter";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -76,7 +77,7 @@ const getStartedSubplebbit = async (address: string): Promise<LocalSubplebbit> =
 
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 
-class PlebbitWsServer {
+class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     plebbit!: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
     ws: RpcWebsocketsServer["wss"];
@@ -90,6 +91,7 @@ class PlebbitWsServer {
     private _onSettingsChange: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
+        super();
         const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
@@ -129,6 +131,7 @@ class PlebbitWsServer {
         // forward errors to PlebbitWsServer
         this.rpcWebsockets.on("error", (error) => {
             log.error("RPC server", "Received an error on rpc-websockets", error);
+            this._emitError(error);
         });
 
         // save connections to send messages to them later
@@ -183,6 +186,12 @@ class PlebbitWsServer {
         this.rpcWebsocketsRegister("unsubscribe", this.unsubscribe.bind(this));
 
         hideClassPrivateProps(this);
+    }
+
+    private _emitError(error: PlebbitError | Error) {
+        if (this.listeners("error").length === 0)
+            log.error("Unhandled error. This may crash your process, you need to listen for error event on PlebbitRpcWsServer", error);
+        this.emit("error", error);
     }
 
     // util function to log errors of registered methods
