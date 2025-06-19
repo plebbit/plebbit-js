@@ -150,49 +150,45 @@ export class BaseClientsManager {
             this._plebbit.clients.libp2pJsClients[kuboPubsubRpcUrlOrLibp2pJsKey]?.heliaWithKuboRpcClientFunctions ||
             this._plebbit.clients.pubsubKuboRpcClients[kuboPubsubRpcUrlOrLibp2pJsKey]._client;
         if (!pubsubClient) throw new PlebbitError("ERR_INVALID_PUBSUB_PROVIDER", { pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey });
+        if (this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey].includes(pubsubTopic)) {
+            log(`Warning, Already subscribed to pubsub topic (${pubsubTopic}) to (${kuboPubsubRpcUrlOrLibp2pJsKey})`);
+            return;
+        }
         const timeBefore = Date.now();
+
+        const handlePubsubError = async (err: Error) => {
+            error = err;
+            log.error(
+                "pubsub callback error, topic",
+                pubsubTopic,
+                "provider url",
+                kuboPubsubRpcUrlOrLibp2pJsKey,
+                "error",
+                err,
+                "Will unsubscribe and re-attempt to subscribe"
+            );
+
+            await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe");
+            try {
+                await this.pubsubUnsubscribeOnProvider(pubsubTopic, kuboPubsubRpcUrlOrLibp2pJsKey, handler);
+            } catch (e) {
+                log.error("Failed to unsubscribe after onError, topic", pubsubTopic, "provider url", kuboPubsubRpcUrlOrLibp2pJsKey, e);
+            }
+            await this.pubsubSubscribeOnProvider(pubsubTopic, handler, kuboPubsubRpcUrlOrLibp2pJsKey);
+        };
+
         let error: Error | undefined;
         try {
-            // TODO sshould rewrite this to accomodate helia
-            await pubsubClient.pubsub.subscribe(pubsubTopic, handler, {
-                onError: async (err) => {
-                    error = err;
-                    log.error(
-                        "pubsub callback error, topic",
-                        pubsubTopic,
-                        "provider url",
-                        kuboPubsubRpcUrlOrLibp2pJsKey,
-                        "error",
-                        err,
-                        "Will unsubscribe and re-attempt to subscribe"
-                    );
-
-                    await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe");
-                    try {
-                        await this.pubsubUnsubscribeOnProvider(pubsubTopic, kuboPubsubRpcUrlOrLibp2pJsKey, handler);
-                    } catch (e) {
-                        log.error(
-                            "Failed to unsubscribe after onError, topic",
-                            pubsubTopic,
-                            "provider url",
-                            kuboPubsubRpcUrlOrLibp2pJsKey,
-                            e
-                        );
-                    }
-                    await this.pubsubSubscribeOnProvider(pubsubTopic, handler, kuboPubsubRpcUrlOrLibp2pJsKey);
-                }
-            });
+            await pubsubClient.pubsub.subscribe(pubsubTopic, handler, { onError: handlePubsubError });
             if (error) throw error;
             await this._plebbit._stats.recordGatewaySuccess(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe", Date.now() - timeBefore);
             this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey].push(pubsubTopic);
         } catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey, pubsubTopic };
             await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe");
             log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${kuboPubsubRpcUrlOrLibp2pJsKey}) due to error`, e);
-            throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", {
-                pubsubTopic,
-                pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey,
-                error: e
-            });
+            throw e;
         }
     }
 
