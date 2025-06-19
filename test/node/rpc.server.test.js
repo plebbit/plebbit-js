@@ -29,8 +29,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         await plebbit.destroy();
     });
 
-    // TODO enable this test later
-    it.skip(`Rpc server emits an error is rpc port is already taken`, async () => {
+    it(`Rpc server emits an error is rpc port is already taken`, async () => {
         const rpcServerPort = 9138;
         const options = {
             port: rpcServerPort,
