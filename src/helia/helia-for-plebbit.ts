@@ -73,7 +73,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
     const pubsubEventHandler = new EventEmitter();
 
     helia.libp2p.services.pubsub.addEventListener("message", (evt) => {
-        log(`Event from helia libp2p pubsub:`, `on topic ${evt.detail.topic}`);
+        log.trace(`Event from helia libp2p pubsub:`, `on topic ${evt.detail.topic}`);
 
         //@ts-expect-error
         const msgFormatted: IpfsHttpClientPubsubMessage = { data: evt.detail.data, topic: evt.detail.topic, type: evt.detail.type };
