@@ -142,9 +142,9 @@ describe("Plebbit options", async () => {
         await plebbit.destroy();
     });
 
-    it(`Plebbit({libp2pJsClientOptions: [{key}], pubsubKuboRpcClientsOptions: []}) sets plebbit instance to use default libp2pjs options`, async () => {
+    it(`Plebbit({libp2pJsClientsOptions: [{key}], pubsubKuboRpcClientsOptions: []}) sets plebbit instance to use default libp2pjs options`, async () => {
         const plebbit = await Plebbit({
-            libp2pJsClientOptions: [{ key: "random" }],
+            libp2pJsClientsOptions: [{ key: "random" }],
             httpRoutersOptions: ["https://notexist.com"],
             dataPath: undefined,
             pubsubKuboRpcClientsOptions: []
@@ -157,9 +157,9 @@ describe("Plebbit options", async () => {
         await plebbit.destroy();
     });
 
-    it(`Plebbit({libp2pJsClientOptions: [{key}]}) sets plebbit instance to use default libp2pjs options`, async () => {
+    it(`Plebbit({libp2pJsClientsOptions: [{key}]}) sets plebbit instance to use default libp2pjs options`, async () => {
         const plebbit = await Plebbit({
-            libp2pJsClientOptions: [{ key: "random" }],
+            libp2pJsClientsOptions: [{ key: "random" }],
             httpRoutersOptions: ["https://notexist.com"],
             dataPath: undefined
         });
