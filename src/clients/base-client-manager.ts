@@ -150,10 +150,7 @@ export class BaseClientsManager {
             this._plebbit.clients.libp2pJsClients[kuboPubsubRpcUrlOrLibp2pJsKey]?.heliaWithKuboRpcClientFunctions ||
             this._plebbit.clients.pubsubKuboRpcClients[kuboPubsubRpcUrlOrLibp2pJsKey]._client;
         if (!pubsubClient) throw new PlebbitError("ERR_INVALID_PUBSUB_PROVIDER", { pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey });
-        if (this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey].includes(pubsubTopic)) {
-            log(`Warning, Already subscribed to pubsub topic (${pubsubTopic}) to (${kuboPubsubRpcUrlOrLibp2pJsKey})`);
-            return;
-        }
+
         const timeBefore = Date.now();
 
         const handlePubsubError = async (err: Error) => {
@@ -186,6 +183,10 @@ export class BaseClientsManager {
         } catch (e) {
             //@ts-expect-error
             e.details = { ...e.details, pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey, pubsubTopic };
+            if ((e as Error).message?.startsWith("Already subscribed to")) {
+                this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey].push(pubsubTopic);
+                return;
+            }
             await this._plebbit._stats.recordGatewayFailure(kuboPubsubRpcUrlOrLibp2pJsKey, "pubsub-subscribe");
             log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${kuboPubsubRpcUrlOrLibp2pJsKey}) due to error`, e);
             throw e;
@@ -217,10 +218,16 @@ export class BaseClientsManager {
             this._plebbit.clients.pubsubKuboRpcClients[kuboPubsubRpcUrlOrLibp2pJsKey]._client;
         if (!pubsubClient) throw new PlebbitError("ERR_INVALID_PUBSUB_PROVIDER", { pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey });
 
-        await pubsubClient.pubsub.unsubscribe(pubsubTopic, handler);
-        this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey] = this.pubsubProviderSubscriptions[
-            kuboPubsubRpcUrlOrLibp2pJsKey
-        ].filter((subPubsubTopic) => subPubsubTopic !== pubsubTopic);
+        try {
+            await pubsubClient.pubsub.unsubscribe(pubsubTopic, handler);
+            this.pubsubProviderSubscriptions[kuboPubsubRpcUrlOrLibp2pJsKey] = this.pubsubProviderSubscriptions[
+                kuboPubsubRpcUrlOrLibp2pJsKey
+            ].filter((subPubsubTopic) => subPubsubTopic !== pubsubTopic);
+        } catch (e) {
+            //@ts-expect-error
+            e.details = { ...e.details, pubsubProviderUrl: kuboPubsubRpcUrlOrLibp2pJsKey, pubsubTopic };
+            throw e;
+        }
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
