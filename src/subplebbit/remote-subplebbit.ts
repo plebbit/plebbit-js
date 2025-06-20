@@ -486,7 +486,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
     // functions to be overridden in local subplebbit classes
 
-    async edit(options: any): Promise<any> {
+    async edit(options: SubplebbitEditOptions): Promise<any> {
         throw Error("Can't edit a remote subplebbit");
     }
 

@@ -303,7 +303,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._updateIpnsPubsubPropsIfNeeded(newProps);
         this.ipnsName = newProps.signer.address;
         this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-        this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
     }
 
     private async initDbHandlerIfNeeded() {
