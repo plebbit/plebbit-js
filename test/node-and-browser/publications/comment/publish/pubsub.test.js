@@ -4,7 +4,8 @@ import {
     generateMockPost,
     generatePostToAnswerMathQuestion,
     publishWithExpectedResult,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
 const subplebbitWithNoChallenge = signers[0].address;
@@ -322,6 +323,12 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
                 const mockPost = await generateMockPost(subplebbitWithNoChallenge, testPlebbit);
 
+                const errors = [];
+
+                mockPost.on("error", (error) => {
+                    errors.push(error);
+                });
+
                 mockPost._publishToDifferentProviderThresholdSeconds = 1; // Speed up test
                 mockPost._setProviderFailureThresholdSeconds = 2; // Speed up test
 
@@ -341,7 +348,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
                 await mockPost.publish();
 
-                await new Promise((resolve) => setTimeout(resolve, mockPost._setProviderFailureThresholdSeconds * 1000 * 3));
+                await resolveWhenConditionIsTrue(mockPost, () => errors.length > 0, "error");
+
+                expect(mockPost.publishingState).to.equal("failed");
+                expect(mockPost.state).to.equal("stopped");
 
                 // after failing to receive a response, it should clean up by itself
 
