@@ -12,6 +12,8 @@ import http from "http";
 import path from "path";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import tcpPortUsed from "tcp-port-used";
+import url from "url";
+import querystring from "querystring";
 
 import fs from "fs";
 
@@ -383,6 +385,180 @@ const setupMockDelegatedRouter = async () => {
         });
 };
 
+const setUpMockPubsubServer = async () => {
+    const pubsubPorts = [30001];
+    for (const pubsubPort of pubsubPorts) {
+        const pubsubUsed = await tcpPortUsed.check(pubsubPort);
+        if (pubsubUsed) {
+            throw new Error(`Pubsub port ${pubsubPort} is already occupied`);
+        }
+    }
+
+    // Track subscriptions and session attempts
+    const subscribedTopics = new Set();
+    const topicAttempts = new Map(); // topic -> attempt count
+    const activeConnections = new Map(); // topic -> response object
+
+    // Mock pubsub server that will:
+    // 1. Fail on first subscribe attempt for each topic
+    // 2. Succeed on subsequent attempts
+    // 3. Track subscriptions properly
+    http.createServer((req, res) => {
+        const parsedUrl = url.parse(req.url);
+        const pathname = parsedUrl.pathname;
+        const query = querystring.parse(parsedUrl.query);
+
+        console.log("Mock pubsub server: Received request", req.url, req.method, req.query);
+        // Handle CORS
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+        if (req.method === "OPTIONS") {
+            res.writeHead(200);
+            res.end();
+            return;
+        }
+
+        // Handle IPFS pubsub subscribe endpoint
+        if (pathname === "/api/v0/pubsub/sub" && req.method === "POST") {
+            const topic = query.arg;
+
+            // Check if already subscribed to this topic
+            if (subscribedTopics.has(topic)) {
+                const errorMsg = `Already subscribed to ${topic} with handler`;
+                console.log(`Mock pubsub server: Error - ${errorMsg}`);
+                res.writeHead(500, { "Content-Type": "text/plain" });
+                res.end(errorMsg);
+                return;
+            }
+
+            // Track attempts for this topic
+            const currentAttempts = topicAttempts.get(topic) || 0;
+            topicAttempts.set(topic, currentAttempts + 1);
+
+            console.log(`Mock pubsub server: Subscribe attempt #${currentAttempts + 1} for topic: ${topic}`);
+
+            // First attempt fails, subsequent attempts succeed
+            if (currentAttempts === 0) {
+                console.log(`Mock pubsub server: First attempt - will fail for topic: ${topic}`);
+
+                // Set headers for streaming response (like real IPFS does)
+                res.writeHead(200, {
+                    "Content-Type": "application/json",
+                    "Transfer-Encoding": "chunked",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive"
+                });
+
+                // Send initial successful response to establish the subscription
+                res.write(""); // Empty response to establish connection
+
+                // Store the connection temporarily
+                activeConnections.set(topic, res);
+
+                // Track when connection is closed (this is the real "unsubscribe")
+                res.on("close", () => {
+                    console.log(`Mock pubsub server: Connection closed for topic: ${topic} (unsubscribed)`);
+                    subscribedTopics.delete(topic);
+                    activeConnections.delete(topic);
+                });
+
+                res.on("error", (err) => {
+                    console.log(`Mock pubsub server: Connection error for topic: ${topic}`, err);
+                    subscribedTopics.delete(topic);
+                    activeConnections.delete(topic);
+                });
+
+                // After a short delay, trigger an error to test onError callback
+                setTimeout(() => {
+                    console.log(`Mock pubsub server: Triggering error for topic: ${topic}`);
+
+                    // Strategy 1: Send malformed JSON that will cause parsing errors
+                    res.write('{"invalid":"json"data"}');
+
+                    // Strategy 2: After another delay, abruptly close the connection
+                    setTimeout(() => {
+                        console.log(`Mock pubsub server: Closing connection for topic: ${topic}`);
+                        // Don't manually delete from tracking here - let the 'close' event handler do it
+                        res.destroy(); // Abruptly close connection - this should trigger onError
+                    }, 1000);
+                }, 500); // Wait 500ms after subscription is established
+
+                return;
+            } else {
+                // Subsequent attempts succeed
+                console.log(`Mock pubsub server: Retry attempt succeeded for topic: ${topic}`);
+
+                // Set headers for streaming response
+                res.writeHead(200, {
+                    "Content-Type": "application/json",
+                    "Transfer-Encoding": "chunked",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive"
+                });
+
+                // Send initial successful response
+                res.write("");
+
+                // Add to subscribed topics only when connection succeeds
+                subscribedTopics.add(topic);
+                activeConnections.set(topic, res);
+
+                // Track when connection is closed (this is the real "unsubscribe")
+                res.on("close", () => {
+                    console.log(`Mock pubsub server: Connection closed for topic: ${topic} (unsubscribed)`);
+                    subscribedTopics.delete(topic);
+                    activeConnections.delete(topic);
+                });
+
+                res.on("error", (err) => {
+                    console.log(`Mock pubsub server: Connection error for topic: ${topic}`, err);
+                    subscribedTopics.delete(topic);
+                    activeConnections.delete(topic);
+                });
+
+                console.log(`Mock pubsub server: Successfully subscribed to topic: ${topic}`);
+                console.log(`Mock pubsub server: Currently subscribed topics:`, Array.from(subscribedTopics));
+
+                // Keep the connection alive for successful subscriptions
+                // Real behavior would keep this open for pubsub messages
+                return;
+            }
+        }
+
+        // Handle other IPFS endpoints that might be needed
+        if (pathname === "/api/v0/pubsub/pub" && req.method === "POST") {
+            const topic = query.arg;
+            console.log(`Mock pubsub server: Publish request for topic: ${topic}`);
+            // Accept publish requests but don't actually do anything
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end("{}");
+            return;
+        }
+
+        if (pathname === "/api/v0/pubsub/ls" && req.method === "POST") {
+            console.log(`Mock pubsub server: List subscriptions request`);
+            console.log(`Mock pubsub server: Currently subscribed topics:`, Array.from(subscribedTopics));
+            // Return current subscriptions list
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ Strings: Array.from(subscribedTopics) }));
+            return;
+        }
+
+        // Return 404 for unhandled endpoints
+        res.writeHead(404);
+        res.end("Not Found");
+    })
+        .listen(30001, hostName)
+        .on("error", (err) => {
+            console.error("Mock pubsub server error:", err);
+        });
+
+    console.log(`Mock pubsub retry-behavior server listening on port 30001`);
+    console.log(`Mock pubsub server: This server fails on first subscribe attempt, succeeds on retries`);
+};
+
 (async () => {
     // do more stuff here, like start some subplebbits
 
@@ -400,6 +576,8 @@ const setupMockDelegatedRouter = async () => {
     await setUpMockGateways();
 
     await setupMockDelegatedRouter();
+
+    await setUpMockPubsubServer();
 
     await import("./pubsub-mock-server.js");
 

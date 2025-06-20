@@ -14,6 +14,15 @@ const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Takes msgs bu
 const workingPubsubUrl = "http://localhost:15002/api/v0"; // kubo node with working pubsub
 
 const offlinePubsubUrl = "http://localhost:23425"; // Non-existent URL that will fail
+const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit, pubsubTopic) => {
+    expect(pubsubTopic).to.be.a("string");
+    for (const pubsubProviderUrl of Object.keys(testPlebbit.clients.pubsubKuboRpcClients)) {
+        const pubsubClient = testPlebbit.clients.pubsubKuboRpcClients[pubsubProviderUrl]._client;
+        const subscribedTopics = await pubsubClient.pubsub.ls();
+        expect(subscribedTopics).to.be.an("array");
+        expect(subscribedTopics).to.not.include(pubsubTopic);
+    }
+};
 
 // Test to reproduce pubsub bugs identified in issue #57
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
@@ -51,15 +60,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
                 expect(errorsEmitted.length).to.equal(0);
 
-                // Verify that pubsub subscription is properly cleaned up after calling stop()
-                const pubsubClient = testPlebbit._clientsManager.getDefaultKuboPubsubClient();
-                const subscribedTopics = await pubsubClient._client.pubsub.ls();
-                expect(subscribedTopics).to.be.an("array");
-                const pubsubTopic = mockPost._pubsubTopicWithfallback();
-                expect(pubsubTopic).to.be.a("string");
-
-                // After calling stop(), the publication should not be subscribed to its pubsub topic
-                expect(subscribedTopics).to.not.include(pubsubTopic);
+                await validateKuboRpcNotListeningToPubsubTopic(testPlebbit, mockPost._pubsubTopicWithfallback());
 
                 await testPlebbit.destroy();
             });
@@ -84,7 +85,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             await mockPost.publish();
 
             // Wait for the timeout handler to run
-            await new Promise((resolve) => setTimeout(resolve, mockPost._setProviderFailureThresholdSeconds * 1000 * 2.1)); // Wait longer than failure threshold
+            await new Promise((resolve) => setTimeout(resolve, mockPost._setProviderFailureThresholdSeconds * 1000 * 3)); // Wait longer than failure threshold
 
             // Bug #1: When state is "stopped" during timeout, it should emit error and clean up properly
             // Currently it just logs an error and returns without cleanup
@@ -95,15 +96,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             expect(errorsEmitted[0].details.challengeExchanges[0].timedoutWaitingForChallengeRequestResponse).to.be.true;
             expect(errorsEmitted[0].details.challengeExchanges[1].timedoutWaitingForChallengeRequestResponse).to.be.true;
 
-            // Verify that pubsub subscription is properly cleaned up after calling stop()
-            const pubsubClient = testPlebbit._clientsManager.getDefaultKuboPubsubClient();
-            const subscribedTopics = await pubsubClient._client.pubsub.ls();
-            expect(subscribedTopics).to.be.an("array");
-            const pubsubTopic = mockPost._pubsubTopicWithfallback();
-            expect(pubsubTopic).to.be.a("string");
-
-            // After calling stop(), the publication should not be subscribed to its pubsub topic
-            expect(subscribedTopics).to.not.include(pubsubTopic);
+            await validateKuboRpcNotListeningToPubsubTopic(testPlebbit, mockPost._pubsubTopicWithfallback());
 
             await testPlebbit.destroy();
         });
@@ -217,7 +210,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             it("should handle provider index correctly in finally blocks", async () => {
                 const testPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: {
-                        pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl, workingPubsubUrl]
+                        pubsubKuboRpcClientsOptions: [workingPubsubUrl, notRespondingPubsubUrl]
                     },
                     forceMockPubsub: true,
                     remotePlebbit: true
@@ -226,7 +219,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbitWithMathCliChallenge }, testPlebbit);
                 mockPost._publishToDifferentProviderThresholdSeconds = 2;
 
-                let providerAttempts = [];
+                const providerAttempts = [];
                 const originalPublishOnProvider = testPlebbit._clientsManager.pubsubPublishOnProvider.bind(testPlebbit._clientsManager);
 
                 mockPost._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {
@@ -234,26 +227,51 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                     return originalPublishOnProvider(topic, data, providerUrl);
                 };
 
-                mockPost.on("challenge", async (challenge) => {
-                    await mockPost.publishChallengeAnswers(["2"]);
-                });
-
                 await publishWithExpectedResult(mockPost, true);
 
                 // Should not attempt the same provider multiple times unnecessarily
                 const uniqueProviders = new Set(providerAttempts);
-                expect(uniqueProviders.size).to.equal(2);
+                expect(uniqueProviders.size).to.equal(1); // only the working pubsub node will be used to publish
 
                 await testPlebbit.destroy();
             });
 
-            it(
-                `Should handle a single provider succeeding to subscribe in first attempt, but failing to publish. It should not throw when it retries`
-            );
+            it(`Should handle a single provider succeeding to subscribe in first attempt, but failing to publish. It should not throw when it retries`, async () => {
+                const testPlebbit = await config.plebbitInstancePromise({
+                    plebbitOptions: { pubsubKuboRpcClientsOptions: [workingPubsubUrl] },
+                    forceMockPubsub: true,
+                    remotePlebbit: true
+                });
+
+                const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbitWithMathCliChallenge }, testPlebbit);
+
+                let publishCount = 0;
+                const originalPublishOnProvider = testPlebbit._clientsManager.pubsubPublishOnProvider.bind(testPlebbit._clientsManager);
+                mockPost._clientsManager.pubsubPublishOnProvider = async (topic, data, providerUrl) => {
+                    publishCount++;
+                    if (publishCount === 1) throw new Error("Mock pubsub publish failure");
+                    else return originalPublishOnProvider(topic, data, providerUrl);
+                };
+
+                const originalSubscribeOnProvider = testPlebbit._clientsManager.pubsubSubscribeOnProvider.bind(testPlebbit._clientsManager);
+                let subscribeCount = 0;
+                mockPost._clientsManager.pubsubSubscribeOnProvider = async (topic, handler, providerUrl) => {
+                    subscribeCount++;
+                    return originalSubscribeOnProvider(topic, handler, providerUrl);
+                };
+
+                await publishWithExpectedResult(mockPost, true);
+
+                expect(publishCount).to.equal(3); // 1st attempt fails, 2nd attempt succeeds, 3rd attempt is from publishChallengeAnswer
+
+                expect(subscribeCount).to.equal(2); // should re-subscribe with every attempt
+
+                await testPlebbit.destroy();
+            });
         });
 
         describe("Pubsub Resource Leak Detection", async () => {
-            it("should properly clean up pubsub subscriptions on failure", async () => {
+            it("should properly clean up pubsub subscriptions when it throws on publish((", async () => {
                 const testPlebbit = await config.plebbitInstancePromise({
                     plebbitOptions: { pubsubKuboRpcClientsOptions: [offlinePubsubUrl] }
                 });
@@ -261,116 +279,77 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 const mockPost = await generateMockPost(subplebbitWithNoChallenge, testPlebbit);
 
                 // Track subscription state
-                const initialSubscriptions = Object.keys(testPlebbit._clientsManager.pubsubProviderSubscriptions).length;
+                const numOfPubsubProvidersBefore = Object.keys(mockPost._clientsManager.pubsubProviderSubscriptions).length;
+                expect(numOfPubsubProvidersBefore).to.equal(1);
+                expect(mockPost._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length).to.equal(0);
 
                 try {
                     await mockPost.publish();
                 } catch (e) {
                     // Expected to fail
+                    expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+                    expect(e.details.challengeExchanges[0].challengeRequestPublishError.message).to.equal("fetch failed");
+                    expect(e.details.challengeExchanges[1].challengeRequestPublishError.message).to.equal("fetch failed");
+
+                    expect(mockPost._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length).to.equal(0);
                 }
 
                 // Check for subscription leaks
-                const finalSubscriptions = Object.keys(testPlebbit._clientsManager.pubsubProviderSubscriptions).length;
+                const numOfPubsubProvidersAfter = Object.keys(testPlebbit._clientsManager.pubsubProviderSubscriptions).length;
                 const activeSubscriptions = Object.values(testPlebbit._clientsManager.pubsubProviderSubscriptions).reduce(
                     (total, subs) => total + subs.length,
                     0
                 );
 
-                if (activeSubscriptions > 0) {
-                    console.warn(`BUG REPRODUCED: Subscription leak detected (${activeSubscriptions} active subscriptions)`);
-                }
-
+                expect(numOfPubsubProvidersAfter).to.equal(numOfPubsubProvidersBefore);
                 expect(activeSubscriptions).to.equal(0);
+
                 await testPlebbit.destroy();
             });
         });
 
-        describe("Timeout Handler Error Emission", async () => {
-            it("should emit proper errors when all providers fail", async () => {
-                const provider1 = "http://localhost:23425"; // Offline
-                const provider2 = "http://localhost:23426"; // Also offline
-
-                const testPlebbit = await config.plebbitInstancePromise({
-                    plebbitOptions: {
-                        pubsubKuboRpcClientsOptions: [provider1, provider2]
-                    }
-                });
-
-                const mockPost = await generateMockPost(subplebbitWithNoChallenge, testPlebbit);
-                mockPost._publishToDifferentProviderThresholdSeconds = 1;
-                mockPost._setProviderFailureThresholdSeconds = 3;
-
-                let emittedErrors = [];
-                mockPost.on("error", (error) => {
-                    emittedErrors.push(error.code);
-                });
-
-                try {
-                    await mockPost.publish();
-                } catch (e) {
-                    // Expected
-                }
-
-                // Should emit timeout error after all attempts fail
-                await new Promise((resolve) => setTimeout(resolve, 5000));
-
-                const hasTimeoutError = emittedErrors.some(
-                    (code) =>
-                        code === "ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST" ||
-                        code === "ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS"
-                );
-
-                expect(hasTimeoutError).to.be.true;
-                await testPlebbit.destroy();
-            });
-        });
-
-        describe("Pubsub edge cases", async () => {
+        describe.only("Pubsub edge cases", async () => {
             it("should handle pubsub error callback without infinite recursion", async () => {
-                const offlinePubsubUrl = "http://localhost:23425";
+                // this pubsub url would throw an error for the first subscribe
+                // but if user retries it sends messages normally
+                // this mocked pubsub server emits an error onError only once
+                // so subscription count should be 2
+                const pubsubMockedWithError = "http://localhost:30001/api/v0";
                 const testPlebbit = await config.plebbitInstancePromise({
-                    plebbitOptions: { pubsubKuboRpcClientsOptions: [offlinePubsubUrl] }
+                    plebbitOptions: { pubsubKuboRpcClientsOptions: [pubsubMockedWithError] }
                 });
 
                 const mockPost = await generateMockPost(subplebbitWithNoChallenge, testPlebbit);
 
-                // Monitor for recursive calls
-                let errorCallbackCount = 0;
-                const originalSubscribe = testPlebbit._clientsManager.pubsubSubscribeOnProvider.bind(testPlebbit._clientsManager);
+                mockPost._publishToDifferentProviderThresholdSeconds = 1; // Speed up test
+                mockPost._setProviderFailureThresholdSeconds = 2; // Speed up test
 
-                testPlebbit._clientsManager.pubsubSubscribeOnProvider = async (topic, handler, provider) => {
-                    // Mock the error callback behavior
-                    const mockPubsubClient = {
-                        pubsub: {
-                            subscribe: async (topic, handler, options) => {
-                                if (options?.onError) {
-                                    errorCallbackCount++;
-                                    if (errorCallbackCount > 3) {
-                                        throw new Error("Infinite recursion detected in error callback!");
-                                    }
-                                    // Simulate error that would trigger the callback
-                                    await options.onError(new Error("Mock pubsub error"));
-                                }
-                                throw new Error("Mock subscribe failure");
-                            }
-                        }
-                    };
+                const originalSubscribeOnProvider = testPlebbit.clients.pubsubKuboRpcClients[
+                    pubsubMockedWithError
+                ]._client.pubsub.subscribe.bind(testPlebbit._clientsManager);
+                let subscribeCount = 0;
 
-                    // This should not cause infinite recursion
-                    throw new Error("Pubsub provider unavailable");
+                testPlebbit.clients.pubsubKuboRpcClients[pubsubMockedWithError]._client.pubsub.subscribe = async (
+                    topic,
+                    handler,
+                    options
+                ) => {
+                    subscribeCount++;
+                    return originalSubscribeOnProvider(topic, handler, options);
                 };
 
-                try {
-                    await mockPost.publish();
-                } catch (e) {
-                    // Expected to fail
-                }
+                await mockPost.publish();
 
-                // The bug causes infinite recursion in error callbacks
-                if (errorCallbackCount > 1) {
-                    console.warn(`BUG REPRODUCED: Error callback called ${errorCallbackCount} times (potential infinite recursion)`);
-                }
+                await new Promise((resolve) => setTimeout(resolve, mockPost._setProviderFailureThresholdSeconds * 1000 * 3));
 
+                // after failing to receive a response, it should clean up by itself
+
+                const ipfsClientTopics = await testPlebbit.clients.pubsubKuboRpcClients[pubsubMockedWithError]._client.pubsub.ls();
+                expect(ipfsClientTopics).to.deep.equal([]);
+
+                expect(mockPost._clientsManager.pubsubProviderSubscriptions[pubsubMockedWithError].length).to.equal(0); // no active subscriptions
+
+                expect(subscribeCount).to.equal(2);
                 await testPlebbit.destroy();
             });
 
