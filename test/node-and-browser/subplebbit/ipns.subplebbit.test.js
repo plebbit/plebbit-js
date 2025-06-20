@@ -30,7 +30,7 @@ const fixture = {
 };
 
 getRemotePlebbitConfigs().map((config) => {
-    describe(`subplebbit.{ipnsName, ipnsPubsubTopic, ipnsPubsubTopicDhtKey, pubsubTopicPeersCid}`, async () => {
+    describe(`subplebbit.{ipnsName, ipnsPubsubTopic, ipnsPubsubTopicRoutingCid, pubsubTopicRoutingCid}`, async () => {
         let plebbit;
         let subplebbit;
         before(async () => {
@@ -50,12 +50,12 @@ getRemotePlebbitConfigs().map((config) => {
             expect(subplebbit.ipnsPubsubTopic).equal("/record/L2lwbnMvACQIARIgfrcVczLMYgfibZ2gUU5TZVZWkKFwH6QGE-J2o197RcM");
         });
 
-        it("subplebbit.ipnsPubsubTopicDhtKey should be a valid DHT key", async () => {
-            expect(subplebbit.ipnsPubsubTopicDhtKey).equal("bafkreigf5ljbukix5wnbrms3rg2nnggrygpjso6qpmff4j2cj7zhjgwxjy");
+        it("subplebbit.ipnsPubsubTopicRoutingCid should be a valid DHT key", async () => {
+            expect(subplebbit.ipnsPubsubTopicRoutingCid).equal("bafkreigf5ljbukix5wnbrms3rg2nnggrygpjso6qpmff4j2cj7zhjgwxjy");
         });
 
-        it("subplebbit.pubsubTopicPeersCid should be a valid CID", async () => {
-            expect(subplebbit.pubsubTopicPeersCid).equal("bafkreigdyreuuffwcpnnnhwrz5pxdi2jey7iyv2i5ketmwc65rpe7zbzoa");
+        it("subplebbit.pubsubTopicRoutingCid should be a valid CID", async () => {
+            expect(subplebbit.pubsubTopicRoutingCid).equal("bafkreigdyreuuffwcpnnnhwrz5pxdi2jey7iyv2i5ketmwc65rpe7zbzoa");
         });
     });
 });

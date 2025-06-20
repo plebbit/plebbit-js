@@ -1,8 +1,8 @@
 {
     "startedState": "stopped",
     "ipnsPubsubTopic": "/record/L2lwbnMvACQIARIgtkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
-    "ipnsPubsubTopicDhtKey": "bafkreiftvi7wgbdhbxnenslhu5sytlid73siolkd2syhdnjhnvn3mksggi",
-    "pubsubTopicPeersCid": "bafkreidwoelrflsx5dgll7s6jfkhsj6ffkfplde2j5dyino6t7m4ijutem",
+    "ipnsPubsubTopicRoutingCid": "bafkreiftvi7wgbdhbxnenslhu5sytlid73siolkd2syhdnjhnvn3mksggi",
+    "pubsubTopicRoutingCid": "bafkreidwoelrflsx5dgll7s6jfkhsj6ffkfplde2j5dyino6t7m4ijutem",
     "raw": {
         "subplebbitIpfs": {
             "address": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
