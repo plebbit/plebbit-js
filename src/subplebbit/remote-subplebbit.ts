@@ -73,8 +73,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     updateCid?: string;
     ipnsName?: string;
     ipnsPubsubTopic?: string; // ipns over pubsub topic
-    ipnsPubsubTopicDhtKey?: string; // peers of subplebbit.ipnsPubsubTopic, use this cid with http routers to find peers of ipns-over-pubsub
-    pubsubTopicPeersCid?: string; // peers of subplebbit.pubsubTopic, use this cid with http routers to find peers of subplebbit.pubsubTopic
+    ipnsPubsubTopicRoutingCid?: string; // peers of subplebbit.ipnsPubsubTopic, use this cid with http routers to find peers of ipns-over-pubsub
+    pubsubTopicRoutingCid?: string; // peers of subplebbit.pubsubTopic, use this cid with http routers to find peers of subplebbit.pubsubTopic
 
     // should be used internally
     _plebbit: Plebbit;
@@ -169,16 +169,16 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if ("ipnsName" in newProps && newProps.ipnsName) {
             this.ipnsName = newProps.ipnsName;
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+            this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         } else if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
             // The signature public key has changed, we need to update the ipns name and pubsub topic
             this.ipnsName = getPlebbitAddressFromPublicKeySync(newProps.signature.publicKey);
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+            this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
-        if (!this.pubsubTopicPeersCid) {
-            if ("pubsubTopicPeersCid" in newProps) this.pubsubTopicPeersCid = newProps.pubsubTopicPeersCid;
-            else this.pubsubTopicPeersCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+        if (!this.pubsubTopicRoutingCid) {
+            if ("pubsubTopicRoutingCid" in newProps) this.pubsubTopicRoutingCid = newProps.pubsubTopicRoutingCid;
+            else this.pubsubTopicRoutingCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
         }
     }
 
