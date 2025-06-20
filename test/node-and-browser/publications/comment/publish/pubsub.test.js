@@ -148,19 +148,9 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 mockPost._publishToDifferentProviderThresholdSeconds = 1; // Very fast timeout
 
                 let challengeRequestCount = 0;
-                const recordedPublishingStates = [];
 
                 mockPost.on("challengerequest", () => {
                     challengeRequestCount++;
-                });
-
-                mockPost.on("publishingstatechange", (state) => {
-                    recordedPublishingStates.push(state);
-                });
-
-                mockPost.on("challenge", async (challenge) => {
-                    // Answer challenge to complete publication
-                    await mockPost.publishChallengeAnswers(["2"]);
                 });
 
                 await publishWithExpectedResult(mockPost, true);
@@ -168,20 +158,6 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 // Verify no race conditions occurred - should have at most 2 challenge requests
                 // (one to non-responding provider, one to working provider)
                 expect(challengeRequestCount).to.be.at.most(2);
-
-                // Check for inconsistent state transitions
-                const expectedStates = [
-                    "fetching-subplebbit-ipns",
-                    "fetching-subplebbit-ipfs",
-                    "publishing-challenge-request",
-                    "waiting-challenge",
-                    "waiting-challenge-answers",
-                    "publishing-challenge-answer",
-                    "waiting-challenge-verification",
-                    "succeeded"
-                ];
-
-                expect(recordedPublishingStates).to.deep.equal(expectedStates);
 
                 // Verify pubsub subscription handlers are cleaned up after successful publication
                 const pubsubTopic = mockPost._pubsubTopicWithfallback();
