@@ -95,7 +95,7 @@ describeSkipIfRpc(`Testing HTTP router settings and address rewriter`, async () 
 
         for (const httpRouterUrl of httpRouterUrls) {
             // why does subplebbit.ipnsPubsubDhtKey fails here?
-            const provideToTestAgainst = [sub.updateCid, sub.pubsubTopicPeersCid];
+            const provideToTestAgainst = [sub.updateCid, sub.pubsubTopicRoutingCid];
             for (const resourceToProvide of provideToTestAgainst) {
                 const providersUrl = `${httpRouterUrl}/routing/v1/providers/${resourceToProvide}`;
                 const res = await fetch(providersUrl, { method: "GET" });
