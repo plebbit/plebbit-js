@@ -139,7 +139,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
-    libp2pJsClientOptions?: ParsedPlebbitOptions["libp2pJsClientOptions"];
+    libp2pJsClientsOptions?: ParsedPlebbitOptions["libp2pJsClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders!: ParsedPlebbitOptions["chainProviders"];
@@ -158,7 +158,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         pubsubKuboRpcClients: { [pubsubKuboClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: NonNullable<ParsedPlebbitOptions["plebbitRpcClientsOptions"]>[number]]: PlebbitRpcClient };
-        libp2pJsClients: { [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"]]: Libp2pJsClient };
+        libp2pJsClients: {
+            [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientsOptions"]>[number]["key"]]: Libp2pJsClient;
+        };
     };
     subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
 
@@ -218,10 +220,10 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
             : this.parsedPlebbitOptions.chainProviders;
-        this.libp2pJsClientOptions = this.parsedPlebbitOptions.libp2pJsClientOptions;
-        if (this.libp2pJsClientOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
+        this.libp2pJsClientsOptions = this.parsedPlebbitOptions.libp2pJsClientsOptions;
+        if (this.libp2pJsClientsOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
             throw new PlebbitError("ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED", {
-                libp2pJsClientOptions: this.libp2pJsClientOptions,
+                libp2pJsClientOptions: this.libp2pJsClientsOptions,
                 kuboRpcClientsOptions: this.kuboRpcClientsOptions,
                 pubsubKuboRpcClientsOptions: this.pubsubKuboRpcClientsOptions
             });
@@ -305,9 +307,9 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
     private async _initLibp2pJsClientsIfNeeded() {
         this.clients.libp2pJsClients = {};
-        if (!this.libp2pJsClientOptions) return;
+        if (!this.libp2pJsClientsOptions) return;
         if (!this.httpRoutersOptions) throw Error("httpRoutersOptions is required for libp2pJsClient");
-        for (const clientOptions of this.libp2pJsClientOptions) {
+        for (const clientOptions of this.libp2pJsClientsOptions) {
             const heliaNode = await createLibp2pJsClientOrUseExistingOne({
                 ...clientOptions,
                 httpRoutersOptions: this.httpRoutersOptions

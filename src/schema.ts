@@ -73,7 +73,7 @@ export const PlebbitUserOptionBaseSchema = z.object({
     noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
     validatePages: z.boolean(), // if false, plebbit-js will not validate pages in commentUpdate/Subplebbit/getPage
     userAgent: UserAgentSchema,
-    libp2pJsClientOptions: z
+    libp2pJsClientsOptions: z
         .object({
             key: z.string().min(1),
             libp2pOptions: z.custom<Partial<libp2pOptions>>(),
@@ -118,7 +118,7 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
 }).transform((args) => {
     if (
         JSON.stringify(args.pubsubKuboRpcClientsOptions) === JSON.stringify(defaultPubsubKuboRpcClientsOptions) &&
-        args.libp2pJsClientOptions
+        args.libp2pJsClientsOptions
     ) {
         return {
             ...args,

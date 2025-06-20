@@ -10,7 +10,7 @@ type Libp2pJsClientInit = {
     heliaUnixfs: ReturnType<typeof unixfs>;
     heliaIpnsRouter: ReturnType<typeof ipns>;
     heliaWithKuboRpcClientFunctions: HeliaWithKuboRpcClientFunctions;
-    libp2pJsClientOptions: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number];
+    libp2pJsClientsOptions: NonNullable<ParsedPlebbitOptions["libp2pJsClientsOptions"]>[number];
     mergedHeliaOptions: Parameters<typeof createHelia>[0]; // merged defaults with user input for helia and libp2p
     key: string;
     countOfUsesOfInstance: number;
@@ -21,7 +21,7 @@ export class Libp2pJsClient {
     _heliaUnixfs: ReturnType<typeof unixfs>;
     _heliaIpnsRouter: ReturnType<typeof ipns>;
     heliaWithKuboRpcClientFunctions: HeliaWithKuboRpcClientFunctions;
-    _libp2pJsClientOptions: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number];
+    _libp2pJsClientsOptions: NonNullable<ParsedPlebbitOptions["libp2pJsClientsOptions"]>[number];
     _mergedHeliaOptions: Parameters<typeof createHelia>[0]; // merged defaults with user input for helia and libp2p
     key: Libp2pJsClientInit["key"];
     countOfUsesOfInstance: number;
@@ -31,7 +31,7 @@ export class Libp2pJsClient {
         this._heliaUnixfs = libp2pJsClientOptions.heliaUnixfs;
         this._heliaIpnsRouter = libp2pJsClientOptions.heliaIpnsRouter;
         this.heliaWithKuboRpcClientFunctions = libp2pJsClientOptions.heliaWithKuboRpcClientFunctions;
-        this._libp2pJsClientOptions = libp2pJsClientOptions.libp2pJsClientOptions;
+        this._libp2pJsClientsOptions = libp2pJsClientOptions.libp2pJsClientsOptions;
         this._mergedHeliaOptions = libp2pJsClientOptions.mergedHeliaOptions;
         this.key = libp2pJsClientOptions.key;
         this.countOfUsesOfInstance = libp2pJsClientOptions.countOfUsesOfInstance;

@@ -293,7 +293,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             } catch (e) {
                 throw e;
             } finally {
-                if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientOptions.key);
+                if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientsOptions.key);
                 else this.updateKuboRpcState("stopped", kuboRpcOrHelia.url);
             }
         } else subRes = await this._fetchSubplebbitFromGateways(ipnsName); // let's use gateways to fetch because we're not connected to kubo or helia
@@ -314,7 +314,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
         if ("_helia" in kuboRpcOrHelia) {
-            this.updateLibp2pJsClientState("fetching-ipns", kuboRpcOrHelia._libp2pJsClientOptions.key);
+            this.updateLibp2pJsClientState("fetching-ipns", kuboRpcOrHelia._libp2pJsClientsOptions.key);
         } else this.updateKuboRpcState("fetching-ipns", kuboRpcOrHelia.url);
         const latestSubplebbitCid = await this.resolveIpnsToCidP2P(ipnsName, { timeoutMs: this._plebbit._timeouts["subplebbit-ipns"] });
         if (this._updateCidsAlreadyLoaded.has(latestSubplebbitCid)) {
@@ -327,7 +327,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             return undefined;
         }
 
-        if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("fetching-ipfs", kuboRpcOrHelia._libp2pJsClientOptions.key);
+        if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("fetching-ipfs", kuboRpcOrHelia._libp2pJsClientsOptions.key);
         else this.updateKuboRpcState("fetching-ipfs", kuboRpcOrHelia.url);
         this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipfs");
 

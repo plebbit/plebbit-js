@@ -537,7 +537,7 @@ export async function mockGatewayPlebbit(opts?: MockPlebbitOptions) {
             plebbitRpcClientsOptions: undefined,
             kuboRpcClientsOptions: undefined,
             pubsubKuboRpcClientsOptions: undefined,
-            libp2pJsClientOptions: undefined,
+            libp2pJsClientsOptions: undefined,
             ...opts?.plebbitOptions
         },
         remotePlebbit: true
@@ -1081,7 +1081,7 @@ export async function mockPlebbitWithHeliaConfig(opts?: MockPlebbitOptions) {
         forceMockPubsub,
         ...opts,
         plebbitOptions: {
-            libp2pJsClientOptions: [{ key, libp2pOptions: { connectionGater: { denyDialMultiaddr: async () => false } } }],
+            libp2pJsClientsOptions: [{ key, libp2pOptions: { connectionGater: { denyDialMultiaddr: async () => false } } }],
             pubsubKuboRpcClientsOptions: [],
             kuboRpcClientsOptions: [],
             httpRoutersOptions: ["http://localhost:20001"], // this http router transmits the addresses of kubo node of test-server.js

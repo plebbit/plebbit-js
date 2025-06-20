@@ -37,7 +37,7 @@ function getDelegatedRoutingFields(routers: string[]) {
 
 export async function createLibp2pJsClientOrUseExistingOne(
     plebbitOptions: Required<Pick<ParsedPlebbitOptions, "httpRoutersOptions">> &
-        NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]
+        NonNullable<ParsedPlebbitOptions["libp2pJsClientsOptions"]>[number]
 ): Promise<Libp2pJsClient> {
     if (!plebbitOptions.httpRoutersOptions?.length) throw Error("You need to have plebbit.httpRouterOptions to set up helia");
     if (libp2pJsClients[plebbitOptions.key]) {
@@ -204,7 +204,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
         heliaIpnsRouter: ipnsNameResolver,
         mergedHeliaOptions: mergedHeliaInit,
         countOfUsesOfInstance: 1,
-        libp2pJsClientOptions: plebbitOptions,
+        libp2pJsClientsOptions: plebbitOptions,
         key: plebbitOptions.key
     };
 
