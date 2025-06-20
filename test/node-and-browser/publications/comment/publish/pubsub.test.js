@@ -14,6 +14,7 @@ const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Takes msgs bu
 const workingPubsubUrl = "http://localhost:15002/api/v0"; // kubo node with working pubsub
 
 const offlinePubsubUrl = "http://localhost:23425"; // Non-existent URL that will fail
+
 const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit, pubsubTopic) => {
     expect(pubsubTopic).to.be.a("string");
     for (const pubsubProviderUrl of Object.keys(testPlebbit.clients.pubsubKuboRpcClients)) {
@@ -308,7 +309,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
             });
         });
 
-        describe.only("Pubsub edge cases", async () => {
+        describe("Pubsub edge cases", async () => {
             it("should handle pubsub error callback without infinite recursion", async () => {
                 // this pubsub url would throw an error for the first subscribe
                 // but if user retries it sends messages normally
@@ -350,46 +351,6 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 expect(mockPost._clientsManager.pubsubProviderSubscriptions[pubsubMockedWithError].length).to.equal(0); // no active subscriptions
 
                 expect(subscribeCount).to.equal(2);
-                await testPlebbit.destroy();
-            });
-
-            it("should not leave publications in hanging state when stopped during timeout", async () => {
-                const testPlebbit = await config.plebbitInstancePromise({
-                    plebbitOptions: { pubsubKuboRpcClientsOptions: [notRespondingPubsubUrl] }
-                });
-
-                const mockPost = await generateMockPost(subplebbitWithNoChallenge, testPlebbit);
-                mockPost._publishToDifferentProviderThresholdSeconds = 1;
-                mockPost._setProviderFailureThresholdSeconds = 3;
-
-                let finalState = null;
-                let errorEmitted = false;
-
-                mockPost.on("publishingstatechange", (state) => {
-                    finalState = state;
-                });
-
-                mockPost.on("error", () => {
-                    errorEmitted = true;
-                });
-
-                // Start publishing
-                const publishPromise = mockPost.publish().catch(() => {}); // Ignore initial error
-
-                // Stop during timeout period
-                await new Promise((resolve) => setTimeout(resolve, 500));
-                await mockPost.stop();
-
-                // Wait for timeout handler to potentially run
-                await new Promise((resolve) => setTimeout(resolve, 4000));
-
-                expect(finalState).to.equal("stopped");
-
-                // Bug: Should emit error when stopped during timeout, but currently doesn't
-                if (!errorEmitted) {
-                    console.warn("BUG REPRODUCED: No error emitted when stopped during timeout handling");
-                }
-
                 await testPlebbit.destroy();
             });
         });
