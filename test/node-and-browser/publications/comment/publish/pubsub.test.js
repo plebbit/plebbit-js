@@ -266,8 +266,14 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 } catch (e) {
                     // Expected to fail
                     expect(e.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
-                    expect(e.details.challengeExchanges[0].challengeRequestPublishError.message).to.equal("fetch failed");
-                    expect(e.details.challengeExchanges[1].challengeRequestPublishError.message).to.equal("fetch failed");
+                    expect(e.details.challengeExchanges[0].challengeRequestPublishError.message).to.be.oneOf([
+                        "fetch failed", // on node
+                        "Failed to fetch" // on browser
+                    ]);
+                    expect(e.details.challengeExchanges[1].challengeRequestPublishError.message).to.be.oneOf([
+                        "fetch failed", // on node
+                        "Failed to fetch" // on browser
+                    ]);
 
                     expect(mockPost._clientsManager.pubsubProviderSubscriptions[offlinePubsubUrl].length).to.equal(0);
                 }
