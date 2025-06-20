@@ -3,6 +3,7 @@ import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import { parseIpfsRawOptionToIpfsOptions } from "./util.js";
 import { UserAgentSchema } from "./schema/schema.js";
 import version from "./version.js";
+import type { libp2pDefaults } from "helia";
 import { createHelia } from "helia";
 
 // This file will have misc schemas, as well as Plebbit class schema
@@ -55,7 +56,7 @@ const ParsedKuboRpcClientOptionsSchema = z.custom<z.output<typeof TransformKuboR
 // I guess {libp2pOptions, heliaOptions, key} for now, this way we can experiment with passing any config to libp2pJsClientOptions. we can test different libp2p transport and stuff like that
 
 type heliaOptions = Parameters<typeof createHelia>[0];
-type libp2pOptions = NonNullable<heliaOptions>["libp2p"];
+type libp2pOptions = ReturnType<typeof libp2pDefaults>;
 
 export const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),

@@ -47,12 +47,13 @@ export async function createLibp2pJsClientOrUseExistingOne(
 
     const mergedHeliaInit = {
         libp2p: {
-            addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
+            addresses: { listen: [], ...plebbitOptions.libp2pOptions?.addresses }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
                 fetch: libp2pFetch(),
-                ...getDelegatedRoutingFields(plebbitOptions.httpRoutersOptions)
+                ...getDelegatedRoutingFields(plebbitOptions.httpRoutersOptions),
+                ...plebbitOptions.libp2pOptions?.services
             },
             peerDiscovery: undefined,
             ...plebbitOptions.libp2pOptions
