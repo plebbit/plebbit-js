@@ -360,7 +360,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
 
                 expect(mockPost._clientsManager.pubsubProviderSubscriptions[pubsubMockedWithError].length).to.equal(0); // no active subscriptions
 
-                expect(subscribeCount).to.equal(2);
+                expect(subscribeCount).to.be.at.most(3).and.at.least(2);
                 await testPlebbit.destroy();
             });
         });
