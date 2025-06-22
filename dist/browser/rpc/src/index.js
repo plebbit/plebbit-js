@@ -10,6 +10,7 @@ import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schem
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails, parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails, parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { TypedEmitter } from "tiny-typed-emitter";
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
 const startedSubplebbits = {};
@@ -23,8 +24,9 @@ const getStartedSubplebbit = async (address) => {
     return startedSubplebbits[address];
 };
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
-class PlebbitWsServer {
+class PlebbitWsServer extends TypedEmitter {
     constructor({ port, server, plebbit, authKey }) {
+        super();
         this.connections = {};
         this.subscriptionCleanups = {};
         // store publishing publications so they can be used by publishChallengeAnswers
@@ -62,6 +64,7 @@ class PlebbitWsServer {
         // forward errors to PlebbitWsServer
         this.rpcWebsockets.on("error", (error) => {
             log.error("RPC server", "Received an error on rpc-websockets", error);
+            this._emitError(error);
         });
         // save connections to send messages to them later
         this.ws.on("connection", (ws) => {
@@ -111,6 +114,11 @@ class PlebbitWsServer {
         this.rpcWebsocketsRegister("publishChallengeAnswers", this.publishChallengeAnswers.bind(this));
         this.rpcWebsocketsRegister("unsubscribe", this.unsubscribe.bind(this));
         hideClassPrivateProps(this);
+    }
+    _emitError(error) {
+        if (this.listeners("error").length === 0)
+            log.error("Unhandled error. This may crash your process, you need to listen for error event on PlebbitRpcWsServer", error);
+        this.emit("error", error);
     }
     // util function to log errors of registered methods
     rpcWebsocketsRegister(method, callback) {

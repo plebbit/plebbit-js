@@ -316,6 +316,8 @@ class Publication extends TypedEmitter {
         };
         this._challengeExchanges[challengeExchange.challengeRequest.challengeRequestId.toString()].challengeAnswer =
             decryptedChallengeAnswer;
+        this._challengeExchanges[challengeExchange.challengeRequest.challengeRequestId.toString()].challengeAnswerPublishTimestamp =
+            timestamp();
         this._updatePublishingStateWithEmission("waiting-challenge-verification");
         const providers = Object.entries(this._clientsManager.pubsubProviderSubscriptions)
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
@@ -732,6 +734,7 @@ class Publication extends TypedEmitter {
             this._updatePublishingStateWithEmission("publishing-challenge-request");
             this._updatePubsubState("subscribing-pubsub", providerUrl);
             try {
+                // this will throw if we succeed in subscribing first attempt, but then fail to publish
                 await this._clientsManager.pubsubSubscribeOnProvider(this._pubsubTopicWithfallback(), this._handleChallengeExchange, providerUrl);
                 this._updatePubsubState("publishing-challenge-request", providerUrl);
                 await this._clientsManager.pubsubPublishOnProvider(this._pubsubTopicWithfallback(), challengeRequest, providerUrl);

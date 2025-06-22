@@ -1,6 +1,7 @@
 import { z } from "zod";
 export declare const SubscriptionIdSchema: z.ZodNumber;
 export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -40,7 +41,6 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -337,6 +337,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -376,7 +377,6 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -673,6 +673,7 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
     previousCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -712,7 +713,6 @@ export declare const RpcCommentUpdateResultSchema: z.ZodUnion<[z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;

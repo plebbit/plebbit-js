@@ -30,7 +30,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
     kuboRpcClientsOptions?: ParsedPlebbitOptions["kuboRpcClientsOptions"];
     pubsubKuboRpcClientsOptions: ParsedPlebbitOptions["pubsubKuboRpcClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
-    libp2pJsClientOptions?: ParsedPlebbitOptions["libp2pJsClientOptions"];
+    libp2pJsClientsOptions?: ParsedPlebbitOptions["libp2pJsClientsOptions"];
     dataPath?: ParsedPlebbitOptions["dataPath"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders: ParsedPlebbitOptions["chainProviders"];
@@ -58,7 +58,7 @@ export declare class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implemen
             [plebbitRpcUrl: NonNullable<ParsedPlebbitOptions["plebbitRpcClientsOptions"]>[number]]: PlebbitRpcClient;
         };
         libp2pJsClients: {
-            [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientOptions"]>[number]["key"]]: Libp2pJsClient;
+            [libp2pJsClientKey: NonNullable<ParsedPlebbitOptions["libp2pJsClientsOptions"]>[number]["key"]]: Libp2pJsClient;
         };
     };
     subplebbits: string[];

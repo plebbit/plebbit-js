@@ -1,6 +1,6 @@
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import { setPlebbitJs } from "./lib/plebbit-js/index.js";
-import type { PlebbitWsServerClassOptions, JsonRpcSendNotificationOptions, CreatePlebbitWsServerOptions } from "./types.js";
+import type { PlebbitWsServerClassOptions, JsonRpcSendNotificationOptions, CreatePlebbitWsServerOptions, PlebbitRpcServerEvents } from "./types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
@@ -8,7 +8,8 @@ import { LocalSubplebbit } from "../../runtime/browser/subplebbit/local-subplebb
 import type { CommentIpfsType } from "../../publications/comment/types.js";
 import type { RpcInternalSubplebbitRecordBeforeFirstUpdateType } from "../../subplebbit/types.js";
 import { RpcPublishResult } from "../../publications/types.js";
-declare class PlebbitWsServer {
+import { TypedEmitter } from "tiny-typed-emitter";
+declare class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
     ws: RpcWebsocketsServer["wss"];
@@ -27,6 +28,7 @@ declare class PlebbitWsServer {
     private _getIpFromConnectionRequest;
     private _onSettingsChange;
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
+    private _emitError;
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<CommentIpfsType>;

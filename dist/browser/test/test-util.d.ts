@@ -464,8 +464,8 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     started: boolean;
     ipnsName?: string | undefined;
     ipnsPubsubTopic?: string | undefined;
-    ipnsPubsubTopicDhtKey?: string | undefined;
-    pubsubTopicPeersCid?: string | undefined;
+    ipnsPubsubTopicRoutingCid?: string | undefined;
+    pubsubTopicRoutingCid?: string | undefined;
 }, "state" | "clients" | "startedState" | "updatingState" | "started">;
 export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): Omit<any, "state" | "publishingState" | "clients" | "raw" | "updatingState">;
 export declare function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string): Promise<void>;

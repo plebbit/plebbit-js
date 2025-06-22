@@ -156,7 +156,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
     _updateKuboRpcClientOrHeliaState(newState, kuboRpcOrHelia, sortTypes) {
         if ("_helia" in kuboRpcOrHelia)
-            this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientOptions.key, sortTypes);
+            this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientsOptions.key, sortTypes);
         else
             this.updateKuboRpcState(newState, kuboRpcOrHelia.url, sortTypes);
     }

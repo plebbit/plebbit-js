@@ -339,6 +339,7 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
@@ -450,7 +451,6 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -462,6 +462,7 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
@@ -573,7 +574,6 @@ export declare const CreateCommentOptionsSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -920,6 +920,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
@@ -1031,7 +1032,6 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -1043,6 +1043,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
@@ -1154,7 +1155,6 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -1166,6 +1166,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
@@ -1277,7 +1278,6 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -1289,6 +1289,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
@@ -1400,7 +1401,6 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -1412,6 +1412,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
@@ -1523,7 +1524,6 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -1535,6 +1535,7 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
@@ -1646,14 +1647,13 @@ export declare const CreateCommentOptionsWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
     parentCid?: string | undefined;
     postCid?: string | undefined;
 }>;
-export declare const CommentSignedPropertyNames: ("timestamp" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid")[];
+export declare const CommentSignedPropertyNames: ("link" | "timestamp" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid")[];
 export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     flair: z.ZodOptional<z.ZodObject<{
         text: z.ZodString;
@@ -1892,7 +1892,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
         publicKey: string;
         signedPropertyNames: string[];
     }>;
-}, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
+}, "link" | "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
         type: string;
@@ -1937,6 +1937,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -1947,7 +1948,6 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -1998,6 +1998,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -2008,7 +2009,6 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -2016,6 +2016,7 @@ export declare const CommentPubsubMessagePublicationSchema: z.ZodObject<Pick<{
     postCid?: string | undefined;
 }>;
 export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -2055,7 +2056,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -2392,6 +2392,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -2402,7 +2403,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -2455,6 +2455,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -2465,7 +2466,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -2473,6 +2473,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorSchema: z.ZodObject<{
     postCid?: string | undefined;
 }>;
 export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.ZodEffects<z.ZodObject<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -2512,7 +2513,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -2803,6 +2803,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -2842,7 +2843,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -3133,6 +3133,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -3172,7 +3173,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -3463,6 +3463,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -3502,7 +3503,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -3793,6 +3793,7 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
         }, z.ZodTypeAny, "passthrough">>>;
     }, z.ZodTypeAny, "passthrough">>;
 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -3832,7 +3833,6 @@ export declare const CommentPubsubMessageWithFlexibleAuthorRefinementSchema: z.Z
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -4361,7 +4361,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
         publicKey: string;
         signedPropertyNames: string[];
     }>;
-}, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
+}, "link" | "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
         type: string;
@@ -4406,6 +4406,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -4416,7 +4417,6 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -4467,6 +4467,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -4477,7 +4478,6 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -4528,6 +4528,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -4538,7 +4539,6 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -4589,6 +4589,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -4599,7 +4600,6 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -4650,6 +4650,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -4660,7 +4661,6 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -4711,6 +4711,7 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -4721,7 +4722,6 @@ export declare const CommentPubsubMessageWithRefinementSchema: z.ZodEffects<z.Zo
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -4733,6 +4733,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
 } & {
     comment: z.ZodObject<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -4772,7 +4773,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -5063,6 +5063,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -5102,7 +5103,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -5393,6 +5393,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -5432,7 +5433,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -5771,6 +5771,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         };
         subplebbitAddress: string;
         protocolVersion: string;
+        link?: string | undefined;
         flair?: z.objectOutputType<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
@@ -5781,7 +5782,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         title?: string | undefined;
-        link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
         linkHtmlTagName?: string | undefined;
@@ -5840,6 +5840,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         };
         subplebbitAddress: string;
         protocolVersion: string;
+        link?: string | undefined;
         flair?: z.objectInputType<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
@@ -5850,7 +5851,6 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         title?: string | undefined;
-        link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
         linkHtmlTagName?: string | undefined;
@@ -5863,6 +5863,7 @@ export declare const CommentChallengeRequestToEncryptSchema: z.ZodObject<{
     challengeCommentCids?: string[] | undefined;
 }>;
 export declare const CommentIpfsSchema: z.ZodObject<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -5902,7 +5903,6 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -6246,6 +6246,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     subplebbitAddress: string;
     protocolVersion: string;
     depth: number;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -6256,7 +6257,6 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -6314,6 +6314,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     subplebbitAddress: string;
     protocolVersion: string;
     depth: number;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -6324,7 +6325,6 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -6336,6 +6336,7 @@ export declare const CommentIpfsSchema: z.ZodObject<{
     previousCid?: string | undefined;
 }>;
 export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -6375,7 +6376,6 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -6719,6 +6719,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     subplebbitAddress: string;
     protocolVersion: string;
     depth: number;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -6729,7 +6730,6 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -6787,6 +6787,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     subplebbitAddress: string;
     protocolVersion: string;
     depth: number;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -6797,7 +6798,6 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -6855,6 +6855,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     subplebbitAddress: string;
     protocolVersion: string;
     depth: number;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -6865,7 +6866,6 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -6923,6 +6923,7 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     subplebbitAddress: string;
     protocolVersion: string;
     depth: number;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -6933,7 +6934,6 @@ export declare const CommentIpfsWithRefinmentSchema: z.ZodEffects<z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -14418,6 +14418,7 @@ export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pi
 }>;
 export declare const CommentUpdateForChallengeVerificationSignedPropertyNames: ("author" | "protocolVersion" | "cid")[];
 export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject<Pick<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -14457,7 +14458,6 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -14845,6 +14845,7 @@ export declare const OriginalCommentFieldsBeforeCommentUpdateSchema: z.ZodObject
     nsfw?: boolean | undefined;
 }>;
 export declare const CommentsTableRowSchema: z.ZodObject<{
+    link: z.ZodOptional<z.ZodString>;
     timestamp: z.ZodNumber;
     signature: z.ZodObject<{
         type: z.ZodString;
@@ -14884,7 +14885,6 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     spoiler: z.ZodOptional<z.ZodBoolean>;
     nsfw: z.ZodOptional<z.ZodBoolean>;
     title: z.ZodOptional<z.ZodString>;
-    link: z.ZodOptional<z.ZodString>;
     linkWidth: z.ZodOptional<z.ZodNumber>;
     linkHeight: z.ZodOptional<z.ZodNumber>;
     linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -15237,6 +15237,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     postCid: string;
     depth: number;
     cid: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -15248,7 +15249,6 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     nsfw?: boolean | undefined;
     extraProps?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -15310,6 +15310,7 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     postCid: string;
     depth: number;
     cid: string;
+    link?: string | undefined;
     flair?: z.objectInputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -15321,7 +15322,6 @@ export declare const CommentsTableRowSchema: z.ZodObject<{
     nsfw?: boolean | undefined;
     extraProps?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;

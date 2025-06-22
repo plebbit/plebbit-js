@@ -63,10 +63,10 @@ export class Plebbit extends PlebbitTypedEmitter {
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
             : this.parsedPlebbitOptions.chainProviders;
-        this.libp2pJsClientOptions = this.parsedPlebbitOptions.libp2pJsClientOptions;
-        if (this.libp2pJsClientOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
+        this.libp2pJsClientsOptions = this.parsedPlebbitOptions.libp2pJsClientsOptions;
+        if (this.libp2pJsClientsOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
             throw new PlebbitError("ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED", {
-                libp2pJsClientOptions: this.libp2pJsClientOptions,
+                libp2pJsClientOptions: this.libp2pJsClientsOptions,
                 kuboRpcClientsOptions: this.kuboRpcClientsOptions,
                 pubsubKuboRpcClientsOptions: this.pubsubKuboRpcClientsOptions
             });
@@ -143,11 +143,11 @@ export class Plebbit extends PlebbitTypedEmitter {
     }
     async _initLibp2pJsClientsIfNeeded() {
         this.clients.libp2pJsClients = {};
-        if (!this.libp2pJsClientOptions)
+        if (!this.libp2pJsClientsOptions)
             return;
         if (!this.httpRoutersOptions)
             throw Error("httpRoutersOptions is required for libp2pJsClient");
-        for (const clientOptions of this.libp2pJsClientOptions) {
+        for (const clientOptions of this.libp2pJsClientsOptions) {
             const heliaNode = await createLibp2pJsClientOrUseExistingOne({
                 ...clientOptions,
                 httpRoutersOptions: this.httpRoutersOptions

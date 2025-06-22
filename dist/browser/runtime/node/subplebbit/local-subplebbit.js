@@ -140,7 +140,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._updateIpnsPubsubPropsIfNeeded(newProps);
         this.ipnsName = newProps.signer.address;
         this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-        this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+        this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
     }
     async initDbHandlerIfNeeded() {
         if (!this._dbHandler) {

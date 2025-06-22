@@ -37,8 +37,8 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     updateCid?: string;
     ipnsName?: string;
     ipnsPubsubTopic?: string;
-    ipnsPubsubTopicDhtKey?: string;
-    pubsubTopicPeersCid?: string;
+    ipnsPubsubTopicRoutingCid?: string;
+    pubsubTopicRoutingCid?: string;
     _plebbit: Plebbit;
     _clientsManager: SubplebbitClientsManager;
     raw: {
@@ -81,7 +81,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     update(): Promise<void>;
     private _cleanUpUpdatingSubInstanceWithListeners;
     stop(): Promise<void>;
-    edit(options: any): Promise<any>;
+    edit(options: SubplebbitEditOptions): Promise<any>;
     delete(): Promise<void>;
     start(): Promise<void>;
 }

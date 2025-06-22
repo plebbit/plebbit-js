@@ -3809,6 +3809,7 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
     };
     subplebbitAddress: string;
     protocolVersion: string;
+    link?: string | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
         backgroundColor: z.ZodOptional<z.ZodString>;
@@ -3819,7 +3820,6 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;
@@ -3832,6 +3832,7 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
         privateKey: string;
     };
     subplebbitAddress: string;
+    link?: string | undefined;
     timestamp?: number | undefined;
     flair?: z.objectOutputType<{
         text: z.ZodString;
@@ -3943,7 +3944,6 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     title?: string | undefined;
-    link?: string | undefined;
     linkWidth?: number | undefined;
     linkHeight?: number | undefined;
     linkHtmlTagName?: string | undefined;

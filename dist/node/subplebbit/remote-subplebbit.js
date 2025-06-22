@@ -86,19 +86,19 @@ export class RemoteSubplebbit extends TypedEmitter {
         if ("ipnsName" in newProps && newProps.ipnsName) {
             this.ipnsName = newProps.ipnsName;
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+            this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
         else if (newProps.signature?.publicKey && this.signature?.publicKey !== newProps.signature?.publicKey) {
             // The signature public key has changed, we need to update the ipns name and pubsub topic
             this.ipnsName = getPlebbitAddressFromPublicKeySync(newProps.signature.publicKey);
             this.ipnsPubsubTopic = ipnsNameToIpnsOverPubsubTopic(this.ipnsName);
-            this.ipnsPubsubTopicDhtKey = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
+            this.ipnsPubsubTopicRoutingCid = pubsubTopicToDhtKey(this.ipnsPubsubTopic);
         }
-        if (!this.pubsubTopicPeersCid) {
-            if ("pubsubTopicPeersCid" in newProps)
-                this.pubsubTopicPeersCid = newProps.pubsubTopicPeersCid;
+        if (!this.pubsubTopicRoutingCid) {
+            if ("pubsubTopicRoutingCid" in newProps)
+                this.pubsubTopicRoutingCid = newProps.pubsubTopicRoutingCid;
             else
-                this.pubsubTopicPeersCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+                this.pubsubTopicRoutingCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
         }
     }
     initRemoteSubplebbitPropsNoMerge(newProps) {
