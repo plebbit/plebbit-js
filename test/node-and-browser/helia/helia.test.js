@@ -3,7 +3,8 @@ import {
     generatePostToAnswerMathQuestion,
     publishWithExpectedResult,
     getRemotePlebbitConfigs,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockPlebbitV2
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
@@ -49,5 +50,44 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((con
             expect(comment.author.subplebbit).to.be.a("object");
             await comment.stop();
         });
+
+        it(`It should connect to peers if we're publishing over pubsub`, async () => {
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            const kuboPlebbit = await mockPlebbitV2({
+                plebbitOptions: { pubsubKuboRpcClientsOptions: ["http://localhost:15001/api/v0"] },
+                forceMockPubsub: false,
+                remotePlebbit: true
+            });
+
+            const kuboRpc = Object.values(kuboPlebbit.clients.pubsubKuboRpcClients)[0];
+
+            const pubsubMsgs = [];
+
+            kuboRpc._client.pubsub.subscribe(mathCliNoMockedPubsubSubplebbitAddress, (msg) => {
+                pubsubMsgs.push(msg);
+            });
+
+            const numOfPeersBeforePublishing = Object.values(testPlebbit.clients.libp2pJsClients)[0]._helia.libp2p.getConnections().length;
+            expect(numOfPeersBeforePublishing).to.equal(0);
+            const heliaWithKuboRpcClientFunctions = Object.values(testPlebbit.clients.libp2pJsClients)[0].heliaWithKuboRpcClientFunctions;
+
+            await heliaWithKuboRpcClientFunctions.pubsub.publish(mathCliNoMockedPubsubSubplebbitAddress, new TextEncoder().encode("test"));
+
+            const numOfPeersAfterPublishing = Object.values(testPlebbit.clients.libp2pJsClients)[0]._helia.libp2p.getConnections().length;
+            expect(numOfPeersAfterPublishing).to.be.greaterThan(numOfPeersBeforePublishing);
+
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            expect(pubsubMsgs.length).to.equal(1);
+            expect(pubsubMsgs[0].data.toString()).to.equal("116,101,115,116"); // uint8 array representation of "test"
+
+            await testPlebbit.destroy();
+            await kuboPlebbit.destroy();
+        });
+
+        it(`should connect to peers if we're publishing over pubsub`);
+        it(`it should connect if we're fetching content by CID`);
     });
 });
