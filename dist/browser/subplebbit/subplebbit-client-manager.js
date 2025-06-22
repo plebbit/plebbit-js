@@ -199,7 +199,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             }
             finally {
                 if ("_helia" in kuboRpcOrHelia)
-                    this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientOptions.key);
+                    this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientsOptions.key);
                 else
                     this.updateKuboRpcState("stopped", kuboRpcOrHelia.url);
             }
@@ -218,7 +218,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
         const log = Logger("plebbit-js:clients-manager:_fetchSubplebbitIpnsP2PAndVerify");
         const kuboRpcOrHelia = this.getDefaultKuboRpcClientOrHelia();
         if ("_helia" in kuboRpcOrHelia) {
-            this.updateLibp2pJsClientState("fetching-ipns", kuboRpcOrHelia._libp2pJsClientOptions.key);
+            this.updateLibp2pJsClientState("fetching-ipns", kuboRpcOrHelia._libp2pJsClientsOptions.key);
         }
         else
             this.updateKuboRpcState("fetching-ipns", kuboRpcOrHelia.url);
@@ -228,7 +228,7 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             return undefined;
         }
         if ("_helia" in kuboRpcOrHelia)
-            this.updateLibp2pJsClientState("fetching-ipfs", kuboRpcOrHelia._libp2pJsClientOptions.key);
+            this.updateLibp2pJsClientState("fetching-ipfs", kuboRpcOrHelia._libp2pJsClientsOptions.key);
         else
             this.updateKuboRpcState("fetching-ipfs", kuboRpcOrHelia.url);
         this._subplebbit._setUpdatingStateWithEventEmissionIfNewState("fetching-ipfs");

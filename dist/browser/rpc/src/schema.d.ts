@@ -19,9 +19,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     }, z.ZodTypeDef, {
@@ -41,9 +43,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     }>>;
@@ -69,9 +73,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     }, z.ZodTypeDef, {
@@ -91,9 +97,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     }>>;
@@ -119,9 +127,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     }, z.ZodTypeDef, {
@@ -141,9 +151,11 @@ export declare const CreatePlebbitWsServerOptionsSchema: z.ZodObject<{
         updateInterval?: number | undefined;
         noData?: boolean | undefined;
         validatePages?: boolean | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     }>>;
@@ -176,17 +188,25 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
-        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        libp2pJsClientsOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
             key: z.ZodString;
-            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>, z.ZodTypeDef, Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>>;
             heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
         }, "strip", z.ZodTypeAny, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }>, "many">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
@@ -212,17 +232,25 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
-        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        libp2pJsClientsOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
             key: z.ZodString;
-            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>, z.ZodTypeDef, Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>>;
             heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
         }, "strip", z.ZodTypeAny, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }>, "many">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
@@ -248,17 +276,25 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
-        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        libp2pJsClientsOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
             key: z.ZodString;
-            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>, z.ZodTypeDef, Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>>;
             heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
         }, "strip", z.ZodTypeAny, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }>, "many">>;
     }, z.ZodTypeAny, "passthrough">>;
@@ -280,9 +316,11 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     } & {
@@ -306,9 +344,11 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         pubsubKuboRpcClientsOptions?: (string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     } & {
@@ -337,17 +377,25 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
-        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        libp2pJsClientsOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
             key: z.ZodString;
-            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>, z.ZodTypeDef, Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>>;
             heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
         }, "strip", z.ZodTypeAny, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }>, "many">>;
     } & {
@@ -374,17 +422,25 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
-        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        libp2pJsClientsOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
             key: z.ZodString;
-            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>, z.ZodTypeDef, Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>>;
             heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
         }, "strip", z.ZodTypeAny, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }>, "many">>;
     } & {
@@ -411,17 +467,25 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         noData: z.ZodBoolean;
         validatePages: z.ZodBoolean;
         userAgent: z.ZodString;
-        libp2pJsClientOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        libp2pJsClientsOptions: z.ZodOptional<z.ZodArray<z.ZodObject<{
             key: z.ZodString;
-            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>, z.ZodTypeDef, Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>>;
+            libp2pOptions: z.ZodType<Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>, z.ZodTypeDef, Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>>;
             heliaOptions: z.ZodType<Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>, z.ZodTypeDef, Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>>;
         }, "strip", z.ZodTypeAny, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }, {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }>, "many">>;
     } & {
@@ -1270,9 +1334,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     } & {
@@ -1317,9 +1383,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         pubsubKuboRpcClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
-        libp2pJsClientOptions?: {
+        libp2pJsClientsOptions?: {
             key: string;
-            libp2pOptions?: Partial<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices> | Omit<import("libp2p").Libp2pOptions<any>, "start"> | undefined>;
+            libp2pOptions: Partial<import("libp2p").Libp2pInit<import("helia").DefaultLibp2pServices> & {
+                start?: boolean;
+            } & Required<Pick<import("libp2p").Libp2pOptions<import("helia").DefaultLibp2pServices>, "services">>>;
             heliaOptions?: Partial<Partial<import("helia").HeliaInit<import("libp2p").Libp2p<import("helia").DefaultLibp2pServices>>> | undefined>;
         }[] | undefined;
     } & {

@@ -36,12 +36,13 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
     }
     const mergedHeliaInit = {
         libp2p: {
-            addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
+            addresses: { listen: [], ...plebbitOptions.libp2pOptions?.addresses }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
                 fetch: libp2pFetch(),
-                ...getDelegatedRoutingFields(plebbitOptions.httpRoutersOptions)
+                ...getDelegatedRoutingFields(plebbitOptions.httpRoutersOptions),
+                ...plebbitOptions.libp2pOptions?.services
             },
             peerDiscovery: undefined,
             ...plebbitOptions.libp2pOptions
@@ -57,7 +58,7 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
     log("Initialized libp2pjs helia with key", plebbitOptions.key, "peer id", helia.libp2p.peerId.toString());
     const pubsubEventHandler = new EventEmitter();
     helia.libp2p.services.pubsub.addEventListener("message", (evt) => {
-        log(`Event from helia libp2p pubsub:`, `on topic ${evt.detail.topic}`);
+        log.trace(`Event from helia libp2p pubsub:`, `on topic ${evt.detail.topic}`);
         //@ts-expect-error
         const msgFormatted = { data: evt.detail.data, topic: evt.detail.topic, type: evt.detail.type };
         pubsubEventHandler.emit(evt.detail.topic, msgFormatted);
@@ -182,7 +183,7 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
         heliaIpnsRouter: ipnsNameResolver,
         mergedHeliaOptions: mergedHeliaInit,
         countOfUsesOfInstance: 1,
-        libp2pJsClientOptions: plebbitOptions,
+        libp2pJsClientsOptions: plebbitOptions,
         key: plebbitOptions.key
     };
     libp2pJsClients[plebbitOptions.key] = new Libp2pJsClient(fullInstanceWithOptions);

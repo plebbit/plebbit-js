@@ -75,7 +75,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
     _updateKuboRpcClientOrHeliaState(newState, kuboRpcOrHelia) {
         if ("_helia" in kuboRpcOrHelia)
-            this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientOptions.key);
+            this.updateLibp2pJsClientState(newState, kuboRpcOrHelia._libp2pJsClientsOptions.key);
         else
             this.updateKuboRpcState(newState, kuboRpcOrHelia.url);
     }

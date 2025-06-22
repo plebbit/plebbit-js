@@ -112,6 +112,7 @@ export declare const ChallengeRequestMessageSchema: z.ZodObject<{
 }>;
 export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
     comment: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -151,7 +152,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -442,6 +442,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -481,7 +482,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -772,6 +772,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -811,7 +812,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -1102,6 +1102,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -1141,7 +1142,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -1432,6 +1432,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -1471,7 +1472,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -12156,6 +12156,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>;
     }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "commentModeration">, z.ZodTypeAny, "passthrough"> | undefined;
     comment?: z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -12195,7 +12196,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -15532,6 +15532,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>;
     }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "commentModeration">, z.ZodTypeAny, "passthrough"> | undefined;
     comment?: z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -15571,7 +15572,6 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -17641,6 +17641,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
 }>;
 export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     comment: z.ZodOptional<z.ZodEffects<z.ZodObject<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -17680,7 +17681,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -17971,6 +17971,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -18010,7 +18011,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -18301,6 +18301,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -18340,7 +18341,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -18631,6 +18631,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -18670,7 +18671,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -18961,6 +18961,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -19000,7 +19001,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -29690,6 +29690,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>;
     }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "commentModeration">, z.ZodTypeAny, "passthrough"> | undefined;
     comment?: z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -29729,7 +29730,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -33068,6 +33068,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>;
     }, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "commentModeration">, z.ZodTypeAny, "passthrough"> | undefined;
     comment?: z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -33107,7 +33108,6 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -35464,6 +35464,7 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<{
 }>;
 export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
     comment: z.ZodObject<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -35503,7 +35504,6 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -35800,6 +35800,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
         previousCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -35839,7 +35840,6 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -36136,6 +36136,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         thumbnailUrlHeight: z.ZodOptional<z.ZodNumber>;
         previousCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        link: z.ZodOptional<z.ZodString>;
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
             type: z.ZodString;
@@ -36175,7 +36176,6 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         spoiler: z.ZodOptional<z.ZodBoolean>;
         nsfw: z.ZodOptional<z.ZodBoolean>;
         title: z.ZodOptional<z.ZodString>;
-        link: z.ZodOptional<z.ZodString>;
         linkWidth: z.ZodOptional<z.ZodNumber>;
         linkHeight: z.ZodOptional<z.ZodNumber>;
         linkHtmlTagName: z.ZodOptional<z.ZodString>;
@@ -41094,6 +41094,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         subplebbitAddress: string;
         protocolVersion: string;
         depth: number;
+        link?: string | undefined;
         flair?: z.objectOutputType<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
@@ -41104,7 +41105,6 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         title?: string | undefined;
-        link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
         linkHtmlTagName?: string | undefined;
@@ -41341,6 +41341,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         subplebbitAddress: string;
         protocolVersion: string;
         depth: number;
+        link?: string | undefined;
         flair?: z.objectInputType<{
             text: z.ZodString;
             backgroundColor: z.ZodOptional<z.ZodString>;
@@ -41351,7 +41352,6 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         spoiler?: boolean | undefined;
         nsfw?: boolean | undefined;
         title?: string | undefined;
-        link?: string | undefined;
         linkWidth?: number | undefined;
         linkHeight?: number | undefined;
         linkHtmlTagName?: string | undefined;

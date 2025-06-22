@@ -1,4 +1,5 @@
-import { Plebbit } from "../../plebbit/plebbit.js";
+import type { PlebbitError } from "../../plebbit-error.js";
+import type { Plebbit } from "../../plebbit/plebbit.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema, PlebbitWsServerSettingsSerializedSchema } from "./schema.js";
 import { z } from "zod";
 export type CreatePlebbitWsServerOptions = z.infer<typeof CreatePlebbitWsServerOptionsSchema>;
@@ -13,4 +14,7 @@ export type JsonRpcSendNotificationOptions = {
     subscription: number;
     event: string;
     connectionId: string;
+};
+export type PlebbitRpcServerEvents = {
+    error: (error: PlebbitError | Error) => void;
 };
