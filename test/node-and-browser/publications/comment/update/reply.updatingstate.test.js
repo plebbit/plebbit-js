@@ -120,7 +120,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             expect(mockReply._commentUpdateIpfsPath).to.not.exist;
             const filteredExpectedStates = cleanupStateArray(expectedStates);
             const filteredRecordedStates = cleanupStateArray(recordedStates);
-            expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
+            expect(filteredRecordedStates).to.deep.equal(
+                filteredExpectedStates,
+                "recorded states: " + recordedStates.join(", ") + "Author is " + JSON.stringify(mockReply.author)
+            );
         });
         it(`updating state of reply is set to failed if sub has an invalid Subplebbit record`, async () => {
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
