@@ -30,6 +30,7 @@ export async function connectToPeersProvidingCid({
             log.trace("Failed to dial IPNS-Over-Pubsub peer", peer.id.toString(), "Due to error", e);
         }
     }
+    log.trace("Connected to", peersWithContent.length, "peers", "for content", contentCid);
     if (peersWithContent.length === 0) {
         const error = new PlebbitError("ERR_FAILED_TO_DIAL_ANY_PEERS_PROVIDING_CID", {
             contentCid,
