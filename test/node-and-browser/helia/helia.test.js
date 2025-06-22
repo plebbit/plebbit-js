@@ -4,7 +4,8 @@ import {
     publishWithExpectedResult,
     getRemotePlebbitConfigs,
     resolveWhenConditionIsTrue,
-    mockPlebbitV2
+    mockPlebbitV2,
+    addStringToIpfs
 } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub is connected to a plebbit instance whose pubsub is not mocked
@@ -122,6 +123,23 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((con
             await testPlebbit.destroy();
             await kuboPlebbit.destroy();
         });
-        it(`it should connect if we're fetching content by CID`);
+        it(`it should connect if we're fetching content by CID`, async () => {
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            const numOfPeersBeforeFetching = Object.values(testPlebbit.clients.libp2pJsClients)[0]._helia.libp2p.getConnections().length;
+            expect(numOfPeersBeforeFetching).to.equal(0);
+
+            const newContentCid = await addStringToIpfs("test");
+
+            const contentLoadedByHelia = await testPlebbit.fetchCid(newContentCid);
+            expect(contentLoadedByHelia).to.equal("test");
+
+            const numOfPeersAfterFetching = Object.values(testPlebbit.clients.libp2pJsClients)[0]._helia.libp2p.getConnections().length;
+            expect(numOfPeersAfterFetching).to.be.greaterThan(numOfPeersBeforeFetching);
+
+            await testPlebbit.destroy();
+        });
     });
 });
