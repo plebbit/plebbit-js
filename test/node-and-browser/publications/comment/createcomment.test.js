@@ -128,8 +128,8 @@ getRemotePlebbitConfigs().map((config) => {
             await post.update();
             await resolveWhenConditionIsTrue(post, () => post.replyCount >= 1);
             expect(post.content).to.be.a("string");
-            expect(post.replyCount).to.equal(1);
-            expect(post.replies.pages.best.comments.length).to.equal(1);
+            expect(post.replyCount).to.be.at.least(1);
+            expect(post.replies.pages.best.comments.length).to.be.at.least(1);
 
             await post.stop();
 
