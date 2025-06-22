@@ -2,7 +2,13 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit, mockRpcServerForTests } from "../../dist/node/test/test-util.js";
+import {
+    startSubplebbits,
+    mockRpcServerPlebbit,
+    mockGatewayPlebbit,
+    mockRpcServerForTests,
+    mockPlebbitNoDataPathWithOnlyKuboClient
+} from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
 
@@ -236,9 +242,14 @@ const setUpMockGateways = async () => {
         });
 
     // Set up mock gateways for subplebbit gateway fetching tests
-    const plebbit = await mockGatewayPlebbit();
+    const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
     const fetchLatestSubplebbit = async () => {
-        return await plebbit.getSubplebbit(signers[0].address);
+        try {
+            return await plebbit.getSubplebbit(signers[0].address);
+        } catch (e) {
+            console.error("Error fetching latest subplebbit", e, e.details);
+            throw e;
+        }
     };
 
     // This gateaway will wait for 11s then respond
