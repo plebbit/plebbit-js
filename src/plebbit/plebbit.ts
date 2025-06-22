@@ -950,6 +950,17 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         for (const storage of Object.values(this._storageLRUs)) await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
 
+        for (const client of Object.values(this.clients.pubsubKuboRpcClients)) {
+            try {
+                const subscribedPubsubTopics = await client._client.pubsub.ls();
+                for (const topic of subscribedPubsubTopics) {
+                    await client._client.pubsub.unsubscribe(topic);
+                }
+            } catch (e) {
+                console.error("Error unsubscribing from pubsub topics", e);
+            }
+        }
+
         await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
 
         // Get all methods on the instance and override them to throw errors if used after destruction
