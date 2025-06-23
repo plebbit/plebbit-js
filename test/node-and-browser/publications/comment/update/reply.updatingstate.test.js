@@ -96,8 +96,10 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
         it(`Updating states is in correct upon updating a reply that's included in preloaded pages of its parent`, async () => {
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             // we don't want domain name in author addrses so its resolving doesn't get included in expected states
-            const preloadedReplyCid = sub.posts.pages.hot.comments.find((post) => post.replies && !post.author.address.includes("."))
-                .replies.pages.best.comments[0].cid;
+            const preloadedReplyCid = sub.posts.pages.hot.comments
+                .find((post) => post.replies)
+                .replies.pages.best.comments.find((reply) => !reply.author.address.includes(".")).cid;
+            expect(preloadedReplyCid).to.exist;
             const mockReply = await plebbit.createComment({ cid: preloadedReplyCid });
             const expectedStates = [
                 "fetching-ipfs", // fetching comment ipfs of reply

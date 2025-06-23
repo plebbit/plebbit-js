@@ -93,7 +93,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0);
+            const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies);
             expect(postWithReplyToCloneFromPage.replies).to.be.a("object");
             const commentCloneInstance = await plebbit.createComment(postWithReplyToCloneFromPage);
             expect(commentCloneInstance.replies).to.be.a("object");
@@ -104,7 +104,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Can recreate a stringified Comment instance with replies with plebbit.createComment`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0);
+            const postWithReplyToCloneFromPage = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies);
             expect(postWithReplyToCloneFromPage.replies).to.be.a("object");
             const commentCloneInstance = await plebbit.createComment(JSON.parse(JSON.stringify(postWithReplyToCloneFromPage)));
             expect(commentCloneInstance.replies).to.be.a("object");

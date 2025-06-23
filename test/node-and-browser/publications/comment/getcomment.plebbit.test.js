@@ -36,7 +36,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         it("reply props are loaded correctly", async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-            const reply = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).replies.pages.best.comments[0];
+            const reply = subplebbit.posts.pages.hot.comments.find((comment) => comment.replies).replies.pages.best.comments[0];
             expect(reply).to.exist;
             const expectedReplyProps = JSON.parse(await plebbit.fetchCid(reply.cid));
             expect(expectedReplyProps.postCid).to.be.a("string");
