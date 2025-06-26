@@ -116,7 +116,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
 
             await resolveWhenConditionIsTrue(mockReply, () => typeof mockReply.updatedAt === "number");
             const updatingMockReply = plebbit._updatingComments[mockReply.cid];
-            expect(updatingMockReply._clientsManager._parentCommentCidsAlreadyLoaded.size).to.equal(0);
+            expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.equal(0);
             await mockReply.stop();
 
             expect(mockReply._commentUpdateIpfsPath).to.not.exist;
@@ -201,7 +201,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             await waitTillReplyInParentPagesInstance(nestedReply, reply);
             const updatingMockReply = plebbit._updatingComments[reply.cid];
             const numOfUpdates = recordedStates.filter((state) => state === "succeeded").length - 1;
-            expect(updatingMockReply._clientsManager._parentCommentCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
+            expect(updatingMockReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThanOrEqual(numOfUpdates);
             await reply.stop();
 
             // Remove consecutive ["waiting-retry", "fetching-subplebbit-ipns"] entries
