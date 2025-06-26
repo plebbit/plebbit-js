@@ -178,7 +178,6 @@ export enum messages {
     ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID = "Unable to derive post cid from page comment while verifying page",
     ERR_POSTS_PAGE_IS_INVALID = "The page of posts is invalid",
     ERR_REPLIES_PAGE_IS_INVALID = "The page of replies is invalid",
-    ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_POST_FLAT_PAGES = "Failed to find reply comment update within all of the post flat pages",
     ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID = "User attempted to validate replies page without providing parent comment cid. Make sure parent comment is properly loaded",
     ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH = "User attempted to validate replies page without providing parent comment depth. Make sure parent comment is properly loaded",
     ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID = "User attempted to validate replies page without providing parent comment post cid. Make sure parent comment is properly loaded",
