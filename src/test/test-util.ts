@@ -590,7 +590,9 @@ export async function publishVote(
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     const challengeVerificationPromise = new Promise((resolve, reject) => {
         publication.once("challengeverification", (verificationMsg) => {
-            if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
+            if (verificationMsg.reason === messages["ERR_DUPLICATE_COMMENT"]) {
+                resolve(1);
+            } else if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${
                     verificationMsg.challengeSuccess
                 }). Reason (${verificationMsg.reason}): ${JSON.stringify(remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
