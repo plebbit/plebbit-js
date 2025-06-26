@@ -166,7 +166,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
         });
 
         // TODO enable this test and fix its flakiness
-        it.skip(`Updating states is in correct upon updating a reply from its parent pageCids`, async () => {
+        it(`Updating states is in correct upon updating a reply from its parent pageCids`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             await subplebbit.update();
             const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);

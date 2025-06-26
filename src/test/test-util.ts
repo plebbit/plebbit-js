@@ -62,6 +62,7 @@ import { CommentModeration } from "../publications/comment-moderation/comment-mo
 import type { CachedTextRecordResolve } from "../clients/base-client-manager.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
+import { messages } from "../errors.js";
 
 interface MockPlebbitOptions {
     plebbitOptions?: InputPlebbitOptions;
@@ -700,7 +701,8 @@ export async function waitTillReplyInParentPagesInstance(
     parentComment: Comment
 ) {
     const isReplyInParentPages = async () => {
-        console.log(
+        const log = Logger("plebbit-js:test-util:waitTillReplyInParentPagesInstance");
+        log(
             "waiting for reply",
             reply.cid,
             "in parent comment",
@@ -710,8 +712,8 @@ export async function waitTillReplyInParentPagesInstance(
         );
         if (Object.keys(parentComment.replies.pageCids).length === 0) {
             // it's a single preloaded page
-            const postInPage = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
-            return Boolean(postInPage);
+            const replyInParentPages = findCommentInPageInstanceRecursively(parentComment.replies, reply.cid);
+            return Boolean(replyInParentPages);
         } else {
             if (!("new" in parentComment.replies.pageCids)) {
                 console.error("no new page", "parentComment.replies.pageCids", parentComment.replies.pageCids);
@@ -1501,7 +1503,8 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     );
 
     const lastPublishedReply = await publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content });
-    console.log(
+    const log = Logger("plebbit-js:test-util:forceSubplebbitToGenerateAllRepliesPages");
+    log(
         "Published",
         numOfCommentsToPublish,
         "replies under comment",
@@ -1518,6 +1521,27 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     if (Object.keys(updatingComment.replies.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
     if (updatingComment.replyCount && updatingComment.replyCount < numOfCommentsToPublish)
         throw Error("Reply count is less than the number of comments published");
+}
+
+export async function findOrPublishCommentWithDepth(depth: number, subplebbit: RemoteSubplebbit) {
+    let commentCidFromPreloadedPages;
+    if (subplebbit.posts.pages.hot) {
+        processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
+            if (comment.depth === depth) {
+                commentCidFromPreloadedPages = comment.cid;
+            }
+        });
+    }
+
+    if (commentCidFromPreloadedPages) return commentCidFromPreloadedPages;
+
+    let curComment = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
+    if (curComment.depth === depth) return curComment.cid;
+
+    while (curComment.depth! < depth) {
+        curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, subplebbit._plebbit, {});
+        if (curComment.depth === depth) return curComment.cid;
+    }
 }
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {

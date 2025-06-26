@@ -13,6 +13,7 @@ import {
     mockPlebbitNoDataPathWithOnlyKuboClient,
     forceSubplebbitToGenerateAllRepliesPages
 } from "../../../dist/node/test/test-util.js";
+import Logger from "@plebbit/plebbit-logger";
 
 describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit, remotePlebbit;
@@ -34,6 +35,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     after(async () => {
         await subplebbit.delete();
         await plebbit.destroy();
+        for (const depth of Object.keys(replyCidByDepth)) delete replyCidByDepth[depth];
     });
 
     it(`subplebbit.postUpdates is undefined if there are no comments`, async () => {
@@ -49,16 +51,22 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         mockCommentToNotUsePagesForUpdates(postRecreated);
 
         await resolveWhenConditionIsTrue(postRecreated, () => typeof postRecreated.updatedAt === "number");
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.postUpdates);
 
         expect(postRecreated._commentUpdateIpfsPath?.endsWith("/update")).to.be.true; // should fetch from post updates directory
         expect(postRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
         expect(postRecreated.content).to.be.a("string"); // check for CommentIpfs props
+        expect(subplebbit.postUpdates).to.exist;
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
         await postRecreated.stop();
     });
 
     [1, 2].map((depth) => {
         it(`Can publish a reply with depth = ${depth} to a post and fetch updates from its post's pages`, async () => {
+            const log = Logger("plebbit-js:test:subplebbit:postUpdates:publishReplyWithDepth");
+            // This test is flaky
+
+            // is it possibly only failing when reply is fetched using pages?
             let parent;
             processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
                 if (comment.depth === depth - 1) parent = comment;
@@ -69,10 +77,19 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             await resolveWhenConditionIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
 
             await forceSubplebbitToGenerateAllRepliesPages(parentCommentInstance);
+            log("Forced subplebbit to generate all replies pages of comment", parentCommentInstance.cid);
+
+            await parentCommentInstance.stop(); // seems like this line fixes the flakiness
+
             const reply = await publishRandomReply(parentCommentInstance, remotePlebbit);
+            log("Published reply under comment", parentCommentInstance.cid, "with cid", reply.cid, "and depth", reply.depth);
             expect(reply.depth).to.equal(depth);
             replyCidByDepth[depth] = reply.cid;
 
+            // is it possible that local subplebbit is publishing a parent comment with outdated pageCids
+            // maybe we should have a setInterval printing pageCids of parent comment, with local plebbit
+
+            log("Creating and updating reply", reply.cid, "and depth", reply.depth);
             const replyRecreated = await remotePlebbit.createComment({ cid: reply.cid });
             await replyRecreated.update();
             mockReplyToUseParentPagesForUpdates(replyRecreated);
@@ -82,6 +99,9 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
             expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
             expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
+
+            const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
+            expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
 
             expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
 
