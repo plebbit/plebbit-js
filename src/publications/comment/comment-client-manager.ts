@@ -589,7 +589,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         let curPageCid: string | undefined = parentCommentInstance.replies.pageCids[pageSortName];
         if (!curPageCid) throw Error("Parent comment does not have any new or old pages");
 
-        if (this._parentCommentCidsAlreadyLoaded.has(curPageCid)) {
+        if (this._parentFirstPageCidsAlreadyLoaded.has(curPageCid)) {
+            log(`Reply`, this._comment.cid, `:SKIPPING: Page CID ${curPageCid} already loaded parent page cid`);
             // we already loaded this page before and have its comment update, no need to do anything
             return;
         }
