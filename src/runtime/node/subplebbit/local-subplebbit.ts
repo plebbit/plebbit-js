@@ -589,7 +589,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         // Calculate remaining space for posts
         const availablePostsSize =
-            MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 500;
+            MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 1000;
 
         const generatedPosts = await this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages, availablePostsSize);
 
@@ -670,7 +670,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 address: this.address
             });
             log.error(
-                `Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)} bytes). Maximum size is 1MB.`,
+                `Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)} bytes). Maximum size is ${MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS} bytes.`,
                 error
             );
             throw error;
@@ -1663,7 +1663,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
 
         const repliesAvailableSize =
-            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 500;
+            MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 1000;
         const preloadedRepliesPages = "best";
 
         const generatedRepliesPages =
