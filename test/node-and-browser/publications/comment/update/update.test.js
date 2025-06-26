@@ -146,7 +146,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         [1, 2, 3].map((replyDepth) => {
-            it.only(`reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`, async () => {
+            it(`reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`, async () => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
                 const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
@@ -179,7 +179,7 @@ getRemotePlebbitConfigs().map((config) => {
                 await replyRecreated.stop();
             });
 
-            it.only(`Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is updating`, async () => {
+            it(`Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is updating`, async () => {
                 const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
                 const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
