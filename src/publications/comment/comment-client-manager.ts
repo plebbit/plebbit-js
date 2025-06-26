@@ -53,14 +53,16 @@ export class CommentClientsManager extends PublicationClientsManager {
         >;
     } & Pick<PublicationEvents, "error" | "updatingstatechange" | "update"> = undefined;
     private _comment: Comment;
-    private _parentCommentCidsAlreadyLoaded: Set<string> = new Set<string>();
+    private _parentFirstPageCidsAlreadyLoaded: Set<string>;
     private _fetchingUpdateForReplyUsingPageCidsPromise?:
         | ReturnType<CommentClientsManager["usePageCidsOfParentToFetchCommentUpdateForReply"]>
-        | undefined = undefined;
+        | undefined;
 
     constructor(comment: Comment) {
         super(comment);
         this._comment = comment;
+        this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
+        this._parentFirstPageCidsAlreadyLoaded = new Set<string>();
         hideClassPrivateProps(this);
     }
 
@@ -762,22 +764,12 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: replyInPage.commentUpdate }, repliesSubplebbit, log);
             return; // we found an update from pages, no need to do anything else
         }
-        if (Object.keys(postInstance.replies.pageCids).length === 0) {
-            log(
-                "Post",
-                postInstance.cid,
-                "has no pageCids and we couldn't find any reply commentUpdate in its preloaded pages, therefore reply",
-                this._comment.cid,
-                "will wait until another update event by post"
-            );
-            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
-            return;
-        }
+
         if (this._fetchingUpdateForReplyUsingPageCidsPromise) await this._fetchingUpdateForReplyUsingPageCidsPromise;
 
         this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
             .catch((error) => {
-                log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
+                log.error("Failed to fetch reply commentUpdate update from parent pages", error);
                 this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                     newUpdatingState: "failed",
                     event: { name: "error", args: [error as PlebbitError | Error] }
@@ -787,6 +779,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
             });
         await this._fetchingUpdateForReplyUsingPageCidsPromise;
+        this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
     }
 
     async _createPostInstanceWithStateTranslation(): Promise<CommentClientsManager["_postForUpdating"]> {
@@ -936,7 +929,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
         // only stop if it's mirroring the actual comment instance updating at plebbit._updatingComments
         if (this._postForUpdating.comment._updatingCommentInstance) await this._postForUpdating.comment.stop();
-        this._parentCommentCidsAlreadyLoaded.clear();
+        this._parentFirstPageCidsAlreadyLoaded.clear();
         this._postForUpdating = undefined;
     }
 }
