@@ -599,10 +599,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         let newCommentUpdate: PageIpfs["comments"][0] | undefined;
         const pageCidsSearchedForNewUpdate: string[] = [];
         while (curPageCid && !newCommentUpdate) {
-            // TODO can optimize this by using _loadedUniqueCommentFromGetPage
-            // TODO need to use _findCommentInPagesOfUpdatingCommentsOrSubplebbit
-            const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid); // should update _loadedUniqueCommentFromGetPage
-            if (pageCidsSearchedForNewUpdate.length === 0) this._parentCommentCidsAlreadyLoaded.add(curPageCid);
+            const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid);
+            if (pageCidsSearchedForNewUpdate.length === 0) this._parentFirstPageCidsAlreadyLoaded.add(curPageCid);
             pageCidsSearchedForNewUpdate.push(curPageCid);
             const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid)?.raw;
             const replyWithinUpdatingPages = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: parentCommentInstance });
