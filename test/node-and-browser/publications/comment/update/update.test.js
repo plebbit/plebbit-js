@@ -2,7 +2,6 @@ import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
     publishRandomPost,
-    processAllCommentsRecursively,
     publishRandomReply,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     mockPostToFailToLoadFromPostUpdates,
@@ -146,72 +145,78 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         [1, 2, 3].map((replyDepth) => {
-            it(`reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`, async () => {
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            itSkipIfRpc(
+                `reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`,
+                async () => {
+                    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-                const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
+                    const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
 
-                const parentComment = await plebbit.getComment(parentCid);
-                expect(parentComment.depth).to.equal(replyDepth - 1);
-                await parentComment.update();
-                await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
-                await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-                await parentComment.stop();
+                    const parentComment = await plebbit.getComment(parentCid);
+                    expect(parentComment.depth).to.equal(replyDepth - 1);
+                    await parentComment.update();
+                    await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
+                    await forceSubplebbitToGenerateAllRepliesPages(parentComment);
+                    await parentComment.stop();
 
-                expect(parentComment.replies.pageCids).to.not.deep.equal({});
+                    expect(parentComment.replies.pageCids).to.not.deep.equal({});
 
-                const reply = await publishRandomReply(parentComment, plebbit);
-                expect(reply.depth).to.equal(replyDepth);
+                    const reply = await publishRandomReply(parentComment, plebbit);
+                    expect(reply.depth).to.equal(replyDepth);
 
-                const replyRecreated = await plebbit.createComment({ cid: reply.cid });
-                await replyRecreated.update();
-                mockReplyToUseParentPagesForUpdates(replyRecreated);
+                    const replyRecreated = await plebbit.createComment({ cid: reply.cid });
+                    await replyRecreated.update();
+                    mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-                await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+                    await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
 
-                expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
-                expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
-                expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
+                    expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
+                    expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
+                    expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
 
-                const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
-                expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
+                    const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
+                    expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
 
-                await replyRecreated.stop();
-            });
+                    await replyRecreated.stop();
+                }
+            );
 
-            it(`Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is updating`, async () => {
-                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+            itSkipIfRpc(
+                `Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is updating`,
+                async () => {
+                    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-                const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
+                    const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
 
-                const parentComment = await plebbit.getComment(parentCid);
-                expect(parentComment.depth).to.equal(replyDepth - 1);
-                await parentComment.update();
-                await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
-                await forceSubplebbitToGenerateAllRepliesPages(parentComment);
-                // keep parent comment updating
+                    const parentComment = await plebbit.getComment(parentCid);
+                    expect(parentComment.depth).to.equal(replyDepth - 1);
+                    await parentComment.update();
+                    await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
+                    await forceSubplebbitToGenerateAllRepliesPages(parentComment);
+                    // keep parent comment updating
 
-                expect(parentComment.replies.pageCids).to.not.deep.equal({});
+                    expect(parentComment.replies.pageCids).to.not.deep.equal({});
 
-                const reply = await publishRandomReply(parentComment, plebbit);
-                expect(reply.depth).to.equal(reply.depth);
+                    const reply = await publishRandomReply(parentComment, plebbit);
+                    expect(reply.depth).to.equal(reply.depth);
 
-                const replyRecreated = await plebbit.createComment({ cid: reply.cid });
-                await replyRecreated.update();
-                mockReplyToUseParentPagesForUpdates(replyRecreated);
+                    const replyRecreated = await plebbit.createComment({ cid: reply.cid });
+                    await replyRecreated.update();
+                    mockReplyToUseParentPagesForUpdates(replyRecreated);
 
-                await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
+                    await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
 
-                expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
-                expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
-                expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
+                    expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
+                    expect(replyRecreated.updatedAt).to.be.a("number"); // check for commentUpdate props
+                    expect(replyRecreated.content).to.be.a("string"); // check for CommentIpfs props
 
-                const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
-                expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
+                    const updatingReply = replyRecreated._plebbit._updatingComments[replyRecreated.cid];
+                    expect(updatingReply._clientsManager._parentFirstPageCidsAlreadyLoaded.size).to.be.greaterThan(0);
 
-                await replyRecreated.stop();
-                await parentComment.stop();
-            });
+                    await replyRecreated.stop();
+                    await parentComment.stop();
+                }
+            );
         });
     });
 });
