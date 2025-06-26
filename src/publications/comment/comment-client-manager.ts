@@ -467,6 +467,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     _findCommentInPagesOfUpdatingCommentsOrSubplebbit(opts?: {
         sub?: RemoteSubplebbit;
         post?: Comment;
+        parent?: Comment;
     }): PageIpfs["comments"][0] | undefined {
         // TODO rewrite this to use updating comments and subplebbit
         if (typeof this._comment.cid !== "string") throw Error("Need to have defined cid");
@@ -481,11 +482,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         let updateFromPost: PageIpfs["comments"][0] | undefined;
         if (post) updateFromPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
 
+        const parent: Comment | undefined = this._comment.parentCid
+            ? opts?.parent || this._plebbit._updatingComments[this._comment.parentCid]
+            : undefined;
         let updateFromParent: PageIpfs["comments"][0] | undefined;
-        if (this._comment.parentCid) {
-            const parentCommentReplyPages: Comment["replies"] | undefined =
-                this._plebbit._updatingComments[this._comment.parentCid]?.replies;
-            updateFromParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
+        if (parent) {
+            updateFromParent = parent.replies && findCommentInPageInstance(parent.replies, this._comment.cid);
         }
 
         const updates: PageIpfs["comments"][0][] = [updateFromSub, updateFromPost, updateFromParent].filter((update) => !!update);
@@ -573,6 +575,20 @@ export class CommentClientsManager extends PublicationClientsManager {
         }
         await resolveWhenPredicateIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
         if (startedUpdatingParentComment) await parentCommentInstance.stop();
+        const replyInPreloadedParentPages =
+            parentCommentInstance.replies && findCommentInPageInstance(parentCommentInstance.replies, this._comment.cid);
+
+        if (
+            replyInPreloadedParentPages &&
+            replyInPreloadedParentPages.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)
+        ) {
+            this._useLoadedCommentUpdateIfNewInfo(
+                { commentUpdate: replyInPreloadedParentPages.commentUpdate },
+                subplebbitWithSignature,
+                log
+            );
+            return;
+        }
         if (Object.keys(parentCommentInstance.replies.pageCids).length === 0) {
             log(
                 "Parent comment",
