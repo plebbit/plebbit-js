@@ -727,6 +727,7 @@ export async function waitTillReplyInParentPagesInstance(
             return Boolean(replyInPage);
         }
     };
+    if (parentComment.state === "stopped") throw Error("Parent comment is stopped, can't wait for reply in parent pages");
     await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
 }
 
