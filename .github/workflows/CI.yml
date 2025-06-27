@@ -100,6 +100,7 @@ jobs:
 
             # Link chrome executable if needed
             - name: Install Chrome
+              id: setup-chrome
               uses: browser-actions/setup-chrome@v1
               with:
                   chrome-version: latest
@@ -108,6 +109,8 @@ jobs:
             # Run tests based on environment and config
             - name: Run browser tests with config
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
+              env:
+                CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
 
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
