@@ -4,6 +4,22 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
+// Add helper function to get browser version
+function getBrowserVersion(browserPath, browserName) {
+    try {
+        const versionOutput = execSync(`"${browserPath}" --version`, {
+            encoding: "utf8",
+            timeout: 5000,
+            stdio: ["ignore", "pipe", "ignore"]
+        });
+        console.log(`${browserName} version: ${versionOutput.trim()}`);
+        return versionOutput.trim();
+    } catch (error) {
+        console.warn(`Could not get ${browserName} version from ${browserPath}: ${error.message}`);
+        return "Version check failed";
+    }
+}
+
 // Get command line arguments
 const args = process.argv.slice(2);
 const plebbitConfigIndex = args.indexOf("--plebbit-config");
@@ -45,22 +61,6 @@ console.log(`Running tests in ${environment} environment`);
 // Create a new environment object with all current env variables
 const env = { ...process.env };
 
-// Add this helper function after the imports
-function getBrowserVersion(browserPath, browserName) {
-    try {
-        const versionOutput = execSync(`"${browserPath}" --version`, {
-            encoding: "utf8",
-            timeout: 5000,
-            stdio: ["ignore", "pipe", "ignore"]
-        });
-        console.log(`${browserName} version: ${versionOutput.trim()}`);
-        return versionOutput.trim();
-    } catch (error) {
-        console.warn(`Could not get ${browserName} version from ${browserPath}: ${error.message}`);
-        return "Version check failed";
-    }
-}
-
 // Run the appropriate test runner with the test directories
 if (environment === "node") {
     // For Node.js, run Mocha with the node-and-browser test directory
@@ -84,17 +84,19 @@ if (environment === "node") {
         process.exit(code);
     });
 } else {
-    // For browser environments, run Karma with the webpacked test files
+    // For browser environments, run Vitest with Playwright
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const projectRoot = path.resolve(__dirname, "..");
 
-    // Use locally installed karma from node_modules
-    const karmaBin = path.join(projectRoot, "node_modules", ".bin", "karma");
-    const karmaConfigPath = path.join(projectRoot, "config", "karma.conf.cjs");
+    // Use locally installed vitest from node_modules
+    const vitestBin = path.join(projectRoot, "node_modules", ".bin", "vitest");
 
-    // Set browser paths based on environment
+    let vitestArgs = ["run", "--reporter=verbose"];
+    let vitestConfigPath;
+
+    // Set browser-specific configuration and environment
     if (environment.toLowerCase().includes("chrome")) {
-        // Check if CHROME_BIN is already set (e.g., from CI environment)
+        // Set Chrome executable path for Playwright
         if (env.CHROME_BIN && env.CHROME_BIN.trim() !== "") {
             console.log(`Using Chrome from CHROME_BIN environment variable: ${env.CHROME_BIN}`);
             if (fs.existsSync(env.CHROME_BIN)) {
@@ -124,16 +126,32 @@ if (environment === "node") {
             }
 
             if (!env.CHROME_BIN) {
-                console.warn("Could not find Chrome executable. Please set CHROME_BIN environment variable manually.");
-                // Set a default value to avoid errors
-                env.CHROME_BIN = "chrome";
-                getBrowserVersion("chrome", "Chrome (default fallback)");
+                console.warn("Could not find Chrome executable. Using Playwright's bundled Chromium.");
+                // Don't set CHROME_BIN - let Playwright use its bundled browser
             }
         }
 
-        // Unset Firefox to ensure only Chrome runs
-        delete env.FIREFOX_BIN;
+        // Use default vitest config (which uses Chromium)
+        vitestConfigPath = path.join(projectRoot, "vitest.config.js");
+
+        // Set Playwright environment for Chromium
+        env.PLAYWRIGHT_BROWSERS_PATH = env.PLAYWRIGHT_BROWSERS_PATH || "0";
+
+        console.log("========================================");
+        console.log("FINAL CHROME VERSION CHECK:");
+        if (env.CHROME_BIN) {
+            getBrowserVersion(env.CHROME_BIN, "Chrome (final)");
+        } else {
+            console.log("Using Playwright's bundled Chromium");
+        }
+        console.log("========================================");
     } else if (environment.toLowerCase().includes("firefox")) {
+        // Create Firefox-specific config on the fly or use a separate config
+        vitestConfigPath = path.join(projectRoot, "vitest.config.js");
+
+        // Override browser type for Firefox
+        env.VITEST_BROWSER = "firefox";
+
         // Try to find Firefox executable
         const possibleFirefoxPaths = [
             "/usr/bin/firefox",
@@ -146,53 +164,46 @@ if (environment === "node") {
             if (fs.existsSync(firefoxPath)) {
                 env.FIREFOX_BIN = firefoxPath;
                 console.log(`Found Firefox at: ${firefoxPath}`);
-                // Add version logging here
                 getBrowserVersion(firefoxPath, "Firefox");
                 break;
             }
         }
 
         if (!env.FIREFOX_BIN) {
-            console.warn("Could not find Firefox executable. Please set FIREFOX_BIN environment variable manually.");
-            // Set a default value to avoid errors
-            env.FIREFOX_BIN = "firefox";
-            // Try to get version of the default firefox command
-            getBrowserVersion("firefox", "Firefox (default)");
+            console.warn("Could not find Firefox executable. Using Playwright's bundled Firefox.");
+            // Don't set FIREFOX_BIN - let Playwright use its bundled browser
         }
 
-        // Unset Chrome to ensure only Firefox runs
-        delete env.CHROME_BIN;
-    }
-
-    // Also add version checking for existing CHROME_BIN/FIREFOX_BIN env vars
-    if (env.CHROME_BIN && environment.toLowerCase().includes("chrome")) {
         console.log("========================================");
-        console.log("CHROME VERSION CHECK:");
-        getBrowserVersion(env.CHROME_BIN, "Chrome");
+        console.log("FINAL FIREFOX VERSION CHECK:");
+        if (env.FIREFOX_BIN) {
+            getBrowserVersion(env.FIREFOX_BIN, "Firefox (final)");
+        } else {
+            console.log("Using Playwright's bundled Firefox");
+        }
         console.log("========================================");
     }
 
-    if (env.FIREFOX_BIN && environment.toLowerCase().includes("firefox")) {
-        console.log("========================================");
-        console.log("FIREFOX VERSION CHECK:");
-        getBrowserVersion(env.FIREFOX_BIN, "Firefox");
-        console.log("========================================");
+    // Add config argument if we have a specific config
+    if (vitestConfigPath) {
+        vitestArgs.push("--config", vitestConfigPath);
     }
 
-    console.log(`Running karma with environment: ${environment}`);
-    console.log(`Karma binary: ${karmaBin}`);
-    console.log(`Karma config: ${karmaConfigPath}`);
+    console.log(`Running Vitest with environment: ${environment}`);
+    console.log(`Vitest binary: ${vitestBin}`);
+    console.log(`Vitest config: ${vitestConfigPath}`);
+    console.log(`Vitest args: ${vitestArgs.join(" ")}`);
     console.log(
-        `Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, CHROME_BIN=${env.CHROME_BIN}, FIREFOX_BIN=${env.FIREFOX_BIN}`
+        `Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, VITEST_BROWSER=${env.VITEST_BROWSER}, CHROME_BIN=${env.CHROME_BIN}, FIREFOX_BIN=${env.FIREFOX_BIN}`
     );
 
-    const karmaProcess = spawn(karmaBin, ["start", karmaConfigPath], {
+    const vitestProcess = spawn(vitestBin, vitestArgs, {
         stdio: "inherit",
         env: env,
-        shell: true // Use shell to handle path issues on different platforms
+        shell: true
     });
 
-    karmaProcess.on("exit", (code) => {
+    vitestProcess.on("exit", (code) => {
         process.exit(code);
     });
 }
