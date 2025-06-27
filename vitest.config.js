@@ -51,9 +51,15 @@ export default defineConfig({
 
     // Redirect Node.js imports to browser builds (just like webpack does)
     resolve: {
-        alias: {
-            "../../dist/node/index.js": "../../dist/browser/index.js",
-            "../../dist/node": "../../dist/browser"
-        }
+        alias: [
+            // Handle any depth of relative paths to dist/node
+            {
+                find: /^((\.\.\/)+)dist\/node(\/.*)?$/,
+                replacement: (match, relativePath, lastSlash, subPath) => {
+                    const path = subPath || "";
+                    return `${relativePath}dist/browser${path}`;
+                }
+            }
+        ]
     }
 });
