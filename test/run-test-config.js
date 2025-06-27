@@ -112,9 +112,8 @@ if (environment === "node") {
     }
 
     // Add config argument if we have a specific config
-    if (vitestConfigPath) {
-        vitestArgs.push("--config", vitestConfigPath);
-    }
+
+    vitestArgs.push("--config", vitestConfigPath);
 
     console.log(`Running Vitest with environment: ${environment}`);
     console.log(`Vitest binary: ${vitestBin}`);
