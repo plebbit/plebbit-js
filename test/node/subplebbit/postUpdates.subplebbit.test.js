@@ -89,8 +89,6 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
 
             log("Creating and updating reply", reply.cid, "and depth", reply.depth);
             const replyRecreated = await remotePlebbit.createComment({ cid: reply.cid });
-            await replyRecreated.update();
-            mockReplyToUseParentPagesForUpdates(replyRecreated);
 
             const intervalId = setInterval(async () => {
                 const replyFromLocalPlebbit = await plebbit.createComment({ cid: reply.cid });
@@ -100,6 +98,9 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
                 console.log("reply from remote plebbit", replyRecreated.cid, "updatedAt", replyRecreated.updatedAt);
                 await replyFromLocalPlebbit.stop();
             }, 10000);
+
+            await replyRecreated.update();
+            mockReplyToUseParentPagesForUpdates(replyRecreated);
 
             await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
 
