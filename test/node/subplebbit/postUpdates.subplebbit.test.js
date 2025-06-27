@@ -3,6 +3,7 @@ import {
     mockPlebbit,
     mockReplyToUseParentPagesForUpdates,
     processAllCommentsRecursively,
+    findOrPublishCommentWithDepth,
     publishRandomPost,
     createSubWithNoChallenge,
     publishRandomReply,
@@ -61,18 +62,15 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
         await postRecreated.stop();
     });
 
-    [1, 2].map((depth) => {
+    [1, 2, 3].map((depth) => {
         it(`Can publish a reply with depth = ${depth} to a post and fetch updates from its post's pages`, async () => {
             const log = Logger("plebbit-js:test:subplebbit:postUpdates:publishReplyWithDepth");
             // This test is flaky
 
             // is it possibly only failing when reply is fetched using pages?
-            let parent;
-            processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
-                if (comment.depth === depth - 1) parent = comment;
-            });
-            expect(parent).to.exist;
-            const parentCommentInstance = await remotePlebbit.createComment({ cid: parent.cid });
+            const parentCid = await findOrPublishCommentWithDepth(depth - 1, subplebbit);
+
+            const parentCommentInstance = await remotePlebbit.createComment({ cid: parentCid });
             await parentCommentInstance.update();
             await resolveWhenConditionIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
 
@@ -94,6 +92,15 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             await replyRecreated.update();
             mockReplyToUseParentPagesForUpdates(replyRecreated);
 
+            const intervalId = setInterval(async () => {
+                const replyFromLocalPlebbit = await plebbit.createComment({ cid: reply.cid });
+                await replyFromLocalPlebbit.update();
+                await resolveWhenConditionIsTrue(replyFromLocalPlebbit, () => typeof replyFromLocalPlebbit.updatedAt === "number");
+                console.log("reply from local plebbit", replyFromLocalPlebbit.cid, "updatedAt", replyFromLocalPlebbit.updatedAt);
+                console.log("reply from remote plebbit", replyRecreated.cid, "updatedAt", replyRecreated.updatedAt);
+                await replyFromLocalPlebbit.stop();
+            }, 10000);
+
             await resolveWhenConditionIsTrue(replyRecreated, () => typeof replyRecreated.updatedAt === "number");
 
             expect(replyRecreated._commentUpdateIpfsPath).to.be.undefined; // should be undefined for replies since we're not including them in post updates
@@ -105,6 +112,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
 
             expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
 
+            clearInterval(intervalId);
             await replyRecreated.stop();
             await parentCommentInstance.stop();
         });
