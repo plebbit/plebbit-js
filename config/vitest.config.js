@@ -1,4 +1,7 @@
 import { defineConfig } from "vitest/config";
+import mocharc from "./config/.mocharc.json";
+
+const mochaTimeout = mocharc.timeout;
 
 export default defineConfig({
     test: {
@@ -41,9 +44,9 @@ export default defineConfig({
         passWithNoTests: true,
 
         // Timeouts
-        testTimeout: 100000,
-        hookTimeout: 100000,
-        browserStartTimeout: 120000
+        testTimeout: mochaTimeout,
+        hookTimeout: mochaTimeout,
+        browserStartTimeout: mochaTimeout
     },
 
     // Define global constants for build-time replacement
