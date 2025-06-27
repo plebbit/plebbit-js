@@ -2088,6 +2088,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
+
+            try {
+                const rootCid = await kuboRpc._client.files.flush("/");
+                log("Flushed ipfs repo", "/", "before GC", "with CID", rootCid);
+            } catch (e) {
+                log.error("Failed to flush ipfs repo", "/", "due to error", e);
+                throw e;
+            }
+
             try {
                 for await (const res of kuboRpc._client.repo.gc({ quiet: true })) {
                     if (res.cid) gcCids++;
