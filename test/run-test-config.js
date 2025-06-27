@@ -94,32 +94,41 @@ if (environment === "node") {
 
     // Set browser paths based on environment
     if (environment.toLowerCase().includes("chrome")) {
-        // Try to find Chrome/Chromium executable
-        const possibleChromePaths = [
-            "/usr/bin/google-chrome",
-            "/usr/bin/chromium",
-            "/usr/bin/chromium-browser",
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-            "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
-        ];
-
-        for (const chromePath of possibleChromePaths) {
-            if (fs.existsSync(chromePath)) {
-                env.CHROME_BIN = chromePath;
-                console.log(`Found Chrome at: ${chromePath}`);
-                // Add version logging here
-                getBrowserVersion(chromePath, "Chrome");
-                break;
+        // Check if CHROME_BIN is already set (e.g., from CI environment)
+        if (env.CHROME_BIN && env.CHROME_BIN.trim() !== "") {
+            console.log(`Using Chrome from CHROME_BIN environment variable: ${env.CHROME_BIN}`);
+            if (fs.existsSync(env.CHROME_BIN)) {
+                console.log(`Verified Chrome exists at: ${env.CHROME_BIN}`);
+                getBrowserVersion(env.CHROME_BIN, "Chrome (from CHROME_BIN)");
+            } else {
+                console.warn(`Warning: CHROME_BIN points to non-existent path: ${env.CHROME_BIN}`);
             }
-        }
+        } else {
+            // Try to find Chrome/Chromium executable
+            const possibleChromePaths = [
+                "/usr/bin/google-chrome",
+                "/usr/bin/chromium",
+                "/usr/bin/chromium-browser",
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+                "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+            ];
 
-        if (!env.CHROME_BIN) {
-            console.warn("Could not find Chrome executable. Please set CHROME_BIN environment variable manually.");
-            // Set a default value to avoid errors
-            env.CHROME_BIN = "chrome";
-            // Try to get version of the default chrome command
-            getBrowserVersion("chrome", "Chrome (default)");
+            for (const chromePath of possibleChromePaths) {
+                if (fs.existsSync(chromePath)) {
+                    env.CHROME_BIN = chromePath;
+                    console.log(`Found Chrome at: ${chromePath}`);
+                    getBrowserVersion(chromePath, "Chrome (auto-detected)");
+                    break;
+                }
+            }
+
+            if (!env.CHROME_BIN) {
+                console.warn("Could not find Chrome executable. Please set CHROME_BIN environment variable manually.");
+                // Set a default value to avoid errors
+                env.CHROME_BIN = "chrome";
+                getBrowserVersion("chrome", "Chrome (default fallback)");
+            }
         }
 
         // Unset Firefox to ensure only Chrome runs
