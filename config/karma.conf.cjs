@@ -1,5 +1,4 @@
 // you can add "CHROME_BIN=/usr/bin/chromium" to .env file
-// to not have to type it every time
 // require("dotenv").config();
 
 const os = require("os");
@@ -16,7 +15,7 @@ mochaConfig.bail = true; // Add bail to browser tests
 // possible to add flags when launching the browser
 const CustomChrome = {
     base: "ChromeHeadless",
-    flags: ["--disable-web-security"],
+    flags: ["--disable-web-security", "--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     debug: true
 };
 
