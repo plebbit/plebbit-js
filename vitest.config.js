@@ -7,7 +7,7 @@ export default defineConfig({
             enabled: true,
             provider: "playwright",
             headless: true,
-            screenshotOnFailure: false,
+            screenshotFailures: false,
             instances: [
                 {
                     browser: process.env.VITEST_BROWSER === "firefox" ? "firefox" : "chromium",
@@ -23,7 +23,7 @@ export default defineConfig({
         },
 
         // Test file patterns - browser-specific and cross-platform tests
-        include: ["test/browser/**/*.test.js", "test/node-and-browser/**/*.test.js"],
+        include: ["test/*browser/**/*.test.js"],
 
         // Enable Vitest globals (describe, it, expect, etc.) for mocha-style tests
         globals: true,
@@ -33,20 +33,26 @@ export default defineConfig({
 
         // Environment variables
         env: {
-            PLEBBIT_CONFIGS: process.env.PLEBBIT_CONFIGS || "",
-            DEBUG: process.env.DEBUG || ""
+            PLEBBIT_CONFIGS: process.env.PLEBBIT_CONFIGS,
+            DEBUG: process.env.DEBUG
         },
 
-        // Aggressive failure handling
-        bail: 1,
-        maxConcurrency: 1,
-        fileParallelism: false,
-        isolate: false,
+        // some tests are skipped if no remote plebbit RPC configs are available
+        passWithNoTests: true,
 
         // Timeouts
         testTimeout: 100000,
         hookTimeout: 100000,
         browserStartTimeout: 120000
+    },
+
+    // Define global constants for build-time replacement
+    define: {
+        "process.env.PLEBBIT_CONFIGS": JSON.stringify(process.env.PLEBBIT_CONFIGS),
+        "process.env.DEBUG": JSON.stringify(process.env.DEBUG),
+        // Also set window.PLEBBIT_CONFIGS for browser environment
+        "globalThis.PLEBBIT_CONFIGS": JSON.stringify(process.env.PLEBBIT_CONFIGS),
+        "window.PLEBBIT_CONFIGS": JSON.stringify(process.env.PLEBBIT_CONFIGS)
     },
 
     // Redirect Node.js imports to browser builds (just like webpack does)
