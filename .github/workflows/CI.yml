@@ -99,7 +99,7 @@ jobs:
 
             # Install Chrome
             - name: Install Playwright browsers
-              run: npx playwright install --with-deps ${{ matrix.environment }}
+              run: npx playwright install --with-deps && npx playwright install --with-deps ${{ matrix.environment }}
 
             # Run tests based on environment and config
             - name: Run browser tests with config
