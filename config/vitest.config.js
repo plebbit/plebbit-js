@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import mocharc from "./config/.mocharc.json";
+import mocharc from "./.mocharc.json";
 
 const mochaTimeout = mocharc.timeout;
 
