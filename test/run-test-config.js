@@ -96,92 +96,20 @@ if (environment === "node") {
 
     // Set browser-specific configuration and environment
     if (environment.toLowerCase().includes("chrome")) {
-        // Set Chrome executable path for Playwright
-        if (env.CHROME_BIN && env.CHROME_BIN.trim() !== "") {
-            console.log(`Using Chrome from CHROME_BIN environment variable: ${env.CHROME_BIN}`);
-            if (fs.existsSync(env.CHROME_BIN)) {
-                console.log(`Verified Chrome exists at: ${env.CHROME_BIN}`);
-                getBrowserVersion(env.CHROME_BIN, "Chrome (from CHROME_BIN)");
-            } else {
-                console.warn(`Warning: CHROME_BIN points to non-existent path: ${env.CHROME_BIN}`);
-            }
-        } else {
-            // Try to find Chrome/Chromium executable
-            const possibleChromePaths = [
-                "/usr/bin/google-chrome",
-                "/usr/bin/chromium",
-                "/usr/bin/chromium-browser",
-                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-                "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
-            ];
-
-            for (const chromePath of possibleChromePaths) {
-                if (fs.existsSync(chromePath)) {
-                    env.CHROME_BIN = chromePath;
-                    console.log(`Found Chrome at: ${chromePath}`);
-                    getBrowserVersion(chromePath, "Chrome (auto-detected)");
-                    break;
-                }
-            }
-
-            if (!env.CHROME_BIN) {
-                console.warn("Could not find Chrome executable. Using Playwright's bundled Chromium.");
-                // Don't set CHROME_BIN - let Playwright use its bundled browser
-            }
-        }
-
         // Use default vitest config (which uses Chromium)
         vitestConfigPath = path.join(projectRoot, "vitest.config.js");
 
-        // Set Playwright environment for Chromium
-        env.PLAYWRIGHT_BROWSERS_PATH = env.PLAYWRIGHT_BROWSERS_PATH || "0";
-
-        console.log("========================================");
-        console.log("FINAL CHROME VERSION CHECK:");
-        if (env.CHROME_BIN) {
-            getBrowserVersion(env.CHROME_BIN, "Chrome (final)");
-        } else {
-            console.log("Using Playwright's bundled Chromium");
-        }
-        console.log("========================================");
+        // Let Playwright handle Chromium browser discovery automatically
+        console.log("Using Playwright's Chromium browser (default)");
     } else if (environment.toLowerCase().includes("firefox")) {
-        // Create Firefox-specific config on the fly or use a separate config
+        // Use default vitest config
         vitestConfigPath = path.join(projectRoot, "vitest.config.js");
 
         // Override browser type for Firefox
         env.VITEST_BROWSER = "firefox";
 
-        // Try to find Firefox executable
-        const possibleFirefoxPaths = [
-            "/usr/bin/firefox",
-            "/Applications/Firefox.app/Contents/MacOS/firefox",
-            "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
-            "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe"
-        ];
-
-        for (const firefoxPath of possibleFirefoxPaths) {
-            if (fs.existsSync(firefoxPath)) {
-                env.FIREFOX_BIN = firefoxPath;
-                console.log(`Found Firefox at: ${firefoxPath}`);
-                getBrowserVersion(firefoxPath, "Firefox");
-                break;
-            }
-        }
-
-        if (!env.FIREFOX_BIN) {
-            console.warn("Could not find Firefox executable. Using Playwright's bundled Firefox.");
-            // Don't set FIREFOX_BIN - let Playwright use its bundled browser
-        }
-
-        console.log("========================================");
-        console.log("FINAL FIREFOX VERSION CHECK:");
-        if (env.FIREFOX_BIN) {
-            getBrowserVersion(env.FIREFOX_BIN, "Firefox (final)");
-        } else {
-            console.log("Using Playwright's bundled Firefox");
-        }
-        console.log("========================================");
+        // Let Playwright handle Firefox browser discovery automatically
+        console.log("Using Playwright's Firefox browser");
     }
 
     // Add config argument if we have a specific config
@@ -193,9 +121,7 @@ if (environment === "node") {
     console.log(`Vitest binary: ${vitestBin}`);
     console.log(`Vitest config: ${vitestConfigPath}`);
     console.log(`Vitest args: ${vitestArgs.join(" ")}`);
-    console.log(
-        `Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, VITEST_BROWSER=${env.VITEST_BROWSER}, CHROME_BIN=${env.CHROME_BIN}, FIREFOX_BIN=${env.FIREFOX_BIN}`
-    );
+    console.log(`Environment variables: PLEBBIT_CONFIGS=${env.PLEBBIT_CONFIGS}, VITEST_BROWSER=${env.VITEST_BROWSER}`);
 
     const vitestProcess = spawn(vitestBin, vitestArgs, {
         stdio: "inherit",
