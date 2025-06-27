@@ -99,8 +99,10 @@ jobs:
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
 
             # Link chrome executable if needed
-            - name: Link chrome executable
-              run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
+            - name: Install Chrome
+              uses: browser-actions/setup-chrome@v1
+              with:
+                  chrome-version: latest
               if: matrix.environment == 'chrome'
 
             # Run tests based on environment and config
