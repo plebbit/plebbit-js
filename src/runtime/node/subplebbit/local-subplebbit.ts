@@ -217,12 +217,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._setState("stopped");
         this.started = false;
         this._stopHasBeenCalled = false;
+
+        // need to make sure these props are undefined on the constructor level, so they wouldn't show while logging
+
         //@ts-expect-error
-        this._challengeAnswerPromises = //@ts-expect-error
-            this._challengeAnswerResolveReject = //@ts-expect-error
-            this._ongoingChallengeExchanges = //@ts-expect-error
-            this._internalStateUpdateId =
-                undefined;
+        this._pageGenerator = undefined;
+        //@ts-expect-error
+        this._challengeAnswerPromises = undefined;
+        //@ts-expect-error
+        this._challengeAnswerResolveReject = undefined;
+        //@ts-expect-error
+        this._ongoingChallengeExchanges = undefined;
+        //@ts-expect-error
+        this._internalStateUpdateId = undefined;
+
+        //@ts-expect-error
+        this._dbHandler = undefined;
+
         hideClassPrivateProps(this);
     }
 
