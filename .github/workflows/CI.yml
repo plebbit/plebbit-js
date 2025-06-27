@@ -94,32 +94,16 @@ jobs:
 
             - run: npm ci
             - run: npm run build
-            - run: npm run webpack
 
             - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
 
             # Install Chrome
-            - name: Install Chrome
-              id: setup-chrome
-              uses: browser-actions/setup-chrome@v1
-              with:
-                  chrome-version: latest
-              if: matrix.environment == 'chrome'
-
-            - name: Debug Chrome installation
-              run: |
-                  echo "Chrome path from setup-chrome: ${{ steps.setup-chrome.outputs.chrome-path }}"
-                  echo "Chrome version from setup-chrome path:"
-                  ${{ steps.setup-chrome.outputs.chrome-path }} --version || echo "Failed to get version from setup-chrome path"
-                  echo "System Chrome at /usr/bin/google-chrome:"
-                  /usr/bin/google-chrome --version || echo "No system Chrome found"
-              if: matrix.environment == 'chrome'
+            - name: Install Playwright browsers
+              run: npx playwright install --with-deps ${{ matrix.environment }}
 
             # Run tests based on environment and config
             - name: Run browser tests with config
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
-              env:
-                  CHROME_BIN: ${{ matrix.environment == 'chrome' && steps.setup-chrome.outputs.chrome-path || '' }}
 
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
