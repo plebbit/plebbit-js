@@ -121,7 +121,6 @@ jobs:
             # Setup plebbit-js deps
             - run: npm ci
             - run: npm run build
-            - run: npm run webpack
             # Setup tests for plebbit-js using rpc here
             - run: DEBUG="plebbit*" npm run test:server:node:rpc |& tee test_server.log & npm run test:server:wait-on
             - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
