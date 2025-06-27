@@ -92,18 +92,17 @@ if (environment === "node") {
     const vitestBin = path.join(projectRoot, "node_modules", ".bin", "vitest");
 
     let vitestArgs = ["run", "--reporter=verbose"];
-    let vitestConfigPath;
+    const vitestConfigPath = path.join(projectRoot, "config", "vitest.config.js");
 
     // Set browser-specific configuration and environment
     if (environment.toLowerCase().includes("chrome")) {
         // Use default vitest config (which uses Chromium)
-        vitestConfigPath = path.join(projectRoot, "vitest.config.js");
+        env.VITEST_BROWSER = "chromium";
 
         // Let Playwright handle Chromium browser discovery automatically
         console.log("Using Playwright's Chromium browser (default)");
     } else if (environment.toLowerCase().includes("firefox")) {
         // Use default vitest config
-        vitestConfigPath = path.join(projectRoot, "vitest.config.js");
 
         // Override browser type for Firefox
         env.VITEST_BROWSER = "firefox";
