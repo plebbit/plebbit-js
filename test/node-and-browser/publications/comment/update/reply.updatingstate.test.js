@@ -210,7 +210,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
             mockReplyToUseParentPagesForUpdates(reply);
             expect(reply.content).to.be.undefined;
             expect(reply.updatedAt).to.be.undefined;
-            await resolveWhenConditionIsTrue(reply, () => typeof reply.depth === "number");
+            await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
             const nestedReply = await publishRandomReply(reply, plebbit);
             await waitTillReplyInParentPagesInstance(nestedReply, reply);
             const updatingMockReply = plebbit._updatingComments[reply.cid];
@@ -273,8 +273,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
             expect(filteredRecordedStates).to.deep.equal(filteredExpectedStates);
         });
 
-        // TODO enable this test and fix its flakiness
-        it.skip(`updating state of reply is in correct order upon updating a reply that's loading from pageCids of its parent`, async () => {
+        it(`updating state of reply is in correct order upon updating a reply that's loading from pageCids of its parent`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             await subplebbit.update();
             const replyInPage = await findOrGenerateReplyUnderPostWithMultiplePages(subplebbit);
