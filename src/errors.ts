@@ -18,6 +18,7 @@ export enum messages {
     ERR_FAILED_TO_DIAL_ANY_PEERS_PROVIDING_CID = "Failed to dial and connect to any peers providing a CID",
     ERR_GET_SUBPLEBBIT_TIMED_OUT = "plebbit.getSubplebbit() timed out",
     ERR_TIMEOUT_WAITING_FOR_PUBSUB_TOPIC_PEERS = "Timeout waiting for propagation of pubsub topic peers",
+    ERR_TIMED_OUT_RM_MFS_FILE = "Timed out removing MFS paths. We may need to nuke the whole MFS directory and republish everything",
     // Plebbit errors
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",

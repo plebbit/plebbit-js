@@ -434,3 +434,115 @@ export async function retryKuboIpfsAdd({
         });
     });
 }
+
+interface MfsRemoveTask {
+    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
+    paths: string[];
+    resolve: (value: void) => void;
+    reject: (reason: any) => void;
+}
+
+class MfsRemoveQueue {
+    private queue: MfsRemoveTask[] = [];
+    private processing = false;
+    private pathsRemovedSinceLastFlush = 0;
+    private readonly FLUSH_THRESHOLD = 3;
+
+    async add(kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string], paths: string[]): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.queue.push({
+                kuboRpcClient,
+                paths,
+                resolve,
+                reject
+            });
+            this.processQueue();
+        });
+    }
+
+    private async processQueue() {
+        if (this.processing || this.queue.length === 0) return;
+
+        this.processing = true;
+        const log = Logger("plebbit-js:util:MfsRemoveQueue");
+
+        while (this.queue.length > 0) {
+            const task = this.queue.shift()!;
+
+            try {
+                log(`Processing MFS rm operation for paths:`, task.paths);
+
+                // If task has more paths than threshold, chunk the removal operations
+                if (task.paths.length > this.FLUSH_THRESHOLD) {
+                    // Process paths in chunks of FLUSH_THRESHOLD size
+                    for (let i = 0; i < task.paths.length; i += this.FLUSH_THRESHOLD) {
+                        const chunk = task.paths.slice(i, i + this.FLUSH_THRESHOLD);
+
+                        await pTimeout(task.kuboRpcClient._client.files.rm(chunk, { flush: false, recursive: true }), {
+                            milliseconds: 120000,
+                            message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
+                                toDeleteMfsPaths: chunk,
+                                kuboRpcUrl: task.kuboRpcClient.url
+                            })
+                        });
+
+                        this.pathsRemovedSinceLastFlush += chunk.length;
+
+                        // Flush after each chunk
+                        await task.kuboRpcClient._client.files.flush("/");
+                        log(
+                            `Flushed after removing ${chunk.length} paths in chunk (total since last reset: ${this.pathsRemovedSinceLastFlush})`
+                        );
+                        this.pathsRemovedSinceLastFlush = 0;
+                    }
+                } else {
+                    // Check if we should flush based on cumulative path count
+                    const shouldFlush = this.pathsRemovedSinceLastFlush + task.paths.length >= this.FLUSH_THRESHOLD;
+
+                    await pTimeout(task.kuboRpcClient._client.files.rm(task.paths, { flush: false, recursive: true }), {
+                        milliseconds: 120000,
+                        message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
+                            toDeleteMfsPaths: task.paths,
+                            kuboRpcUrl: task.kuboRpcClient.url
+                        })
+                    });
+
+                    // Update path counter
+                    this.pathsRemovedSinceLastFlush += task.paths.length;
+
+                    // Flush if threshold reached
+                    if (shouldFlush) {
+                        await task.kuboRpcClient._client.files.flush("/");
+                        log(`Flushed after removing ${this.pathsRemovedSinceLastFlush} paths (threshold: ${this.FLUSH_THRESHOLD})`);
+                        this.pathsRemovedSinceLastFlush = 0;
+                    }
+                }
+
+                // Always flush after completing a task to ensure changes are persisted
+                await task.kuboRpcClient._client.files.flush("/");
+                log(`Final flush completed for task with ${task.paths.length} paths`);
+
+                task.resolve();
+                log(`Successfully completed MFS rm operation for paths:`, task.paths);
+            } catch (error) {
+                // if ((error as Error).message === messages["ERR_TIMED_OUT_RM_MFS_FILE"]) {
+                //     // shutdown the kubo node
+                //     log("Timed out removing MFS files. Shutting down the kubo node at", task.kuboRpcClient.url);
+                //     // await task.kuboRpcClient._client.stop();
+                //     // log("Kubo node shut down. Waiting 10 seconds to restart");
+
+                //     await new Promise((resolve) => setTimeout(resolve, 10000)); // wait 10 seconds to restart kubo node
+                // }
+                task.reject(error);
+            }
+        }
+
+        this.processing = false;
+    }
+}
+
+const mfsRemoveQueue = new MfsRemoveQueue();
+
+export async function removeMfsFilesSafely(kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string], paths: string[]) {
+    return mfsRemoveQueue.add(kuboRpcClient, paths);
+}

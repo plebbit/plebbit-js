@@ -32,7 +32,8 @@ import {
     retryKuboIpfsAdd,
     throwWithErrorCode,
     timestamp,
-    getErrorCodeFromMessage
+    getErrorCodeFromMessage,
+    removeMfsFilesSafely
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -1964,14 +1965,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             try {
-                await pTimeout(kuboRpc._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }), { milliseconds: 60000 });
+                await removeMfsFilesSafely(kuboRpc, toDeleteMfsPaths);
                 return toDeleteMfsPaths;
             } catch (e) {
                 const error = <Error>e;
-                if (!error.message.includes("file does not exist")) {
+                if (error.message.includes("file does not exist"))
+                    return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
+                else {
                     log.error("Failed to remove paths from MFS", toDeleteMfsPaths, e);
                     throw error;
-                } else return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
+                }
             }
         } else return [];
     }
