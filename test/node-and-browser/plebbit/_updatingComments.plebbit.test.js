@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import {
     getRemotePlebbitConfigs,
+    findOrPublishCommentWithDepth,
     itSkipIfRpc,
     publishRandomPost,
     publishRandomReply,
@@ -25,16 +26,30 @@ getRemotePlebbitConfigs().map((config) => {
             const plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit(subplebbitAddress);
 
+            const replyWithDepth1Cid = await findOrPublishCommentWithDepth(1, sub);
+            const replyWithDepth2Cid = await findOrPublishCommentWithDepth(2, sub);
+            const replyWithDepth3Cid = await findOrPublishCommentWithDepth(3, sub);
+
             const replyPostConfigs = [
-                { commentType: "post", cid: sub.posts.pages.hot.comments[0].cid },
+                { commentType: "post (depth 0)", cid: sub.posts.pages.hot.comments[0].cid },
                 {
-                    commentType: "reply",
-                    cid: sub.posts.pages.hot.comments.find((comment) => comment.replies?.pages?.best).replies.pages.best.comments[0].cid
+                    commentType: "reply (depth 1)",
+                    cid: replyWithDepth1Cid
+                },
+                {
+                    commentType: "reply (depth 2)",
+                    cid: replyWithDepth2Cid
+                },
+                {
+                    commentType: "reply (depth 3)",
+                    cid: replyWithDepth3Cid
                 }
             ];
 
             expect(replyPostConfigs[0].cid).to.be.a("string");
             expect(replyPostConfigs[1].cid).to.be.a("string");
+            expect(replyPostConfigs[2].cid).to.be.a("string");
+            expect(replyPostConfigs[3].cid).to.be.a("string");
 
             // Dynamically define test cases here now that replyPostConfigs is available
             for (const replyPostConfig of replyPostConfigs) {
