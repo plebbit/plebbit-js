@@ -1,5 +1,5 @@
 // Import necessary modules
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -44,6 +44,22 @@ console.log(`Running tests in ${environment} environment`);
 
 // Create a new environment object with all current env variables
 const env = { ...process.env };
+
+// Add this helper function after the imports
+function getBrowserVersion(browserPath, browserName) {
+    try {
+        const versionOutput = execSync(`"${browserPath}" --version`, {
+            encoding: "utf8",
+            timeout: 5000,
+            stdio: ["ignore", "pipe", "ignore"]
+        });
+        console.log(`${browserName} version: ${versionOutput.trim()}`);
+        return versionOutput.trim();
+    } catch (error) {
+        console.warn(`Could not get ${browserName} version from ${browserPath}: ${error.message}`);
+        return "Version check failed";
+    }
+}
 
 // Run the appropriate test runner with the test directories
 if (environment === "node") {
@@ -92,6 +108,8 @@ if (environment === "node") {
             if (fs.existsSync(chromePath)) {
                 env.CHROME_BIN = chromePath;
                 console.log(`Found Chrome at: ${chromePath}`);
+                // Add version logging here
+                getBrowserVersion(chromePath, "Chrome");
                 break;
             }
         }
@@ -100,6 +118,8 @@ if (environment === "node") {
             console.warn("Could not find Chrome executable. Please set CHROME_BIN environment variable manually.");
             // Set a default value to avoid errors
             env.CHROME_BIN = "chrome";
+            // Try to get version of the default chrome command
+            getBrowserVersion("chrome", "Chrome (default)");
         }
 
         // Unset Firefox to ensure only Chrome runs
@@ -117,6 +137,8 @@ if (environment === "node") {
             if (fs.existsSync(firefoxPath)) {
                 env.FIREFOX_BIN = firefoxPath;
                 console.log(`Found Firefox at: ${firefoxPath}`);
+                // Add version logging here
+                getBrowserVersion(firefoxPath, "Firefox");
                 break;
             }
         }
@@ -125,10 +147,27 @@ if (environment === "node") {
             console.warn("Could not find Firefox executable. Please set FIREFOX_BIN environment variable manually.");
             // Set a default value to avoid errors
             env.FIREFOX_BIN = "firefox";
+            // Try to get version of the default firefox command
+            getBrowserVersion("firefox", "Firefox (default)");
         }
 
         // Unset Chrome to ensure only Firefox runs
         delete env.CHROME_BIN;
+    }
+
+    // Also add version checking for existing CHROME_BIN/FIREFOX_BIN env vars
+    if (env.CHROME_BIN && environment.toLowerCase().includes("chrome")) {
+        console.log("========================================");
+        console.log("CHROME VERSION CHECK:");
+        getBrowserVersion(env.CHROME_BIN, "Chrome");
+        console.log("========================================");
+    }
+
+    if (env.FIREFOX_BIN && environment.toLowerCase().includes("firefox")) {
+        console.log("========================================");
+        console.log("FIREFOX VERSION CHECK:");
+        getBrowserVersion(env.FIREFOX_BIN, "Firefox");
+        console.log("========================================");
     }
 
     console.log(`Running karma with environment: ${environment}`);
