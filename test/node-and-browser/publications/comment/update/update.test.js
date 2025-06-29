@@ -165,6 +165,7 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(reply.depth).to.equal(replyDepth);
 
                     const replyRecreated = await plebbit.createComment({ cid: reply.cid });
+                    replyRecreated.on("updatingstatechange", (newState) => console.log("replyRecreated updatingstatechange", newState));
                     await replyRecreated.update();
                     mockReplyToUseParentPagesForUpdates(replyRecreated);
 

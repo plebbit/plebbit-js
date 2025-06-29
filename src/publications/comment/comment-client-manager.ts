@@ -772,6 +772,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     async handleUpdateEventFromPostToFetchReplyCommentUpdate(postInstance: Comment) {
         if (!this._comment.cid) throw Error("comment.cid should be defined");
         const log = Logger("plebbit-js:comment:update:handleUpdateEventFromPost");
+        log("Received update event from post", postInstance.cid, "for reply", this._comment.cid, "with depth", this._comment.depth);
         if (Object.keys(postInstance.replies.pageCids).length === 0 && Object.keys(postInstance.replies.pages).length === 0) {
             log(
                 "Post",
