@@ -632,6 +632,21 @@ export class CommentClientsManager extends PublicationClientsManager {
                 if (isNewUpdate) newCommentUpdate = replyWithinUpdatingPages;
             }
 
+            if (pageSortName === "new" && pageLoaded.comments.find((comment) => comment.timestamp < this._comment.timestamp)) {
+                log(
+                    "Reply",
+                    this._comment.cid,
+                    "we found a comment in the page that is older than our reply, stopping search for new comment update"
+                );
+                break;
+            } else if (pageSortName === "old" && pageLoaded.comments.find((comment) => comment.timestamp > this._comment.timestamp)) {
+                log(
+                    "Reply",
+                    this._comment.cid,
+                    "we found a comment in the page that is newer than our reply, stopping search for old comment update"
+                );
+                break;
+            }
             curPageCid = pageLoaded.nextCid;
         }
         log(
