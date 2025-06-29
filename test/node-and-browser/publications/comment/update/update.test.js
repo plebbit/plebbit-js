@@ -146,7 +146,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         [1, 2, 3].map((replyDepth) => {
             itSkipIfRpc(
-                `reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`,
+                `Reply with depth = ${replyDepth} can receive comment updates from parent comment page cids, if parent comment is stopped`,
                 async () => {
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
