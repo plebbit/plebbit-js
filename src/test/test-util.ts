@@ -1563,24 +1563,46 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
         throw Error("Reply count is less than the number of comments published");
 }
 
-export async function findOrPublishCommentWithDepth(depth: number, subplebbit: RemoteSubplebbit) {
-    let commentCidFromPreloadedPages;
+export async function findOrPublishCommentWithDepth({
+    depth,
+    subplebbit
+}: {
+    depth: number;
+    subplebbit: RemoteSubplebbit;
+}): Promise<Comment> {
+    let commentFromPreloadedPages: PageTypeJson["comments"][0] | undefined;
     if (subplebbit.posts.pages.hot) {
         processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
             if (comment.depth === depth) {
-                commentCidFromPreloadedPages = comment.cid;
+                commentFromPreloadedPages = comment as PageTypeJson["comments"][0];
             }
         });
     }
 
-    if (commentCidFromPreloadedPages) return commentCidFromPreloadedPages;
+    if (commentFromPreloadedPages) return subplebbit._plebbit.createComment(commentFromPreloadedPages);
 
     let curComment = await publishRandomPost(subplebbit.address, subplebbit._plebbit);
-    if (curComment.depth === depth) return curComment.cid;
+    if (curComment.depth === depth) return curComment;
 
     while (curComment.depth! < depth) {
         curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, subplebbit._plebbit, {});
-        if (curComment.depth === depth) return curComment.cid;
+        if (curComment.depth === depth) return curComment;
+    }
+    throw Error("Failed to find or publish comment with depth");
+}
+
+export async function publishCommentWithDepth({ depth, subplebbit }: { depth: number; subplebbit: RemoteSubplebbit }): Promise<Comment> {
+    if (depth === 0) {
+        return publishRandomPost(subplebbit.address, subplebbit._plebbit);
+    } else {
+        const parentComment = await findOrPublishCommentWithDepth({ depth: depth - 1, subplebbit });
+        let curComment = await publishRandomReply(parentComment as CommentIpfsWithCidDefined, subplebbit._plebbit, {});
+        if (curComment.depth === depth) return curComment;
+        while (curComment.depth! < depth) {
+            curComment = await publishRandomReply(curComment as CommentIpfsWithCidDefined, subplebbit._plebbit, {});
+            if (curComment.depth === depth) return curComment;
+        }
+        throw Error("Failed to publish comment with depth");
     }
 }
 

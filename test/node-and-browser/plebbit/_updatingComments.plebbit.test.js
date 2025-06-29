@@ -26,23 +26,23 @@ getRemotePlebbitConfigs().map((config) => {
             const plebbit = await config.plebbitInstancePromise();
             sub = await plebbit.getSubplebbit(subplebbitAddress);
 
-            const replyWithDepth1Cid = await findOrPublishCommentWithDepth(1, sub);
-            const replyWithDepth2Cid = await findOrPublishCommentWithDepth(2, sub);
-            const replyWithDepth3Cid = await findOrPublishCommentWithDepth(3, sub);
+            const replyWithDepth1Cid = await findOrPublishCommentWithDepth({ depth: 1, subplebbit: sub });
+            const replyWithDepth2Cid = await findOrPublishCommentWithDepth({ depth: 2, subplebbit: sub });
+            const replyWithDepth3Cid = await findOrPublishCommentWithDepth({ depth: 3, subplebbit: sub });
 
             const replyPostConfigs = [
                 { commentType: "post (depth 0)", cid: sub.posts.pages.hot.comments[0].cid },
                 {
                     commentType: "reply (depth 1)",
-                    cid: replyWithDepth1Cid
+                    cid: replyWithDepth1Cid.cid
                 },
                 {
                     commentType: "reply (depth 2)",
-                    cid: replyWithDepth2Cid
+                    cid: replyWithDepth2Cid.cid
                 },
                 {
                     commentType: "reply (depth 3)",
-                    cid: replyWithDepth3Cid
+                    cid: replyWithDepth3Cid.cid
                 }
             ];
 

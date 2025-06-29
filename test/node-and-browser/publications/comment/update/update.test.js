@@ -150,9 +150,7 @@ getRemotePlebbitConfigs().map((config) => {
                 async () => {
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-                    const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
-
-                    const parentComment = await plebbit.getComment(parentCid);
+                    const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
                     await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
@@ -187,9 +185,8 @@ getRemotePlebbitConfigs().map((config) => {
                 async () => {
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-                    const parentCid = await findOrPublishCommentWithDepth(replyDepth - 1, subplebbit);
+                    const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
 
-                    const parentComment = await plebbit.getComment(parentCid);
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
                     await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");
