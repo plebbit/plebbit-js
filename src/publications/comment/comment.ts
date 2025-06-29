@@ -560,14 +560,13 @@ export class Comment
                 await this._subplebbitForUpdating!.subplebbit.update();
             }
             if (this._subplebbitForUpdating.subplebbit.raw.subplebbitIpfs)
-                await this._clientsManager.handleUpdateEventFromSub(this._subplebbitForUpdating.subplebbit);
+                await this._subplebbitForUpdating.update(this._subplebbitForUpdating.subplebbit);
         } else {
             if (!this._postForUpdating) this._postForUpdating = await this._clientsManager._createPostInstanceWithStateTranslation();
             if (this._postForUpdating!.comment.state === "stopped") {
                 await this._postForUpdating!.comment.update();
             }
-            if (this._postForUpdating!.comment.raw.commentUpdate)
-                await this._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate(this._postForUpdating!.comment);
+            if (this._postForUpdating!.comment.raw.commentUpdate) await this._postForUpdating!.update(this._postForUpdating!.comment);
         }
     }
 
