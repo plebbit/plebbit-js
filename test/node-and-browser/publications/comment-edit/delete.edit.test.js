@@ -14,7 +14,7 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 
-const subplebbitAddress = signers[0].address;
+const subplebbitAddress = signers[8].address;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },

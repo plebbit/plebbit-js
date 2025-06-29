@@ -401,6 +401,17 @@ export async function startSubplebbits(props: {
     await subForRemove.start();
     await new Promise((resolve) => subForRemove.once("update", resolve));
 
+    const subForDelete = await createSubWithNoChallenge({ signer: props.signers[8] }, plebbit);
+    await subForDelete.edit({
+        roles: {
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
+        }
+    });
+    await subForDelete.start();
+    await new Promise((resolve) => subForDelete.once("update", resolve));
+
     return {
         onlineSub: onlineSub?.address,
         mathSub: mathSub.address,
