@@ -242,7 +242,8 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         itSkipIfRpc(`publish() can be caught if subplebbit failed to load`, async () => {
-            const downSubplebbitAddress = signers[7].address; // an offline sub
+            const randomSigner = await plebbit.createSigner();
+            const downSubplebbitAddress = randomSigner.address; // an offline sub
             const post = await generateMockPost(downSubplebbitAddress, plebbit);
             plebbit._timeouts["subplebbit-ipns"] = 100; // need to change time out from 5 minutes to 100ms
 
@@ -340,8 +341,10 @@ describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub provi
         // move
         const error429Gateway = `http://localhost:13416`; // this gateway always returns 429 status code
         const normalIpfsGateway = `http://localhost:18080`;
-        const offlineSubAddress = signers[7].address; // offline sub
         const gatewayPlebbit = await mockGatewayPlebbit({ plebbitOptions: { ipfsGatewayUrls: [error429Gateway, normalIpfsGateway] } });
+        const randomSigner = await gatewayPlebbit.createSigner();
+        const offlineSubAddress = randomSigner.address; // offline sub
+
         const post = await generateMockPost(offlineSubAddress, gatewayPlebbit);
 
         gatewayPlebbit._timeouts["subplebbit-ipns"] = 1000; // reduce timeout or otherwise it's gonna keep retrying for 5 minutes

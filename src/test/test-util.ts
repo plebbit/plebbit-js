@@ -316,6 +316,8 @@ type TestServerSubs = {
     mathSub: string;
     NoPubsubResponseSub: string;
     mathCliSubWithNoMockedPubsub: string;
+    subForPurge: string;
+    subForRemove: string;
 };
 
 export async function startOnlineSubplebbit() {
@@ -377,13 +379,37 @@ export async function startSubplebbits(props: {
     const mathCliSubWithNoMockedPubsub = await _startMathCliSubplebbit(props.signers[5], plebbitNoMockedSub);
     await new Promise((resolve) => mathCliSubWithNoMockedPubsub.once("update", resolve));
 
+    const subForPurge = await createSubWithNoChallenge({ signer: props.signers[6] }, plebbit);
+    await subForPurge.edit({
+        roles: {
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
+        }
+    });
+    await subForPurge.start();
+    await new Promise((resolve) => subForPurge.once("update", resolve));
+
+    const subForRemove = await createSubWithNoChallenge({ signer: props.signers[7] }, plebbit);
+    await subForRemove.edit({
+        roles: {
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
+        }
+    });
+    await subForRemove.start();
+    await new Promise((resolve) => subForRemove.once("update", resolve));
+
     return {
         onlineSub: onlineSub?.address,
         mathSub: mathSub.address,
         ensSub: ensSub.address,
         mainSub: mainSub.address,
         NoPubsubResponseSub: subWithNoResponse.address,
-        mathCliSubWithNoMockedPubsub: mathCliSubWithNoMockedPubsub.address
+        mathCliSubWithNoMockedPubsub: mathCliSubWithNoMockedPubsub.address,
+        subForPurge: subForPurge.address,
+        subForRemove: subForRemove.address
     };
 }
 
