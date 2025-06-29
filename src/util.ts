@@ -9,7 +9,7 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, create as CreateKuboRpcClient } from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -426,6 +426,47 @@ export async function retryKuboIpfsAdd({
                 resolve(addRes);
             } catch (error) {
                 log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add content to IPFS:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
+}
+
+export async function removeBlocksFromKuboNode({
+    ipfsClient: kuboRpcClient,
+    log,
+    cids,
+    inputNumOfRetries,
+    options
+}: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "block">;
+    log: Logger;
+    cids: string[];
+    inputNumOfRetries?: number;
+    options?: BlockRmOptions;
+}) {
+    const cidsToRemove = cids.map((cid) => CID.parse(cid));
+    const numOfRetries = inputNumOfRetries ?? 3;
+
+    const removedCids: string[] = [];
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 1000
+        });
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                for await (const cid of kuboRpcClient.block.rm(cidsToRemove, options)) {
+                    removedCids.push(cid.cid.toString());
+                }
+                resolve(removedCids);
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to remove blocks from kubo node:`, error);
 
                 if (operation.retry(error as Error)) return;
 

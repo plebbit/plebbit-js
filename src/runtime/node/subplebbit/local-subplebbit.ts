@@ -33,7 +33,8 @@ import {
     throwWithErrorCode,
     timestamp,
     getErrorCodeFromMessage,
-    removeMfsFilesSafely
+    removeMfsFilesSafely,
+    removeBlocksFromKuboNode
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -211,6 +212,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         | "challengeanswer"
     > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _pendingEditProps: Partial<ParsedSubplebbitEditOptions & { editId: string }>[] = [];
+    private _forceBlockRm: boolean = false;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -649,7 +651,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
+        const cidsToRemove = Array.from(this._cidsToUnPin);
         await this._unpinStaleCids();
+        if (this._forceBlockRm) {
+            const removedBlocks = await removeBlocksFromKuboNode({
+                ipfsClient: this._clientsManager.getDefaultKuboRpcClient()._client,
+                log,
+                cids: cidsToRemove,
+                options: { force: true }
+            });
+            log("Removed blocks", removedBlocks, "from kubo node");
+            this._forceBlockRm = false;
+        }
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
         this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
@@ -815,7 +828,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentUpdateToPurge = this._dbHandler.queryStoredCommentUpdate({ cid: modTableRow.commentCid });
             const commentToPurge = this._dbHandler.queryComment(modTableRow.commentCid);
             if (!commentToPurge) throw Error("Comment to purge not found");
-            const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid);
+            const cidsToPurgeOffIpfsNode = this._dbHandler.purgeComment(modTableRow.commentCid);
 
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
             purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
@@ -825,10 +838,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket)
                 );
 
-            await this._unpinStaleCids();
-
-            await this._cleanUpIpfsRepoRarely(true);
-
             log(
                 "Purged comment",
                 modTableRow.commentCid,
@@ -836,6 +845,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 cidsToPurgeOffIpfsNode.length,
                 "out of DB and IPFS"
             );
+
+            if (commentToPurge.parentCid) {
+                this._dbHandler.forceUpdateOnAllCommentsWithCid([commentToPurge.parentCid]);
+            }
+            this._forceBlockRm = true;
         }
         this._dbHandler.insertCommentModerations([modTableRow]);
         log("Inserted comment moderation", "of comment", modTableRow.commentCid, "into db", "with props", modTableRow);
