@@ -1493,23 +1493,23 @@ export function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit) {
     const originalFetch = plebbit._clientsManager._fetchCidP2P.bind(plebbit._clientsManager);
     for (const ipfsClient of Object.values(plebbit.clients.kuboRpcClients)) {
         ipfsClient._client.cat = async function* (ipfsPath, options) {
-            await new Promise((resolve) => setTimeout(resolve, 60000));
-            throw new Error("Timeout");
+            await new Promise((resolve) => setTimeout(resolve, plebbit._timeouts["subplebbit-ipfs"] * 2));
+            return undefined;
         };
     }
 
     for (const libp2pJsClient of Object.values(plebbit.clients.libp2pJsClients)) {
         libp2pJsClient.heliaWithKuboRpcClientFunctions.cat = async function* (ipfsPath, options) {
-            await new Promise((resolve) => setTimeout(resolve, 60000));
-            throw new Error("Timeout");
+            await new Promise((resolve) => setTimeout(resolve, plebbit._timeouts["subplebbit-ipfs"] * 2));
+            return undefined;
         };
     }
 
     // TODO mock for gateway
-    plebbit._clientsManager._fetchCidP2P = async (...args) => {
-        await new Promise((resolve) => setTimeout(resolve, 60000));
-        throw new Error("Timeout");
-    };
+    // plebbit._clientsManager._fetchCidP2P = async (...args) => {
+    //     await new Promise((resolve) => setTimeout(resolve, plebbit._timeouts["subplebbit-ipfs"] * 2));
+    //     return undefined;
+    // };
 }
 
 export function mockCommentToNotUsePagesForUpdates(comment: Comment) {

@@ -30,11 +30,6 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
     });
 });
 
-const clientsFieldName = {
-    "remote-kubo-rpc": "kuboRpcClients",
-    "remote-libp2pjs": "libp2pJsClients"
-};
-
 getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`Subplebbit waiting-retry - ${config.name}`, () => {
         let plebbit;
