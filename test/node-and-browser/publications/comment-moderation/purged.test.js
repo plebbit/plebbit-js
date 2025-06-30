@@ -17,6 +17,7 @@ import { CID } from "kubo-rpc-client";
 
 import * as remeda from "remeda";
 import { findCommentInPageInstanceRecursively } from "../../../../dist/node/pages/util.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 const subplebbitAddress = signers[6].address;
 const roles = [
@@ -24,9 +25,6 @@ const roles = [
     { role: "admin", signer: signers[2] },
     { role: "mod", signer: signers[3] }
 ];
-
-// I think the bug is in purging that's causing MFS timeout
-// could it because we try to files.rm, where the file block itself is not there?
 
 getRemotePlebbitConfigs().map((config) => {
     [0, 1, 2, 3].map((commentDepth) => {
@@ -63,6 +61,11 @@ getRemotePlebbitConfigs().map((config) => {
                         ]._client.block.stat(cid);
                     expect(res.size).to.be.a("number");
                 }
+
+                // make sure comment to be purged is in pages of subplebbit
+                const sub = await plebbit.getSubplebbit(subplebbitAddress);
+                const purgedCommentInPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
+                expect(purgedCommentInPage).to.exist;
             });
             after(async () => {
                 await plebbit.destroy();
@@ -95,6 +98,9 @@ getRemotePlebbitConfigs().map((config) => {
                     commentToPurge.cid,
                     replyOfCommentToPurge.cid,
                     replyUnderReplyOfCommentToPurge.cid,
+                    await calculateIpfsHash(JSON.stringify(commentToPurge.raw.commentUpdate)), // CID of comment update
+                    await calculateIpfsHash(JSON.stringify(replyOfCommentToPurge.raw.commentUpdate)),
+                    await calculateIpfsHash(JSON.stringify(replyUnderReplyOfCommentToPurge.raw.commentUpdate)),
                     ...Object.values(commentToPurge.replies.pageCids),
                     ...Object.values(replyOfCommentToPurge.replies.pageCids)
                 ]);
@@ -165,8 +171,8 @@ getRemotePlebbitConfigs().map((config) => {
 
                 expect(sub.posts.pageCids).to.deep.equal({}); // let's assume sub has no page cids
 
-                await resolveWhenConditionIsTrue(sub, async () => {
-                    const purgedPostInPage = await findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
+                await resolveWhenConditionIsTrue(sub, () => {
+                    const purgedPostInPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
                     return purgedPostInPage === undefined; // if we can't find it then it's purged
                 });
 
@@ -177,14 +183,16 @@ getRemotePlebbitConfigs().map((config) => {
 
             if (commentDepth === 0)
                 it(`Purged post should not appear in subplebbit.postUpdates`, async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 3000));
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
                     const postUpdatesTimes = Object.keys(subplebbit.postUpdates);
                     expect(postUpdatesTimes.length).to.equal(1);
                     const mfsPath = `/${commentToPurge.subplebbitAddress}/postUpdates/${postUpdatesTimes[0]}/${commentToPurge.postCid}/update`;
                     try {
-                        await remotePlebbitIpfs.clients.kuboRpcClients[
-                            Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
-                        ]._client.files.stat(mfsPath);
+                        const res =
+                            await remotePlebbitIpfs.clients.kuboRpcClients[
+                                Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
+                            ]._client.files.stat(mfsPath);
                         expect.fail("Should have thrown an error");
                     } catch (e) {
                         expect(e.message).to.equal("file does not exist");
@@ -201,6 +209,11 @@ getRemotePlebbitConfigs().map((config) => {
                         differentPlebbit.createComment({ cid: comment.cid })
                     )
                 );
+
+                for (const purgedComment of commentsWithDifferentPlebbit) {
+                    expect(purgedComment.depth).to.be.undefined; // comment depth is not defined
+                    expect(purgedComment.updatedAt).to.be.undefined; // comment update is not defined
+                }
                 await Promise.all(
                     commentsWithDifferentPlebbit.map(async (purgedComment) => {
                         const waitingRetryErrs = [];
