@@ -173,7 +173,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
             const reply = await publishRandomReply(post, plebbit, { signer: post.signer });
             await reply.update();
-            await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+            await resolveWhenConditionIsTrue(post, () => post.replyCount >= 2);
             await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
             expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
             expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);

@@ -9,7 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
-const subplebbitAddress = signers[0].address;
+const subplebbitAddress = signers[10].address;
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -78,7 +78,14 @@ getRemotePlebbitConfigs().map((config) => {
             await resolveWhenConditionIsTrue(recreatedComment, () => typeof recreatedComment.updatedAt === "number");
             await recreatedComment.stop();
 
-            for (const commentJson of [JSON.parse(JSON.stringify(commentToBeEdited)), JSON.parse(JSON.stringify(recreatedComment))]) {
+            for (const commentJson of [
+                JSON.parse(JSON.stringify(commentToBeEdited)),
+                JSON.parse(JSON.stringify(recreatedComment)),
+                { ...commentToBeEdited },
+                { ...recreatedComment },
+                commentToBeEdited,
+                recreatedComment
+            ]) {
                 expect(commentJson.content.startsWith("edit test")).to.be.true;
                 expect(commentJson.edit.content.startsWith("edit test")).to.be.true;
                 expect(commentJson.original.content).to.equal(originalContent);
@@ -111,8 +118,17 @@ getRemotePlebbitConfigs().map((config) => {
             const sub2 = await plebbit.createSubplebbit(sub1); // we're testing if posts from subplebbit are parsed correctly
             const sub3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(sub1)));
 
-            for (const sub of [sub1, sub2, sub3]) {
-                const subJson = JSON.parse(JSON.stringify(sub));
+            for (const subJson of [
+                sub1,
+                sub2,
+                sub3,
+                { ...sub1 },
+                { ...sub2 },
+                { ...sub3 },
+                JSON.parse(JSON.stringify(sub1)),
+                JSON.parse(JSON.stringify(sub2)),
+                JSON.parse(JSON.stringify(sub3))
+            ]) {
                 const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) =>
                     comment.edit?.reason?.startsWith("To test editing content")
                 );

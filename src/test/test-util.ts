@@ -318,6 +318,10 @@ type TestServerSubs = {
     mathCliSubWithNoMockedPubsub: string;
     subForPurge: string;
     subForRemove: string;
+    subForDelete: string;
+    subForChainProviders: string;
+    subForEditContent: string;
+    subForLocked: string;
 };
 
 export async function startOnlineSubplebbit() {
@@ -412,6 +416,32 @@ export async function startSubplebbits(props: {
     await subForDelete.start();
     await new Promise((resolve) => subForDelete.once("update", resolve));
 
+    const subForChainProviders = await createSubWithNoChallenge({ signer: props.signers[9] }, plebbit);
+    await subForChainProviders.start();
+    await new Promise((resolve) => subForChainProviders.once("update", resolve));
+
+    const subForEditContent = await createSubWithNoChallenge({ signer: props.signers[10] }, plebbit);
+    await subForEditContent.edit({
+        roles: {
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
+        }
+    });
+    await subForEditContent.start();
+    await new Promise((resolve) => subForEditContent.once("update", resolve));
+
+    const subForLocked = await createSubWithNoChallenge({ signer: props.signers[11] }, plebbit);
+    await subForLocked.edit({
+        roles: {
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
+        }
+    });
+    await subForLocked.start();
+    await new Promise((resolve) => subForLocked.once("update", resolve));
+
     return {
         onlineSub: onlineSub?.address,
         mathSub: mathSub.address,
@@ -420,7 +450,11 @@ export async function startSubplebbits(props: {
         NoPubsubResponseSub: subWithNoResponse.address,
         mathCliSubWithNoMockedPubsub: mathCliSubWithNoMockedPubsub.address,
         subForPurge: subForPurge.address,
-        subForRemove: subForRemove.address
+        subForRemove: subForRemove.address,
+        subForDelete: subForDelete.address,
+        subForChainProviders: subForChainProviders.address,
+        subForEditContent: subForEditContent.address,
+        subForLocked: subForLocked.address
     };
 }
 

@@ -10,6 +10,7 @@ import {
     mockPostToHaveSubplebbitWithNoPostUpdates,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
+    publishCommentWithDepth,
     getRemotePlebbitConfigs,
     findOrPublishCommentWithDepth,
     mockPostToReturnSpecificCommentUpdate,
@@ -150,7 +151,7 @@ getRemotePlebbitConfigs().map((config) => {
                 async () => {
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-                    const parentComment = await findOrPublishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
+                    const parentComment = await publishCommentWithDepth({ depth: replyDepth - 1, subplebbit });
                     expect(parentComment.depth).to.equal(replyDepth - 1);
                     await parentComment.update();
                     await resolveWhenConditionIsTrue(parentComment, () => typeof parentComment.updatedAt === "number");

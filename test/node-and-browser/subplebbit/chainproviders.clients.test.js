@@ -10,11 +10,13 @@ import {
     waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
 
+const subplebbitAddress = signers[9].address;
+
 describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
         const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true });
-        const mockSub = await plebbit.getSubplebbit(signers[0].address);
-        expect(Object.keys(mockSub.clients.chainProviders).length).to.be.greaterThanOrEqual(1)
+        const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
+        expect(Object.keys(mockSub.clients.chainProviders).length).to.be.greaterThanOrEqual(1);
         for (const chain of Object.keys(mockSub.clients.chainProviders)) {
             expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
             for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
@@ -26,7 +28,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
     it(`Correct order of chainProviders state when sub pages has comments with author.address as domain - uncached`, async () => {
         const plebbit = await mockPlebbitV2({ stubStorage: true, plebbitOptions: { validatePages: false }, remotePlebbit: true }); // no storage so it wouldn't be cached
 
-        const mockPost = await publishRandomPost(signers[0].address, plebbit, {
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {
             author: { address: "plebbit.eth" },
             signer: signers[6]
         });
@@ -70,7 +72,7 @@ describeSkipIfRpc(`subplebbit.clients.chainProviders`, async () => {
             remotePlebbit: true,
             mockResolve: true
         }); // using different plebbit to it wouldn't be cached
-        const sub = await differentPlebbit.createSubplebbit({ address: signers[0].address });
+        const sub = await differentPlebbit.createSubplebbit({ address: subplebbitAddress });
 
         await mockCacheOfTextRecord({
             plebbit: sub._plebbit,
