@@ -1595,7 +1595,7 @@ export async function publishCommentWithDepth({ depth, subplebbit }: { depth: nu
     if (depth === 0) {
         return publishRandomPost(subplebbit.address, subplebbit._plebbit);
     } else {
-        const parentComment = await findOrPublishCommentWithDepth({ depth: depth - 1, subplebbit });
+        const parentComment = await publishCommentWithDepth({ depth: depth - 1, subplebbit });
         let curComment = await publishRandomReply(parentComment as CommentIpfsWithCidDefined, subplebbit._plebbit, {});
         if (curComment.depth === depth) return curComment;
         while (curComment.depth! < depth) {
