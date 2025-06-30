@@ -138,16 +138,62 @@ const startIpfsNode = async (nodeArgs) => {
 
     const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
     console.log(ipfsCmd);
-    const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
-    ipfsProcess.stderr.on("data", console.error);
+
+    // 🔧 ENHANCED: Create environment for IPFS process, inheriting from process.env
+    const debugEnv = {
+        ...process.env, // Inherit ALL environment variables from parent process
+        IPFS_PATH: nodeArgs.dir,
+        // Only override GOLOG_TRACING_FILE if it contains {NODE} placeholder
+        ...(process.env.GOLOG_FILE?.includes("{NODE}") && {
+            GOLOG_FILE: process.env.GOLOG_FILE.replace("{NODE}", path.basename(nodeArgs.dir))
+        })
+    };
+
+    // 🔧 ENHANCED: Create log files for each IPFS node if debug logging is enabled
+    const nodeBaseName = path.basename(nodeArgs.dir);
+    let stdoutStream, stderrStream;
+
+    if (process.env.IPFS_LOGGING === "debug" || process.env.GOLOG_LOG_LEVEL === "debug") {
+        const logTimestamp = process.env.KUBO_LOG_TIMESTAMP || new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const stdoutLogFile = `kubo_${nodeBaseName}_stdout_${logTimestamp}.log`;
+        const stderrLogFile = `kubo_${nodeBaseName}_stderr_${logTimestamp}.log`;
+
+        console.log(`📝 Kubo debug logs for ${nodeBaseName}:`);
+        console.log(`   📄 stdout: ${stdoutLogFile}`);
+        console.log(`   📄 stderr: ${stderrLogFile}`);
+        if (debugEnv.GOLOG_FILE) {
+            console.log(`   📄 log: ${debugEnv.GOLOG_FILE}`);
+        }
+
+        stdoutStream = fs.createWriteStream(stdoutLogFile, { flags: "a" });
+        stderrStream = fs.createWriteStream(stderrLogFile, { flags: "a" });
+    }
+
+    const ipfsProcess = exec(ipfsCmd, { env: debugEnv });
+
+    // 🔧 ENHANCED: Stream logs to both files and console (if debug logging enabled)
+    ipfsProcess.stdout.on("data", (data) => {
+        console.log(`[${nodeBaseName}] ${data}`);
+        if (stdoutStream) stdoutStream.write(data);
+    });
+
+    ipfsProcess.stderr.on("data", (data) => {
+        console.error(`[${nodeBaseName}] ${data}`);
+        if (stderrStream) stderrStream.write(data);
+    });
+
     ipfsProcess.stdin.on("data", console.log);
-    ipfsProcess.stdout.on("data", console.log);
     ipfsProcess.on("error", console.error);
     ipfsProcess.on("exit", () => {
         console.error(`${ipfsPath} process with dir ${path.basename(nodeArgs.dir)} with pid ${ipfsProcess.pid} exited`);
+        // Close log streams if they exist
+        if (stdoutStream) stdoutStream.end();
+        if (stderrStream) stderrStream.end();
     });
     process.on("exit", () => {
         exec(`kill ${ipfsProcess.pid + 1}`);
+        if (stdoutStream) stdoutStream.end();
+        if (stderrStream) stderrStream.end();
     });
 
     const ipfsDaemonIsReady = () =>
