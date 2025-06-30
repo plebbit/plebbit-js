@@ -9,7 +9,7 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient } from "kubo-rpc-client";
+import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesCpOptions } from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -586,4 +586,56 @@ const mfsRemoveQueue = new MfsRemoveQueue();
 
 export async function removeMfsFilesSafely(kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string], paths: string[]) {
     return mfsRemoveQueue.add(kuboRpcClient, paths);
+}
+
+export async function ipfsCpWithRmIfFails({
+    kuboRpcClient,
+    log,
+    src,
+    dest,
+    inputNumOfRetries,
+    options
+}: {
+    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
+    log: Logger;
+    src: string;
+    dest: string;
+    inputNumOfRetries?: number;
+    options?: FilesCpOptions;
+}) {
+    const numOfRetries = inputNumOfRetries ?? 3;
+
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 1000
+        });
+
+        const filesCpWithRmIfFails = async (src: string, dest: string) => {
+            try {
+                await kuboRpcClient._client.files.cp(src, dest, options);
+            } catch (error) {
+                if (error instanceof Error && error.message.includes("directory already has entry by that name")) {
+                    log(`Directory already has entry by that name. Removing file and retrying cp operation for path ${dest}`);
+                    await removeMfsFilesSafely(kuboRpcClient, [dest]);
+                    await filesCpWithRmIfFails(src, dest);
+                } else throw error;
+            }
+        };
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                await filesCpWithRmIfFails(src, dest);
+
+                resolve(1);
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to copy paths to kubo node:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
 }

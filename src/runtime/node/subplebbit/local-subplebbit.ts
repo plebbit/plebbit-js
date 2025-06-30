@@ -34,7 +34,8 @@ import {
     timestamp,
     getErrorCodeFromMessage,
     removeMfsFilesSafely,
-    removeBlocksFromKuboNode
+    removeBlocksFromKuboNode,
+    ipfsCpWithRmIfFails
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -212,7 +213,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         | "challengeanswer"
     > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _pendingEditProps: Partial<ParsedSubplebbitEditOptions & { editId: string }>[] = [];
-    private _forceBlockRm: boolean = false;
+    private _blocksToRm: string[] = [];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -651,17 +652,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
-        const cidsToRemove = Array.from(this._cidsToUnPin);
         await this._unpinStaleCids();
-        if (this._forceBlockRm) {
+        if (this._blocksToRm.length > 0) {
             const removedBlocks = await removeBlocksFromKuboNode({
                 ipfsClient: this._clientsManager.getDefaultKuboRpcClient()._client,
                 log,
-                cids: cidsToRemove,
+                cids: this._blocksToRm,
                 options: { force: true }
             });
             log("Removed blocks", removedBlocks, "from kubo node");
-            this._forceBlockRm = false;
+            this._blocksToRm = [];
         }
         if (this.updateCid) this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
         this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
@@ -832,11 +832,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
             purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
-
-            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number")
-                this._mfsPathsToRemove.add(
-                    this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket)
-                );
+            purgedCids.forEach((cid) => this._blocksToRm.push(cid));
 
             log(
                 "Purged comment",
@@ -849,7 +845,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (commentToPurge.parentCid) {
                 this._dbHandler.forceUpdateOnAllCommentsWithCid([commentToPurge.parentCid]);
             }
-            this._forceBlockRm = true;
+            this._subplebbitUpdateTrigger = true;
+            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
+                const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
+                    commentToPurge,
+                    commentUpdateToPurge.postUpdatesBucket
+                );
+                this._mfsPathsToRemove.add(localCommentUpdatePath);
+                try {
+                    await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), [localCommentUpdatePath]);
+                    this._mfsPathsToRemove.delete(localCommentUpdatePath);
+                } catch (e) {
+                    log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
+                }
+            }
         }
         this._dbHandler.insertCommentModerations([modTableRow]);
         log("Inserted comment moderation", "of comment", modTableRow.commentCid, "into db", "with props", modTableRow);
@@ -2047,7 +2056,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         );
 
         commentUpdatesOfPosts.forEach((newPostUpdate) => this._mfsPathsToRemove.add(newPostUpdate.localMfsPath)); // need to make sure we don't cp to path without it not existing to begin with
-        const removedMfsPaths = await this._rmUnneededMfsPaths();
+        const removedMfsPaths: string[] = [];
 
         // Create a concurrency limiter with a limit of 50
         const limit = pLimit(50);
@@ -2060,10 +2069,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
 
+            removedMfsPaths.push(commentUpdateFilePath);
+
             const copyPromise = limit(() =>
-                kuboRpc._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
-                    parents: true,
-                    flush: false
+                ipfsCpWithRmIfFails({
+                    kuboRpcClient: kuboRpc,
+                    log,
+                    src: "/ipfs/" + commentUpdateFile.cid.toString(),
+                    dest: commentUpdateFilePath,
+                    options: { parents: true, flush: false }
                 })
             );
 
