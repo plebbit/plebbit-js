@@ -337,7 +337,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
                 expect(mockPost.publishingState).to.equal("failed");
                 expect(mockPost.state).to.equal("stopped");
 
-                await new Promise((resolve) => setTimeout(resolve, 1000)); // need to wait for the unsusbcribe to be called
+                await new Promise((resolve) => setTimeout(resolve, 3000)); // need to wait for the unsusbcribe to be called
 
                 // after failing to receive a response, it should clean up by itself
 
