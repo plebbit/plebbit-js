@@ -70,4 +70,74 @@ signers[9] = {
     type: "ed25519"
 };
 
+signers[10] = {
+    privateKey: "kzWYGiH/qKluqyrlDJoF/kUsn4mWAnpytqVaxrrNZYI",
+    publicKey: "Ntb86vc7YwjfigSmZJu2Qceuo84GpRkzNG3vAY6thLQ",
+    address: "12D3KooWDWSKZsDvHv11eCLy6RVXg59Y3RGwR4JzqoRefjGPbN6F",
+    type: "ed25519"
+};
+
+signers[11] = {
+    privateKey: "qzXlPZH/iyqJQNr03gYZc7uuY+jFHm+K6Nssnju2gf0",
+    publicKey: "jSLNG27Gti+mn8ObMJHLC9EoP7/xvGiDyZPV1brYTaA",
+    address: "12D3KooWKKJS3Mnp2M3ndPjHTzFFyrPvqsPQsjkNeAwqitVLPLjH",
+    type: "ed25519"
+};
+
+signers[12] = {
+    privateKey: "GZVaNoi8L2MbGNtNvas0DYhD18ud90rFv2GIMlIk6L0",
+    publicKey: "x0fpBqN7WnGN1usKBRCrxIJ5nbgT2ZcNsP5PKnILFnU",
+    address: "12D3KooWPEGu4gD7GaCqPJCZXt2L8oYx7s3josNoRL1G5Qk7KqJC",
+    type: "ed25519"
+};
+
+signers[13] = {
+    privateKey: "X/Czd98Tst4SOI/aXtswx/nC7Lga3hYrdGWEejl308g",
+    publicKey: "eDVEk9cZ30L+5iSteinaM/qDKwh0eDmtK4J7QkY7kVk",
+    address: "12D3KooWHucCitsTqJJkGr7KKTJVKEgLn3H6x7o6MghHpwgTdfVA",
+    type: "ed25519"
+};
+
+signers[14] = {
+    privateKey: "OuywXJipYWjOyqMH1WVDvjCrLgjTHgj0TwsMMr8n71Q",
+    publicKey: "WWwIti/KiRUeUSMTkNH5KL058c6sI8UgnJGMUSAMWto",
+    address: "12D3KooWFqRzwRprSHGM7b3izHktZfzJ93FCL6cZX4ZyZPBymhzq",
+    type: "ed25519"
+};
+
+signers[15] = {
+    privateKey: "AHtI9i0h/FukBFp02bFE4fISd83fTby8o52Pax2Gjbs",
+    publicKey: "UgrGUtrvGpfecnlRVDnAaf9OqRGR2G8tSqooh5/2G9w",
+    address: "12D3KooWFLd8SyX7uRiGAL22DGsbj7UdCV6kAwpVzxcBu8JAcTHm",
+    type: "ed25519"
+};
+
+signers[16] = {
+    privateKey: "9jSv4sO9XUtghENqVVmRPZFV5H2J87avmznxwUURVck",
+    publicKey: "+yZHTYJXb284anUQJTCHO44oI8FRp31Vb3Ypf5GDJYY",
+    address: "12D3KooWSikMXNGxZmdpwm8uFuVs7u72tMkTDuJSrZ3qvd3Ra2qT",
+    type: "ed25519"
+};
+
+signers[17] = {
+    privateKey: "3ycTs0GJ79Nq/J3VLzXL3UPqAWaE2wzQab2u6KHg1yQ",
+    publicKey: "d/lMCa841oBqqeUhk9++70dWZi2ceBH3iUbw13gw3g4",
+    address: "12D3KooWHthAVH2aSzo3VtgfZ6vYFqwW42NvLo9rBmfc3nGXJHRw",
+    type: "ed25519"
+};
+
+signers[18] = {
+    privateKey: "mECC+meMHRM35uazenGUqP7WrERymV1RCKb3i41e5A0",
+    publicKey: "F1EVNfrNECFoA0XCwGU2AsMLODhWb8XqxppBJBLMOdI",
+    address: "12D3KooWBPPFoFwq6b3huHUv5w1HQV8LcYkugSHng6u5VYzYgwDT",
+    type: "ed25519"
+};
+
+signers[19] = {
+    privateKey: "9heYHq8rMU4f0e8MdFCKCK1td4ROBcz6+CV5ad2U7lA",
+    publicKey: "nWulPXMkSrJDQdpQIjkMcZ7uerOfKIpHUeo5d3uvbWA",
+    address: "12D3KooWLQsNy5qEMnb6vMEqoddq2UnRanMLTFF3qrd9aZGwd8aB",
+    type: "ed25519"
+};
+
 export default signers;
