@@ -4,11 +4,10 @@
     "type": "module",
     "scripts": {
         "build": "npm run clean && run-s build:node build:browser",
-        "build:watch": "concurrently --raw \"tsc --project config/tsconfig.json --watch\" \"node config/build-browser --watch\"",
         "build:node": "tsc --project config/tsconfig.json",
         "build:node:watch": "tsc --project config/tsconfig.json --watch",
         "build:browser": "node config/build-browser",
-        "build:browser:watch": "node config/build-browser --watch --debug",
+        "build:browser:watch": "node config/build-browser --watch",
         "test": "run-s test:node test:browser:chrome test:browser:firefox",
         "test:node": "mocha --forbid-only --bail --recursive --config config/.mocharc.json test/",
         "test:node:rpc": "USE_RPC=1 PLEBBIT_CONFIGS=remote-plebbit-rpc mocha --forbid-only --exit --bail --recursive --config config/.mocharc.json test/node test/node-and-browser",
