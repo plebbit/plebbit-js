@@ -241,9 +241,6 @@ export function findCommentInPageInstance(
     if (!pageInstance) throw Error("should define page ipfs");
     if (!targetCommentCid) throw Error("should define target comment cid");
 
-    const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCommentCid];
-    if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
-
     for (const page of Object.values(pageInstance.pages))
         if (page) for (const pageComment of page.comments) if (pageComment.cid === targetCommentCid) return pageComment.raw;
 
@@ -280,8 +277,6 @@ export function findCommentInPageInstanceRecursively(
     if (!pageInstance) throw Error("should define page instance");
     if (!targetCid) throw Error("should define target comment cid");
 
-    const commentInLoadedUniqueComment = pageInstance._loadedUniqueCommentFromGetPage[targetCid];
-    if (commentInLoadedUniqueComment) return commentInLoadedUniqueComment;
     for (const preloadedPage of Object.values(pageInstance.pages)) {
         if (!preloadedPage) continue;
 
