@@ -175,7 +175,21 @@ getRemotePlebbitConfigs().map((config) => {
                 await plebbit.destroy();
             });
 
-            it(`Purged post should not appear in subplebbit.postUpdates`);
+            if (commentDepth === 0)
+                it(`Purged post should not appear in subplebbit.postUpdates`, async () => {
+                    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                    const postUpdatesTimes = Object.keys(subplebbit.postUpdates);
+                    expect(postUpdatesTimes.length).to.equal(1);
+                    const mfsPath = `/${commentToPurge.subplebbitAddress}/postUpdates/${postUpdatesTimes[0]}/${commentToPurge.postCid}/update`;
+                    try {
+                        await remotePlebbitIpfs.clients.kuboRpcClients[
+                            Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
+                        ]._client.files.stat(mfsPath);
+                        expect.fail("Should have thrown an error");
+                    } catch (e) {
+                        expect(e.message).to.equal("file does not exist");
+                    }
+                });
 
             it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
                 const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
