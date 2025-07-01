@@ -169,12 +169,35 @@ getRemotePlebbitConfigs().map((config) => {
 
                 await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
+                const purgedPostInRemoteSubplebbitPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
+
+                console.log(
+                    "Loaded remote subplebbit with updatedAt",
+                    sub.updatedAt,
+                    "does it have purged post in page?",
+                    !!purgedPostInRemoteSubplebbitPage
+                );
+
+                const intervalId = setInterval(async () => {
+                    const subplebbitLocalNode = await remotePlebbitIpfs.getSubplebbit(subplebbitAddress);
+                    const purgedPostInLocalNode = findCommentInPageInstanceRecursively(subplebbitLocalNode.posts, commentToPurge.cid);
+
+                    console.log(
+                        "subplebbitLocalNode",
+                        subplebbitLocalNode.updatedAt,
+                        "does it have purged post in page?",
+                        !!purgedPostInLocalNode
+                    );
+                }, 1000);
+
                 expect(sub.posts.pageCids).to.deep.equal({}); // let's assume sub has no page cids
 
                 await resolveWhenConditionIsTrue(sub, () => {
                     const purgedPostInPage = findCommentInPageInstanceRecursively(sub.posts, commentToPurge.cid);
                     return purgedPostInPage === undefined; // if we can't find it then it's purged
                 });
+
+                clearInterval(intervalId);
 
                 await sub.stop();
 
@@ -189,10 +212,9 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(postUpdatesTimes.length).to.equal(1);
                     const mfsPath = `/${commentToPurge.subplebbitAddress}/postUpdates/${postUpdatesTimes[0]}/${commentToPurge.postCid}/update`;
                     try {
-                        const res =
-                            await remotePlebbitIpfs.clients.kuboRpcClients[
-                                Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
-                            ]._client.files.stat(mfsPath);
+                        await remotePlebbitIpfs.clients.kuboRpcClients[
+                            Object.keys(remotePlebbitIpfs.clients.kuboRpcClients)[0]
+                        ]._client.files.stat(mfsPath);
                         expect.fail("Should have thrown an error");
                     } catch (e) {
                         expect(e.message).to.equal("file does not exist");
