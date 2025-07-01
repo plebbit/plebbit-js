@@ -12,9 +12,9 @@ export class CommentClientsManager extends PublicationClientsManager {
     constructor(comment) {
         super(comment);
         this._postForUpdating = undefined;
-        this._parentCommentCidsAlreadyLoaded = new Set();
-        this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
         this._comment = comment;
+        this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
+        this._parentFirstPageCidsAlreadyLoaded = new Set();
         hideClassPrivateProps(this);
     }
     _initKuboRpcClients() {
@@ -391,10 +391,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         let updateFromPost;
         if (post)
             updateFromPost = findCommentInPageInstanceRecursively(post.replies, this._comment.cid);
+        const parent = this._comment.parentCid
+            ? opts?.parent || this._plebbit._updatingComments[this._comment.parentCid]
+            : undefined;
         let updateFromParent;
-        if (this._comment.parentCid) {
-            const parentCommentReplyPages = this._plebbit._updatingComments[this._comment.parentCid]?.replies;
-            updateFromParent = parentCommentReplyPages && findCommentInPageInstance(parentCommentReplyPages, this._comment.cid);
+        if (parent) {
+            updateFromParent = parent.replies && findCommentInPageInstance(parent.replies, this._comment.cid);
         }
         const updates = [updateFromSub, updateFromPost, updateFromParent].filter((update) => !!update);
         const latestUpdate = updates.sort((a, b) => b.commentUpdate.updatedAt - a.commentUpdate.updatedAt)[0];
@@ -474,6 +476,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         await resolveWhenPredicateIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
         if (startedUpdatingParentComment)
             await parentCommentInstance.stop();
+        const replyInPreloadedParentPages = parentCommentInstance.replies && findCommentInPageInstance(parentCommentInstance.replies, this._comment.cid);
+        if (replyInPreloadedParentPages &&
+            replyInPreloadedParentPages.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0)) {
+            this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: replyInPreloadedParentPages.commentUpdate }, subplebbitWithSignature, log);
+            return;
+        }
         if (Object.keys(parentCommentInstance.replies.pageCids).length === 0) {
             log("Parent comment", this._comment.parentCid, "of reply", this._comment.cid, "does not have any pageCids, will wait until another update event by post");
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
@@ -483,7 +491,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         let curPageCid = parentCommentInstance.replies.pageCids[pageSortName];
         if (!curPageCid)
             throw Error("Parent comment does not have any new or old pages");
-        if (this._parentCommentCidsAlreadyLoaded.has(curPageCid)) {
+        if (this._parentFirstPageCidsAlreadyLoaded.has(curPageCid)) {
+            log(`Reply`, this._comment.cid, `:SKIPPING: Page CID ${curPageCid} already loaded parent page cid`);
             // we already loaded this page before and have its comment update, no need to do anything
             return;
         }
@@ -491,11 +500,9 @@ export class CommentClientsManager extends PublicationClientsManager {
         let newCommentUpdate;
         const pageCidsSearchedForNewUpdate = [];
         while (curPageCid && !newCommentUpdate) {
-            // TODO can optimize this by using _loadedUniqueCommentFromGetPage
-            // TODO need to use _findCommentInPagesOfUpdatingCommentsOrSubplebbit
-            const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid); // should update _loadedUniqueCommentFromGetPage
+            const pageLoaded = await parentCommentInstance.replies.getPage(curPageCid);
             if (pageCidsSearchedForNewUpdate.length === 0)
-                this._parentCommentCidsAlreadyLoaded.add(curPageCid);
+                this._parentFirstPageCidsAlreadyLoaded.add(curPageCid);
             pageCidsSearchedForNewUpdate.push(curPageCid);
             const replyWithinParentPage = findCommentInParsedPages(pageLoaded, this._comment.cid)?.raw;
             const replyWithinUpdatingPages = this._findCommentInPagesOfUpdatingCommentsOrSubplebbit({ post: parentCommentInstance });
@@ -510,6 +517,14 @@ export class CommentClientsManager extends PublicationClientsManager {
                 const isNewUpdate = replyWithinUpdatingPages.commentUpdate.updatedAt > (this._comment.raw?.commentUpdate?.updatedAt || 0);
                 if (isNewUpdate)
                     newCommentUpdate = replyWithinUpdatingPages;
+            }
+            if (pageSortName === "new" && pageLoaded.comments.find((comment) => comment.timestamp < this._comment.timestamp)) {
+                log("Reply", this._comment.cid, "we found a comment in the page that is older than our reply, stopping search for new comment update");
+                break;
+            }
+            else if (pageSortName === "old" && pageLoaded.comments.find((comment) => comment.timestamp > this._comment.timestamp)) {
+                log("Reply", this._comment.cid, "we found a comment in the page that is newer than our reply, stopping search for old comment update");
+                break;
             }
             curPageCid = pageLoaded.nextCid;
         }
@@ -607,6 +622,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (!this._comment.cid)
             throw Error("comment.cid should be defined");
         const log = Logger("plebbit-js:comment:update:handleUpdateEventFromPost");
+        log("Received update event from post", postInstance.cid, "for reply", this._comment.cid, "with depth", this._comment.depth);
         if (Object.keys(postInstance.replies.pageCids).length === 0 && Object.keys(postInstance.replies.pages).length === 0) {
             log("Post", postInstance.cid, "has no replies, therefore reply", this._comment.cid, "will wait until another update event by post");
             this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
@@ -621,16 +637,11 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._useLoadedCommentUpdateIfNewInfo({ commentUpdate: replyInPage.commentUpdate }, repliesSubplebbit, log);
             return; // we found an update from pages, no need to do anything else
         }
-        if (Object.keys(postInstance.replies.pageCids).length === 0) {
-            log("Post", postInstance.cid, "has no pageCids and we couldn't find any reply commentUpdate in its preloaded pages, therefore reply", this._comment.cid, "will wait until another update event by post");
-            this._comment._setUpdatingStateWithEmissionIfNewState("waiting-retry");
-            return;
-        }
         if (this._fetchingUpdateForReplyUsingPageCidsPromise)
             await this._fetchingUpdateForReplyUsingPageCidsPromise;
         this._fetchingUpdateForReplyUsingPageCidsPromise = this.usePageCidsOfParentToFetchCommentUpdateForReply(postInstance)
             .catch((error) => {
-            log.error("Failed to fetch reply commentUpdate update from post flat pages", error);
+            log.error("Failed to fetch reply commentUpdate update from parent pages", error);
             this._comment._changeCommentStateEmitEventEmitStateChangeEvent({
                 newUpdatingState: "failed",
                 event: { name: "error", args: [error] }
@@ -640,6 +651,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
         });
         await this._fetchingUpdateForReplyUsingPageCidsPromise;
+        this._fetchingUpdateForReplyUsingPageCidsPromise = undefined;
     }
     async _createPostInstanceWithStateTranslation() {
         // this function will be for translating between the states of the post and its clients to reply states
@@ -740,7 +752,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         // only stop if it's mirroring the actual comment instance updating at plebbit._updatingComments
         if (this._postForUpdating.comment._updatingCommentInstance)
             await this._postForUpdating.comment.stop();
-        this._parentCommentCidsAlreadyLoaded.clear();
+        this._parentFirstPageCidsAlreadyLoaded.clear();
         this._postForUpdating = undefined;
     }
 }

@@ -37,7 +37,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     };
     private _postForUpdating?;
     private _comment;
-    private _parentCommentCidsAlreadyLoaded;
+    private _parentFirstPageCidsAlreadyLoaded;
     private _fetchingUpdateForReplyUsingPageCidsPromise?;
     constructor(comment: Comment);
     protected _initKuboRpcClients(): void;
@@ -68,6 +68,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     _findCommentInPagesOfUpdatingCommentsOrSubplebbit(opts?: {
         sub?: RemoteSubplebbit;
         post?: Comment;
+        parent?: Comment;
     }): PageIpfs["comments"][0] | undefined;
     handleUpdateEventFromSub(sub: RemoteSubplebbit): Promise<void>;
     _chooseWhichPagesBasedOnParentAndReplyTimestamp(parentCommentTimestamp: number): "old" | "new";

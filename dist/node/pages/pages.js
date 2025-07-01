@@ -2,21 +2,17 @@ import { parsePageIpfs } from "./util.js";
 import { verifyPage } from "../signer/signatures.js";
 import { SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
-import * as remeda from "remeda";
 import { hideClassPrivateProps } from "../util.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 export class BasePages {
     constructor(props) {
         this._parentComment = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
-        this._loadedUniqueCommentFromGetPage = {}; // comment cid => CommentInPageIpfs. Will be reset on stop or when we update the record of pages cause of new subplebbit update or CommentUpdate
         this._initClientsManager(props.plebbit);
         this.updateProps(props);
         hideClassPrivateProps(this);
     }
     updateProps(props) {
         this.pages = props.pages;
-        if (!remeda.isDeepEqual(this.pageCids, props.pageCids))
-            this._loadedUniqueCommentFromGetPage = {};
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
         if (this.pageCids) {
@@ -34,7 +30,6 @@ export class BasePages {
         // Called when the sub changes address and needs to remove all the comments with the old subplebbit address
         this.pageCids = {};
         this.pages = {};
-        this._loadedUniqueCommentFromGetPage = {};
     }
     async _validatePage(pageIpfs, pageCid) {
         throw Error("should be implemented");
@@ -45,21 +40,11 @@ export class BasePages {
             await this._validatePage(pageIpfs, pageCid);
         return pageIpfs;
     }
-    _updateLoadedUniqueCommentFromGetPage(pageIpfs) {
-        pageIpfs.comments.forEach((comment) => {
-            this._loadedUniqueCommentFromGetPage[comment.commentUpdate.cid] = comment;
-            if (comment.commentUpdate.replies)
-                for (const preloadedPage of Object.values(comment.commentUpdate.replies.pages)) {
-                    return this._updateLoadedUniqueCommentFromGetPage(preloadedPage);
-                }
-        });
-    }
     async getPage(pageCid) {
         if (!this._subplebbit?.address)
             throw Error("Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const pageIpfs = await this._fetchAndVerifyPage(parsedCid);
-        this._updateLoadedUniqueCommentFromGetPage(pageIpfs);
         return parsePageIpfs(pageIpfs);
     }
     // method below will be present in both subplebbit.posts and comment.replies
@@ -69,9 +54,7 @@ export class BasePages {
         const pageIpfs = { comments: page.comments.map((comment) => ("comment" in comment ? comment : comment.raw)) };
         await this._validatePage(pageIpfs);
     }
-    _stop() {
-        this._loadedUniqueCommentFromGetPage = {};
-    }
+    _stop() { }
 }
 export class RepliesPages extends BasePages {
     constructor(props) {

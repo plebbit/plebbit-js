@@ -66,7 +66,7 @@ export class Plebbit extends PlebbitTypedEmitter {
         this.libp2pJsClientsOptions = this.parsedPlebbitOptions.libp2pJsClientsOptions;
         if (this.libp2pJsClientsOptions && (this.kuboRpcClientsOptions?.length || this.pubsubKuboRpcClientsOptions?.length))
             throw new PlebbitError("ERR_CAN_NOT_HAVE_BOTH_KUBO_AND_LIBP2P_JS_CLIENTS_DEFINED", {
-                libp2pJsClientOptions: this.libp2pJsClientsOptions,
+                libp2pJsClientsOptions: this.libp2pJsClientsOptions,
                 kuboRpcClientsOptions: this.kuboRpcClientsOptions,
                 pubsubKuboRpcClientsOptions: this.pubsubKuboRpcClientsOptions
             });
@@ -726,6 +726,17 @@ export class Plebbit extends PlebbitTypedEmitter {
         for (const storage of Object.values(this._storageLRUs))
             await storage.destroy();
         Object.values(this._memCaches).forEach((cache) => cache.clear());
+        for (const client of Object.values(this.clients.pubsubKuboRpcClients)) {
+            try {
+                const subscribedPubsubTopics = await client._client.pubsub.ls();
+                for (const topic of subscribedPubsubTopics) {
+                    await client._client.pubsub.unsubscribe(topic);
+                }
+            }
+            catch (e) {
+                console.error("Error unsubscribing from pubsub topics", e);
+            }
+        }
         await Promise.all(Object.values(this.clients.libp2pJsClients).map((client) => client.heliaWithKuboRpcClientFunctions.stop()));
         // Get all methods on the instance and override them to throw errors if used after destruction
         Object.getOwnPropertyNames(Object.getPrototypeOf(this))

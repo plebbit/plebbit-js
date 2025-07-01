@@ -1,37 +1,9 @@
 import { pubsub as ipnsPubsubRouter } from "@helia/ipns/routing";
 import { CustomProgressEvent } from "progress-events";
 import Logger from "@plebbit/plebbit-logger";
-import { CID } from "multiformats/cid";
-import { peerIdFromString } from "@libp2p/peer-id";
 import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey } from "../util.js";
-import { PlebbitError } from "../plebbit-error.js";
+import { connectToPeersProvidingCid } from "./util.js";
 const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
-const maxPeersToDialOverPubsub = 2;
-async function addPubsubPeersFromDelegatedRouters(helia, ipnsPeersCid, options) {
-    const pubsubPeers = [];
-    const peerDialToError = {};
-    for await (const ipnsPubsubPeer of helia.libp2p.contentRouting.findProviders(CID.parse(ipnsPeersCid), options)) {
-        try {
-            await helia.libp2p.dial(ipnsPubsubPeer.id, options); // will be a no-op if we're already connected
-            log.trace("Succeesfully dialed", ipnsPubsubPeer.id.toString(), "To be able to connect for IPNS-OverPubsub", ipnsPeersCid);
-            // if it succeeds, means we can connect to this peer
-            pubsubPeers.push(peerIdFromString(ipnsPubsubPeer.id.toString()));
-            if (pubsubPeers.length >= maxPeersToDialOverPubsub)
-                break;
-        }
-        catch (e) {
-            peerDialToError[ipnsPubsubPeer.id.toString()] = e;
-            log.trace("Failed to dial IPNS-Over-Pubsub peer", ipnsPubsubPeer.id.toString(), "Due to error", e);
-        }
-    }
-    if (pubsubPeers.length === 0)
-        throw new PlebbitError("ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS", {
-            ipnsPeersCid,
-            peerDialToError
-        });
-    else
-        return pubsubPeers;
-}
 export function createPubsubRouterWithFetch(helia) {
     const originalRouter = ipnsPubsubRouter(helia);
     const libp2pFetchService = helia.libp2p.services.fetch;
@@ -45,14 +17,21 @@ export function createPubsubRouterWithFetch(helia) {
                 // add peers if if we don't have any peers connected to this topic
                 let peersFromDelegatedRouters;
                 if (originalRouterPubsub.getSubscribers(topic).length === 0)
-                    peersFromDelegatedRouters = await addPubsubPeersFromDelegatedRouters(helia, pubsubTopicToDhtKey(topic), options);
+                    peersFromDelegatedRouters = await connectToPeersProvidingCid({
+                        helia,
+                        contentCid: pubsubTopicToDhtKey(topic),
+                        maxPeers: 2,
+                        options,
+                        log: Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch:connectToPeersProvidingCid")
+                    });
                 const peersToFetchFrom = peersFromDelegatedRouters || originalRouterPubsub.getSubscribers(topic);
                 if (!peersToFetchFrom?.length)
                     throw Error("Failed to detect peers for pubsub topic");
                 // call @libp2p/fetch here,
                 for (const pubsubPeer of peersToFetchFrom) {
+                    const peerId = "id" in pubsubPeer ? pubsubPeer.remotePeer : pubsubPeer;
                     try {
-                        ipnsRecordFromFetch = await libp2pFetchService.fetch(pubsubPeer, routingKey, options);
+                        ipnsRecordFromFetch = await libp2pFetchService.fetch(peerId, routingKey, options);
                         if (!ipnsRecordFromFetch)
                             throw Error("Fetch for IPNS-Over-Pubsub returned undefined");
                         log("Fetched IPNS record of topic", topic, "from peer", pubsubPeer.toString());

@@ -38,6 +38,12 @@ type TestServerSubs = {
     mathSub: string;
     NoPubsubResponseSub: string;
     mathCliSubWithNoMockedPubsub: string;
+    subForPurge: string;
+    subForRemove: string;
+    subForDelete: string;
+    subForChainProviders: string;
+    subForEditContent: string;
+    subForLocked: string;
 };
 export declare function startOnlineSubplebbit(): Promise<LocalSubplebbit | RpcLocalSubplebbit>;
 export declare function startSubplebbits(props: {
@@ -479,6 +485,14 @@ export declare function mockPlebbitToReturnSpecificSubplebbit(plebbit: Plebbit, 
 export declare function mockPlebbitToTimeoutFetchingCid(plebbit: Plebbit): void;
 export declare function mockCommentToNotUsePagesForUpdates(comment: Comment): void;
 export declare function forceSubplebbitToGenerateAllRepliesPages(comment: Comment): Promise<void>;
+export declare function findOrPublishCommentWithDepth({ depth, subplebbit }: {
+    depth: number;
+    subplebbit: RemoteSubplebbit;
+}): Promise<Comment>;
+export declare function publishCommentWithDepth({ depth, subplebbit }: {
+    depth: number;
+    subplebbit: RemoteSubplebbit;
+}): Promise<Comment>;
 export declare function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit): Promise<void>;
 export declare function findOrGeneratePostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson | Comment>;
 export declare function findOrGenerateReplyUnderPostWithMultiplePages(subplebbit: RemoteSubplebbit): Promise<CommentWithinPageJson | Comment>;

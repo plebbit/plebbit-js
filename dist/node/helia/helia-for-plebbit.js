@@ -14,6 +14,8 @@ import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
 import { PlebbitError } from "../plebbit-error.js";
 import { Libp2pJsClient } from "./libp2pjsClient.js";
+import { sha256 } from "multiformats/hashes/sha2";
+import { connectToPeersProvidingCid, waitForTopicPeers } from "./util.js";
 const log = Logger("plebbit-js:libp2p-js");
 const libp2pJsClients = {}; // key => plebbit.clients.libp2pJsClients[key]
 function getDelegatedRoutingFields(routers) {
@@ -36,16 +38,17 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
     }
     const mergedHeliaInit = {
         libp2p: {
-            addresses: { listen: [], ...plebbitOptions.libp2pOptions?.addresses }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
+            // for now we're overwriting addresses
+            addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
+            peerDiscovery: undefined,
+            ...plebbitOptions.libp2pOptions,
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
                 fetch: libp2pFetch(),
                 ...getDelegatedRoutingFields(plebbitOptions.httpRoutersOptions),
                 ...plebbitOptions.libp2pOptions?.services
-            },
-            peerDiscovery: undefined,
-            ...plebbitOptions.libp2pOptions
+            }
         },
         blockstore: new MemoryBlockstore(), // TODO use indexed db here
         blockBrokers: [bitswap()],
@@ -78,7 +81,6 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
                 helia
             });
     };
-    const ipnsPubsubAbortControllers = {}; // abort id => abort signal
     const heliaWithKuboRpcClientShape = {
         name: {
             resolve: (ipnsName, options) => {
@@ -86,15 +88,9 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
                 throwIfHeliaIsStoppingOrStopped();
                 async function* generator() {
                     const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
-                    const abortId = String(Math.random());
-                    const abortSignal = new AbortController();
-                    ipnsPubsubAbortControllers[abortId] = abortSignal;
                     log.trace("Resolving ipns name", ipnsName, "with options", options);
                     try {
-                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
-                            ...options,
-                            signal: abortSignal.signal
-                        });
+                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), options);
                         yield result.record.value;
                         return;
                     }
@@ -108,9 +104,6 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
                             });
                         else
                             throw err;
-                    }
-                    finally {
-                        delete ipnsPubsubAbortControllers[abortId];
                     }
                 }
                 return generator();
@@ -135,11 +128,34 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             peers: async (topic, options) => helia.libp2p.services.pubsub.getSubscribers(topic),
             publish: async (topic, data, options) => {
                 throwIfHeliaIsStoppingOrStopped();
+                if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
+                    const topicHash = await sha256.digest(new TextEncoder().encode(topic));
+                    const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
+                    await connectToPeersProvidingCid({
+                        helia,
+                        contentCid: topicCid.toString(),
+                        maxPeers: 2,
+                        options,
+                        log: Logger("plebbit-js:helia:pubsub:publish:connectToPeersProvidingCid")
+                    });
+                    await waitForTopicPeers(helia, topic, 1);
+                }
                 const res = await helia.libp2p.services.pubsub.publish(topic, data);
                 log("Published new data to topic", topic, "And the result is", res);
             },
             subscribe: async (topic, handler, options) => {
                 throwIfHeliaIsStoppingOrStopped();
+                if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
+                    const topicHash = await sha256.digest(new TextEncoder().encode(topic));
+                    const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
+                    await connectToPeersProvidingCid({
+                        helia,
+                        contentCid: topicCid.toString(),
+                        maxPeers: 2,
+                        options,
+                        log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
+                    });
+                }
                 //@ts-expect-error
                 pubsubEventHandler.on(topic, handler);
                 helia.libp2p.services.pubsub.subscribe(topic);
@@ -159,10 +175,6 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
         async stop(options) {
             libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance--;
             if (libp2pJsClients[plebbitOptions.key].countOfUsesOfInstance === 0) {
-                Object.entries(ipnsPubsubAbortControllers).forEach(([key, abortController]) => {
-                    abortController.abort("Aborting ipns pubsub because we're stopping helia instance");
-                    delete ipnsPubsubAbortControllers[key];
-                });
                 for (const topic of helia.libp2p.services.pubsub.getTopics())
                     helia.libp2p.services.pubsub.unsubscribe(topic);
                 try {

@@ -24,6 +24,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _internalStateUpdateId;
     private _mirroredStartedOrUpdatingSubplebbit?;
     private _pendingEditProps;
+    private _blocksToRm;
     constructor(plebbit: Plebbit);
     toJSONInternalAfterFirstUpdate(): InternalSubplebbitRecordAfterFirstUpdateType;
     toJSONInternalBeforeFirstUpdate(): InternalSubplebbitRecordBeforeFirstUpdateType;

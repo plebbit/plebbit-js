@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { PageGenerator } from "./page-generator.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, retryKuboIpfsAdd, throwWithErrorCode, timestamp, getErrorCodeFromMessage } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, ipnsNameToIpnsOverPubsubTopic, isLinkOfMedia, isStringDomain, pubsubTopicToDhtKey, retryKuboIpfsAdd, throwWithErrorCode, timestamp, getErrorCodeFromMessage, removeMfsFilesSafely, removeBlocksFromKuboNode, ipfsCpWithRmIfFails } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
@@ -33,7 +33,6 @@ import { MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS } from "../../../subplebbit/sub
 import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/comment/comment-client-manager.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
-import pTimeout from "p-timeout";
 const _startedSubplebbits = {}; // A global record on process level to track started subplebbits
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -55,16 +54,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._internalStateUpdateId = "";
         this._mirroredStartedOrUpdatingSubplebbit = undefined; // The plebbit._startedSubplebbits we're subscribed to
         this._pendingEditProps = [];
+        this._blocksToRm = [];
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this._setState("stopped");
         this.started = false;
         this._stopHasBeenCalled = false;
+        // need to make sure these props are undefined on the constructor level, so they wouldn't show while logging
         //@ts-expect-error
-        this._challengeAnswerPromises = //@ts-expect-error
-            this._challengeAnswerResolveReject = //@ts-expect-error
-                this._ongoingChallengeExchanges = //@ts-expect-error
-                    this._internalStateUpdateId =
-                        undefined;
+        this._pageGenerator = undefined;
+        //@ts-expect-error
+        this._challengeAnswerPromises = undefined;
+        //@ts-expect-error
+        this._challengeAnswerResolveReject = undefined;
+        //@ts-expect-error
+        this._ongoingChallengeExchanges = undefined;
+        //@ts-expect-error
+        this._internalStateUpdateId = undefined;
+        //@ts-expect-error
+        this._dbHandler = undefined;
         hideClassPrivateProps(this);
     }
     // This will be stored in DB
@@ -349,7 +356,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     _calculateLatestUpdateTrigger() {
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
-        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0; // we have at least one edit to include in new ipns
+        this._subplebbitUpdateTrigger =
+            this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0 || this._blocksToRm.length > 0; // we have at least one edit to include in new ipns
     }
     async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs) {
         const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
@@ -397,7 +405,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // Calculate expected signature size
         const expectedSignatureSize = calculateExpectedSignatureSize(newIpns);
         // Calculate remaining space for posts
-        const availablePostsSize = MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 500;
+        const availablePostsSize = MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS - subplebbitWithoutPostsSignatureSize - expectedSignatureSize - 1000;
         const generatedPosts = await this._pageGenerator.generateSubplebbitPosts(preloadedPostsPages, availablePostsSize);
         // posts should not be cleaned up because we want to make sure not to modify authors' posts
         if (generatedPosts) {
@@ -439,6 +447,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`);
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
         await this._unpinStaleCids();
+        if (this._blocksToRm.length > 0) {
+            const removedBlocks = await removeBlocksFromKuboNode({
+                ipfsClient: this._clientsManager.getDefaultKuboRpcClient()._client,
+                log,
+                cids: this._blocksToRm,
+                options: { force: true }
+            });
+            log("Removed blocks", removedBlocks, "from kubo node");
+            this._blocksToRm = [];
+        }
         if (this.updateCid)
             this._cidsToUnPin.add(this.updateCid); // add old cid of subplebbit to be unpinned
         this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
@@ -465,7 +483,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 recordToPublishRaw,
                 address: this.address
             });
-            log.error(`Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)} bytes). Maximum size is 1MB.`, error);
+            log.error(`Local subplebbit (${this.address}) produced a record that is too large (${recordSize.toFixed(2)} bytes). Maximum size is ${MAX_FILE_SIZE_BYTES_FOR_SUBPLEBBIT_IPFS} bytes.`, error);
             throw error;
         }
         const parseRes = SubplebbitIpfsSchema.safeParse(recordToPublishRaw);
@@ -568,14 +586,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentToPurge = this._dbHandler.queryComment(modTableRow.commentCid);
             if (!commentToPurge)
                 throw Error("Comment to purge not found");
-            const cidsToPurgeOffIpfsNode = await this._dbHandler.purgeComment(modTableRow.commentCid);
+            const cidsToPurgeOffIpfsNode = this._dbHandler.purgeComment(modTableRow.commentCid);
             const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
             purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
-            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number")
-                this._mfsPathsToRemove.add(this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket));
-            await this._unpinStaleCids();
-            await this._cleanUpIpfsRepoRarely(true);
+            purgedCids.forEach((cid) => this._blocksToRm.push(cid));
             log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", cidsToPurgeOffIpfsNode.length, "out of DB and IPFS");
+            if (commentToPurge.parentCid) {
+                this._dbHandler.forceUpdateOnAllCommentsWithCid([commentToPurge.parentCid]);
+            }
+            this._subplebbitUpdateTrigger = true;
+            if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
+                const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket).replace("/update", "");
+                this._mfsPathsToRemove.add(localCommentUpdatePath);
+                try {
+                    await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), [localCommentUpdatePath]);
+                    this._mfsPathsToRemove.delete(localCommentUpdatePath);
+                }
+                catch (e) {
+                    log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
+                }
+            }
         }
         this._dbHandler.insertCommentModerations([modTableRow]);
         log("Inserted comment moderation", "of comment", modTableRow.commentCid, "into db", "with props", modTableRow);
@@ -1202,7 +1232,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             })
         };
         const commentUpdateSize = Buffer.byteLength(JSON.stringify(commentUpdatePriorToSigning), "utf8");
-        const repliesAvailableSize = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 500;
+        const repliesAvailableSize = MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE - commentUpdateSize - calculateExpectedSignatureSize(commentUpdatePriorToSigning) - 1000;
         const preloadedRepliesPages = "best";
         const generatedRepliesPages = comment.depth === 0
             ? await this._pageGenerator.generatePostPages(comment, preloadedRepliesPages, repliesAvailableSize)
@@ -1430,17 +1460,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             try {
-                await pTimeout(kuboRpc._client.files.rm(toDeleteMfsPaths, { flush: false, recursive: true }), { milliseconds: 60000 });
+                await removeMfsFilesSafely(kuboRpc, toDeleteMfsPaths);
                 return toDeleteMfsPaths;
             }
             catch (e) {
                 const error = e;
-                if (!error.message.includes("file does not exist")) {
+                if (error.message.includes("file does not exist"))
+                    return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
+                else {
                     log.error("Failed to remove paths from MFS", toDeleteMfsPaths, e);
                     throw error;
                 }
-                else
-                    return toDeleteMfsPaths; // file does not exist, we can return the paths that were not deleted
             }
         }
         else
@@ -1485,7 +1515,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const newCommentUpdatesAddAll = await genToArray(kuboRpc._client.addAll(this._createCommentUpdateIterable(commentUpdatesOfPosts), {
             wrapWithDirectory: false // we want to publish them to ipfs as is
         }));
-        commentUpdatesOfPosts.forEach((newPostUpdate) => this._mfsPathsToRemove.add(newPostUpdate.localMfsPath)); // need to make sure we don't cp to path without it not existing to begin with
         const removedMfsPaths = await this._rmUnneededMfsPaths();
         // Create a concurrency limiter with a limit of 50
         const limit = pLimit(50);
@@ -1494,9 +1523,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentUpdateFilePath = commentUpdatesOfPosts.find((row) => row.postCommentUpdateCid === commentUpdateFile.cid.toV0().toString())?.localMfsPath;
             if (!commentUpdateFilePath)
                 throw Error("Failed to find the local mfs path of the post comment update");
-            const copyPromise = limit(() => kuboRpc._client.files.cp("/ipfs/" + commentUpdateFile.cid.toString(), commentUpdateFilePath, {
-                parents: true,
-                flush: false
+            removedMfsPaths.push(commentUpdateFilePath);
+            const copyPromise = limit(() => ipfsCpWithRmIfFails({
+                kuboRpcClient: kuboRpc,
+                log,
+                src: "/ipfs/" + commentUpdateFile.cid.toString(),
+                dest: commentUpdateFilePath,
+                options: { parents: true, flush: false }
             }));
             copyPromises.push(copyPromise);
         }
@@ -1515,7 +1548,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const postsWithOutdatedPostUpdateBucket = this._dbHandler.queryPostsWithOutdatedBuckets(this._postUpdatesBuckets);
         if (postsWithOutdatedPostUpdateBucket.length === 0)
             return;
+        const outdatedPostDirectories = postsWithOutdatedPostUpdateBucket.map((post) => this._calculateLocalMfsPathForCommentUpdate(post, post.currentBucket).replace("/update", ""));
+        outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.add(path));
         this._dbHandler.forceUpdateOnAllCommentsWithCid(postsWithOutdatedPostUpdateBucket.map((post) => post.cid));
+        try {
+            await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), outdatedPostDirectories);
+            outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.delete(path));
+        }
+        catch (e) {
+            log.error("Failed to remove outdated post update buckets from MFS", e);
+        }
         log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets`);
     }
     async _cleanUpIpfsRepoRarely(force = false) {
@@ -1523,6 +1565,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
+            try {
+                const rootCid = await kuboRpc._client.files.flush("/");
+                log("Flushed ipfs repo", "/", "before GC", "with CID", rootCid);
+            }
+            catch (e) {
+                log.error("Failed to flush ipfs repo", "/", "due to error", e);
+                throw e;
+            }
             try {
                 for await (const res of kuboRpc._client.repo.gc({ quiet: true })) {
                     if (res.cid)

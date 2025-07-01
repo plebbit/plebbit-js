@@ -16,7 +16,10 @@ export var messages;
     messages["ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING"] = "You need to stop updating the subplebbit before starting it";
     messages["ERR_HELIAS_STOPPING_OR_STOPPED"] = "Helia is stopping or stopped already. You can't use any helia functions";
     messages["ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS"] = "Failed to dial and connect to any IPNS-Over-Pubsub peers from delegated routers";
+    messages["ERR_FAILED_TO_DIAL_ANY_PEERS_PROVIDING_CID"] = "Failed to dial and connect to any peers providing a CID";
     messages["ERR_GET_SUBPLEBBIT_TIMED_OUT"] = "plebbit.getSubplebbit() timed out";
+    messages["ERR_TIMEOUT_WAITING_FOR_PUBSUB_TOPIC_PEERS"] = "Timeout waiting for propagation of pubsub topic peers";
+    messages["ERR_TIMED_OUT_RM_MFS_FILE"] = "Timed out removing MFS paths. We may need to nuke the whole MFS directory and republish everything";
     // Plebbit errors
     messages["ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE"] = "subplebbit.stop() called without calling update() first";
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";
@@ -174,7 +177,6 @@ export var messages;
     messages["ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID"] = "Unable to derive post cid from page comment while verifying page";
     messages["ERR_POSTS_PAGE_IS_INVALID"] = "The page of posts is invalid";
     messages["ERR_REPLIES_PAGE_IS_INVALID"] = "The page of replies is invalid";
-    messages["ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_POST_FLAT_PAGES"] = "Failed to find reply comment update within all of the post flat pages";
     messages["ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_CID"] = "User attempted to validate replies page without providing parent comment cid. Make sure parent comment is properly loaded";
     messages["ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_DEPTH"] = "User attempted to validate replies page without providing parent comment depth. Make sure parent comment is properly loaded";
     messages["ERR_USER_ATTEMPTS_TO_VALIDATE_REPLIES_PAGE_WITHOUT_PARENT_COMMENT_POST_CID"] = "User attempted to validate replies page without providing parent comment post cid. Make sure parent comment is properly loaded";

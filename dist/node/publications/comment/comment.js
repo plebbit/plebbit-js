@@ -411,7 +411,7 @@ export class Comment extends Publication {
                 await this._subplebbitForUpdating.subplebbit.update();
             }
             if (this._subplebbitForUpdating.subplebbit.raw.subplebbitIpfs)
-                await this._clientsManager.handleUpdateEventFromSub(this._subplebbitForUpdating.subplebbit);
+                await this._subplebbitForUpdating.update(this._subplebbitForUpdating.subplebbit);
         }
         else {
             if (!this._postForUpdating)
@@ -420,7 +420,7 @@ export class Comment extends Publication {
                 await this._postForUpdating.comment.update();
             }
             if (this._postForUpdating.comment.raw.commentUpdate)
-                await this._clientsManager.handleUpdateEventFromPostToFetchReplyCommentUpdate(this._postForUpdating.comment);
+                await this._postForUpdating.update(this._postForUpdating.comment);
         }
     }
     async loadCommentIpfsAndStartCommentUpdateSubscription() {

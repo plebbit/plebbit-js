@@ -68,7 +68,7 @@ export class DbHandler {
         }
         catch (e) {
             await this.initDbIfNeeded();
-            log.error(`Sub (${this._subplebbit.address}) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${env.DB_VERSION}). Error`, e);
+            log.error(`Sub (${this._subplebbit.address}) failed to create/migrate tables. Current db version (${this.getDbVersion()}), latest db version (${env.DB_VERSION}). Error`, e);
             await this.destoryConnection();
             throw e;
         }
@@ -311,6 +311,8 @@ export class DbHandler {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
         const currentDbVersion = this.getDbVersion();
         log.trace(`current db version: ${currentDbVersion}`);
+        if (currentDbVersion > env.DB_VERSION)
+            throw new Error(`DB version ${currentDbVersion} is greater than the latest version ${env.DB_VERSION}. You need to upgrade your client to accommodate the new DB version`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
         const dbPath = this._dbConfig.filename;
         let backupDbPath;

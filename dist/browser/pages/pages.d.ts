@@ -20,14 +20,12 @@ export declare class BasePages {
     _clientsManager: BasePagesClientsManager;
     _parentComment: Comment | undefined;
     _subplebbit: BaseProps["subplebbit"];
-    _loadedUniqueCommentFromGetPage: Record<string, PageIpfs["comments"][0]>;
     constructor(props: PostsProps | RepliesProps);
     updateProps(props: Omit<PostsProps | RepliesProps, "plebbit">): void;
     protected _initClientsManager(plebbit: Plebbit): void;
     resetPages(): void;
     _validatePage(pageIpfs: PageIpfs, pageCid?: string): Promise<void>;
     _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs>;
-    _updateLoadedUniqueCommentFromGetPage(pageIpfs: PageIpfs): void;
     getPage(pageCid: string): Promise<PageTypeJson>;
     validatePage(page: PageIpfs | PageTypeJson): Promise<void>;
     _stop(): void;
