@@ -49,26 +49,45 @@ jobs:
 
             - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
               shell: bash
-            - name: Run mocked challenge tests
-              run: npm run test:mocked:challenges > test_output.log 2> debug_output.log
-            - name: Show test results
-              run: cat test_output.log
-              if: always()
-            - name: Show debug output on failure
-              run: cat debug_output.log
-              if: ${{ !cancelled() && failure() }}
-            - name: Run node local tests
-              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:local > test_output_main.log 2> debug_output_main.log
+
+            - name: Run mocked challenge tests (clean output)
+              run: npm run test:mocked:challenges 2>&1 | tee test_output.log
+              continue-on-error: true
+              id: mocked_tests
+
+            - name: Run mocked challenge tests with DEBUG (on failure)
+              run: DEBUG="plebbit*, -plebbit*trace" npm run test:mocked:challenges 2>&1 | tee debug_output.log
+              if: steps.mocked_tests.outcome == 'failure'
+
+            - name: Run node local tests (clean output)
+              run: npm run test:node:local 2>&1 | tee test_output_main.log
               shell: bash
-            - name: Show main test results
-              run: cat test_output_main.log
-              if: always()
-            - name: Show main debug output on failure
-              run: cat debug_output_main.log
-              if: ${{ !cancelled() && failure() }}
+              continue-on-error: true
+              id: main_tests
+
+            - name: Run node local tests with DEBUG (on failure)
+              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:local 2>&1 | tee debug_output_main.log
+              shell: bash
+              if: steps.main_tests.outcome == 'failure'
+
+            - name: Show debug output for mocked tests
+              run: echo "=== MOCKED TESTS DEBUG OUTPUT ===" && cat debug_output.log
+              if: steps.mocked_tests.outcome == 'failure'
+
+            - name: Show debug output for main tests
+              run: echo "=== MAIN TESTS DEBUG OUTPUT ===" && cat debug_output_main.log
+              if: steps.main_tests.outcome == 'failure'
+
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
               shell: bash
+
+            # Fail the job if any tests failed
+            - name: Check test results
+              run: |
+                  if [ "${{ steps.mocked_tests.outcome }}" = "failure" ] || [ "${{ steps.main_tests.outcome }}" = "failure" ]; then
+                    exit 1
+                  fi
 
     test-plebbit-js-node-remote-configs:
         name: test-plebbit-js-node-${{ matrix.config }}
@@ -89,16 +108,29 @@ jobs:
             - run: npm run build
 
             - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
-            - name: Run tests with config
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node > test_output.log 2> debug_output.log
-            - name: Show test results
-              run: cat test_output.log
-              if: always()
-            - name: Show debug output on failure
-              run: cat debug_output.log
-              if: ${{ !cancelled() && failure() }}
+
+            - name: Run tests with config (clean output)
+              run: node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node 2>&1 | tee test_output.log
+              continue-on-error: true
+              id: config_tests
+
+            - name: Run tests with config and DEBUG (on failure)
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node 2>&1 | tee debug_output.log
+              if: steps.config_tests.outcome == 'failure'
+
+            - name: Show debug output
+              run: echo "=== DEBUG OUTPUT ===" && cat debug_output.log
+              if: steps.config_tests.outcome == 'failure'
+
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
+
+            # Fail the job if tests failed
+            - name: Check test results
+              run: |
+                  if [ "${{ steps.config_tests.outcome }}" = "failure" ]; then
+                    exit 1
+                  fi
 
     test-plebbit-js-browser-remote-configs:
         name: test-plebbit-js-${{ matrix.environment }}-${{ matrix.config }}
@@ -125,18 +157,28 @@ jobs:
             - name: Install Playwright browsers
               run: npx playwright install --with-deps && npx playwright install --with-deps ${{ matrix.environment }}
 
-            # Run tests based on environment and config
-            - name: Run browser tests with config
-              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} > test_output.log 2> debug_output.log
-            - name: Show test results
-              run: cat test_output.log
-              if: always()
-            - name: Show debug output on failure
-              run: cat debug_output.log
-              if: ${{ !cancelled() && failure() }}
+            - name: Run browser tests with config (clean output)
+              run: node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} 2>&1 | tee test_output.log
+              continue-on-error: true
+              id: browser_tests
+
+            - name: Run browser tests with config and DEBUG (on failure)
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} 2>&1 | tee debug_output.log
+              if: steps.browser_tests.outcome == 'failure'
+
+            - name: Show debug output
+              run: echo "=== DEBUG OUTPUT ===" && cat debug_output.log
+              if: steps.browser_tests.outcome == 'failure'
 
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
+
+            # Fail the job if tests failed
+            - name: Check test results
+              run: |
+                  if [ "${{ steps.browser_tests.outcome }}" = "failure" ]; then
+                    exit 1
+                  fi
 
     test-plebbit-rpc:
         runs-on: ubuntu-latest
@@ -153,16 +195,29 @@ jobs:
             - run: npm run build
             # Setup tests for plebbit-js using rpc here
             - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
-            - name: Run RPC tests
-              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc > test_output.log 2> debug_output.log
-            - name: Show test results
-              run: cat test_output.log
-              if: always()
-            - name: Show debug output on failure
-              run: cat debug_output.log
-              if: ${{ !cancelled() && failure() }}
+
+            - name: Run RPC tests (clean output)
+              run: npm run test:node:rpc 2>&1 | tee test_output.log
+              continue-on-error: true
+              id: rpc_tests
+
+            - name: Run RPC tests with DEBUG (on failure)
+              run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc 2>&1 | tee debug_output.log
+              if: steps.rpc_tests.outcome == 'failure'
+
+            - name: Show debug output
+              run: echo "=== DEBUG OUTPUT ===" && cat debug_output.log
+              if: steps.rpc_tests.outcome == 'failure'
+
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
+
+            # Fail the job if tests failed
+            - name: Check test results
+              run: |
+                  if [ "${{ steps.rpc_tests.outcome }}" = "failure" ]; then
+                    exit 1
+                  fi
 
             # Setup tests for rpc directory here (skipped for now)
 
