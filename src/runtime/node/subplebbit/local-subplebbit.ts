@@ -850,7 +850,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
                     commentToPurge,
                     commentUpdateToPurge.postUpdatesBucket
-                );
+                ).replace("/update", "");
                 this._mfsPathsToRemove.add(localCommentUpdatePath);
                 try {
                     await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), [localCommentUpdatePath]);
@@ -1661,7 +1661,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private _calculateLocalMfsPathForCommentUpdate(postDbComment: CommentsTableRow, timestampRange: number) {
+    private _calculateLocalMfsPathForCommentUpdate(postDbComment: Pick<CommentsTableRow, "cid">, timestampRange: number) {
         // TODO Can optimize the call below by only asking for timestamp field
         return ["/" + this.address, "postUpdates", timestampRange, postDbComment.cid, "update"].join("/");
     }
@@ -2055,8 +2055,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             })
         );
 
-        commentUpdatesOfPosts.forEach((newPostUpdate) => this._mfsPathsToRemove.add(newPostUpdate.localMfsPath)); // need to make sure we don't cp to path without it not existing to begin with
-        const removedMfsPaths: string[] = [];
+        const removedMfsPaths: string[] = await this._rmUnneededMfsPaths();
 
         // Create a concurrency limiter with a limit of 50
         const limit = pLimit(50);
@@ -2109,13 +2108,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const postsWithOutdatedPostUpdateBucket = this._dbHandler.queryPostsWithOutdatedBuckets(this._postUpdatesBuckets);
         if (postsWithOutdatedPostUpdateBucket.length === 0) return;
 
+        const outdatedPostDirectories = postsWithOutdatedPostUpdateBucket.map((post) =>
+            this._calculateLocalMfsPathForCommentUpdate(post, post.currentBucket).replace("/update", "")
+        );
+
+        outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.add(path));
+
         this._dbHandler.forceUpdateOnAllCommentsWithCid(postsWithOutdatedPostUpdateBucket.map((post) => post.cid));
+
+        try {
+            await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), outdatedPostDirectories);
+            outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.delete(path));
+        } catch (e) {
+            log.error("Failed to remove outdated post update buckets from MFS", e);
+        }
 
         log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets`);
     }
 
     private async _cleanUpIpfsRepoRarely(force = false) {
-        return;
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
