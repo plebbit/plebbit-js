@@ -24,11 +24,6 @@ on:
             - "package.json"
             - "package-lock.json"
 
-env:
-    # Disable colors in CI for better log readability
-    NO_COLOR: 1
-    FORCE_COLOR: 0
-
 jobs:
     test-plebbit-js-node-local:
         runs-on: ${{ matrix.os }}
@@ -47,43 +42,12 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
               shell: bash
-
             - name: Run mocked challenge tests
-              run: |
-                  set +e
-                  DEBUG="plebbit*, -plebbit*trace" npm run test:mocked:challenges > test_stdout.log 2> test_stderr.log
-                  TEST_EXIT_CODE=$?
-                  set -e
-
-                  # Always show test results (stdout)
-                  cat test_stdout.log
-
-                  exit $TEST_EXIT_CODE
-
-            - name: Show mocked tests debug output
-              run: cat test_stderr.log
-              if: failure()
-
-            - name: Run node local tests
-              run: |
-                  set +e
-                  DEBUG="plebbit*, -plebbit*trace" npm run test:node:local > test_stdout_main.log 2> test_stderr_main.log
-                  TEST_EXIT_CODE=$?
-                  set -e
-
-                  # Always show test results (stdout)
-                  cat test_stdout_main.log
-
-                  exit $TEST_EXIT_CODE
+              run: npm run test:mocked:challenges
+            - run: DEBUG="plebbit*" npm run test:node:local
               shell: bash
-
-            - name: Show node local tests debug output
-              run: cat test_stderr_main.log
-              if: failure()
-              shell: bash
-
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
               shell: bash
@@ -106,24 +70,9 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
-
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
-              run: |
-                  set +e
-                  DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node > test_stdout.log 2> test_stderr.log
-                  TEST_EXIT_CODE=$?
-                  set -e
-
-                  # Always show test results (stdout)
-                  cat test_stdout.log
-
-                  exit $TEST_EXIT_CODE
-
-            - name: Show debug output
-              run: cat test_stderr.log
-              if: failure()
-
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
@@ -146,27 +95,15 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
 
             # Install Chrome
             - name: Install Playwright browsers
               run: npx playwright install --with-deps && npx playwright install --with-deps ${{ matrix.environment }}
 
+            # Run tests based on environment and config
             - name: Run browser tests with config
-              run: |
-                  set +e
-                  DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }} > test_stdout.log 2> test_stderr.log
-                  TEST_EXIT_CODE=$?
-                  set -e
-
-                  # Always show test results (stdout)
-                  cat test_stdout.log
-
-                  exit $TEST_EXIT_CODE
-
-            - name: Show debug output
-              run: cat test_stderr.log
-              if: failure()
+              run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment ${{ matrix.environment }}
 
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
@@ -185,24 +122,8 @@ jobs:
             - run: npm ci
             - run: npm run build
             # Setup tests for plebbit-js using rpc here
-            - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
-
-            - name: Run RPC tests
-              run: |
-                  set +e
-                  DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc > test_stdout.log 2> test_stderr.log
-                  TEST_EXIT_CODE=$?
-                  set -e
-
-                  # Always show test results (stdout)
-                  cat test_stdout.log
-
-                  exit $TEST_EXIT_CODE
-
-            - name: Show debug output
-              run: cat test_stderr.log
-              if: failure()
-
+            - run: DEBUG="plebbit*" npm run test:server:node:rpc |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
 
