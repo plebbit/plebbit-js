@@ -188,7 +188,22 @@ getRemotePlebbitConfigs().map((config) => {
                         "does it have purged post in page?",
                         !!purgedPostInLocalNode
                     );
-                }, 1000);
+
+                    const ipnsRecordFromGateway = (
+                        await fetch(`http://localhost:18080/ipns/${subplebbitAddress}`, {
+                            cache: "no-cache",
+                            headers: {
+                                "Cache-Control": "no-cache, no-store, must-revalidate",
+                                Pragma: "no-cache",
+                                Expires: "0"
+                            }
+                        })
+                    ).json();
+                    const subFromGateway = await plebbit.createSubplebbit(ipnsRecordFromGateway);
+                    const purgedPostInIpns = findCommentInPageInstanceRecursively(subFromGateway.posts, commentToPurge.cid);
+
+                    console.log("subFromGateway", subFromGateway.updatedAt, "does it have purged post in page?", !!purgedPostInIpns);
+                }, 5000);
 
                 expect(sub.posts.pageCids).to.deep.equal({}); // let's assume sub has no page cids
 
