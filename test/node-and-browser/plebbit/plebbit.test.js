@@ -248,7 +248,8 @@ describe(`plebbit.destroy`, async () => {
     it(`plebbit.destroy() should not fail if you stop reply and immedietly destroy plebbit after`, async () => {
         const plebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
         const subplebbit = await plebbit.getSubplebbit(fixtureSigner.address);
-        const replyCid = subplebbit.posts.pages.hot.comments.find((post) => post.replies).replies.pages.best.comments[0].cid;
+        const replyCid = subplebbit.posts.pages.hot.comments.find((post) => post.replies?.pages?.best?.comments?.length > 0).replies.pages
+            .best.comments[0].cid;
 
         const reply = await plebbit.createComment({ cid: replyCid });
         await reply.update();

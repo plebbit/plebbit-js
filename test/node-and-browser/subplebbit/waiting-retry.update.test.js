@@ -62,7 +62,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
         it(`subplebbit.update() emits waiting-retry if fetching subplebbit CID record times out`, async () => {
             const validIpns = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR"; // this IPNS exists
 
-            plebbit._timeouts["subplebbit-ipns"] = 100;
+            // plebbit._timeouts["subplebbit-ipns"] = 100;
             plebbit._timeouts["subplebbit-ipfs"] = 100;
             const tempSubplebbit = await plebbit.createSubplebbit({ address: validIpns });
             await mockPlebbitToTimeoutFetchingCid(plebbit);
