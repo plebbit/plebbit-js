@@ -12,7 +12,8 @@ import {
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitPages,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    forceSubplebbitToGenerateAllRepliesPages
+    forceSubplebbitToGenerateAllRepliesPages,
+    publishCommentWithDepth
 } from "../../../dist/node/test/test-util.js";
 import Logger from "@plebbit/plebbit-logger";
 
@@ -68,9 +69,8 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
             // This test is flaky
 
             // is it possibly only failing when reply is fetched using pages?
-            const parentCid = await findOrPublishCommentWithDepth(depth - 1, subplebbit);
+            const parentCommentInstance = await publishCommentWithDepth({ depth: depth - 1, subplebbit });
 
-            const parentCommentInstance = await remotePlebbit.createComment({ cid: parentCid });
             await parentCommentInstance.update();
             await resolveWhenConditionIsTrue(parentCommentInstance, () => typeof parentCommentInstance.updatedAt === "number");
 
