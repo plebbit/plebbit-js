@@ -189,16 +189,14 @@ getRemotePlebbitConfigs().map((config) => {
                         !!purgedPostInLocalNode
                     );
 
-                    const ipnsRecordFromGateway = (
-                        await fetch(`http://localhost:18080/ipns/${subplebbitAddress}`, {
-                            cache: "no-cache",
-                            headers: {
-                                "Cache-Control": "no-cache, no-store, must-revalidate",
-                                Pragma: "no-cache",
-                                Expires: "0"
-                            }
-                        })
-                    ).json();
+                    const ipnsRecordFromGateway = await fetch(`http://localhost:18080/ipns/${commentToPurge.subplebbitAddress}`, {
+                        cache: "no-cache",
+                        headers: {
+                            "Cache-Control": "no-cache, no-store, must-revalidate",
+                            Pragma: "no-cache",
+                            Expires: "0"
+                        }
+                    }).then((res) => res.json());
                     const subFromGateway = await plebbit.createSubplebbit(ipnsRecordFromGateway);
                     const purgedPostInIpns = findCommentInPageInstanceRecursively(subFromGateway.posts, commentToPurge.cid);
 
