@@ -34,6 +34,9 @@ export default defineConfig({
         // Add missing Mocha globals that some tests expect
         setupFiles: ["./test/vitest-browser-setup.js"],
 
+        // Sequential execution configuration
+        fileParallelism: false, // Run test files sequentially instead of in parallel
+
         // Environment variables
         env: {
             PLEBBIT_CONFIGS: process.env.PLEBBIT_CONFIGS,
