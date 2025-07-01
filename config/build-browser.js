@@ -53,6 +53,7 @@ chokidar.watch(distFolder, { persistent }).on("all", async (event, path) => {
 
         await fs.ensureFile(outputPath);
         await fs.writeFile(outputPath, builtFile);
+        console.log("built for browser", path);
     } else {
         if (debug) {
             console.log({ time, event, path });
