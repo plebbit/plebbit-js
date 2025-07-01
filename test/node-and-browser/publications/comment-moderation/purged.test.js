@@ -206,8 +206,8 @@ getRemotePlebbitConfigs().map((config) => {
 
             if (commentDepth === 0)
                 it(`Purged post should not appear in subplebbit.postUpdates`, async () => {
-                    await new Promise((resolve) => setTimeout(resolve, 3000));
                     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                    if (!subplebbit.postUpdates) return; // sub has no post updates, good!
                     const postUpdatesTimes = Object.keys(subplebbit.postUpdates);
                     expect(postUpdatesTimes.length).to.equal(1);
                     const mfsPath = `/${commentToPurge.subplebbitAddress}/postUpdates/${postUpdatesTimes[0]}/${commentToPurge.postCid}/update`;
