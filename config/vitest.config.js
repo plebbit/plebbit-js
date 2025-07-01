@@ -37,7 +37,10 @@ export default defineConfig({
         // Environment variables
         env: {
             PLEBBIT_CONFIGS: process.env.PLEBBIT_CONFIGS,
-            DEBUG: process.env.DEBUG
+            DEBUG: process.env.DEBUG,
+            NO_COLOR: process.env.NO_COLOR,
+            FORCE_COLOR: process.env.FORCE_COLOR,
+            CI: process.env.CI
         },
 
         // some tests are skipped if no remote plebbit RPC configs are available
