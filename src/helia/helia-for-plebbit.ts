@@ -53,6 +53,14 @@ export async function createLibp2pJsClientOrUseExistingOne(
             addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
             peerDiscovery: undefined,
             ...plebbitOptions.libp2pOptions,
+            // Configure connection manager to handle more concurrent streams
+            connectionManager: {
+                maxConnections: 100, // Increase max connections
+                minConnections: 10, // Keep minimum connections
+                dialTimeout: 30000, // 30s dial timeout
+                maxPendingDials: 10, // Allow more pending dials
+                ...plebbitOptions.libp2pOptions?.connectionManager
+            },
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
