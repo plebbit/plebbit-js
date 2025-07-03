@@ -15,6 +15,7 @@ export enum messages {
     ERR_NEED_TO_STOP_UPDATING_SUB_BEFORE_STARTING = "You need to stop updating the subplebbit before starting it",
     ERR_HELIAS_STOPPING_OR_STOPPED = "Helia is stopping or stopped already. You can't use any helia functions",
     ERR_FAILED_TO_DIAL_ANY_PUBSUB_PEERS_FROM_DELEGATED_ROUTERS = "Failed to dial and connect to any IPNS-Over-Pubsub peers from delegated routers",
+    ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED = "libp2p Fetch over IPNS-Over-Pubsub returned undefined when requested from a peer",
     ERR_FAILED_TO_DIAL_ANY_PEERS_PROVIDING_CID = "Failed to dial and connect to any peers providing a CID",
     ERR_GET_SUBPLEBBIT_TIMED_OUT = "plebbit.getSubplebbit() timed out",
     ERR_TIMEOUT_WAITING_FOR_PUBSUB_TOPIC_PEERS = "Timeout waiting for propagation of pubsub topic peers",

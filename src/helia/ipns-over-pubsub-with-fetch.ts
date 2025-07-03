@@ -6,6 +6,7 @@ import type { Fetch } from "@libp2p/fetch";
 import type { HeliaWithLibp2pPubsub } from "./types.js";
 import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey } from "../util.js";
 import { connectToPeersProvidingCid } from "./util.js";
+import { PlebbitError } from "../plebbit-error.js";
 
 const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
 
@@ -35,20 +36,38 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
 
                 const peersToFetchFrom = peersFromDelegatedRouters || originalRouterPubsub.getSubscribers(topic);
 
-                if (!peersToFetchFrom?.length) throw Error("Failed to detect peers for pubsub topic");
+                if (!peersToFetchFrom?.length) throw Error("Failed to detect peers for pubsub topic"); // should not happen, but we will throw just in case
 
                 // call @libp2p/fetch here,
+                const errorPerPeer: Record<string, Error> = {};
                 for (const pubsubPeer of peersToFetchFrom) {
                     const peerId = "id" in pubsubPeer ? pubsubPeer.remotePeer : pubsubPeer;
                     try {
                         ipnsRecordFromFetch = await libp2pFetchService.fetch(peerId, routingKey, options);
-                        if (!ipnsRecordFromFetch) throw Error("Fetch for IPNS-Over-Pubsub returned undefined");
+                        if (!ipnsRecordFromFetch)
+                            throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED", {
+                                peerId,
+                                routingKey,
+                                topic: topic,
+                                options
+                            });
                         log("Fetched IPNS record of topic", topic, "from peer", pubsubPeer.toString());
                         break;
                     } catch (e) {
-                        log.error("Failed to fetch IPNS record", topic, "from peer", pubsubPeer.toString(), e);
+                        //@ts-expect-error
+                        e.details = { ...e.details, routingKey, topic: topic, peerId, fetchOptions: options };
+                        errorPerPeer[peerId.toString()] = e as Error;
                     }
                 }
+                if (!ipnsRecordFromFetch)
+                    log.error(
+                        "Failed to fetch IPNS record using libp2p-fetch over IPNS-Over-Pubsub",
+                        routingKey,
+                        "from peers",
+                        peersToFetchFrom,
+                        "Error per peer",
+                        errorPerPeer
+                    );
 
                 log("add subscription for topic", topic);
                 originalRouterPubsub.subscribe(topic);
@@ -56,7 +75,7 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
                 this.subscriptions.push(topic);
 
                 //@ts-expect-error
-                options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:subscribe", { topic }));
+                options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:subscribe", { topic: topic }));
 
                 if (ipnsRecordFromFetch) {
                     log("Fetched IPNS record of topic", topic, "from peers", peersToFetchFrom, "Using libp2p-fetch");
@@ -77,6 +96,8 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
 
             return record;
         } catch (err) {
+            //@ts-expect-error
+            err.details = { ...err.details, routingKey, topic: topic, options };
             //@ts-expect-error
             options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:error", err));
             throw err;

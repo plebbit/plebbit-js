@@ -42,6 +42,7 @@ export async function connectToPeersProvidingCid({
 }
 
 export async function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: string, minPeers = 1, timeoutMs = 10000) {
+    // after connecting to peers, we need to get the peers from the pubsub service
     const startTime = Date.now();
 
     while (Date.now() - startTime < timeoutMs) {
