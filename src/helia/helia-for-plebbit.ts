@@ -9,7 +9,7 @@ import { MemoryBlockstore } from "blockstore-core";
 import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
 import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
-import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
+import { createPubsubRouterWithFetch, PlebbitIpnsGetOptions } from "./ipns-over-pubsub-with-fetch.js";
 import Logger from "@plebbit/plebbit-logger";
 import type { AddResult, NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
@@ -120,7 +120,10 @@ export async function createLibp2pJsClientOrUseExistingOne(
                     const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
                     log.trace("Resolving ipns name", ipnsName, "with options", options);
                     try {
-                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), options);
+                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
+                            ...options,
+                            ipnsName
+                        } as PlebbitIpnsGetOptions);
                         yield result.record.value;
                         return;
                     } catch (err) {
