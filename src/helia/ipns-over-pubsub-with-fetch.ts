@@ -1,4 +1,10 @@
-import { pubsub as ipnsPubsubRouter, PubsubRoutingComponents, GetOptions as ipnsGetOptions } from "@helia/ipns/routing";
+import {
+    pubsub as ipnsPubsubRouter,
+    PubsubRoutingComponents,
+    GetOptions as ipnsGetOptions,
+    IPNSRouting,
+    PutOptions
+} from "@helia/ipns/routing";
 import { CustomProgressEvent } from "progress-events";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
@@ -15,33 +21,33 @@ export type PlebbitIpnsGetOptions = ipnsGetOptions & {
     ipnsName: string;
 };
 
-const lastTimeFetchedIpnsRecord: Record<string, number> = {}; // key is the "heliaPeerId:topic", value is the timestamp when it was last fetched via libp2p/fetch
-
 const PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT = 3;
 const IPNS_FETCH_COOLOFF_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
 
-export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
-    const originalRouter = ipnsPubsubRouter(helia);
-
-    const libp2pFetchService = <Fetch>helia.libp2p.services.fetch;
-
-    //@ts-expect-error
-    const originalRouterPubsub = <PubsubRoutingComponents["libp2p"]["services"]["pubsub"]>originalRouter.pubsub;
-    originalRouter.get = async function (routingKey, options: PlebbitIpnsGetOptions) {
+export class IpnsFetchRouter implements IPNSRouting {
+    lastTimeFetchedIpnsRecord: Record<string, number> = {}; // key is the "heliaPeerId:topic", value is the timestamp when it was last fetched via libp2p/fetch
+    _helia: HeliaWithLibp2pPubsub;
+    constructor(helia: HeliaWithLibp2pPubsub) {
+        this._helia = helia;
+    }
+    put(routingKey: Uint8Array, marshaledRecord: Uint8Array, options?: PutOptions): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    async get(routingKey: Uint8Array, options?: PlebbitIpnsGetOptions): Promise<Uint8Array> {
+        const libp2pFetchService = <Fetch>this._helia.libp2p.services.fetch;
+        const topic = binaryKeyToPubsubTopic(routingKey);
         try {
-            const topic = binaryKeyToPubsubTopic(routingKey);
-
             let ipnsRecordFromFetch: Uint8Array | undefined;
 
             // Check if we should use libp2p/fetch based on cooloff period
             const now = Date.now();
-            const cooloffKey = `${helia.libp2p.peerId.toString()}:${topic}`;
-            const lastFetchTime = lastTimeFetchedIpnsRecord[cooloffKey];
+            const cooloffKey = `${topic}`;
+            const lastFetchTime = this.lastTimeFetchedIpnsRecord[cooloffKey];
             const shouldUseFetch = !lastFetchTime || now - lastFetchTime > IPNS_FETCH_COOLOFF_PERIOD_MS;
 
             if (shouldUseFetch) {
                 // Get peers providing this content
-                const peersInPubsubTopic = await getPeersProvidingCid(helia, pubsubTopicToDhtKey(topic), options);
+                const peersInPubsubTopic = await getPeersProvidingCid(this._helia, pubsubTopicToDhtKey(topic), options);
 
                 if (peersInPubsubTopic.length > 0) {
                     const limit = pLimit(PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT);
@@ -51,7 +57,7 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
                         : abortController.signal;
 
                     const fetchFromPeer = async (peer: (typeof peersInPubsubTopic)[0]) => {
-                        await helia.libp2p.dial(peer.id, { signal: combinedSignal });
+                        // await this._helia.libp2p.dial(peer.id, { signal: combinedSignal });
                         const record = await libp2pFetchService.fetch(peer.id, routingKey, { signal: combinedSignal });
                         if (!record) {
                             throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED", {
@@ -79,13 +85,13 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
                                 ipnsRecordFromFetch = settled.result;
                                 abortController.abort(); // Cancel remaining operations
                                 // Record successful fetch timestamp
-                                lastTimeFetchedIpnsRecord[cooloffKey] = now;
-                                log("Fetched IPNS", options.ipnsName, "record for topic", topic, "using parallel fetch");
+                                this.lastTimeFetchedIpnsRecord[cooloffKey] = now;
+                                log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using parallel fetch");
                                 break;
                             }
                         }
                     } catch (error) {
-                        log.trace("All parallel fetch attempts failed of IPNS", options.ipnsName, "for topic", topic);
+                        log.trace("All parallel fetch attempts failed of IPNS", options?.ipnsName, "for topic", topic);
                     }
                 }
             } else {
@@ -93,47 +99,27 @@ export function createPubsubRouterWithFetch(helia: HeliaWithLibp2pPubsub) {
                     "Skipping libp2p/fetch for topic",
                     topic,
                     "and IPNS",
-                    options.ipnsName,
+                    options?.ipnsName,
                     "due to cooloff period (last fetch was",
                     Math.round((now - lastFetchTime) / 1000),
                     "seconds ago)"
                 );
+                throw new Error("Already loaded via libp2p/fetch, should await for updates in gossipsub topic");
             }
 
-            // Always subscribe to pubsub if not already subscribed
-            if (!originalRouterPubsub.getTopics().includes(topic)) {
-                log("add subscription for topic", topic);
-                originalRouterPubsub.subscribe(topic);
-                //@ts-expect-error
-                this.subscriptions.push(topic);
+            if (ipnsRecordFromFetch) return ipnsRecordFromFetch;
 
-                options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:subscribe", { topic: topic }));
-            }
-
-            if (ipnsRecordFromFetch) {
-                log("Successfully obtained IPNS", options.ipnsName, "record for topic", topic);
-                return ipnsRecordFromFetch;
-            } else if (shouldUseFetch) {
-                log(
-                    "Failed to fetch IPNS",
-                    options.ipnsName,
-                    "record for topic",
-                    topic,
-                    "Will be awaiting in the gossip topic, it may take 30s+"
-                );
-            }
-
+            // If no record found, throw an error
+            throw new Error(`No IPNS record found for topic ${topic} using fetch`);
+        } catch (error) {
             //@ts-expect-error
-            const { record } = await this.localStore.get(routingKey, options);
-
-            return record;
-        } catch (err) {
-            //@ts-expect-error
-            err.details = { ...err.details, routingKey, topic: topic, options };
-            options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:error", err));
-            throw err;
+            error.details = { ...error.details, topic, routingKey, options };
+            log.trace("Error in get method:", error);
+            throw error;
         }
-    };
+    }
+}
 
-    return originalRouter;
+export function createIpnsFetchRouter(helia: HeliaWithLibp2pPubsub): IPNSRouting {
+    return new IpnsFetchRouter(helia);
 }

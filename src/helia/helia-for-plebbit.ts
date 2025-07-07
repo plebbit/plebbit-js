@@ -9,7 +9,8 @@ import { MemoryBlockstore } from "blockstore-core";
 import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
 import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
-import { createPubsubRouterWithFetch, PlebbitIpnsGetOptions } from "./ipns-over-pubsub-with-fetch.js";
+import { createIpnsFetchRouter, PlebbitIpnsGetOptions } from "./ipns-over-pubsub-with-fetch.js";
+import { pubsub as createIpnsPubusubRouter } from "@helia/ipns/routing";
 import Logger from "@plebbit/plebbit-logger";
 import type { AddResult, NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
@@ -95,7 +96,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
     const heliaFs = unixfs(helia);
 
     const ipnsNameResolver = ipns(helia, {
-        routers: [createPubsubRouterWithFetch(helia)]
+        routers: [createIpnsFetchRouter(helia), createIpnsPubusubRouter(helia)]
     });
 
     //@ts-expect-error
@@ -224,6 +225,24 @@ export async function createLibp2pJsClientOrUseExistingOne(
                 log("Helia/libp2p-js stopped with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
             }
         }
+    };
+
+    const originalSubscribe = helia.libp2p.services.pubsub.subscribe.bind(helia.libp2p.services.pubsub);
+
+    helia.libp2p.services.pubsub.subscribe = async (topic) => {
+        throwIfHeliaIsStoppingOrStopped();
+        if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
+            const topicHash = await sha256.digest(new TextEncoder().encode(topic));
+            const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
+
+            await connectToPeersProvidingCid({
+                helia,
+                contentCid: topicCid.toString(),
+                maxPeers: 2,
+                log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
+            });
+        }
+        originalSubscribe(topic);
     };
 
     const fullInstanceWithOptions = {
