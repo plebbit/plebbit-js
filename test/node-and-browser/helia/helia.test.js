@@ -141,5 +141,33 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((con
 
             await testPlebbit.destroy();
         });
+
+        it(`We can fetch the IPNS using pubsub only`, async () => {
+            // plebbit-js sets up helia to use two routers for IPNS:
+            // 1. Pubsub router: Joins pubsub topic, and awaits for the IPNS record to be published
+            // 2. Fetch router: requests the IPNS record from peers in the pubsub topic
+
+            // We need to test if we can fetch the IPNS using pubsub only
+
+            const testPlebbit = await config.plebbitInstancePromise({
+                forceMockPubsub: false
+            });
+
+            Object.values(testPlebbit.clients.libp2pJsClients)[0]._heliaIpnsRouter.routers = Object.values(
+                testPlebbit.clients.libp2pJsClients
+            )[0]._heliaIpnsRouter.routers.slice(1); // remove the fetch router
+
+            const sub = await testPlebbit.createSubplebbit({ address: mathCliNoMockedPubsubSubplebbitAddress });
+            const errors = [];
+            sub.on("error", (error) => errors.push(error));
+
+            await sub.update();
+            await new Promise((resolve) => sub.once("update", resolve));
+
+            expect(sub.updatedAt).to.be.a("number");
+            expect(sub.settings).to.be.undefined; // make sure it's not loading local subplebbit
+
+            await testPlebbit.destroy();
+        });
     });
 });
