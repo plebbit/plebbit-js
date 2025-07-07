@@ -229,19 +229,22 @@ export async function createLibp2pJsClientOrUseExistingOne(
 
     const originalSubscribe = helia.libp2p.services.pubsub.subscribe.bind(helia.libp2p.services.pubsub);
 
-    helia.libp2p.services.pubsub.subscribe = async (topic) => {
-        throwIfHeliaIsStoppingOrStopped();
-        if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
-            const topicHash = await sha256.digest(new TextEncoder().encode(topic));
-            const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
+    const connectToPeersProvidingTopic = async (topic: string) => {
+        const topicHash = await sha256.digest(new TextEncoder().encode(topic));
+        const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
 
-            await connectToPeersProvidingCid({
-                helia,
-                contentCid: topicCid.toString(),
-                maxPeers: 2,
-                log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
-            });
-        }
+        await connectToPeersProvidingCid({
+            helia,
+            contentCid: topicCid.toString(),
+            maxPeers: 2,
+            log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
+        });
+    };
+
+    helia.libp2p.services.pubsub.subscribe = (topic) => {
+        throwIfHeliaIsStoppingOrStopped();
+        if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0)
+            connectToPeersProvidingTopic(topic).catch((err) => log.error("Error connecting to peers providing topic", err));
         originalSubscribe(topic);
     };
 
