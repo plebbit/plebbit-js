@@ -395,6 +395,10 @@ export function ipnsNameToIpnsOverPubsubTopic(ipnsName: string) {
 }
 
 export const pubsubTopicToDhtKey = (pubsubTopic: string): string => {
+    return pubsubTopicToDhtKeyCid(pubsubTopic).toString(base32);
+};
+
+export const pubsubTopicToDhtKeyCid = (pubsubTopic: string): CID => {
     const stringToHash = `floodsub:${pubsubTopic}`;
     const bytes = new TextEncoder().encode(stringToHash);
 
@@ -407,7 +411,7 @@ export const pubsubTopicToDhtKey = (pubsubTopic: string): string => {
 
     // Create CID with the digest
     const cid = CID.create(1, 0x55, digest);
-    return cid.toString(base32);
+    return cid;
 };
 
 export async function retryKuboIpfsAdd({
