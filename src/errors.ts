@@ -42,6 +42,7 @@ export enum messages {
     ERR_FAILED_TO_FETCH_IPFS_CID_VIA_IPFS_P2P = "Failed to fetch an IPFS CID via IPFS P2P",
     ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",
     ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS = "Failed to fetch Subplebbit IPNS record from gateway(s)",
+    ERR_FETCH_OVER_IPNS_OVER_PUBSUB_FAILED = "Failed to fetch IPNS record over IPNS-Over-Pubsub using libp2p/fetch",
     ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS = "Failed to fetch comment IPFS file from gateway(s)",
     ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS = "Failed to fetch comment update IPFS file from gateway(s)",
     ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS = "Failed to fetch Page IPFS file from gateway(s)",

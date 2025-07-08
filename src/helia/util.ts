@@ -63,7 +63,7 @@ export async function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: str
     });
 }
 
-export async function getPeersProvidingCid(helia: HeliaWithLibp2pPubsub, contentCid: string, options?: { signal?: AbortSignal }) {
-    const peersWithContent = await genToArray(helia.libp2p.contentRouting.findProviders(CID.parse(contentCid), options));
+export async function getPeersProvidingCid(helia: HeliaWithLibp2pPubsub, contentCid: CID, options?: { signal?: AbortSignal }) {
+    const peersWithContent = await genToArray(helia.libp2p.contentRouting.findProviders(contentCid, options));
     return peersWithContent;
 }
