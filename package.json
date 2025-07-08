@@ -58,7 +58,7 @@
         "@helia/ipns": "8.2.3",
         "@helia/unixfs": "5.0.3",
         "@libp2p/fetch": "3.0.21",
-        "@libp2p/identify": "3.0.37",
+        "@libp2p/identify": "3.0.38",
         "@libp2p/interfaces": "3.3.2",
         "@libp2p/peer-id": "5.1.8",
         "@libp2p/peer-id-factory": "4.2.4",
