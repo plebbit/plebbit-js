@@ -62,6 +62,8 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
 
         it(`Correct order of ${clientFieldName} state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
             const sub = await plebbit.getSubplebbit(signers[0].address);
+            delete sub.raw.subplebbitIpfs;
+            delete sub.updateCid;
             const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
             const actualStates = [];
