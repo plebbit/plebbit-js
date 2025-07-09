@@ -335,6 +335,9 @@ export async function resolveWhenPredicateIsTrue(
 
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: RemoteSubplebbit, timeoutMs: number) {
     const wasUpdating = subplebbit.state === "updating";
+    const updatingStates: RemoteSubplebbit["updatingState"][] = [];
+    const updatingStateChangeListener = (state: RemoteSubplebbit["updatingState"]) => updatingStates.push(state);
+    subplebbit.on("updatingstatechange", updatingStateChangeListener);
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
     let updateError: PlebbitError | Error | undefined;
     const errorListener = (err: PlebbitError | Error) => (updateError = err);
@@ -343,7 +346,15 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: 
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new PlebbitError("ERR_GET_SUBPLEBBIT_TIMED_OUT", { subplebbitAddress: subplebbit.address, timeoutMs })
+            message:
+                updateError ||
+                new PlebbitError("ERR_GET_SUBPLEBBIT_TIMED_OUT", {
+                    subplebbitAddress: subplebbit.address,
+                    timeoutMs,
+                    error: updateError,
+                    updatingStates,
+                    subplebbit
+                })
         });
         if (updateError) throw updateError;
     } catch (e) {
@@ -353,6 +364,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit: 
         throw e;
     } finally {
         subplebbit.removeListener("error", errorListener);
+        subplebbit.removeListener("updatingstatechange", updatingStateChangeListener);
         if (!wasUpdating) await subplebbit.stop();
     }
 }
@@ -383,6 +395,10 @@ export function ipnsNameToIpnsOverPubsubTopic(ipnsName: string) {
 }
 
 export const pubsubTopicToDhtKey = (pubsubTopic: string): string => {
+    return pubsubTopicToDhtKeyCid(pubsubTopic).toString(base32);
+};
+
+export const pubsubTopicToDhtKeyCid = (pubsubTopic: string): CID => {
     const stringToHash = `floodsub:${pubsubTopic}`;
     const bytes = new TextEncoder().encode(stringToHash);
 
@@ -395,7 +411,7 @@ export const pubsubTopicToDhtKey = (pubsubTopic: string): string => {
 
     // Create CID with the digest
     const cid = CID.create(1, 0x55, digest);
-    return cid.toString(base32);
+    return cid;
 };
 
 export async function retryKuboIpfsAdd({

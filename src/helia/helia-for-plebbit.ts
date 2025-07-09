@@ -9,7 +9,8 @@ import { MemoryBlockstore } from "blockstore-core";
 import { createDelegatedRoutingV1HttpApiClient } from "@helia/delegated-routing-v1-http-api-client";
 import { unixfs } from "@helia/unixfs";
 import { fetch as libp2pFetch } from "@libp2p/fetch";
-import { createPubsubRouterWithFetch } from "./ipns-over-pubsub-with-fetch.js";
+import { createIpnsFetchRouter, PlebbitIpnsGetOptions } from "./ipns-over-pubsub-with-fetch.js";
+import { pubsub as createIpnsPubusubRouter } from "@helia/ipns/routing";
 import Logger from "@plebbit/plebbit-logger";
 import type { AddResult, NameResolveOptions as KuboNameResolveOptions } from "kubo-rpc-client";
 import type { IpfsHttpClientPubsubMessage, ParsedPlebbitOptions } from "../types.js";
@@ -53,6 +54,8 @@ export async function createLibp2pJsClientOrUseExistingOne(
             addresses: { listen: [] }, // TODO at some point we should use addresses, but right now it gets into an infinite loop with random walk
             peerDiscovery: undefined,
             ...plebbitOptions.libp2pOptions,
+            // Configure connection manager to handle more concurrent streams
+
             services: {
                 identify: identify(),
                 pubsub: gossipsub(),
@@ -87,7 +90,7 @@ export async function createLibp2pJsClientOrUseExistingOne(
     const heliaFs = unixfs(helia);
 
     const ipnsNameResolver = ipns(helia, {
-        routers: [createPubsubRouterWithFetch(helia)]
+        routers: [createIpnsFetchRouter(helia), createIpnsPubusubRouter(helia)]
     });
 
     //@ts-expect-error
@@ -112,7 +115,10 @@ export async function createLibp2pJsClientOrUseExistingOne(
                     const ipnsNameAsPeerId = typeof ipnsName === "string" ? peerIdFromString(ipnsName) : ipnsName;
                     log.trace("Resolving ipns name", ipnsName, "with options", options);
                     try {
-                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), options);
+                        const result = await ipnsNameResolver.resolve(ipnsNameAsPeerId.toMultihash(), {
+                            ...options,
+                            ipnsName
+                        } as PlebbitIpnsGetOptions);
                         yield result.record.value;
                         return;
                     } catch (err) {
@@ -213,6 +219,27 @@ export async function createLibp2pJsClientOrUseExistingOne(
                 log("Helia/libp2p-js stopped with key", plebbitOptions.key, "and peer id", helia.libp2p.peerId.toString());
             }
         }
+    };
+
+    const originalSubscribe = helia.libp2p.services.pubsub.subscribe.bind(helia.libp2p.services.pubsub);
+
+    const connectToPeersProvidingTopic = async (topic: string) => {
+        const topicHash = await sha256.digest(new TextEncoder().encode(topic));
+        const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
+
+        await connectToPeersProvidingCid({
+            helia,
+            contentCid: topicCid.toString(),
+            maxPeers: 2,
+            log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
+        });
+    };
+
+    helia.libp2p.services.pubsub.subscribe = (topic) => {
+        throwIfHeliaIsStoppingOrStopped();
+        if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0)
+            connectToPeersProvidingTopic(topic).catch((err) => log.error("Error connecting to peers providing topic", err));
+        originalSubscribe(topic);
     };
 
     const fullInstanceWithOptions = {
