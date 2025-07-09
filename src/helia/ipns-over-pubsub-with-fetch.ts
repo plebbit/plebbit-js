@@ -18,6 +18,7 @@ export type PlebbitIpnsGetOptions = ipnsGetOptions & {
 
 const PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT = 3; // Increased from 1
 const IPNS_FETCH_COOLOFF_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+const IPNS_FETCH_FROM_PEER_TIMEOUT_MS = 10000;
 
 // Infer types from the existing usage
 type PeerId = ReturnType<typeof peerIdFromString>;
@@ -47,24 +48,18 @@ export class IpnsFetchRouter implements IPNSRouting {
     }): Promise<Uint8Array> {
         const contentCidString = pubsubTopicToDhtKeyCid(topic);
 
-        // Check if already aborted
-        if (options?.signal?.aborted) {
-            throw new Error("Fetch aborted");
-        }
-
-        console.log("Before fetchFromPeer " + peer.toString() + " " + contentCidString);
-
-        // Check again after delay
-        if (options?.signal?.aborted) {
-            throw new Error("Fetch aborted");
-        }
-
         const record = await pTimeout(this._fetchService.fetch(peer, routingKey), {
-            milliseconds: 6000,
-            signal: options?.signal
+            milliseconds: IPNS_FETCH_FROM_PEER_TIMEOUT_MS,
+            signal: options?.signal,
+            message: new PlebbitError("ERR_LIBP2P_FETCH_IPNS_FROM_PEER_TIMEDOUT", {
+                peerId: peer,
+                routingKey,
+                topic,
+                timeoutMs: IPNS_FETCH_FROM_PEER_TIMEOUT_MS,
+                contentCidString,
+                options
+            })
         });
-
-        console.log("After fetchFromPeer " + peer.toString() + " " + contentCidString, "did it download a record?", !!record);
 
         if (!record) {
             throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED", {
@@ -286,7 +281,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         }
 
         // First check if we already have pubsub subscribers
-        const pubsubSubscribers: any[] = []; // TODO revert this later
+        const pubsubSubscribers = this._helia.libp2p.services.pubsub.getSubscribers(topic);
 
         const abortController = new AbortController();
         const combinedSignal = options?.signal ? AbortSignal.any([options.signal, abortController.signal]) : abortController.signal;
