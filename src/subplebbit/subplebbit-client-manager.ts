@@ -291,6 +291,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
             try {
                 subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
             } catch (e) {
+                //@ts-expect-error
+                e.details = { ...e.details, ipnsName, subAddress };
                 throw e;
             } finally {
                 if ("_helia" in kuboRpcOrHelia) this.updateLibp2pJsClientState("stopped", kuboRpcOrHelia._libp2pJsClientsOptions.key);
