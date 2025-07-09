@@ -8,6 +8,7 @@ import { peerIdFromString } from "@libp2p/peer-id";
 import type { HeliaWithLibp2pPubsub } from "./types.js";
 import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey, pubsubTopicToDhtKeyCid } from "../util.js";
 import { PlebbitError } from "../plebbit-error.js";
+import { CID } from "kubo-rpc-client";
 
 const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
 
@@ -15,7 +16,7 @@ export type PlebbitIpnsGetOptions = ipnsGetOptions & {
     ipnsName: string;
 };
 
-const PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT = 3;
+const PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT = 1;
 const IPNS_FETCH_COOLOFF_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
 
 // Infer types from the existing usage
@@ -44,14 +45,27 @@ export class IpnsFetchRouter implements IPNSRouting {
         topic: string;
         options?: PlebbitIpnsGetOptions;
     }): Promise<Uint8Array> {
-        // console.time("fetchFromPeer " + peer.toString() + " " + contentCidString);
         const contentCidString = pubsubTopicToDhtKeyCid(topic);
+
+        // Check if already aborted
+        if (options?.signal?.aborted) {
+            throw new Error("Fetch aborted");
+        }
+
         console.log("Before fetchFromPeer " + peer.toString() + " " + contentCidString);
-        const record = await pTimeout(this._fetchService.fetch(peer, routingKey, { signal: options?.signal }), {
-            milliseconds: 10000
+
+        // Check again after delay
+        if (options?.signal?.aborted) {
+            throw new Error("Fetch aborted");
+        }
+
+        const record = await pTimeout(this._fetchService.fetch(peer, routingKey), {
+            milliseconds: 6000,
+            signal: options?.signal
         });
+
         console.log("After fetchFromPeer " + peer.toString() + " " + contentCidString, "did it download a record?", !!record);
-        // console.timeEnd("fetchFromPeer " + peer.toString() + " " + contentCidString);
+
         if (!record) {
             throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED", {
                 peerId: peer,
@@ -80,36 +94,45 @@ export class IpnsFetchRouter implements IPNSRouting {
         // We already have subscribers, no need to find providers
         log("Using", pubsubSubscribers.length, "existing pubsub subscribers for topic", topic);
 
-        const promises = pubsubSubscribers.map((peer) =>
-            limit(() =>
-                this._fetchFromPeer({
-                    peer,
-                    routingKey,
-                    topic,
-                    options: options
-                })
-            )
-                .then((result) => ({ success: true as const, result, peerId: peer }))
-                .catch((error) => ({ success: false as const, error, peerId: peer }))
-        );
+        // Create individual abort controllers for each fetch
+        const fetchAbortControllers: AbortController[] = [];
 
         const peerIdToError: Record<string, Error> = {};
-        // Keep racing until we get a success or all fail
         let ipnsRecordFromFetch: Uint8Array | undefined;
-        for await (const outcome of promises) {
-            const settled = await outcome;
-            if (settled.success && "result" in settled) {
-                ipnsRecordFromFetch = settled.result;
-                options.abortController.abort(); // Cancel remaining operations
-                limit.clearQueue();
-                // Record successful fetch timestamp
-                // this.lastTimeFetchedIpnsRecord[cooloffKey] = now;
-                log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using pubsub subscribers");
-                break;
-            } else if ("error" in settled && settled.error) {
-                // Track error by peer ID
-                peerIdToError[settled.peerId.toString()] = settled.error;
+
+        // With p-limit(1), we execute sequentially, so we can try subscribers one by one
+        // and stop as soon as we get a successful result
+        try {
+            for (const peer of pubsubSubscribers) {
+                if (ipnsRecordFromFetch) {
+                    break; // Already got a result, stop trying more subscribers
+                }
+
+                const peerAbortController = new AbortController();
+                fetchAbortControllers.push(peerAbortController);
+
+                const combinedSignal = AbortSignal.any([options.signal, peerAbortController.signal]);
+
+                try {
+                    const result = await limit(() =>
+                        this._fetchFromPeer({
+                            peer,
+                            routingKey,
+                            topic,
+                            options: { ...options, signal: combinedSignal }
+                        })
+                    );
+                    ipnsRecordFromFetch = result;
+                    log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using pubsub subscribers");
+                    break; // Success! Stop trying more subscribers
+                } catch (error) {
+                    peerIdToError[peer.toString()] = error as Error;
+                    // Continue to next subscriber
+                }
             }
+        } finally {
+            // Clean up any remaining abort controllers
+            fetchAbortControllers.forEach((controller) => controller.abort());
         }
 
         if (ipnsRecordFromFetch) {
@@ -136,53 +159,75 @@ export class IpnsFetchRouter implements IPNSRouting {
     }): Promise<Uint8Array> {
         const limit = pLimit(PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT);
         // No subscribers, need to find providers using content routing and process them as they come
-        const pubsubTopicCid = pubsubTopicToDhtKeyCid(topic);
-
-        const providerPromises: Promise<
-            { success: true; result: Uint8Array; peerId: PeerId } | { success: false; error: Error; peerId: PeerId }
-        >[] = [];
+        const pubsubTopicCidString = pubsubTopicToDhtKey(topic);
+        const pubsubTopicCid = CID.parse(pubsubTopicToDhtKey(topic));
 
         let ipnsRecordFromFetch: Uint8Array | undefined;
         const peerIdToError: Record<string, Error> = {};
 
+        // Create individual abort controllers for each fetch
+        const fetchAbortControllers: AbortController[] = [];
+
+        const fetchFromIpnsPeerInLimit = async (peer: PeerId, peerAbortController: AbortController) => {
+            if (ipnsRecordFromFetch) throw Error("Already fetched IPNS record");
+
+            // Create combined signal that includes the peer-specific abort controller
+            const combinedSignal = AbortSignal.any([options.signal, peerAbortController.signal]);
+
+            return this._fetchFromPeer({
+                peer,
+                routingKey,
+                topic,
+                options: { ...options, signal: combinedSignal }
+            });
+        };
+
+        const cleanUp = () => {
+            findProvidersAbortController.abort();
+            fetchAbortControllers.forEach((controller) => controller.abort());
+        };
+
+        const findProvidersAbortController = new AbortController();
+
         // Process providers as they're discovered
-        // TODO need to optimize this and make peers we already connected at the top
-        for await (const peer of this._helia.libp2p.contentRouting.findProviders(pubsubTopicCid, options)) {
-            if (ipnsRecordFromFetch) break; // Stop if we already found a record
+        try {
+            for await (const peer of this._helia.libp2p.contentRouting.findProviders(pubsubTopicCid, {
+                signal: findProvidersAbortController.signal
+            })) {
+                if (ipnsRecordFromFetch) {
+                    break; // Already got a result, stop trying more providers
+                }
 
-            const promise = limit(() => this._fetchFromPeer({ peer: peer.id, routingKey, topic, options }))
-                .then((result) => {
-                    if (!ipnsRecordFromFetch) {
-                        ipnsRecordFromFetch = result;
-                        // this.lastTimeFetchedIpnsRecord[cooloffKey] = now;
-                        log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
-                        // options.abortController.abort(); // Cancel remaining operations
-                        limit.clearQueue();
-                    }
-                    return { success: true as const, result, peerId: peer.id };
-                })
-                .catch((error) => ({ success: false as const, error, peerId: peer.id }));
+                const peerAbortController = new AbortController();
+                fetchAbortControllers.push(peerAbortController);
 
-            providerPromises.push(promise);
-        }
-
-        // Wait for any remaining promises if we haven't found a record yet
-
-        const allResults = await Promise.allSettled(providerPromises);
-        for (const result of allResults) {
-            if (result.status === "fulfilled" && result.value.success && "result" in result.value) {
-                ipnsRecordFromFetch = result.value.result;
-                // this.lastTimeFetchedIpnsRecord[cooloffKey] = now;
-                log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
-                break;
-            } else if (result.status === "fulfilled" && result.value.success && "error" in result.value && result.value.error) {
-                // Handle case where fetchFromPeer succeeded but returned { success: false, error }
-                peerIdToError[result.value.peerId.toString()] = result.value.error as Error;
-            } else if (result.status === "rejected") {
-                // Handle case where fetchFromPeer promise was rejected
-                // Note: We can't track peerId for rejected promises since we lose the context
-                log.trace("Promise rejected without peer context:", result.reason);
+                try {
+                    const result = await limit(() => fetchFromIpnsPeerInLimit(peer.id, peerAbortController));
+                    ipnsRecordFromFetch = result;
+                    cleanUp();
+                    log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
+                    break; // Success! Stop trying more providers
+                } catch (error) {
+                    peerIdToError[peer.id.toString()] = error as Error;
+                    // Continue to next provider
+                }
             }
+        } catch (e) {
+            //@ts-expect-error
+            e.details = {
+                //@ts-expect-error
+                ...e.details,
+                topic,
+                routingKey,
+                peerIdToError,
+                pubsubTopicCid,
+                pubsubTopicCidString,
+                options
+            };
+            throw e;
+        } finally {
+            // Clean up any remaining abort controllers
+            cleanUp();
         }
 
         if (ipnsRecordFromFetch) {
@@ -221,7 +266,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         }
 
         // First check if we already have pubsub subscribers
-        const pubsubSubscribers: any[] = []; // will revert this later
+        const pubsubSubscribers: any[] = []; // TODO revert this later
 
         const abortController = new AbortController();
         const combinedSignal = options?.signal ? AbortSignal.any([options.signal, abortController.signal]) : abortController.signal;
