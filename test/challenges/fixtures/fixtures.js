@@ -145,13 +145,10 @@ const whitelistChallegeSubplebbit = {
     settings: {
         challenges: [
             {
-                // the fail challenge always fails
-                name: "fail",
+                name: "whitelist",
                 options: {
-                    error: `You're not whitelisted.`
-                },
-                // challenge should never be triggered if the author address is excluded
-                exclude: [{ address: ["high-karma.eth"] }]
+                    whitelist: "high-karma.eth"
+                }
             }
         ]
     }
