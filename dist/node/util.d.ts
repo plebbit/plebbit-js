@@ -1,5 +1,6 @@
 import { messages } from "./errors.js";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
+import { CID } from "kubo-rpc-client";
 import type { KuboRpcClient } from "./types.js";
 import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesCpOptions } from "kubo-rpc-client";
 import type { DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeRequestMessageWithPostSubplebbitAuthor, DecryptedChallengeRequestMessageWithReplySubplebbitAuthor, DecryptedChallengeRequestPublication, PublicationFromDecryptedChallengeRequest, PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest } from "./pubsub-messages/types.js";
@@ -42,6 +43,7 @@ export declare function calculateIpfsCidV0(content: string): Promise<string>;
 export declare function binaryKeyToPubsubTopic(key: Uint8Array): string;
 export declare function ipnsNameToIpnsOverPubsubTopic(ipnsName: string): string;
 export declare const pubsubTopicToDhtKey: (pubsubTopic: string) => string;
+export declare const pubsubTopicToDhtKeyCid: (pubsubTopic: string) => CID;
 export declare function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, options }: {
     ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add">;
     log: Logger;

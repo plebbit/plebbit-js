@@ -1,71 +1,227 @@
-import { pubsub as ipnsPubsubRouter } from "@helia/ipns/routing";
-import { CustomProgressEvent } from "progress-events";
 import Logger from "@plebbit/plebbit-logger";
-import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey } from "../util.js";
-import { connectToPeersProvidingCid } from "./util.js";
+import pLimit from "p-limit";
+import pTimeout from "p-timeout";
+import { binaryKeyToPubsubTopic, pubsubTopicToDhtKey, pubsubTopicToDhtKeyCid } from "../util.js";
+import { PlebbitError } from "../plebbit-error.js";
+import { CID } from "kubo-rpc-client";
 const log = Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch");
-export function createPubsubRouterWithFetch(helia) {
-    const originalRouter = ipnsPubsubRouter(helia);
-    const libp2pFetchService = helia.libp2p.services.fetch;
-    //@ts-expect-error
-    const originalRouterPubsub = originalRouter.pubsub;
-    originalRouter.get = async function (routingKey, options) {
+const PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT = 3;
+const IPNS_FETCH_FROM_PEER_TIMEOUT_MS = 10000;
+export class IpnsFetchRouter {
+    constructor(helia) {
+        this.fetchedIpnsRecordBefore = {}; // key is the "topic", value is true if it was fetched before using libp2p/fetch
+        this._helia = helia;
+        this._fetchService = helia.libp2p.services.fetch;
+    }
+    put(routingKey, marshaledRecord, options) {
+        throw new Error("Method not implemented.");
+    }
+    async _fetchFromPeer({ peer, routingKey, topic, options }) {
+        const contentCidString = pubsubTopicToDhtKeyCid(topic);
+        const record = await pTimeout(this._fetchService.fetch(peer, routingKey), {
+            milliseconds: IPNS_FETCH_FROM_PEER_TIMEOUT_MS,
+            signal: options?.signal,
+            message: new PlebbitError("ERR_LIBP2P_FETCH_IPNS_FROM_PEER_TIMEDOUT", {
+                peerId: peer,
+                routingKey,
+                topic,
+                timeoutMs: IPNS_FETCH_FROM_PEER_TIMEOUT_MS,
+                contentCidString,
+                options
+            })
+        });
+        if (!record) {
+            throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_RETURNED_UNDEFINED", {
+                peerId: peer,
+                routingKey,
+                topic,
+                contentCidString,
+                options
+            });
+        }
+        return record;
+    }
+    async _handleFetchingFromSubscribedPubsubPeers({ routingKey, topic, pubsubSubscribers, options }) {
+        const limit = pLimit(PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT);
+        // We already have subscribers, no need to find providers
+        log("Using", pubsubSubscribers.length, "existing pubsub subscribers for topic", topic);
+        // Create individual abort controllers for each fetch
+        const fetchAbortControllers = [];
+        const peerIdToError = {};
+        const cleanUp = () => {
+            fetchAbortControllers.forEach((controller) => controller.abort());
+            if (options.abortController)
+                options.abortController.abort();
+        };
+        // Create fetch promises for all subscribers in parallel
+        const fetchPromises = pubsubSubscribers.map((peer) => {
+            const peerAbortController = new AbortController();
+            fetchAbortControllers.push(peerAbortController);
+            const combinedSignal = AbortSignal.any([options.signal, peerAbortController.signal]);
+            return limit(() => this._fetchFromPeer({
+                peer,
+                routingKey,
+                topic,
+                options: { ...options, signal: combinedSignal }
+            })).catch((error) => {
+                peerIdToError[peer.toString()] = error;
+                throw error;
+            });
+        });
+        // Use Promise.allSettled to wait for all promises and find the first successful one
+        const results = await Promise.allSettled(fetchPromises);
+        // Find the first fulfilled (successful) result
+        const successfulResult = results.find((result) => result.status === "fulfilled");
+        if (successfulResult) {
+            log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using pubsub subscribers");
+            cleanUp();
+            return successfulResult.value;
+        }
+        else {
+            // All promises failed
+            cleanUp();
+            throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_FAILED", {
+                peerIdToError,
+                topic,
+                routingKey,
+                options,
+                fetchingFromGossipsubTopicSubscribers: true
+            });
+        }
+    }
+    async _handleFetchingFromProviders({ routingKey, topic, options }) {
+        const limit = pLimit(PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT);
+        // No subscribers, need to find providers using content routing and process them as they come
+        const pubsubTopicCidString = pubsubTopicToDhtKey(topic);
+        const pubsubTopicCid = CID.parse(pubsubTopicToDhtKey(topic));
+        const peerIdToError = {};
+        const fetchAbortControllers = [];
+        const activeFetchPromises = [];
+        const findProvidersAbortController = new AbortController();
+        const cleanUp = () => {
+            findProvidersAbortController.abort();
+            fetchAbortControllers.forEach((controller) => controller.abort());
+            options.abortController.abort();
+        };
+        // Helper function to check if any promise has succeeded
+        const checkForSuccess = async (promises) => {
+            if (promises.length === 0)
+                return null;
+            const results = await Promise.allSettled(promises);
+            const successfulResult = results.find((result) => result.status === "fulfilled");
+            return successfulResult ? successfulResult.value : null;
+        };
         try {
-            const topic = binaryKeyToPubsubTopic(routingKey);
-            let ipnsRecordFromFetch;
-            if (!originalRouterPubsub.getTopics().includes(topic)) {
-                // add peers if if we don't have any peers connected to this topic
-                let peersFromDelegatedRouters;
-                if (originalRouterPubsub.getSubscribers(topic).length === 0)
-                    peersFromDelegatedRouters = await connectToPeersProvidingCid({
-                        helia,
-                        contentCid: pubsubTopicToDhtKey(topic),
-                        maxPeers: 2,
-                        options,
-                        log: Logger("plebbit-js:helia:ipns:routing:pubsub-with-fetch:connectToPeersProvidingCid")
-                    });
-                const peersToFetchFrom = peersFromDelegatedRouters || originalRouterPubsub.getSubscribers(topic);
-                if (!peersToFetchFrom?.length)
-                    throw Error("Failed to detect peers for pubsub topic");
-                // call @libp2p/fetch here,
-                for (const pubsubPeer of peersToFetchFrom) {
-                    const peerId = "id" in pubsubPeer ? pubsubPeer.remotePeer : pubsubPeer;
-                    try {
-                        ipnsRecordFromFetch = await libp2pFetchService.fetch(peerId, routingKey, options);
-                        if (!ipnsRecordFromFetch)
-                            throw Error("Fetch for IPNS-Over-Pubsub returned undefined");
-                        log("Fetched IPNS record of topic", topic, "from peer", pubsubPeer.toString());
-                        break;
-                    }
-                    catch (e) {
-                        log.error("Failed to fetch IPNS record", topic, "from peer", pubsubPeer.toString(), e);
-                    }
+            // Process providers as they're discovered, but in parallel up to the limit
+            for await (const peer of this._helia.libp2p.contentRouting.findProviders(pubsubTopicCid, {
+                signal: findProvidersAbortController.signal
+            })) {
+                const peerAbortController = new AbortController();
+                fetchAbortControllers.push(peerAbortController);
+                const combinedSignal = AbortSignal.any([options.signal, peerAbortController.signal]);
+                const fetchPromise = limit(() => this._fetchFromPeer({
+                    peer: peer.id,
+                    routingKey,
+                    topic,
+                    options: { ...options, signal: combinedSignal }
+                })).catch((error) => {
+                    peerIdToError[peer.id.toString()] = error;
+                    throw error;
+                });
+                activeFetchPromises.push(fetchPromise);
+                // Check if any active promises have succeeded
+                const result = await checkForSuccess(activeFetchPromises);
+                if (result) {
+                    cleanUp();
+                    log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
+                    return result;
                 }
-                log("add subscription for topic", topic);
-                originalRouterPubsub.subscribe(topic);
-                //@ts-expect-error
-                this.subscriptions.push(topic);
-                //@ts-expect-error
-                options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:subscribe", { topic }));
-                if (ipnsRecordFromFetch) {
-                    log("Fetched IPNS record of topic", topic, "from peers", peersToFetchFrom, "Using libp2p-fetch");
-                }
-                else {
-                    log("Failed to fetch IPNS record of topic", topic, "using libp2p-fetch from peers", peersToFetchFrom, ".Will be awaiting in the gossip topic, it may take 30s+");
+                // If we have reached the limit, wait for some to complete before adding more
+                if (activeFetchPromises.length >= PARALLEL_IPNS_OVER_PUBSUB_FETCH_LIMIT) {
+                    // Remove completed promises
+                    const results = await Promise.allSettled(activeFetchPromises);
+                    const successfulResult = results.find((result) => result.status === "fulfilled");
+                    if (successfulResult) {
+                        cleanUp();
+                        log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
+                        return successfulResult.value;
+                    }
                 }
             }
-            if (ipnsRecordFromFetch)
-                return ipnsRecordFromFetch;
-            //@ts-expect-error
-            const { record } = await this.localStore.get(routingKey, options);
-            return record;
+            // Final check on any remaining promises
+            const result = await checkForSuccess(activeFetchPromises);
+            if (result) {
+                log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
+                return result;
+            }
+            cleanUp();
+            // If we get here, all providers have been tried and failed
+            throw new PlebbitError("ERR_FETCH_OVER_IPNS_OVER_PUBSUB_FAILED", {
+                peerIdToError,
+                fetchingFromProviders: true,
+                topic,
+                routingKey,
+                options
+            });
         }
-        catch (err) {
+        catch (e) {
             //@ts-expect-error
-            options.onProgress?.(new CustomProgressEvent("ipns:pubsub-with-fetch:error", err));
-            throw err;
+            e.details = {
+                //@ts-expect-error
+                ...e.details,
+                topic,
+                routingKey,
+                peerIdToError,
+                pubsubTopicCid,
+                pubsubTopicCidString,
+                options
+            };
+            throw e;
         }
-    };
-    return originalRouter;
+        finally {
+            cleanUp();
+        }
+    }
+    async get(routingKey, options) {
+        const topic = binaryKeyToPubsubTopic(routingKey);
+        // Check if we should use libp2p/fetch based on cooloff period
+        const cooloffKey = `${topic}`;
+        const shouldUseFetch = !this.fetchedIpnsRecordBefore[cooloffKey];
+        if (!shouldUseFetch) {
+            log("Skipping libp2p/fetch for topic", topic, "and IPNS", options?.ipnsName, "since we already fetched it before using libp2p/fetch");
+            throw new Error("Already loaded via libp2p/fetch, should await for updates in gossipsub topic");
+        }
+        // First check if we already have pubsub subscribers
+        const pubsubSubscribers = this._helia.libp2p.services.pubsub.getSubscribers(topic);
+        const abortController = new AbortController();
+        const combinedSignal = options?.signal ? AbortSignal.any([options.signal, abortController.signal]) : abortController.signal;
+        try {
+            if (pubsubSubscribers.length > 0)
+                return await this._handleFetchingFromSubscribedPubsubPeers({
+                    routingKey,
+                    topic,
+                    pubsubSubscribers,
+                    options: { ...options, signal: combinedSignal, abortController }
+                });
+            else
+                return await this._handleFetchingFromProviders({
+                    routingKey,
+                    topic,
+                    options: { ...options, signal: combinedSignal, abortController }
+                });
+        }
+        catch (error) {
+            //@ts-expect-error
+            error.details = { ...error.details, topic, routingKey, options };
+            log.trace("Error in get method:", error);
+            throw error;
+        }
+        finally {
+            abortController.abort(); // make sure to abort
+        }
+    }
+}
+export function createIpnsFetchRouter(helia) {
+    return new IpnsFetchRouter(helia);
 }
 //# sourceMappingURL=ipns-over-pubsub-with-fetch.js.map

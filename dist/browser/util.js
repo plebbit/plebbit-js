@@ -298,6 +298,9 @@ export async function resolveWhenPredicateIsTrue(toUpdate, predicate, eventName 
 }
 export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, timeoutMs) {
     const wasUpdating = subplebbit.state === "updating";
+    const updatingStates = [];
+    const updatingStateChangeListener = (state) => updatingStates.push(state);
+    subplebbit.on("updatingstatechange", updatingStateChangeListener);
     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
     let updateError;
     const errorListener = (err) => (updateError = err);
@@ -306,7 +309,14 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
         await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
-            message: updateError || new PlebbitError("ERR_GET_SUBPLEBBIT_TIMED_OUT", { subplebbitAddress: subplebbit.address, timeoutMs })
+            message: updateError ||
+                new PlebbitError("ERR_GET_SUBPLEBBIT_TIMED_OUT", {
+                    subplebbitAddress: subplebbit.address,
+                    timeoutMs,
+                    error: updateError,
+                    updatingStates,
+                    subplebbit
+                })
         });
         if (updateError)
             throw updateError;
@@ -320,6 +330,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
     }
     finally {
         subplebbit.removeListener("error", errorListener);
+        subplebbit.removeListener("updatingstatechange", updatingStateChangeListener);
         if (!wasUpdating)
             await subplebbit.stop();
     }
@@ -346,6 +357,9 @@ export function ipnsNameToIpnsOverPubsubTopic(ipnsName) {
     return pubsubTopic;
 }
 export const pubsubTopicToDhtKey = (pubsubTopic) => {
+    return pubsubTopicToDhtKeyCid(pubsubTopic).toString(base32);
+};
+export const pubsubTopicToDhtKeyCid = (pubsubTopic) => {
     const stringToHash = `floodsub:${pubsubTopic}`;
     const bytes = new TextEncoder().encode(stringToHash);
     // Use synchronous sha256 from js-sha256
@@ -355,7 +369,7 @@ export const pubsubTopicToDhtKey = (pubsubTopic) => {
     const digest = Digest.create(0x12, new Uint8Array(hashBytes));
     // Create CID with the digest
     const cid = CID.create(1, 0x55, digest);
-    return cid.toString(base32);
+    return cid;
 };
 export async function retryKuboIpfsAdd({ ipfsClient: kuboRpcClient, log, content, inputNumOfRetries, options }) {
     const numOfRetries = inputNumOfRetries ?? 3;

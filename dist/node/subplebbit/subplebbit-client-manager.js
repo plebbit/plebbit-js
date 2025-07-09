@@ -195,6 +195,8 @@ export class SubplebbitClientsManager extends PlebbitClientsManager {
                 subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
             }
             catch (e) {
+                //@ts-expect-error
+                e.details = { ...e.details, ipnsName, subAddress };
                 throw e;
             }
             finally {
