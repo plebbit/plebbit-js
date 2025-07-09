@@ -164,7 +164,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         const cleanUp = () => {
             findProvidersAbortController.abort();
             fetchAbortControllers.forEach((controller) => controller.abort());
-            if (options.abortController) options.abortController.abort();
+            options.abortController.abort();
         };
 
         // Helper function to check if any promise has succeeded
@@ -222,9 +222,6 @@ export class IpnsFetchRouter implements IPNSRouting {
                         log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
                         return successfulResult.value;
                     }
-
-                    // Clear completed promises and continue
-                    activeFetchPromises.length = 0;
                 }
             }
 
