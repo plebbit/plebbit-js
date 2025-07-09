@@ -2,7 +2,6 @@ import type { HeliaWithLibp2pPubsub } from "./types.js";
 import { CID } from "multiformats/cid";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../plebbit-error.js";
-import { genToArray } from "../util.js";
 
 export async function connectToPeersProvidingCid({
     helia,
@@ -61,9 +60,4 @@ export async function waitForTopicPeers(helia: HeliaWithLibp2pPubsub, topic: str
         minPeers,
         timeoutMs
     });
-}
-
-export async function getPeersProvidingCid(helia: HeliaWithLibp2pPubsub, contentCid: CID, options?: { signal?: AbortSignal }) {
-    const peersWithContent = await genToArray(helia.libp2p.contentRouting.findProviders(contentCid, options));
-    return peersWithContent;
 }
