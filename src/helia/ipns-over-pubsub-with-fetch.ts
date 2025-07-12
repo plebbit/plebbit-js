@@ -127,6 +127,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         if (successfulResult) {
             log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using pubsub subscribers");
             cleanUp();
+            this.fetchedIpnsRecordBefore[topic] = true;
             return successfulResult.value;
         } else {
             // All promises failed
@@ -229,6 +230,7 @@ export class IpnsFetchRouter implements IPNSRouting {
             const result = await checkForSuccess(activeFetchPromises);
             if (result) {
                 log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
+                this.fetchedIpnsRecordBefore[topic] = true;
                 return result;
             }
 
