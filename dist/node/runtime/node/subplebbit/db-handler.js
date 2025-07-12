@@ -1204,12 +1204,36 @@ export class DbHandler {
         const modAuthorEdits = this.queryAuthorModEdits(authorSignerAddress);
         return { postScore, replyScore, lastCommentCid, ...modAuthorEdits, firstCommentTimestamp };
     }
+    _getAllDescendantCids(cid) {
+        const allCids = [cid];
+        const directChildren = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(cid);
+        for (const child of directChildren) {
+            allCids.push(...this._getAllDescendantCids(child.cid));
+        }
+        return allCids;
+    }
     purgeComment(cid, isNestedCall = false) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeComment");
         const purgedCids = [];
         if (!isNestedCall)
             this.createTransaction();
         try {
+            // Get all CIDs that will be purged (including descendants) and their authors
+            const allCidsToBeDeleted = this._getAllDescendantCids(cid);
+            const allAffectedAuthors = new Set();
+            // Collect all unique authorSignerAddresses from comments that will be purged
+            if (!isNestedCall) {
+                for (const cidToDelete of allCidsToBeDeleted) {
+                    const commentToDelete = this.queryComment(cidToDelete);
+                    if (!commentToDelete) {
+                        throw new Error(`Comment with cid ${cidToDelete} not found when attempting to purge`);
+                    }
+                    if (!commentToDelete.authorSignerAddress) {
+                        throw new Error(`Comment with cid ${cidToDelete} has no authorSignerAddress`);
+                    }
+                    allAffectedAuthors.add(commentToDelete.authorSignerAddress);
+                }
+            }
             const directChildren = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(cid);
             for (const child of directChildren)
                 purgedCids.push(...this.purgeComment(child.cid, true));
@@ -1230,6 +1254,19 @@ export class DbHandler {
             const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENTS} WHERE cid = ?`).run(cid);
             if (deleteResult.changes > 0)
                 purgedCids.push(cid);
+            // Force update on all comments by all affected authors since their statistics have changed
+            if (!isNestedCall && allAffectedAuthors.size > 0) {
+                const allAffectedAuthorCids = [];
+                for (const authorSignerAddress of allAffectedAuthors) {
+                    const authorCommentCids = this._db
+                        .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE authorSignerAddress = ?`)
+                        .all(authorSignerAddress);
+                    allAffectedAuthorCids.push(...authorCommentCids.map((c) => c.cid));
+                }
+                if (allAffectedAuthorCids.length > 0) {
+                    this.forceUpdateOnAllCommentsWithCid(allAffectedAuthorCids);
+                }
+            }
             if (!isNestedCall)
                 this.commitTransaction();
             return remeda.unique(purgedCids);

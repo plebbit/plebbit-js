@@ -214,6 +214,7 @@ export declare class DbHandler {
     queryAllCommentsOrderedByIdAsc(): CommentsTableRow[];
     queryAuthorModEdits(authorSignerAddress: string): Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
     querySubplebbitAuthor(authorSignerAddress: string): SubplebbitAuthor | undefined;
+    private _getAllDescendantCids;
     purgeComment(cid: string, isNestedCall?: boolean): string[];
     changeDbFilename(oldDbName: string, newDbName: string): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
