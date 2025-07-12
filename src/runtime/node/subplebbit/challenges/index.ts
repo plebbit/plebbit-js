@@ -10,6 +10,7 @@ import textMath from "./plebbit-js-challenges/text-math.js";
 import captchaCanvasV3 from "./plebbit-js-challenges/captcha-canvas-v3/index.js";
 import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
+import whitelist from "./plebbit-js-challenges/whitelist.js";
 import question from "./plebbit-js-challenges/question.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 import publicationMatch from "./plebbit-js-challenges/publication-match.js";
@@ -40,6 +41,7 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
     "captcha-canvas-v3": captchaCanvasV3,
     fail: fail,
     blacklist: blacklist,
+    whitelist: whitelist,
     question: question,
     "evm-contract-call": evmContractCall,
     "publication-match": publicationMatch

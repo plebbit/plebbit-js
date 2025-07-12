@@ -156,6 +156,19 @@ const whitelistChallegeSubplebbit = {
         ]
     }
 };
+const whitelistChallenge2Subplebbit = {
+    title: "whitelist challenge 2 subplebbit",
+    settings: {
+        challenges: [
+            {
+                name: "whitelist",
+                options: {
+                    whitelist: "high-karma.eth"
+                }
+            }
+        ]
+    }
+};
 const blacklistChallegeSubplebbit = {
     title: "blacklist challenge subplebbit",
     settings: {
@@ -384,6 +397,7 @@ const subplebbits = [
     excludeHighKarmaChallegeSubplebbit,
     excludeAccountAgeChallegeSubplebbit,
     whitelistChallegeSubplebbit,
+    whitelistChallenge2Subplebbit,
     blacklistChallegeSubplebbit,
     // erc20PaymentChallegeSubplebbit,
     // evmContractCallChallegeSubplebbit,
@@ -434,6 +448,13 @@ results[excludeAccountAgeChallegeSubplebbit.title] = {
     }
 };
 results[whitelistChallegeSubplebbit.title] = {
+    "high-karma.eth": { challengeSuccess: true },
+    "low-karma.eth": {
+        challengeSuccess: false,
+        challengeErrors: { 0: "You're not whitelisted." }
+    }
+};
+results[whitelistChallenge2Subplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,

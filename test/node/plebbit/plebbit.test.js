@@ -77,6 +77,7 @@ describe(`Plebbit.challenges`, async () => {
             "captcha-canvas-v3",
             "fail",
             "blacklist",
+            "whitelist",
             "question",
             "evm-contract-call",
             "publication-match"
