@@ -75,6 +75,7 @@ export class IpnsFetchRouter {
         if (successfulResult) {
             log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using pubsub subscribers");
             cleanUp();
+            this.fetchedIpnsRecordBefore[topic] = true;
             return successfulResult.value;
         }
         else {
@@ -152,6 +153,7 @@ export class IpnsFetchRouter {
             const result = await checkForSuccess(activeFetchPromises);
             if (result) {
                 log("Fetched IPNS", options?.ipnsName, "record for topic", topic, "using provider discovery");
+                this.fetchedIpnsRecordBefore[topic] = true;
                 return result;
             }
             cleanUp();

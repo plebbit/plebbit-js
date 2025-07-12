@@ -536,11 +536,20 @@ export class BaseClientsManager {
     preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) { }
     postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) { }
     postResolveTextRecordFailure(address, txtRecordName, chain, chainProviderUrl, error, staleCache) { }
-    async _resolveTextRecordSingleChainProvider(address, txtRecordName, chain, chainproviderUrl, chainId, staleCache) {
+    async _resolveTextRecordSingleChainProvider(address, txtRecordName, chain, chainproviderUrl, chainId, staleCache, signal) {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
         try {
-            const resolvedTextRecord = await this._plebbit._domainResolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl, chainId);
+            const resolvePromise = this._plebbit._domainResolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl, chainId);
+            const abortPromise = new Promise((_, reject) => {
+                if (signal.aborted) {
+                    reject(new PlebbitError("ERR_ABORTED_RESOLVING_TEXT_RECORD", { address, txtRecordName, chain, chainproviderUrl, chainId }));
+                }
+                signal.addEventListener("abort", () => {
+                    reject(new PlebbitError("ERR_ABORTED_RESOLVING_TEXT_RECORD", { address, txtRecordName, chain, chainproviderUrl }));
+                });
+            });
+            const resolvedTextRecord = signal ? await Promise.race([resolvePromise, abortPromise]) : await resolvePromise;
             const timeAfter = Date.now();
             if (typeof resolvedTextRecord === "string" && !isIpns(resolvedTextRecord))
                 throwWithErrorCode("ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS", {
@@ -587,8 +596,9 @@ export class BaseClientsManager {
             const providersSorted = this._plebbit.clients.chainProviders[chain].urls.length <= concurrencyLimit
                 ? this._plebbit.clients.chainProviders[chain].urls
                 : await this._plebbit._stats.sortGatewaysAccordingToScore(chain);
+            const abortController = new AbortController();
             try {
-                const providerPromises = providersSorted.map((providerUrl) => queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl, chainId, cachedTextRecord)));
+                const providerPromises = providersSorted.map((providerUrl) => queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl, chainId, cachedTextRecord, abortController.signal)));
                 //@ts-expect-error
                 const resolvedTextRecord = await Promise.race([
                     _firstResolve(providerPromises),
@@ -605,6 +615,7 @@ export class BaseClientsManager {
                     // result could be either the value of the text record
                     // or null if it doesn't have any value
                     queueLimit.clearQueue();
+                    abortController.abort("Aborted resolving text record on domain since we got a result");
                     if (typeof resolvedTextRecord === "string") {
                         // Only cache valid text records, not null
                         const resolvedCache = {

@@ -21,6 +21,7 @@ export var messages;
     messages["ERR_GET_SUBPLEBBIT_TIMED_OUT"] = "plebbit.getSubplebbit() timed out";
     messages["ERR_TIMEOUT_WAITING_FOR_PUBSUB_TOPIC_PEERS"] = "Timeout waiting for propagation of pubsub topic peers";
     messages["ERR_TIMED_OUT_RM_MFS_FILE"] = "Timed out removing MFS paths. We may need to nuke the whole MFS directory and republish everything";
+    messages["ERR_ABORTED_RESOLVING_TEXT_RECORD"] = "Aborted resolving text record on domain";
     // Plebbit errors
     messages["ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE"] = "subplebbit.stop() called without calling update() first";
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";

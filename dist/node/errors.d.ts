@@ -20,6 +20,7 @@ export declare enum messages {
     ERR_GET_SUBPLEBBIT_TIMED_OUT = "plebbit.getSubplebbit() timed out",
     ERR_TIMEOUT_WAITING_FOR_PUBSUB_TOPIC_PEERS = "Timeout waiting for propagation of pubsub topic peers",
     ERR_TIMED_OUT_RM_MFS_FILE = "Timed out removing MFS paths. We may need to nuke the whole MFS directory and republish everything",
+    ERR_ABORTED_RESOLVING_TEXT_RECORD = "Aborted resolving text record on domain",
     ERR_CALLED_SUBPLEBBIT_STOP_WITHOUT_UPDATE = "subplebbit.stop() called without calling update() first",
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
     ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
