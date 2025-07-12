@@ -201,7 +201,7 @@ getRemotePlebbitConfigs().map((config) => {
                     const purgedPostInIpns = findCommentInPageInstanceRecursively(subFromGateway.posts, commentToPurge.cid);
 
                     console.log("subFromGateway", subFromGateway.updatedAt, "does it have purged post in page?", !!purgedPostInIpns);
-                }, 5000);
+                }, 10000);
 
                 expect(sub.posts.pageCids).to.deep.equal({}); // let's assume sub has no page cids
 
