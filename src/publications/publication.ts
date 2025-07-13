@@ -180,6 +180,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const log = Logger("plebbit-js:publication:_handleRpcChallengeVerification");
         if (verification.comment)
             await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(<DecryptedChallengeVerification>verification);
+        this._setRpcClientState("stopped");
         this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
         if (this._rpcPublishSubscriptionId) {
             try {
