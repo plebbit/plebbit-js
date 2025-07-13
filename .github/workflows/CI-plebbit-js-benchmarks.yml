@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  benchmark:
     permissions:
       contents: read
       pull-requests: write
@@ -36,7 +36,7 @@ jobs:
       # prepare plebbit-js for installing
       - run: npm ci
       - run: npm run build
-      - run: rm -fr node_modules
+      # - run: rm -fr node_modules
 
       # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: |
