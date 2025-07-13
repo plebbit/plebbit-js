@@ -1,0 +1,73 @@
+# run and save benchmarks for @plebbit/plebbit-js in @plebbit/plebbit-js-benchmarks
+name: CI plebbit-js-benchmarks
+
+# only run if the CI passes
+# on:
+#   workflow_run:
+#     workflows:
+#       - 'CI'
+#     types:
+#       - 'completed'
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+
+    steps:
+      - run: sudo apt install -y xvfb
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # clone plebbit-js-benchmarks
+      - run: git clone https://github.com/plebbit/plebbit-js-benchmarks.git ../plebbit-js-benchmarks
+      # log the current commit for debugging
+      - run: |
+          git log -n 1
+        working-directory: ../plebbit-js-benchmarks
+
+      # prepare plebbit-js for installing
+      - run: npm ci
+      - run: npm run build
+      - run: rm -fr node_modules
+
+      # install latest plebbit-js using add ./plebbit-js (local folder module)
+      - run: |
+          npm uninstall @plebbit/plebbit-js
+          npm install ../plebbit-js
+          rm -rf ../plebbit-js/package-lock.json
+          npm install
+          npm run webpack
+        working-directory: ../plebbit-js-benchmarks
+
+      # benchmark and save report
+      - run: |
+          node start --benchmark publish
+          mkdir -p reports
+          cp report.json reports/${{github.sha}}.json
+          npm run report > reports/${{github.sha}}.txt
+          cat report.json | jq -c '.' >> reports/all.ndjson
+        working-directory: ../plebbit-js-benchmarks
+
+      # set up ssh to commit report
+      - run: |
+          mkdir -p ~/.ssh
+          echo "${{secrets.PLEBBIT_JS_BENCHMARKS_DEPLOY_KEY}}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      # commit and push report
+      - run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+          git add reports/
+          git commit -m "add benchmark report for ${{github.sha}}" || echo "no reports to commit"
+          git push
+        working-directory: ../plebbit-js-benchmarks
