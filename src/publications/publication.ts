@@ -285,8 +285,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return;
         }
         let decryptedChallengeVerification: DecryptedChallengeVerification | undefined;
+        let newPublishingState: Publication["publishingState"];
         if (msg.challengeSuccess) {
-            this._updatePublishingStateWithEmission("succeeded");
+            newPublishingState = "succeeded";
             log(`Received a challengeverification with challengeSuccess=true`, "for publication", this.getType());
             if (msg.encrypted) {
                 let decryptedRawString: string;
@@ -333,7 +334,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 }
             }
         } else {
-            this._updatePublishingStateWithEmission("failed");
+            newPublishingState = "failed";
             log.error(
                 `Challenge exchange with publication`,
                 this.getType(),
@@ -349,12 +350,15 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         this._challengeExchanges[msg.challengeRequestId.toString()].challengeVerification = challengeVerificationMsg;
 
+        this._changePublicationStateEmitEventEmitStateChangeEvent({
+            newPublishingState,
+            newState: "stopped",
+            event: {
+                name: "challengeverification",
+                args: [challengeVerificationMsg, this instanceof Comment && decryptedChallengeVerification ? this : undefined]
+            }
+        });
         await this._postSucessOrFailurePublishing();
-        this.emit(
-            "challengeverification",
-            challengeVerificationMsg,
-            this instanceof Comment && decryptedChallengeVerification ? this : undefined
-        );
     }
 
     private async _handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
