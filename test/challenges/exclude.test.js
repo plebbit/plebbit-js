@@ -201,6 +201,11 @@ describe("shouldExcludePublication", () => {
         commentModeration: { locked: true },
         author
     };
+    const subplebbitEdit = {
+        subplebbitAddress: "Qm...",
+        subplebbitEdit: { title: "New Title" },
+        author
+    };
 
     it("publicationType.post", () => {
         const subplebbitChallenge = {
@@ -238,6 +243,18 @@ describe("shouldExcludePublication", () => {
         expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(true);
     });
 
+    it("publicationType.subplebbitEdit and publicationType.commentEdit", () => {
+        const subplebbitChallenge = {
+            exclude: [{ publicationType: { subplebbitEdit: true, commentEdit: true } }]
+        };
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { subplebbitEdit })).to.equal(true);
+    });
+
     it("publicationType.commentEdit", () => {
         const subplebbitChallenge = {
             exclude: [{ publicationType: { commentEdit: true } }]
@@ -256,6 +273,18 @@ describe("shouldExcludePublication", () => {
         expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
         expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(true);
+    });
+
+    it("publicationType.subplebbitEdit", () => {
+        const subplebbitChallenge = {
+            exclude: [{ publicationType: { subplebbitEdit: true } }]
+        };
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { subplebbitEdit })).to.equal(true);
     });
 
     // Exclude based on roles

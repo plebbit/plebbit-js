@@ -65,6 +65,7 @@ describe("testRateLimit", () => {
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const publicationCommentEdit = { author, commentCid: "Qm...", content: "edited content" };
         const publicationCommentModeration = { author, commentCid: "Qm...", commentModeration: { locked: true } };
+        const publicationSubplebbitEdit = { author, subplebbitAddress: "Qm...", subplebbitEdit: { title: "New Title" } };
 
         const challengeSuccess = true;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
@@ -84,6 +85,7 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
         expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
         expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
     });
 
     it("1 publicationType.commentEdit true", async () => {
@@ -136,6 +138,31 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
     });
 
+    it("1 publicationType.subplebbitEdit true", async () => {
+        const author = { address: getRandomAddress() };
+        const exclude = { rateLimit: 1, publicationType: { subplebbitEdit: true } };
+        const subplebbitChallenges = [{ exclude: [exclude] }];
+        const publicationSubplebbitEdit = { author, subplebbitAddress: "Qm...", subplebbitEdit: { title: "New Title" } };
+        const publicationReply = { author, parentCid: "Qm..." };
+        const publicationVote = { author, commentCid: "Qm...", vote: 0 };
+        const challengeSuccess = true;
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { subplebbitEdit: publicationSubplebbitEdit }, challengeSuccess);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+    });
+
     it("1 publicationType.post true challengeSuccess false", async () => {
         const author = { address: getRandomAddress() };
         const exclude = { rateLimit: 1, publicationType: { post: true } };
@@ -157,7 +184,10 @@ describe("testRateLimit", () => {
     it("1 publicationType.post false", async () => {
         const author = { address: getRandomAddress() };
         // publicationType was changed to use OR algo, so not possible to use {post: false}, must set all to true except post
-        const exclude = { rateLimit: 1, publicationType: { reply: true, vote: true, commentEdit: true, commentModeration: true } };
+        const exclude = {
+            rateLimit: 1,
+            publicationType: { reply: true, vote: true, commentEdit: true, commentModeration: true, subplebbitEdit: true }
+        };
         const subplebbitChallenges = [{ exclude: [exclude] }];
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
@@ -180,7 +210,7 @@ describe("testRateLimit", () => {
     it("1 publicationType.post and publicationType.reply false", async () => {
         const author = { address: getRandomAddress() };
         // publicationType was changed to use OR algo, so not possible to use {post: false, reply: false}, must set all to true except post, reply
-        const exclude = { rateLimit: 1, publicationType: { vote: true, commentEdit: true, commentModeration: true } };
+        const exclude = { rateLimit: 1, publicationType: { vote: true, commentEdit: true, commentModeration: true, subplebbitEdit: true } };
         const subplebbitChallenges = [{ exclude: [exclude] }];
         const publicationPost = { author };
         const publicationReply = { author, parentCid: "Qm..." };
@@ -340,6 +370,7 @@ describe("testRateLimit", () => {
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         const publicationCommentEdit = { author, commentCid: "Qm...", content: "edited content" };
         const publicationCommentModeration = { author, commentCid: "Qm...", commentModeration: { locked: true } };
+        const publicationSubplebbitEdit = { author, subplebbitAddress: "Qm...", subplebbitEdit: { title: "New Title" } };
 
         const challengeSuccess = false;
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(true);
@@ -359,6 +390,7 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
         expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
         expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
 
         addToRateLimiter(subplebbitChallenges, { commentEdit: publicationCommentEdit }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
@@ -366,6 +398,7 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
         expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
         expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
 
         addToRateLimiter(subplebbitChallenges, { commentModeration: publicationCommentModeration }, challengeSuccess);
         expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
@@ -373,6 +406,15 @@ describe("testRateLimit", () => {
         expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
         expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
         expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
+
+        addToRateLimiter(subplebbitChallenges, { subplebbitEdit: publicationSubplebbitEdit }, challengeSuccess);
+        expect(testRateLimit(exclude, { comment: publicationPost })).to.equal(false);
+        expect(testRateLimit(exclude, { comment: publicationReply })).to.equal(true);
+        expect(testRateLimit(exclude, { vote: publicationVote })).to.equal(true);
+        expect(testRateLimit(exclude, { commentEdit: publicationCommentEdit })).to.equal(true);
+        expect(testRateLimit(exclude, { commentModeration: publicationCommentModeration })).to.equal(true);
+        expect(testRateLimit(exclude, { subplebbitEdit: publicationSubplebbitEdit })).to.equal(true);
     });
 
     it("multiple exclude publicationType", async () => {
