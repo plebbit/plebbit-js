@@ -350,6 +350,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         this._challengeExchanges[msg.challengeRequestId.toString()].challengeVerification = challengeVerificationMsg;
 
+        Object.values(this._challengeExchanges).forEach((exchange) => this._updatePubsubState("stopped", exchange.providerUrl));
+
         this._changePublicationStateEmitEventEmitStateChangeEvent({
             newPublishingState,
             newState: "stopped",
