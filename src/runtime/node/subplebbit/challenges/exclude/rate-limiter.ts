@@ -1,5 +1,5 @@
 import QuickLRU from "quick-lru";
-import { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType } from "./utils.js";
+import { isVote, isReply, isPost, isCommentEdit, isCommentModeration, isSubplebbitEdit, testPublicationType } from "./utils.js";
 import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
@@ -11,7 +11,7 @@ import {
     isRequestPubsubPublicationOfPost,
     isRequestPubsubPublicationOfReply
 } from "../../../../../util.js";
-type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration";
+type PublicationType = "post" | "reply" | "vote" | "commentEdit" | "commentModeration" | "subplebbitEdit";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
 const rateLimiters = new QuickLRU<string, RateLimiter>({ maxSize: 50000 });
@@ -27,7 +27,9 @@ const getPublicationType = (request: DecryptedChallengeRequestMessageTypeWithSub
               ? "commentEdit"
               : isCommentModeration(request)
                 ? "commentModeration"
-                : undefined;
+                : isSubplebbitEdit(request)
+                  ? "subplebbitEdit"
+                  : undefined;
 
 const getRateLimiterName = (
     exclude: Exclude,
@@ -136,6 +138,9 @@ const getRateLimitersToAddTo = (
         }
         if (request.commentModeration) {
             addFilteredRateLimiter(exclude, publication, "commentModeration", challengeSuccess, filteredRateLimiters);
+        }
+        if (request.subplebbitEdit) {
+            addFilteredRateLimiter(exclude, publication, "subplebbitEdit", challengeSuccess, filteredRateLimiters);
         }
     }
     return filteredRateLimiters;

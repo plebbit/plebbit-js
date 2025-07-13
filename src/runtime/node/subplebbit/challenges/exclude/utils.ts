@@ -29,6 +29,7 @@ const isReply = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuth
 const isPost = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => isRequestPubsubPublicationOfPost(request);
 const isCommentEdit = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentEdit);
 const isCommentModeration = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.commentModeration);
+const isSubplebbitEdit = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => Boolean(request.subplebbitEdit);
 
 const testPublicationType = (
     excludePublicationType: Exclude["publicationType"] | undefined,
@@ -52,7 +53,21 @@ const testPublicationType = (
     if (excludePublicationType.commentModeration && isCommentModeration(request)) {
         return true;
     }
+    if (excludePublicationType.subplebbitEdit && isSubplebbitEdit(request)) {
+        return true;
+    }
     return false;
 };
 
-export { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType, testScore, testFirstCommentTimestamp, testRole };
+export {
+    isVote,
+    isReply,
+    isPost,
+    isCommentEdit,
+    isCommentModeration,
+    isSubplebbitEdit,
+    testPublicationType,
+    testScore,
+    testFirstCommentTimestamp,
+    testRole
+};

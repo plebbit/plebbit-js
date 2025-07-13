@@ -129,7 +129,8 @@ export const ChallengeExcludePublicationTypeSchema = z
         reply: excludePublicationFieldSchema,
         vote: excludePublicationFieldSchema,
         commentEdit: excludePublicationFieldSchema,
-        commentModeration: excludePublicationFieldSchema
+        commentModeration: excludePublicationFieldSchema,
+        subplebbitEdit: excludePublicationFieldSchema
     })
     .passthrough()
     .refine(
