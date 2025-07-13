@@ -1,18 +1,17 @@
 # run and save benchmarks for @plebbit/plebbit-js in @plebbit/plebbit-js-benchmarks
 name: CI plebbit-js-benchmarks
 
-# only run if the CI passes
-# on:
-#   workflow_run:
-#     workflows:
-#       - 'CI'
-#     types:
-#       - 'completed'
+# only run if the CI passes or if manually dispatched
 on:
+  workflow_run:
+    workflows:
+      - 'CI'
+    types:
+      - 'completed'
   workflow_dispatch:
 
 jobs:
-  test:
+  benchmark:
     permissions:
       contents: read
       pull-requests: write
@@ -26,8 +25,15 @@ jobs:
         with:
           node-version: 20
 
+      # set up ssh (needed to commit reports)
+      - run: |
+          mkdir -p ~/.ssh
+          echo "${{secrets.PLEBBIT_JS_BENCHMARKS_DEPLOY_KEY}}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       # clone plebbit-js-benchmarks
-      - run: git clone https://github.com/plebbit/plebbit-js-benchmarks.git ../plebbit-js-benchmarks
+      - run: git clone git@github.com:plebbit/plebbit-js-benchmarks.git ../plebbit-js-benchmarks
       # log the current commit for debugging
       - run: |
           git log -n 1
@@ -36,7 +42,6 @@ jobs:
       # prepare plebbit-js for installing
       - run: npm ci
       - run: npm run build
-      - run: rm -fr node_modules
 
       # install latest plebbit-js using add ./plebbit-js (local folder module)
       - run: |
@@ -49,19 +54,12 @@ jobs:
 
       # benchmark and save report
       - run: |
-          node start --benchmark publish
+          node start
           mkdir -p reports
           cp report.json reports/${{github.sha}}.json
           npm run report > reports/${{github.sha}}.txt
           cat report.json | jq -c '.' >> reports/all.ndjson
         working-directory: ../plebbit-js-benchmarks
-
-      # set up ssh to commit report
-      - run: |
-          mkdir -p ~/.ssh
-          echo "${{secrets.PLEBBIT_JS_BENCHMARKS_DEPLOY_KEY}}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       # commit and push report
       - run: |
