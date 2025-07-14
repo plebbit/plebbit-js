@@ -717,7 +717,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private _handleIncomingStateFromRpc(args: any) {
         const state: Publication["state"] = args.params.result; // optimistic here, we're not validating it via schema
-        this._setStateWithEmission(state);
     }
 
     private async _handleIncomingErrorFromRpc(args: any) {
