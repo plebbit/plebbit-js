@@ -16,7 +16,7 @@ jobs:
       contents: read
       pull-requests: write
     runs-on: ubuntu-22.04
-    timeout-minutes: 40
+    timeout-minutes: 120
 
     steps:
       - run: sudo apt install -y xvfb
