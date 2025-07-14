@@ -57,14 +57,19 @@ jobs:
           node start
         working-directory: ../plebbit-js-benchmarks
 
-      # print report and save it
+      # print report for debugging
+      # save report as <commit-hash>.txt
+      # save report as <commit-hash>.json (with extra prop plebbitJsCommitHash)
+      # save all reports as all.json (ordered by timestamp)
       - run: |
           npm run report
           mkdir -p reports
-          cp report.json reports/${{github.sha}}.json
           npm run report > reports/${{github.sha}}.txt
+          jq --arg sha "$SHA" 'map(. + {plebbitJsCommitHash: $sha})' report.json > reports/$SHA.json
           jq -s -c "sort_by(.[0].timestamp)|reverse" reports/*.json > reports/all.json
         working-directory: ../plebbit-js-benchmarks
+        env:
+          SHA: ${{github.sha}}
 
       # commit and push report
       - run: |
