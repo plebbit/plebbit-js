@@ -52,13 +52,18 @@ jobs:
           npm run webpack
         working-directory: ../plebbit-js-benchmarks
 
-      # benchmark and save report
+      # benchmark
       - run: |
           node start
+        working-directory: ../plebbit-js-benchmarks
+
+      # print report and save it
+      - run: |
+          npm run report
           mkdir -p reports
           cp report.json reports/${{github.sha}}.json
           npm run report > reports/${{github.sha}}.txt
-          cat report.json | jq -c '.' >> reports/all.ndjson
+          jq -s -c "sort_by(.[0].timestamp)|reverse" reports/*.json > reports/all.json
         working-directory: ../plebbit-js-benchmarks
 
       # commit and push report
