@@ -43,5 +43,14 @@ getRemotePlebbitConfigs().map((config) => {
             await tempComment.stop();
             expect(tempComment.state).to.equal("stopped");
         });
+
+        it(`state changes to updating after calling .update() when publishing`, async () => {
+            const tempComment = await publishRandomPost(subplebbitAddress, plebbit);
+            expect(tempComment.state).to.equal("stopped");
+            await tempComment.update();
+            expect(tempComment.state).to.equal("updating");
+            await tempComment.stop();
+            expect(tempComment.state).to.equal("stopped");
+        });
     });
 });
