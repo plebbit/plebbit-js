@@ -233,6 +233,15 @@ getRemotePlebbitConfigs().map((config) => {
                         expect(e.message).to.equal("file does not exist");
                     }
                 });
+            it(`purged comment should not appear in subplebbit.lastPostCid`, async () => {
+                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                expect(subplebbit.lastPostCid).to.not.equal(commentToPurge.cid);
+            });
+
+            it(`purged comment should not appear in subplebbit.lastCommentCid`, async () => {
+                const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+                expect(subplebbit.lastCommentCid).to.not.equal(commentToPurge.cid);
+            });
 
             it(`Should not be able to load a comment update of a purged post or its reply tree`, async () => {
                 const differentPlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
