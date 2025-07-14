@@ -12,6 +12,7 @@ on:
 
 jobs:
   benchmark:
+    # only run if the CI passes or if manually dispatched
     if: ${{github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')}}
     permissions:
       contents: read
@@ -27,7 +28,8 @@ jobs:
           node-version: 20
 
       # set up ssh (needed to commit reports)
-      - run: |
+      - name: set up ssh
+        run: |
           mkdir -p ~/.ssh
           echo "${{secrets.PLEBBIT_JS_BENCHMARKS_DEPLOY_KEY}}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
@@ -45,7 +47,8 @@ jobs:
       - run: npm run build
 
       # install latest plebbit-js using add ./plebbit-js (local folder module)
-      - run: |
+      - name: install and build plebbit-js-benchmarks
+        run: |
           npm uninstall @plebbit/plebbit-js
           npm install ../plebbit-js
           rm -rf ../plebbit-js/package-lock.json
@@ -54,7 +57,8 @@ jobs:
         working-directory: ../plebbit-js-benchmarks
 
       # benchmark
-      - run: |
+      - name: run benchmarks
+        run: |
           node start
         working-directory: ../plebbit-js-benchmarks
 
@@ -62,18 +66,21 @@ jobs:
       # save report as <commit-hash>.txt
       # save report as <commit-hash>.json (with extra prop plebbitJsCommitHash)
       # save all reports as all.json (ordered by timestamp)
-      - run: |
+      - name: print report
+        run: |
           npm run report
           mkdir -p reports
           npm run report > reports/${{github.sha}}.txt
           jq --arg sha "$SHA" 'map(. + {plebbitJsCommitHash: $sha})' report.json > reports/$SHA.json
-          jq -s -c "sort_by(.[0].timestamp)|reverse" reports/*.json > reports/all.json
+          rm -f reports/all.json
+          jq -s -c 'sort_by(.[0].timestamp) | reverse' reports/*.json > reports/all.json
         working-directory: ../plebbit-js-benchmarks
         env:
           SHA: ${{github.sha}}
 
       # commit and push report
-      - run: |
+      - name: commit report
+        run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
           git add reports/
