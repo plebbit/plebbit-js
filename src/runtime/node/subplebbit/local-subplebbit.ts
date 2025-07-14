@@ -844,6 +844,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
 
             this._subplebbitUpdateTrigger = true;
+            log(`Set _subplebbitUpdateTrigger to true after purging comment ${modTableRow.commentCid}.`);
             if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
                 const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
                     commentToPurge,

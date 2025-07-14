@@ -1547,6 +1547,19 @@ export class DbHandler {
                 // Combine author comments and comments that received votes/edits/replies from purged comments
                 const allCommentsToUpdate = [...allAffectedAuthorCids, ...Array.from(commentsToForceUpdate)];
 
+                // Force update on a random comment to ensure IPNS update triggers even if no other comments need updating
+                // Make sure we don't select a comment that's being purged
+                const placeholders = allCidsToBeDeleted.map(() => "?").join(",");
+                const randomComment = this._db
+                    .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE cid NOT IN (${placeholders}) ORDER BY RANDOM() LIMIT 1`)
+                    .get(...allCidsToBeDeleted) as { cid: string } | undefined;
+                if (randomComment) {
+                    allCommentsToUpdate.push(randomComment.cid);
+                    log(`Forcing update on random comment ${randomComment.cid} to ensure IPNS update after purge`);
+                } else {
+                    log(`No comments left to force update after purge - IPNS will update to show empty subplebbit`);
+                }
+
                 if (allCommentsToUpdate.length > 0) {
                     this.forceUpdateOnAllCommentsWithCid(allCommentsToUpdate);
                 }
