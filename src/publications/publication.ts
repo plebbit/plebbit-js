@@ -181,7 +181,15 @@ class Publication extends TypedEmitter<PublicationEvents> {
         if (verification.comment)
             await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(<DecryptedChallengeVerification>verification);
         this._setRpcClientState("stopped");
-        this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
+        const newPublishingState = verification.challengeSuccess ? "succeeded" : "failed";
+        this._changePublicationStateEmitEventEmitStateChangeEvent({
+            newPublishingState,
+            newState: "stopped",
+            event: {
+                name: "challengeverification",
+                args: [verification, this instanceof Comment && verification.comment ? this : undefined]
+            }
+        });
         if (this._rpcPublishSubscriptionId) {
             try {
                 await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
