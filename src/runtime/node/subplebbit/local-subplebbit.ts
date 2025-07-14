@@ -843,9 +843,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 "out of DB and IPFS"
             );
 
-            if (commentToPurge.parentCid) {
-                this._dbHandler.forceUpdateOnAllCommentsWithCid([commentToPurge.parentCid]);
-            }
             this._subplebbitUpdateTrigger = true;
             if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
                 const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(

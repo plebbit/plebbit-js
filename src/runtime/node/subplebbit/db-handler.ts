@@ -1479,6 +1479,7 @@ export class DbHandler {
             // Get all CIDs that will be purged (including descendants) and their authors
             const allCidsToBeDeleted = this._getAllDescendantCids(cid);
             const allAffectedAuthors = new Set<string>();
+            const commentsToForceUpdate = new Set<string>();
 
             // Collect all unique authorSignerAddresses from comments that will be purged
             if (!isNestedCall) {
@@ -1491,6 +1492,24 @@ export class DbHandler {
                         throw new Error(`Comment with cid ${cidToDelete} has no authorSignerAddress`);
                     }
                     allAffectedAuthors.add(commentToDelete.authorSignerAddress);
+
+                    // Collect comments that received votes FROM this purged comment
+                    const votesFromPurgedComment = this._db
+                        .prepare(`SELECT commentCid FROM ${TABLES.VOTES} WHERE authorSignerAddress = ?`)
+                        .all(commentToDelete.authorSignerAddress) as { commentCid: string }[];
+                    votesFromPurgedComment.forEach((vote) => commentsToForceUpdate.add(vote.commentCid));
+
+                    // Collect comments that received edits FROM this purged comment
+                    const editsFromPurgedComment = this._db
+                        .prepare(`SELECT commentCid FROM ${TABLES.COMMENT_EDITS} WHERE authorSignerAddress = ?`)
+                        .all(commentToDelete.authorSignerAddress) as { commentCid: string }[];
+                    editsFromPurgedComment.forEach((edit) => commentsToForceUpdate.add(edit.commentCid));
+
+                    // Collect parent comments of purged comments (for reply count updates)
+                    if (commentToDelete.parentCid) {
+                        const allAncestors = this.queryParentsCids(commentToDelete);
+                        allAncestors.forEach((ancestor) => commentsToForceUpdate.add(ancestor.cid));
+                    }
                 }
             }
 
@@ -1514,7 +1533,7 @@ export class DbHandler {
             if (deleteResult.changes > 0) purgedCids.push(cid);
 
             // Force update on all comments by all affected authors since their statistics have changed
-            if (!isNestedCall && allAffectedAuthors.size > 0) {
+            if (!isNestedCall && (allAffectedAuthors.size > 0 || commentsToForceUpdate.size > 0)) {
                 const allAffectedAuthorCids: string[] = [];
 
                 for (const authorSignerAddress of allAffectedAuthors) {
@@ -1525,8 +1544,11 @@ export class DbHandler {
                     allAffectedAuthorCids.push(...authorCommentCids.map((c) => c.cid));
                 }
 
-                if (allAffectedAuthorCids.length > 0) {
-                    this.forceUpdateOnAllCommentsWithCid(allAffectedAuthorCids);
+                // Combine author comments and comments that received votes/edits/replies from purged comments
+                const allCommentsToUpdate = [...allAffectedAuthorCids, ...Array.from(commentsToForceUpdate)];
+
+                if (allCommentsToUpdate.length > 0) {
+                    this.forceUpdateOnAllCommentsWithCid(allCommentsToUpdate);
                 }
             }
 
