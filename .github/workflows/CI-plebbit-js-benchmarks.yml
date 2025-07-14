@@ -68,9 +68,9 @@ jobs:
       # save all reports as all.json (ordered by timestamp)
       - name: print report
         run: |
-          npm run report
+          node lib/print-report
           mkdir -p reports
-          npm run report > reports/${{github.sha}}.txt
+          node lib/print-report > reports/${{github.sha}}.txt
           jq --arg sha "$SHA" 'map(. + {plebbitJsCommitHash: $sha})' report.json > reports/$SHA.json
           rm -f reports/all.json
           jq -s -c 'sort_by(.[0].timestamp) | reverse' reports/*.json > reports/all.json
