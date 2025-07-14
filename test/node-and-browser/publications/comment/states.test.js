@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
-import { generateMockPost, getRemotePlebbitConfigs } from "../../../../dist/node/test/test-util.js";
+import { generateMockPost, getRemotePlebbitConfigs, publishRandomPost } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs().map((config) => {
@@ -24,6 +24,16 @@ getRemotePlebbitConfigs().map((config) => {
             expect(comment.state).to.equal("publishing");
         });
 
+        it(`state changes to stopped after calling .stop() when publishing`, async () => {
+            await comment.stop();
+            expect(comment.state).to.equal("stopped");
+        });
+
+        it(`state changes to stop after finishing publishing`, async () => {
+            const newComment = await publishRandomPost(subplebbitAddress, plebbit);
+            expect(newComment.state).to.equal("stopped");
+        });
+
         it(`state changes to updating after calling .update()`, async () => {
             const tempComment = await plebbit.createComment({
                 cid: (await plebbit.getSubplebbit(signers[0].address)).posts.pages.hot.comments[0].cid
@@ -31,6 +41,7 @@ getRemotePlebbitConfigs().map((config) => {
             await tempComment.update();
             expect(tempComment.state).to.equal("updating");
             await tempComment.stop();
+            expect(tempComment.state).to.equal("stopped");
         });
     });
 });
