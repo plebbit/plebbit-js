@@ -270,7 +270,7 @@ export class IpnsFetchRouter implements IPNSRouting {
         const shouldUseFetch = !this.fetchedIpnsRecordBefore[cooloffKey];
 
         if (!shouldUseFetch) {
-            log(
+            log.trace(
                 "Skipping libp2p/fetch for topic",
                 topic,
                 "and IPNS",
