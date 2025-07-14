@@ -168,30 +168,35 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">>>;
             }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
                 subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
@@ -227,30 +232,35 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">>>;
             }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                 subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
@@ -286,30 +296,35 @@ export declare function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLoca
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, "passthrough", import("zod").ZodTypeAny, import("zod").objectOutputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">>, import("zod").objectOutputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">, import("zod").objectInputType<{
                     post: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     reply: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     vote: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                     commentModeration: import("zod").ZodOptional<import("zod").ZodBoolean>;
+                    subplebbitEdit: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">>>;
             }, import("zod").ZodTypeAny, "passthrough">>, "atleastone">>;
             description: import("zod").ZodOptional<import("zod").ZodString>;

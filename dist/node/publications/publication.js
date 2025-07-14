@@ -70,7 +70,16 @@ class Publication extends TypedEmitter {
         const log = Logger("plebbit-js:publication:_handleRpcChallengeVerification");
         if (verification.comment)
             await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(verification);
-        this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
+        this._setRpcClientState("stopped");
+        const newPublishingState = verification.challengeSuccess ? "succeeded" : "failed";
+        this._changePublicationStateEmitEventEmitStateChangeEvent({
+            newPublishingState,
+            newState: "stopped",
+            event: {
+                name: "challengeverification",
+                args: [verification, this instanceof Comment && verification.comment ? this : undefined]
+            }
+        });
         if (this._rpcPublishSubscriptionId) {
             try {
                 await this._plebbit._plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
@@ -169,8 +178,9 @@ class Publication extends TypedEmitter {
             return;
         }
         let decryptedChallengeVerification;
+        let newPublishingState;
         if (msg.challengeSuccess) {
-            this._updatePublishingStateWithEmission("succeeded");
+            newPublishingState = "succeeded";
             log(`Received a challengeverification with challengeSuccess=true`, "for publication", this.getType());
             if (msg.encrypted) {
                 let decryptedRawString;
@@ -213,13 +223,21 @@ class Publication extends TypedEmitter {
             }
         }
         else {
-            this._updatePublishingStateWithEmission("failed");
+            newPublishingState = "failed";
             log.error(`Challenge exchange with publication`, this.getType(), `has failed to pass`, "Challenge errors", msg.challengeErrors, `reason`, msg.reason);
         }
         const challengeVerificationMsg = { ...msg, ...decryptedChallengeVerification };
         this._challengeExchanges[msg.challengeRequestId.toString()].challengeVerification = challengeVerificationMsg;
+        Object.values(this._challengeExchanges).forEach((exchange) => this._updatePubsubState("stopped", exchange.providerUrl));
+        this._changePublicationStateEmitEventEmitStateChangeEvent({
+            newPublishingState,
+            newState: "stopped",
+            event: {
+                name: "challengeverification",
+                args: [challengeVerificationMsg, this instanceof Comment && decryptedChallengeVerification ? this : undefined]
+            }
+        });
         await this._postSucessOrFailurePublishing();
-        this.emit("challengeverification", challengeVerificationMsg, this instanceof Comment && decryptedChallengeVerification ? this : undefined);
     }
     async _handleChallengeExchange(pubsubMsg) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
@@ -515,7 +533,6 @@ class Publication extends TypedEmitter {
     }
     _handleIncomingStateFromRpc(args) {
         const state = args.params.result; // optimistic here, we're not validating it via schema
-        this._setStateWithEmission(state);
     }
     async _handleIncomingErrorFromRpc(args) {
         const log = Logger("plebbit-js:publication:publish:_publishWithRpc:_handleIncomingErrorFromRpc");

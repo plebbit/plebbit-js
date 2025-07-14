@@ -20,6 +20,7 @@ const isReply = (request) => isRequestPubsubPublicationOfReply(request);
 const isPost = (request) => isRequestPubsubPublicationOfPost(request);
 const isCommentEdit = (request) => Boolean(request.commentEdit);
 const isCommentModeration = (request) => Boolean(request.commentModeration);
+const isSubplebbitEdit = (request) => Boolean(request.subplebbitEdit);
 const testPublicationType = (excludePublicationType, request) => {
     if (excludePublicationType === undefined) {
         return true;
@@ -39,7 +40,10 @@ const testPublicationType = (excludePublicationType, request) => {
     if (excludePublicationType.commentModeration && isCommentModeration(request)) {
         return true;
     }
+    if (excludePublicationType.subplebbitEdit && isSubplebbitEdit(request)) {
+        return true;
+    }
     return false;
 };
-export { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType, testScore, testFirstCommentTimestamp, testRole };
+export { isVote, isReply, isPost, isCommentEdit, isCommentModeration, isSubplebbitEdit, testPublicationType, testScore, testFirstCommentTimestamp, testRole };
 //# sourceMappingURL=utils.js.map

@@ -8,5 +8,6 @@ declare const isReply: (request: DecryptedChallengeRequestMessageTypeWithSubpleb
 declare const isPost: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => request is import("../../../../../pubsub-messages/types.js").DecryptedChallengeRequestMessageWithPostSubplebbitAuthor;
 declare const isCommentEdit: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => boolean;
 declare const isCommentModeration: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => boolean;
+declare const isSubplebbitEdit: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => boolean;
 declare const testPublicationType: (excludePublicationType: Exclude["publicationType"] | undefined, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => boolean;
-export { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType, testScore, testFirstCommentTimestamp, testRole };
+export { isVote, isReply, isPost, isCommentEdit, isCommentModeration, isSubplebbitEdit, testPublicationType, testScore, testFirstCommentTimestamp, testRole };

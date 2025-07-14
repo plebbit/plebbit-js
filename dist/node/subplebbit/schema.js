@@ -103,7 +103,8 @@ export const ChallengeExcludePublicationTypeSchema = z
     reply: excludePublicationFieldSchema,
     vote: excludePublicationFieldSchema,
     commentEdit: excludePublicationFieldSchema,
-    commentModeration: excludePublicationFieldSchema
+    commentModeration: excludePublicationFieldSchema,
+    subplebbitEdit: excludePublicationFieldSchema
 })
     .passthrough()
     .refine((args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so

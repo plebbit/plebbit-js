@@ -1162,7 +1162,6 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment) {
     log("Published", numOfCommentsToPublish, "replies under comment", comment.cid, "to force subplebbit", comment.subplebbitAddress, "to generate all pages");
     const updatingComment = await comment._plebbit.createComment({ cid: comment.cid });
     await updatingComment.update();
-    //@ts-expect-error
     await waitTillReplyInParentPagesInstance(lastPublishedReply, updatingComment);
     if (Object.keys(updatingComment.replies.pageCids).length === 0)
         throw Error("Failed to force the subplebbit to load all pages");

@@ -1221,6 +1221,7 @@ export class DbHandler {
             // Get all CIDs that will be purged (including descendants) and their authors
             const allCidsToBeDeleted = this._getAllDescendantCids(cid);
             const allAffectedAuthors = new Set();
+            const commentsToForceUpdate = new Set();
             // Collect all unique authorSignerAddresses from comments that will be purged
             if (!isNestedCall) {
                 for (const cidToDelete of allCidsToBeDeleted) {
@@ -1232,6 +1233,21 @@ export class DbHandler {
                         throw new Error(`Comment with cid ${cidToDelete} has no authorSignerAddress`);
                     }
                     allAffectedAuthors.add(commentToDelete.authorSignerAddress);
+                    // Collect comments that received votes FROM this purged comment
+                    const votesFromPurgedComment = this._db
+                        .prepare(`SELECT commentCid FROM ${TABLES.VOTES} WHERE authorSignerAddress = ?`)
+                        .all(commentToDelete.authorSignerAddress);
+                    votesFromPurgedComment.forEach((vote) => commentsToForceUpdate.add(vote.commentCid));
+                    // Collect comments that received edits FROM this purged comment
+                    const editsFromPurgedComment = this._db
+                        .prepare(`SELECT commentCid FROM ${TABLES.COMMENT_EDITS} WHERE authorSignerAddress = ?`)
+                        .all(commentToDelete.authorSignerAddress);
+                    editsFromPurgedComment.forEach((edit) => commentsToForceUpdate.add(edit.commentCid));
+                    // Collect parent comments of purged comments (for reply count updates)
+                    if (commentToDelete.parentCid) {
+                        const allAncestors = this.queryParentsCids(commentToDelete);
+                        allAncestors.forEach((ancestor) => commentsToForceUpdate.add(ancestor.cid));
+                    }
                 }
             }
             const directChildren = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(cid);
@@ -1255,7 +1271,7 @@ export class DbHandler {
             if (deleteResult.changes > 0)
                 purgedCids.push(cid);
             // Force update on all comments by all affected authors since their statistics have changed
-            if (!isNestedCall && allAffectedAuthors.size > 0) {
+            if (!isNestedCall && (allAffectedAuthors.size > 0 || commentsToForceUpdate.size > 0)) {
                 const allAffectedAuthorCids = [];
                 for (const authorSignerAddress of allAffectedAuthors) {
                     const authorCommentCids = this._db
@@ -1263,8 +1279,23 @@ export class DbHandler {
                         .all(authorSignerAddress);
                     allAffectedAuthorCids.push(...authorCommentCids.map((c) => c.cid));
                 }
-                if (allAffectedAuthorCids.length > 0) {
-                    this.forceUpdateOnAllCommentsWithCid(allAffectedAuthorCids);
+                // Combine author comments and comments that received votes/edits/replies from purged comments
+                const allCommentsToUpdate = [...allAffectedAuthorCids, ...Array.from(commentsToForceUpdate)];
+                // Force update on a random comment to ensure IPNS update triggers even if no other comments need updating
+                // Make sure we don't select a comment that's being purged
+                const placeholders = allCidsToBeDeleted.map(() => "?").join(",");
+                const randomComment = this._db
+                    .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE cid NOT IN (${placeholders}) ORDER BY RANDOM() LIMIT 1`)
+                    .get(...allCidsToBeDeleted);
+                if (randomComment) {
+                    allCommentsToUpdate.push(randomComment.cid);
+                    log(`Forcing update on random comment ${randomComment.cid} to ensure IPNS update after purge`);
+                }
+                else {
+                    log(`No comments left to force update after purge - IPNS will update to show empty subplebbit`);
+                }
+                if (allCommentsToUpdate.length > 0) {
+                    this.forceUpdateOnAllCommentsWithCid(allCommentsToUpdate);
                 }
             }
             if (!isNestedCall)

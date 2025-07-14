@@ -591,10 +591,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
             purgedCids.forEach((cid) => this._blocksToRm.push(cid));
             log("Purged comment", modTableRow.commentCid, "and its comment and comment update children", cidsToPurgeOffIpfsNode.length, "out of DB and IPFS");
-            if (commentToPurge.parentCid) {
-                this._dbHandler.forceUpdateOnAllCommentsWithCid([commentToPurge.parentCid]);
-            }
             this._subplebbitUpdateTrigger = true;
+            log(`Set _subplebbitUpdateTrigger to true after purging comment ${modTableRow.commentCid}.`);
             if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
                 const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(commentToPurge, commentUpdateToPurge.postUpdatesBucket).replace("/update", "");
                 this._mfsPathsToRemove.add(localCommentUpdatePath);

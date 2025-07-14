@@ -190,7 +190,7 @@ export class IpnsFetchRouter {
         const cooloffKey = `${topic}`;
         const shouldUseFetch = !this.fetchedIpnsRecordBefore[cooloffKey];
         if (!shouldUseFetch) {
-            log("Skipping libp2p/fetch for topic", topic, "and IPNS", options?.ipnsName, "since we already fetched it before using libp2p/fetch");
+            log.trace("Skipping libp2p/fetch for topic", topic, "and IPNS", options?.ipnsName, "since we already fetched it before using libp2p/fetch");
             throw new Error("Already loaded via libp2p/fetch, should await for updates in gossipsub topic");
         }
         // First check if we already have pubsub subscribers

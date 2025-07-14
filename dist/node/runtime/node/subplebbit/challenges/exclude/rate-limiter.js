@@ -1,5 +1,5 @@
 import QuickLRU from "quick-lru";
-import { isVote, isReply, isPost, isCommentEdit, isCommentModeration, testPublicationType } from "./utils.js";
+import { isVote, isReply, isPost, isCommentEdit, isCommentModeration, isSubplebbitEdit, testPublicationType } from "./utils.js";
 import { RateLimiter } from "limiter-es6-compat";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 // each author could have 20+ rate limiters each if the sub has
@@ -15,7 +15,9 @@ const getPublicationType = (request) => isPost(request)
                 ? "commentEdit"
                 : isCommentModeration(request)
                     ? "commentModeration"
-                    : undefined;
+                    : isSubplebbitEdit(request)
+                        ? "subplebbitEdit"
+                        : undefined;
 const getRateLimiterName = (exclude, publication, publicationType, challengeSuccess) => `${publication.author.address}-${exclude.rateLimit}-${publicationType}-${challengeSuccess}`;
 const getOrCreateRateLimiter = (exclude, publication, publicationType, challengeSuccess) => {
     if (typeof exclude.rateLimit !== "number")
@@ -85,6 +87,9 @@ const getRateLimitersToAddTo = (excludeArray, request, challengeSuccess) => {
         }
         if (request.commentModeration) {
             addFilteredRateLimiter(exclude, publication, "commentModeration", challengeSuccess, filteredRateLimiters);
+        }
+        if (request.subplebbitEdit) {
+            addFilteredRateLimiter(exclude, publication, "subplebbitEdit", challengeSuccess, filteredRateLimiters);
         }
     }
     return filteredRateLimiters;

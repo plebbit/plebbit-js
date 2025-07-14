@@ -73,30 +73,35 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -132,30 +137,35 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -191,30 +201,35 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
             description: z.ZodOptional<z.ZodString>;
@@ -434,30 +449,35 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>>;
                 }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
                     subplebbit: z.ZodOptional<z.ZodObject<{
@@ -493,30 +513,35 @@ export declare function parseSubplebbitEditPubsubMessagePublicationSchemaWithPle
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>>;
                 }, z.ZodTypeAny, "passthrough">[]] | undefined;
                 description?: string | undefined;
@@ -624,30 +649,35 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>>;
                 }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
                     subplebbit: z.ZodOptional<z.ZodObject<{
@@ -683,30 +713,35 @@ export declare function parseCreateSubplebbitEditPublicationOptionsSchemaWithPle
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                         post: z.ZodOptional<z.ZodBoolean>;
                         reply: z.ZodOptional<z.ZodBoolean>;
                         vote: z.ZodOptional<z.ZodBoolean>;
                         commentEdit: z.ZodOptional<z.ZodBoolean>;
                         commentModeration: z.ZodOptional<z.ZodBoolean>;
+                        subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                     }, z.ZodTypeAny, "passthrough">>>;
                 }, z.ZodTypeAny, "passthrough">[]] | undefined;
                 description?: string | undefined;
@@ -1451,30 +1486,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -1510,30 +1550,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -1569,30 +1614,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -1634,30 +1684,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -1693,30 +1748,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -1752,30 +1812,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -1817,30 +1882,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -1876,30 +1946,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -1935,30 +2010,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -2231,30 +2311,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2290,30 +2375,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, z.ZodTypeAny, "passthrough">[]] | undefined;
             description?: string | undefined;
@@ -2375,30 +2465,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2434,30 +2529,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2493,30 +2593,35 @@ export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitE
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -2631,30 +2736,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2690,30 +2800,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2749,30 +2864,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -2814,30 +2934,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2873,30 +2998,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2932,30 +3062,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -2997,30 +3132,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3056,30 +3196,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3115,30 +3260,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
@@ -3411,30 +3561,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, z.ZodTypeAny, "passthrough">, ...z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3470,30 +3625,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                     post: z.ZodOptional<z.ZodBoolean>;
                     reply: z.ZodOptional<z.ZodBoolean>;
                     vote: z.ZodOptional<z.ZodBoolean>;
                     commentEdit: z.ZodOptional<z.ZodBoolean>;
                     commentModeration: z.ZodOptional<z.ZodBoolean>;
+                    subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
                 }, z.ZodTypeAny, "passthrough">>>;
             }, z.ZodTypeAny, "passthrough">[]] | undefined;
             description?: string | undefined;
@@ -3555,30 +3715,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3614,30 +3779,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3673,30 +3843,35 @@ export declare function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbi
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>, z.objectOutputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
                 post: z.ZodOptional<z.ZodBoolean>;
                 reply: z.ZodOptional<z.ZodBoolean>;
                 vote: z.ZodOptional<z.ZodBoolean>;
                 commentEdit: z.ZodOptional<z.ZodBoolean>;
                 commentModeration: z.ZodOptional<z.ZodBoolean>;
+                subplebbitEdit: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>, "atleastone">>;
         description: z.ZodOptional<z.ZodString>;
