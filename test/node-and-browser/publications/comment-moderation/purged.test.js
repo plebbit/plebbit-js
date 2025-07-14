@@ -30,6 +30,7 @@ getRemotePlebbitConfigs().map((config) => {
     [0, 1, 2, 3].map((commentDepth) => {
         describeSkipIfRpc(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
             let plebbit, commentToPurge, replyOfCommentToPurge, replyUnderReplyOfCommentToPurge;
+            let replyCountOfParentOfPurgedComment; // undefined if commentDepth is 0
             let remotePlebbitIpfs;
             before(async () => {
                 plebbit = await config.plebbitInstancePromise();
@@ -51,6 +52,16 @@ getRemotePlebbitConfigs().map((config) => {
                         resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number")
                     )
                 );
+
+                if (commentDepth > 0) {
+                    const parentOfPurgedComment = await plebbit.createComment({ cid: commentToPurge.parentCid });
+                    await parentOfPurgedComment.update();
+                    await resolveWhenConditionIsTrue(parentOfPurgedComment, () => typeof parentOfPurgedComment.updatedAt === "number");
+                    await parentOfPurgedComment.stop();
+
+                    replyCountOfParentOfPurgedComment = parentOfPurgedComment.replyCount;
+                    expect(replyCountOfParentOfPurgedComment).to.be.at.least(3); // direct purged comment + 2 replies
+                }
 
                 // make sure both postToPurge and postReply exists on the IPFS node
 
@@ -114,6 +125,26 @@ getRemotePlebbitConfigs().map((config) => {
                     expect(!allCids.includes(pin.cid.toString())).to.be.true;
                 }
             });
+            if (commentDepth > 0) {
+                it("the parent of purged comment replyCount should be reduced by 3", async () => {
+                    const parentOfPurgedComment = await plebbit.createComment({ cid: commentToPurge.parentCid });
+                    await parentOfPurgedComment.update();
+                    await resolveWhenConditionIsTrue(parentOfPurgedComment, () => typeof parentOfPurgedComment.updatedAt === "number");
+                    await parentOfPurgedComment.stop();
+
+                    expect(parentOfPurgedComment.replyCount).to.be.at.least(replyCountOfParentOfPurgedComment - 3);
+                });
+
+                it("the purged comment should not appear in the parent's replies", async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
+                    const parentOfPurgedComment = await plebbit.createComment({ cid: commentToPurge.parentCid });
+                    await parentOfPurgedComment.update();
+                    await resolveWhenConditionIsTrue(parentOfPurgedComment, () => typeof parentOfPurgedComment.updatedAt === "number");
+                    await parentOfPurgedComment.stop();
+                    const purgedCommentInParent = findCommentInPageInstanceRecursively(parentOfPurgedComment.replies, commentToPurge.cid);
+                    expect(purgedCommentInParent).to.be.undefined;
+                });
+            }
 
             it(`Sub rejects votes on purged comment with depth ${commentDepth}`, async () => {
                 const vote = await generateMockVote(commentToPurge, 1, plebbit, remeda.sample(signers, 1)[0]);
