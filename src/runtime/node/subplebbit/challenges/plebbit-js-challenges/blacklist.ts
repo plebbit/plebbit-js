@@ -4,11 +4,18 @@ import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 
 const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
-        option: "blacklist",
-        label: "Blacklist",
+        option: "addresses",
+        label: "Addresses",
         default: "",
         description: "Comma separated list of author addresses to be blacklisted.",
         placeholder: `address1.eth,address2.eth,address3.eth`
+    },
+    {
+        option: "urls",
+        label: "URLs",
+        default: "",
+        description: "Comma separated list of URLs to fetch blacklists from (JSON arrays of addresses)",
+        placeholder: `https://example.com/file.json,https://github.com/blacklist.json`
     },
     {
         option: "error",
@@ -23,6 +30,45 @@ const type: Challenge["type"] = "text/plain";
 
 const description = "Blacklist author addresses.";
 
+class UrlsAddressesSet {
+    urlsString: string | undefined
+    urls: string[] = []
+    urlsSets: {[url: string]: Set<string>} = {}
+    constructor() {
+        // refetch urls every 5min
+        setInterval(() => this.updateUrlsSets(), 1000 * 60 * 5)
+    }
+    setUrls(urlsString?: string) {
+        // no changes
+        if (urlsString === this.urlsString) {
+            return
+        }
+        this.urlsString = urlsString
+        this.urls = this.urlsString?.split(",").map(u => u.trim()).filter(Boolean) || []
+        this.urlsSets = {}
+        for (const url of this.urls) {
+            this.urlsSets[url] = new Set()
+        }
+        this.updateUrlsSets()
+    }
+    has(address?: string) {
+        if (address) {
+            for (const urlSet of Object.values(this.urlsSets)) {
+                if (urlSet.has(address)) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    updateUrlsSets() {
+        this.urls.forEach((url) => fetch(url).then(res => res.json().then(addresses => {
+            this.urlsSets[url] = new Set(addresses)
+        }).catch(() => {})))
+    }
+}
+const urlsAddressesSet = new UrlsAddressesSet()
+
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -30,11 +76,11 @@ const getChallenge = async (
 ): Promise<ChallengeResult> => {
     // add a custom error message to display to the author
     const error = subplebbitChallengeSettings?.options?.error;
-    const blacklist = subplebbitChallengeSettings?.options?.blacklist?.split(",");
-    const blacklistSet = new Set(blacklist);
+    const addresses = subplebbitChallengeSettings?.options?.addresses?.split(",").map(u => u.trim()).filter(Boolean)
+    const addressesSet = new Set(addresses);
 
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
-    if (blacklistSet.has(publication?.author?.address)) {
+    if (addressesSet.has(publication?.author?.address) || urlsAddressesSet.has(publication?.author?.address)) {
         return {
             success: false,
             error: error || `You're blacklisted.`
@@ -47,6 +93,7 @@ const getChallenge = async (
 };
 
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+    urlsAddressesSet.setUrls(subplebbitChallengeSettings?.options?.urls)
     return { getChallenge, optionInputs, type, description };
 }
 

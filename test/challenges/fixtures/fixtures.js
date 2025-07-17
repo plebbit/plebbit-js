@@ -140,8 +140,8 @@ const excludeAccountAgeChallegeSubplebbit = {
         ]
     }
 };
-const whitelistChallegeSubplebbit = {
-    title: "whitelist challenge subplebbit",
+const excludeAddressChallegeSubplebbit = {
+    title: "exclude address challenge subplebbit",
     settings: {
         challenges: [
             {
@@ -156,14 +156,14 @@ const whitelistChallegeSubplebbit = {
         ]
     }
 };
-const whitelistChallenge2Subplebbit = {
-    title: "whitelist challenge 2 subplebbit",
+const whitelistChallengeSubplebbit = {
+    title: "whitelist challenge subplebbit",
     settings: {
         challenges: [
             {
                 name: "whitelist",
                 options: {
-                    whitelist: "high-karma.eth"
+                    addresses: "high-karma.eth"
                 }
             }
         ]
@@ -176,7 +176,7 @@ const blacklistChallegeSubplebbit = {
             {
                 name: "blacklist",
                 options: {
-                    blacklist: "low-karma.eth,some-author.eth"
+                    addresses: "low-karma.eth,some-author.eth"
                 }
             }
         ]
@@ -447,14 +447,21 @@ results[excludeAccountAgeChallegeSubplebbit.title] = {
         challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
-results[whitelistChallegeSubplebbit.title] = {
+results[excludeAddressChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not whitelisted." }
     }
 };
-results[whitelistChallenge2Subplebbit.title] = {
+results[whitelistChallengeSubplebbit.title] = {
+    "high-karma.eth": { challengeSuccess: true },
+    "low-karma.eth": {
+        challengeSuccess: false,
+        challengeErrors: { 0: "You're not whitelisted." }
+    }
+};
+results[whitelistUrlsChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
