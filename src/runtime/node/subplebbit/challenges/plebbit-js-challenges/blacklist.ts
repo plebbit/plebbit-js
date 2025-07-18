@@ -36,7 +36,7 @@ class UrlsAddressesSet {
     urlsSets: {[url: string]: Set<string>} = {}
     constructor() {
         // refetch urls every 5min
-        setInterval(() => this.updateUrlsSets(), 1000 * 60 * 5)
+        setInterval(() => this.updateUrlsSets(), 1000 * 60 * 5).unref?.()
     }
     setUrls(urlsString?: string) {
         // no changes
