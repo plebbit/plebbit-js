@@ -73,7 +73,7 @@ const Plebbit = () => createPlebbit();
 Plebbit.challenges = plebbitJsChallenges;
 
 // define mock Subplebbit instances
-const textMathChallegeSubplebbit = {
+const textMathChallengeSubplebbit = {
     title: "text-math challenge subplebbit",
     settings: {
         challenges: [
@@ -86,7 +86,7 @@ const textMathChallegeSubplebbit = {
     }
 };
 // comment out because don't know how to make the captcha node code work in the browser
-// const captchaAndMathChallegeSubplebbit = {
+// const captchaAndMathChallengeSubplebbit = {
 //   title: 'captcha and math challenge subplebbit',
 //   settings: {
 //     challenges: [
@@ -108,7 +108,7 @@ const textMathChallegeSubplebbit = {
 //     ]
 //   }
 // }
-const excludeHighKarmaChallegeSubplebbit = {
+const excludeHighKarmaChallengeSubplebbit = {
     title: "exclude high karma challenge subplebbit",
     settings: {
         challenges: [
@@ -125,7 +125,7 @@ const excludeHighKarmaChallegeSubplebbit = {
         ]
     }
 };
-const excludeAccountAgeChallegeSubplebbit = {
+const excludeAccountAgeChallengeSubplebbit = {
     title: "exclude account age challenge subplebbit",
     settings: {
         challenges: [
@@ -140,7 +140,7 @@ const excludeAccountAgeChallegeSubplebbit = {
         ]
     }
 };
-const excludeAddressChallegeSubplebbit = {
+const excludeAddressChallengeSubplebbit = {
     title: "exclude address challenge subplebbit",
     settings: {
         challenges: [
@@ -169,7 +169,7 @@ const whitelistChallengeSubplebbit = {
         ]
     }
 };
-const blacklistChallegeSubplebbit = {
+const blacklistChallengeSubplebbit = {
     title: "blacklist challenge subplebbit",
     settings: {
         challenges: [
@@ -183,7 +183,7 @@ const blacklistChallegeSubplebbit = {
     }
 };
 // comment out because don't know how to require external challenge in the browser tests
-// const erc20PaymentChallegeSubplebbit = {
+// const erc20PaymentChallengeSubplebbit = {
 //   title: 'erc20 payment challenge subplebbit',
 //   settings: {
 //     challenges: [
@@ -203,7 +203,7 @@ const blacklistChallegeSubplebbit = {
 //     ]
 //   }
 // }
-const evmContractCallChallegeSubplebbit = {
+const evmContractCallChallengeSubplebbit = {
     title: "evm contract call challenge subplebbit",
     settings: {
         challenges: [
@@ -223,7 +223,7 @@ const evmContractCallChallegeSubplebbit = {
         ]
     }
 };
-const passwordChallegeSubplebbit = {
+const passwordChallengeSubplebbit = {
     title: "password challenge subplebbit",
     settings: {
         challenges: [
@@ -237,7 +237,7 @@ const passwordChallegeSubplebbit = {
         ]
     }
 };
-const excludeFriendlySubKarmaChallegeSubplebbit = {
+const excludeFriendlySubKarmaChallengeSubplebbit = {
     title: "exclude friendly sub karma challenge subplebbit",
     settings: {
         challenges: [
@@ -258,7 +258,7 @@ const excludeFriendlySubKarmaChallegeSubplebbit = {
         ]
     }
 };
-const twoOutOf4SuccessChallegeSubplebbit = {
+const twoOutOf4SuccessChallengeSubplebbit = {
     title: "2 out of 4 success challenge subplebbit",
     settings: {
         // challenge 0, 1 fail, but excluded if 2, 3 succeed, which makes challengeVerification.challengeSuccess = true
@@ -273,27 +273,27 @@ const twoOutOf4SuccessChallegeSubplebbit = {
             },
             {
                 name: "blacklist",
-                options: { blacklist: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.eth,some-author.eth" }
             },
             {
                 name: "blacklist",
-                options: { blacklist: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.eth,some-author.eth" }
             }
         ]
     }
 };
-const twoOutOf4SuccessInverseChallegeSubplebbit = {
+const twoOutOf4SuccessInverseChallengeSubplebbit = {
     title: "2 out of 4 success inverse challenge subplebbit",
     settings: {
         // challenge 0, 1 fail, but excluded if 2, 3 succeed, which makes challengeVerification.challengeSuccess = true
         challenges: [
             {
                 name: "blacklist",
-                options: { blacklist: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.eth,some-author.eth" }
             },
             {
                 name: "blacklist",
-                options: { blacklist: "low-karma.eth,some-author.eth" }
+                options: { addresses: "low-karma.eth,some-author.eth" }
             },
             {
                 name: "fail",
@@ -306,7 +306,7 @@ const twoOutOf4SuccessInverseChallegeSubplebbit = {
         ]
     }
 };
-const rateLimitChallegeSubplebbit = {
+const rateLimitChallengeSubplebbit = {
     title: "rate limit challenge subplebbit",
     settings: {
         challenges: [
@@ -325,7 +325,7 @@ const rateLimitChallegeSubplebbit = {
         ]
     }
 };
-const rateLimitChallengeSuccessChallegeSubplebbit = {
+const rateLimitChallengeSuccessChallengeSubplebbit = {
     title: "rate limit challenge success challenge subplebbit",
     settings: {
         challenges: [
@@ -344,7 +344,7 @@ const rateLimitChallengeSuccessChallegeSubplebbit = {
         ]
     }
 };
-const excludeModsChallegeSubplebbit = {
+const excludeModsChallengeSubplebbit = {
     title: "exclude mods challenge subplebbit",
     roles: {
         "high-karma.eth": {
@@ -367,19 +367,19 @@ const excludeModsChallegeSubplebbit = {
 // define mock author karma scores and account age
 const subplebbitAuthors = {};
 subplebbitAuthors[highKarmaAuthor.address] = {};
-subplebbitAuthors[highKarmaAuthor.address][excludeHighKarmaChallegeSubplebbit.title] = {
+subplebbitAuthors[highKarmaAuthor.address][excludeHighKarmaChallengeSubplebbit.title] = {
     postScore: 1000,
     replyScore: 1000,
     firstCommentTimestamp: 1
 };
-subplebbitAuthors[highKarmaAuthor.address][excludeAccountAgeChallegeSubplebbit.title] = {
+subplebbitAuthors[highKarmaAuthor.address][excludeAccountAgeChallengeSubplebbit.title] = {
     postScore: 1,
     replyScore: 1,
     firstCommentTimestamp: 1
 };
 subplebbitAuthors[lowKarmaAuthor.address] = {};
-subplebbitAuthors[lowKarmaAuthor.address][excludeHighKarmaChallegeSubplebbit.title] = { postScore: 1, replyScore: 1000 };
-subplebbitAuthors[lowKarmaAuthor.address][excludeAccountAgeChallegeSubplebbit.title] = { postScore: 1000, replyScore: 1000 };
+subplebbitAuthors[lowKarmaAuthor.address][excludeHighKarmaChallengeSubplebbit.title] = { postScore: 1, replyScore: 1000 };
+subplebbitAuthors[lowKarmaAuthor.address][excludeAccountAgeChallengeSubplebbit.title] = { postScore: 1000, replyScore: 1000 };
 
 // define mock friendly sub comment cids
 const challengeCommentCids = {};
@@ -387,31 +387,31 @@ challengeCommentCids[highKarmaAuthor.address] = ["Qm...friendly-sub.eth,high,old
 
 const challengeAnswers = {};
 challengeAnswers[highKarmaAuthor.address] = {};
-challengeAnswers[highKarmaAuthor.address][passwordChallegeSubplebbit.title] = ["password"];
+challengeAnswers[highKarmaAuthor.address][passwordChallengeSubplebbit.title] = ["password"];
 challengeAnswers[lowKarmaAuthor.address] = {};
-challengeAnswers[lowKarmaAuthor.address][passwordChallegeSubplebbit.title] = ["wrong"];
+challengeAnswers[lowKarmaAuthor.address][passwordChallengeSubplebbit.title] = ["wrong"];
 
 const subplebbits = [
-    textMathChallegeSubplebbit,
-    // captchaAndMathChallegeSubplebbit,
-    excludeHighKarmaChallegeSubplebbit,
-    excludeAccountAgeChallegeSubplebbit,
-    whitelistChallegeSubplebbit,
-    whitelistChallenge2Subplebbit,
-    blacklistChallegeSubplebbit,
-    // erc20PaymentChallegeSubplebbit,
-    // evmContractCallChallegeSubplebbit,
-    passwordChallegeSubplebbit,
-    excludeFriendlySubKarmaChallegeSubplebbit,
-    twoOutOf4SuccessChallegeSubplebbit,
-    twoOutOf4SuccessInverseChallegeSubplebbit,
-    rateLimitChallegeSubplebbit,
-    rateLimitChallengeSuccessChallegeSubplebbit,
-    excludeModsChallegeSubplebbit
+    textMathChallengeSubplebbit,
+    // captchaAndMathChallengeSubplebbit,
+    excludeHighKarmaChallengeSubplebbit,
+    excludeAccountAgeChallengeSubplebbit,
+    excludeAddressChallengeSubplebbit,
+    whitelistChallengeSubplebbit,
+    blacklistChallengeSubplebbit,
+    // erc20PaymentChallengeSubplebbit,
+    // evmContractCallChallengeSubplebbit,
+    passwordChallengeSubplebbit,
+    excludeFriendlySubKarmaChallengeSubplebbit,
+    twoOutOf4SuccessChallengeSubplebbit,
+    twoOutOf4SuccessInverseChallengeSubplebbit,
+    rateLimitChallengeSubplebbit,
+    rateLimitChallengeSuccessChallengeSubplebbit,
+    excludeModsChallengeSubplebbit
 ];
 
 const results = {};
-results[textMathChallegeSubplebbit.title] = {
+results[textMathChallengeSubplebbit.title] = {
     "high-karma.eth": {
         pendingChallenges: [{ challenge: "660 - 256", type: "text/plain" }]
     },
@@ -420,7 +420,7 @@ results[textMathChallegeSubplebbit.title] = {
     }
 };
 // comment out because don't know how to make the captcha node code work in the browser
-// results[captchaAndMathChallegeSubplebbit.title] = {
+// results[captchaAndMathChallengeSubplebbit.title] = {
 //   'high-karma.eth': {
 //     pendingChallenges: [
 //       { challenge: '...', type: 'image' },
@@ -434,20 +434,20 @@ results[textMathChallegeSubplebbit.title] = {
 //     ]
 //   }
 // }
-results[excludeHighKarmaChallegeSubplebbit.title] = {
+results[excludeHighKarmaChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         pendingChallenges: [{ challenge: "82 * 45", type: "text/plain" }]
     }
 };
-results[excludeAccountAgeChallegeSubplebbit.title] = {
+results[excludeAccountAgeChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
-results[excludeAddressChallegeSubplebbit.title] = {
+results[excludeAddressChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
@@ -461,14 +461,7 @@ results[whitelistChallengeSubplebbit.title] = {
         challengeErrors: { 0: "You're not whitelisted." }
     }
 };
-results[whitelistUrlsChallengeSubplebbit.title] = {
-    "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": {
-        challengeSuccess: false,
-        challengeErrors: { 0: "You're not whitelisted." }
-    }
-};
-results[blacklistChallegeSubplebbit.title] = {
+results[blacklistChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
@@ -476,32 +469,32 @@ results[blacklistChallegeSubplebbit.title] = {
     }
 };
 // comment out because don't know how to require external challenge in the browser tests
-// results[erc20PaymentChallegeSubplebbit.title] = {
+// results[erc20PaymentChallengeSubplebbit.title] = {
 //   'high-karma.eth': { challengeSuccess: true },
 //   'low-karma.eth': {
 //     challengeSuccess: false,
 //     challengeErrors: {"0": "Author doesn't have wallet (eth) set." }
 //   }
 // }
-results[evmContractCallChallegeSubplebbit.title] = {
+results[evmContractCallChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
         challengeErrors: { 0: "Author doesn't have a wallet set." }
     }
 };
-results[passwordChallegeSubplebbit.title] = {
+results[passwordChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": { challengeSuccess: false, challengeErrors: { 0: "Wrong answer." } }
 };
-results[excludeFriendlySubKarmaChallegeSubplebbit.title] = {
+results[excludeFriendlySubKarmaChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
-results[twoOutOf4SuccessChallegeSubplebbit.title] = {
+results[twoOutOf4SuccessChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
@@ -513,7 +506,7 @@ results[twoOutOf4SuccessChallegeSubplebbit.title] = {
         }
     }
 };
-results[twoOutOf4SuccessInverseChallegeSubplebbit.title] = {
+results[twoOutOf4SuccessInverseChallengeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
@@ -525,7 +518,7 @@ results[twoOutOf4SuccessInverseChallegeSubplebbit.title] = {
         }
     }
 };
-results[rateLimitChallegeSubplebbit.title] = {
+results[rateLimitChallengeSubplebbit.title] = {
     "high-karma.eth": {
         challengeSuccess: false,
         challengeErrors: { 0: "You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h." }
@@ -535,7 +528,7 @@ results[rateLimitChallegeSubplebbit.title] = {
         challengeErrors: { 0: "You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h." }
     }
 };
-results[rateLimitChallengeSuccessChallegeSubplebbit.title] = {
+results[rateLimitChallengeSuccessChallengeSubplebbit.title] = {
     "high-karma.eth": {
         challengeSuccess: true
     },
@@ -543,7 +536,7 @@ results[rateLimitChallengeSuccessChallegeSubplebbit.title] = {
         challengeSuccess: true
     }
 };
-results[excludeModsChallegeSubplebbit.title] = {
+results[excludeModsChallengeSubplebbit.title] = {
     "high-karma.eth": {
         challengeSuccess: true
     },
