@@ -30,7 +30,6 @@ const type: Challenge["type"] = "text/plain";
 
 const description = "Blacklist author addresses.";
 
-
 class UrlsAddressesSet {
     private subplebbits: {
         [subplebbitAddress: string]: {
