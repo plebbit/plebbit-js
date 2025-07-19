@@ -31,40 +31,80 @@ const type: Challenge["type"] = "text/plain";
 const description = "Whitelist author addresses.";
 
 class UrlsAddressesSet {
-    urlsString: string | undefined
-    urls: string[] = []
-    urlsSets: {[url: string]: Set<string>} = {}
+    private subplebbits: {
+        [subplebbitAddress: string]: {
+            urlsString: string | undefined;
+            urls: string[];
+            urlsSets: { [url: string]: Set<string> };
+            setUrlsPromise?: Promise<void>;
+        };
+    } = {};
+
     constructor() {
-        // refetch urls every 5min
-        setInterval(() => this.updateUrlsSets(), 1000 * 60 * 5).unref?.()
+        // update all urls in the background every 5min
+        setInterval(() => this.updateAllUrls(), 1000 * 60 * 5).unref?.();
     }
-    setUrls(urlsString?: string) {
-        // no changes
-        if (urlsString === this.urlsString) {
-            return
-        }
-        this.urlsString = urlsString
-        this.urls = this.urlsString?.split(",").map(u => u.trim()).filter(Boolean) || []
-        this.urlsSets = {}
-        for (const url of this.urls) {
-            this.urlsSets[url] = new Set()
-        }
-        this.updateUrlsSets()
-    }
-    has(address?: string) {
-        if (address) {
-            for (const urlSet of Object.values(this.urlsSets)) {
-                if (urlSet.has(address)) {
-                    return true
-                }
+
+    async has(address?: string, subplebbitAddress?: string, urlsString?: string): Promise<boolean> {
+        if (!address || !subplebbitAddress || !urlsString) return false;
+        // update urls on first run, wait for 10s max
+        await this.setUrls(subplebbitAddress, urlsString);
+        const subplebbit = this.subplebbits[subplebbitAddress]
+        const urlsSets = subplebbit.urls.map(url => subplebbit.urlsSets[url]).filter(Boolean)
+        for (const urlSet of urlsSets) {
+            if (urlSet.has(address)) {
+                return true;
             }
         }
-        return false
+        return false;
     }
-    updateUrlsSets() {
-        this.urls.forEach((url) => fetch(url).then(res => res.json().then(addresses => {
-            this.urlsSets[url] = new Set(addresses)
-        }).catch(() => {})))
+
+    private async setUrls(subplebbitAddress: string, urlsString: string): Promise<void> {
+        const subplebbit = this.subplebbits[subplebbitAddress];
+        if (subplebbit && urlsString === subplebbit.urlsString) {
+            return subplebbit.setUrlsPromise;
+        }
+        this.subplebbits[subplebbitAddress] = {
+            urlsString,
+            urls: urlsString?.split(",").map(u => u.trim()).filter(Boolean) || [],
+            urlsSets: {}
+        };
+        this.subplebbits[subplebbitAddress].setUrlsPromise = this.updateUrlsSets(subplebbitAddress);
+        return this.subplebbits[subplebbitAddress].setUrlsPromise;
+    }
+
+    private async updateUrlsSets(subplebbitAddress: string): Promise<void> {
+        const subplebbit = this.subplebbits[subplebbitAddress];
+        if (!subplebbit) return;
+        await Promise.race([
+            Promise.all(subplebbit.urls.map(async (url) => this.updateUrlSet(url, [subplebbitAddress]))),
+            // make sure to resolve after max 10s, or the initial urlsAddressesSet.has() could take infinite time
+            new Promise<void>(resolve => setTimeout(resolve, 10000))
+        ]);
+    }
+
+    private async updateUrlSet(url: string, subplebbitAddresses: string[]): Promise<void> {
+        try {
+            const addresses = await fetch(url).then(res => res.json())
+            for (const subplebbitAddress of subplebbitAddresses) {
+                this.subplebbits[subplebbitAddress].urlsSets[url] = new Set(addresses)
+            }
+        } catch {}
+    }
+
+    private updateAllUrls(): void {
+        const urlToSubplebbitAddresses: { [url: string]: string[] } = {};
+        for (const [subplebbitAddress, subplebbit] of Object.entries(this.subplebbits)) {
+            for (const url of subplebbit.urls) {
+                if (!urlToSubplebbitAddresses[url]) {
+                    urlToSubplebbitAddresses[url] = [];
+                }
+                urlToSubplebbitAddresses[url].push(subplebbitAddress);
+            }
+        }
+        for (const [url, subplebbitAddresses] of Object.entries(urlToSubplebbitAddresses)) {
+            this.updateUrlSet(url, subplebbitAddresses);
+        }
     }
 }
 const urlsAddressesSet = new UrlsAddressesSet()
@@ -72,7 +112,7 @@ const urlsAddressesSet = new UrlsAddressesSet()
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    challengeIndex: number
+    challengeIndex: number,
 ): Promise<ChallengeResult> => {
     // add a custom error message to display to the author
     const error = subplebbitChallengeSettings?.options?.error;
@@ -80,7 +120,7 @@ const getChallenge = async (
     const addressesSet = new Set(addresses);
 
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
-    if (!addressesSet.has(publication?.author?.address) && !urlsAddressesSet.has(publication?.author?.address)) {
+    if (!addressesSet.has(publication?.author?.address) && !await urlsAddressesSet.has(publication?.author?.address, publication?.subplebbitAddress, subplebbitChallengeSettings?.options?.urls)) {
         return {
             success: false,
             error: error || `You're not whitelisted.`
@@ -93,7 +133,6 @@ const getChallenge = async (
 };
 
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
-    urlsAddressesSet.setUrls(subplebbitChallengeSettings?.options?.urls)
     return { getChallenge, optionInputs, type, description };
 }
 
