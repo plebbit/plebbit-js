@@ -71,7 +71,7 @@ class UrlsAddressesSet {
         };
         // try fetching urls before resolving
         this.subplebbits[subplebbitAddress].setUrlsPromise = Promise.race([
-            Promise.all(this.subplebbits[subplebbitAddress].urls.map(async (url) => this.fetchAndUpdateUrlSet(url, [subplebbitAddress]))).then(() => {}),
+            Promise.all(this.subplebbits[subplebbitAddress].urls.map((url) => this.fetchAndUpdateUrlSet(url, [subplebbitAddress]))).then(() => {}),
             // make sure to resolve after max 10s, or the initial urlsAddressesSet.has() could take infinite time
             new Promise<void>(resolve => setTimeout(resolve, 10000))
         ]);
