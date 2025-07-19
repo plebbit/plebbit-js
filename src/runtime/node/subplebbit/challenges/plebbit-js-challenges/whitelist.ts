@@ -36,13 +36,13 @@ class UrlsAddressesSet {
             urlsString: string | undefined;
             urls: string[];
             urlsSets: { [url: string]: Set<string> };
-            setUrlsPromise?: Promise<void>;
+            setUrlsPromise?: Promise<any>;
         };
     } = {};
 
     constructor() {
-        // update all urls in the background every 5min
-        setInterval(() => this.updateAllUrls(), 1000 * 60 * 5).unref?.();
+        // refetch all urls in the background every 5min
+        setInterval(() => this.refetchAndUpdateAllUrlsSets(), 1000 * 60 * 5).unref?.();
     }
 
     async has(address?: string, subplebbitAddress?: string, urlsString?: string): Promise<boolean> {
@@ -60,7 +60,7 @@ class UrlsAddressesSet {
     }
 
     private async setUrls(subplebbitAddress: string, urlsString: string): Promise<void> {
-        const subplebbit = this.subplebbits[subplebbitAddress];
+        let subplebbit = this.subplebbits[subplebbitAddress];
         if (subplebbit && urlsString === subplebbit.urlsString) {
             return subplebbit.setUrlsPromise;
         }
@@ -69,21 +69,16 @@ class UrlsAddressesSet {
             urls: urlsString?.split(",").map(u => u.trim()).filter(Boolean) || [],
             urlsSets: {}
         };
-        this.subplebbits[subplebbitAddress].setUrlsPromise = this.updateUrlsSets(subplebbitAddress);
-        return this.subplebbits[subplebbitAddress].setUrlsPromise;
-    }
-
-    private async updateUrlsSets(subplebbitAddress: string): Promise<void> {
-        const subplebbit = this.subplebbits[subplebbitAddress];
-        if (!subplebbit) return;
-        await Promise.race([
-            Promise.all(subplebbit.urls.map(async (url) => this.updateUrlSet(url, [subplebbitAddress]))),
+        // try fetching urls before resolving
+        this.subplebbits[subplebbitAddress].setUrlsPromise = Promise.race([
+            Promise.all(this.subplebbits[subplebbitAddress].urls.map(async (url) => this.fetchAndUpdateUrlSet(url, [subplebbitAddress]))).then(() => {}),
             // make sure to resolve after max 10s, or the initial urlsAddressesSet.has() could take infinite time
             new Promise<void>(resolve => setTimeout(resolve, 10000))
         ]);
+        return this.subplebbits[subplebbitAddress].setUrlsPromise;
     }
 
-    private async updateUrlSet(url: string, subplebbitAddresses: string[]): Promise<void> {
+    private async fetchAndUpdateUrlSet(url: string, subplebbitAddresses: string[]): Promise<void> {
         try {
             const addresses = await fetch(url).then(res => res.json())
             for (const subplebbitAddress of subplebbitAddresses) {
@@ -92,7 +87,7 @@ class UrlsAddressesSet {
         } catch {}
     }
 
-    private updateAllUrls(): void {
+    private refetchAndUpdateAllUrlsSets(): void {
         const urlToSubplebbitAddresses: { [url: string]: string[] } = {};
         for (const [subplebbitAddress, subplebbit] of Object.entries(this.subplebbits)) {
             for (const url of subplebbit.urls) {
@@ -103,7 +98,7 @@ class UrlsAddressesSet {
             }
         }
         for (const [url, subplebbitAddresses] of Object.entries(urlToSubplebbitAddresses)) {
-            this.updateUrlSet(url, subplebbitAddresses);
+            this.fetchAndUpdateUrlSet(url, subplebbitAddresses);
         }
     }
 }
