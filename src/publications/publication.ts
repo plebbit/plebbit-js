@@ -676,6 +676,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const encodedRequest: EncodedDecryptedChallengeRequestMessageType = args.params.result;
         const request = <DecryptedChallengeRequestMessageType>decodeRpcChallengeRequestPubsubMsg(encodedRequest);
         this._challengeExchanges[request.challengeRequestId.toString()] = {
+            ...this._challengeExchanges[request.challengeRequestId.toString()],
             challengeRequest: request,
             challengeRequestPublishTimestamp: timestamp(),
             providerUrl: Object.keys(this.clients.plebbitRpcClients)[0]
@@ -686,8 +687,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private _handleIncomingChallengeFromRpc(args: any) {
         const encodedChallenge: EncodedDecryptedChallengeMessageType = args.params.result;
         const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
-        this._challengeExchanges[challenge.challengeRequestId.toString()].challenge = challenge;
-        this._challengeExchanges[challenge.challengeRequestId.toString()].challengeRequestPublishTimestamp = timestamp();
+        this._challengeExchanges[challenge.challengeRequestId.toString()] = {
+            ...this._challengeExchanges[challenge.challengeRequestId.toString()],
+            challenge,
+            challengeRequestPublishTimestamp: timestamp()
+        };
 
         this.emit("challenge", challenge);
     }
@@ -696,15 +700,21 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType = args.params.result;
 
         const challengeAnswerMsg = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
-        this._challengeExchanges[challengeAnswerMsg.challengeRequestId.toString()].challengeAnswer = challengeAnswerMsg;
-        this._challengeExchanges[challengeAnswerMsg.challengeRequestId.toString()].challengeAnswerPublishTimestamp = timestamp();
+        this._challengeExchanges[challengeAnswerMsg.challengeRequestId.toString()] = {
+            ...this._challengeExchanges[challengeAnswerMsg.challengeRequestId.toString()],
+            challengeAnswer: challengeAnswerMsg,
+            challengeAnswerPublishTimestamp: timestamp()
+        };
         this.emit("challengeanswer", challengeAnswerMsg);
     }
 
     private async _handleIncomingChallengeVerificationFromRpc(args: any) {
         const encoded: EncodedDecryptedChallengeVerificationMessageType = args.params.result;
         const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
-        this._challengeExchanges[decoded.challengeRequestId.toString()].challengeVerification = decoded;
+        this._challengeExchanges[decoded.challengeRequestId.toString()] = {
+            ...this._challengeExchanges[decoded.challengeRequestId.toString()],
+            challengeVerification: decoded
+        };
         await this._handleRpcChallengeVerification(decoded);
     }
 
