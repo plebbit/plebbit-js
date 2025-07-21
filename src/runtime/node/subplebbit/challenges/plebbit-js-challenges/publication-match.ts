@@ -9,6 +9,8 @@ interface Match {
     regexp: string; // regex pattern to match against the property value. For example, "\\.eth$"
 }
 
+const defaultDescription = "Match publication properties against regex patterns.";
+
 const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "matches",
@@ -30,12 +32,17 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
         default: "true",
         description: "If true, all patterns must match. If false, at least one pattern must match.",
         placeholder: "true"
+    },
+    {
+        option: "description",
+        label: "Description",
+        default: defaultDescription,
+        description: "Custom description for the challenge that explains what patterns are being matched.",
+        placeholder: "Authors must have .eth addresses"
     }
 ];
 
 const type: Challenge["type"] = "text/plain";
-
-const description = "Match publication properties against regex patterns.";
 
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
@@ -151,6 +158,7 @@ const getChallenge = async (
 };
 
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+    const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
     return { getChallenge, optionInputs, type, description };
 }
 

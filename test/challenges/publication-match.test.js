@@ -76,6 +76,33 @@ describe("publication-match challenge", () => {
         expect(subplebbitChallenge.description).to.equal("Match publication properties against regex patterns.");
     });
 
+    // Test custom description option
+    it("getSubplebbitChallengeFromSubplebbitChallengeSettings with custom description", () => {
+        const subplebbitChallengeSettings = {
+            name: "publication-match",
+            options: {
+                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.eth$" }]),
+                description: "Authors must have .eth addresses"
+            }
+        };
+        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
+        expect(subplebbitChallenge.type).to.equal("text/plain");
+        expect(subplebbitChallenge.description).to.equal("Authors must have .eth addresses");
+    });
+
+    // Test default description when no custom description provided
+    it("getSubplebbitChallengeFromSubplebbitChallengeSettings uses default description when none provided", () => {
+        const subplebbitChallengeSettings = {
+            name: "publication-match",
+            options: {
+                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.eth$" }])
+            }
+        };
+        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
+        expect(subplebbitChallenge.type).to.equal("text/plain");
+        expect(subplebbitChallenge.description).to.equal("Match publication properties against regex patterns.");
+    });
+
     // Test with matching author address (.eth)
     it("publication-match challenge with matching author address .eth", async () => {
         const subplebbit = createSubplebbit();
