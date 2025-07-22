@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
-import { generateMockPost, getRemotePlebbitConfigs, publishRandomPost } from "../../../../dist/node/test/test-util.js";
+import { generateMockPost, getAvailablePlebbitConfigsToTestAgainst, publishRandomPost } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`comment.state - ${config.name}`, async () => {
         let plebbit, comment;
         before(async () => {

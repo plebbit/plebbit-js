@@ -2,7 +2,7 @@ import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     isRpcFlagOn,
     jsonifySubplebbitAndRemoveInternalProps,
     isRunningInBrowser,
@@ -17,7 +17,7 @@ import validSubplebbitJsonfiedFixture from "../../fixtures/signatures/subplebbit
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) =>
+getAvailablePlebbitConfigsToTestAgainst().map((config) =>
     describe(`plebbit.createSubplebbit - Remote (${config.name})`, async () => {
         let plebbit;
 

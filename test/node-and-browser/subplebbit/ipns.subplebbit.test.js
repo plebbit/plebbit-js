@@ -1,4 +1,4 @@
-import { getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 
 const fixture = {
@@ -29,7 +29,7 @@ const fixture = {
     }
 };
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`subplebbit.{ipnsName, ipnsPubsubTopic, ipnsPubsubTopicRoutingCid, pubsubTopicRoutingCid}`, async () => {
         let plebbit;
         let subplebbit;

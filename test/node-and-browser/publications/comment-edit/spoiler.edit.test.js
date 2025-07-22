@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPagesToFindCommentInParentPagesInstance,
     publishRandomPost,
     publishWithExpectedResult,
@@ -17,7 +17,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Authors can mark their own comment as spoiler - ${config.name}`, async () => {
         let plebbit, authorPost;
         before(async () => {

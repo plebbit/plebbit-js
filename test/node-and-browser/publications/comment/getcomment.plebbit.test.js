@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     addStringToIpfs,
     itSkipIfRpc,
     isPlebbitFetchingUsingGateways
@@ -9,7 +9,7 @@ import {
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 const subplebbitSigner = signers[0];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.getComment - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

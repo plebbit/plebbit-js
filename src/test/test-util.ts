@@ -1242,7 +1242,7 @@ export function setPlebbitConfigs(configs: PlebbitTestConfigCode[]) {
     }
 }
 
-export function getRemotePlebbitConfigs(opts?: { includeOnlyTheseTests?: PlebbitTestConfigCode[] }) {
+export function getAvailablePlebbitConfigsToTestAgainst(opts?: { includeOnlyTheseTests?: PlebbitTestConfigCode[] }) {
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {

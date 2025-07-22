@@ -5,7 +5,7 @@ import {
     getRandomPostCidFromSub,
     resolveWhenConditionIsTrue,
     addStringToIpfs,
-    getRemotePlebbitConfigs
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
@@ -13,7 +13,7 @@ const clientsFieldName = {
     "remote-libp2pjs": "libp2pJsClients",
     "remote-kubo-rpc": "kuboRpcClients"
 };
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     const clientFieldName = clientsFieldName[config.testConfigCode];
     describe(`comment.replies.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;
@@ -63,7 +63,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`comment.replies.clients.ipfsGateways - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -152,7 +152,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
     describe(`comment.replies.clients.plebbitRpcClients - ${config.name}`, async () => {
         let plebbit;
         let commentCid;

@@ -6,7 +6,7 @@ import {
     publishRandomPost,
     generatePostToAnswerMathQuestion,
     mockRemotePlebbit,
-    getRemotePlebbitConfigs
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../dist/node/test/test-util.js";
 
 const mathCliSubplebbitAddress = signers[1].address;
@@ -30,7 +30,7 @@ describe.skip(`Stress test challenge exchange`, async () => {
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`math-cli - ${config.name}`, async () => {
         let plebbit;
 

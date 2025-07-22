@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     findOrPublishCommentWithDepth,
     itSkipIfRpc,
     publishRandomPost,
@@ -11,7 +11,7 @@ import signers from "../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
 
 // TODO write a better way to wait for events to propgate other than setTimeout
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit._updatingComments - ${config.name}`, async () => {
         let plebbit;
         let sub;

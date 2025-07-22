@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
     generatePostToAnswerMathQuestion,
     publishWithExpectedResult,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     resolveWhenConditionIsTrue,
     mockPlebbitV2,
     addStringToIpfs
@@ -12,7 +12,7 @@ const mathCliNoMockedPubsubSubplebbitAddress = signers[5].address; // this sub i
 
 // should connect to a kubo node and exchange pubsub messages with it
 // DO NOT MOCK PUBSUB
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-libp2pjs"] }).map((config) => {
     describe(`Test publishing pubsub in real environment - ${config.name}`, async () => {
         let plebbit, publishedPost;
 

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
     publishRandomPost,
@@ -21,7 +21,7 @@ const subplebbitAddress = signers[0].address;
 
 const subWithNoResponseSigner = signers[4]; // this sub will never respond via pubsub
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Loading CommentUpdate with extra prop - ${config.name}`, async () => {
         let plebbit, post, subplebbit;
         const extraProps = { extraPropUpdate: "1234" };

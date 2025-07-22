@@ -7,13 +7,13 @@ import {
     jsonifyCommentAndRemoveInstanceProps,
     loadAllPages,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishWithExpectedResult,
     addStringToIpfs
 } from "../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.createComment - Remote (${config.name})`, async () => {
         let plebbit;
         before(async () => {

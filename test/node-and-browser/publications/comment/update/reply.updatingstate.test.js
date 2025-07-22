@@ -8,7 +8,7 @@ import {
     waitTillReplyInParentPagesInstance,
     mockReplyToUseParentPagesForUpdates,
     describeSkipIfRpc,
-    getRemotePlebbitConfigs
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
@@ -87,7 +87,7 @@ const cleanupStateArray = (states) => {
     return filteredStates;
 };
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describeSkipIfRpc(`reply.updatingState - ${config.name}`, async () => {
         let plebbit, replyCid;
         before(async () => {
@@ -231,7 +231,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`reply.updatingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -362,7 +362,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
     });
 });
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describeSkipIfRpc(`reply.updatingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

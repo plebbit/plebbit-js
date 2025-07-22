@@ -4,7 +4,7 @@ import {
     generateMockPost,
     generatePostToAnswerMathQuestion,
     publishWithExpectedResult,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 
@@ -27,7 +27,7 @@ const validateKuboRpcNotListeningToPubsubTopic = async (testPlebbit, pubsubTopic
 };
 
 // Test to reproduce pubsub bugs identified in issue #57
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
     describe(`Pubsub timeout and subscription bugs - ${config.name}`, async () => {
         describe("Bug #1: Incomplete Control Flow in _handleNotReceivingResponseToChallengeRequest", async () => {
             it("should properly handle when publication state becomes 'stopped' during timeout", async () => {

@@ -9,7 +9,7 @@ import {
     publishRandomReply,
     waitTillPostInSubplebbitInstancePages,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
@@ -41,7 +41,7 @@ const removeAllPins = async (allComments, plebbit) => {
     );
 };
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Pinning posts - ${config.name}`, async () => {
         let plebbit, postToPin, secondPostToPin, sub;
 

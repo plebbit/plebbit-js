@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../../fixtures/signers.js";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomPost,
     publishRandomReply,
     publishVote,
@@ -9,7 +9,7 @@ import {
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`commentUpdate.replyCount - ${config.name}`, async () => {
         let plebbit, post, reply;
         before(async () => {

@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { getRemotePlebbitConfigs, itSkipIfRpc, resolveWhenConditionIsTrue, itIfRpc } from "../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst, itSkipIfRpc, resolveWhenConditionIsTrue, itIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit._updatingSubplebbits - ${config.name}`, async () => {
         let plebbit;
         beforeEach(async () => {

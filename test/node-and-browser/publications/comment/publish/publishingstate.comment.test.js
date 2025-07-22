@@ -6,14 +6,14 @@ import {
     isPlebbitFetchingUsingGateways,
     generatePostToAnswerMathQuestion,
     publishSubplebbitRecordWithExtraProp,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     createNewIpns,
     resolveWhenConditionIsTrue
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`comment.publishingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -102,7 +102,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((config) => {
     describe(`comment.publishingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -135,7 +135,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc"] }).map((con
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`comment.publishingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -203,7 +203,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
     });
 });
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`comment.publishingState - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

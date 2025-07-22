@@ -1,10 +1,10 @@
 import { expect } from "chai";
 
-import { getRemotePlebbitConfigs, mockPlebbitToTimeoutFetchingCid, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst, mockPlebbitToTimeoutFetchingCid, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 
 import { _signJson } from "../../../dist/node/signer/signatures.js";
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`Subplebbit and waiting-retry - ${config.name}`, async () => {
         it(`subplebbit.update() emits error if loading subplebbit record times out`, async () => {
             const stallingGateway = "http://127.0.0.1:14000"; // this gateway will wait for 11s before responding
@@ -30,7 +30,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map(
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`Subplebbit waiting-retry - ${config.name}`, () => {
         let plebbit;
         before(async () => {

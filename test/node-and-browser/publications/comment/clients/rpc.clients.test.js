@@ -4,12 +4,12 @@ import {
     generateMockPost,
     publishRandomPost,
     publishWithExpectedResult,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     waitTillPostInSubplebbitPages
 } from "../../../../../dist/node/test/test-util.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
     describe(`comment.clients.plebbitRpcClients`, async () => {
         let plebbit;
         before(async () => {

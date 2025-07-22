@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     let plebbit;
     describe(`subplebbit.state - ${config.name}`, () => {
         beforeEach(async () => {

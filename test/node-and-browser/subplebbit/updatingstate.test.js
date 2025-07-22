@@ -7,10 +7,10 @@ import {
     mockPlebbitToReturnSpecificSubplebbit,
     createNewIpns,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../dist/node/test/test-util.js";
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -135,7 +135,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
     });
 });
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -217,7 +217,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`subplebbit.updatingState (node/browser - remote sub) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

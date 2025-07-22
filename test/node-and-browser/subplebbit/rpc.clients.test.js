@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
-import { createNewIpns, resolveWhenConditionIsTrue, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { createNewIpns, resolveWhenConditionIsTrue, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 
 import { signSubplebbit } from "../../../dist/node/signer/signatures.js";
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
     describe(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
         let plebbit;
 

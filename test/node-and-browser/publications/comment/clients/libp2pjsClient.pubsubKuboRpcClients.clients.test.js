@@ -3,7 +3,7 @@ import signers from "../../../../fixtures/signers.js";
 import {
     generateMockPost,
     mockRemotePlebbit,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishWithExpectedResult,
     generatePostToAnswerMathQuestion,
     mockPlebbitV2
@@ -18,7 +18,7 @@ const clientsFieldName = {
     "remote-kubo-rpc": "pubsubKuboRpcClients"
 };
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     const clientFieldName = clientsFieldName[config.testConfigCode];
     describe(`comment.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;

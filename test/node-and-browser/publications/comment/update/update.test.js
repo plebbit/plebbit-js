@@ -11,7 +11,7 @@ import {
     addStringToIpfs,
     resolveWhenConditionIsTrue,
     publishCommentWithDepth,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     findOrPublishCommentWithDepth,
     mockPostToReturnSpecificCommentUpdate,
     isPlebbitFetchingUsingGateways,
@@ -23,7 +23,7 @@ import { cleanUpBeforePublishing } from "../../../../../dist/node/signer/signatu
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`comment.update - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -253,7 +253,7 @@ const addInvalidJsonToIpfs = async () => {
     return addStringToIpfs("<html>something</html>");
 };
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`comment.update() emits errors for issues with CommentIpfs or CommentUpdate record - ${config.name}`, async () => {
         let invalidCommentIpfsCid;
         let cidOfInvalidJson;
@@ -508,7 +508,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`comment.update() emits errors for gateways that return content that does not correspond to their cids`, async () => {
         it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID - IPFS Gateway`, async () => {
             const gatewayUrl = "http://localhost:13415"; // This gateway responds with content that is not equivalent to its CID

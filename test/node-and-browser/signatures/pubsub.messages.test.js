@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { generateMockPost, publishWithExpectedResult, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { generateMockPost, publishWithExpectedResult, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 import {
     verifyChallengeRequest,
     verifyChallengeAnswer,
@@ -38,7 +38,7 @@ const parsePubsubMsgFixture = (json) => {
 
 // Clients of RPC will trust the response of RPC and won't validate
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).forEach((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).forEach((config) => {
     describe("challengerequest - " + config.name, async () => {
         let plebbit;
         before(async () => {

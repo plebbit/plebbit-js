@@ -2,13 +2,13 @@ import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
 
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     isPlebbitFetchingUsingGateways,
     publishSubplebbitRecordWithExtraProp,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.createSubplebbit - Backward Compatiblity - ${config.name}`, async () => {
         it(`Can create a subplebbit instance with subplebbit record with extra props`, async () => {
             const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };

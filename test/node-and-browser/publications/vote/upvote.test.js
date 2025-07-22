@@ -6,14 +6,14 @@ import {
     publishRandomReply,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getAvailablePlebbitConfigsToTestAgainst
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     const previousVotes = [];
 
     describe(`Test upvote - ${config.name}`, async () => {

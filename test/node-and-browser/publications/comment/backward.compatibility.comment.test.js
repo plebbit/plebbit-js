@@ -3,7 +3,7 @@ import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     setExtraPropOnCommentAndSign,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     iterateThroughPagesToFindCommentInParentPagesInstance,
@@ -14,7 +14,7 @@ import { _signJson } from "../../../../dist/node/signer/signatures.js";
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Comments with extra props - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

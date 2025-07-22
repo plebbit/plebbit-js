@@ -7,7 +7,7 @@ import {
     publishRandomPost,
     mockRemotePlebbit,
     mockGatewayPlebbit,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     describeSkipIfRpc,
     itSkipIfRpc,
     iterateThroughPagesToFindCommentInParentPagesInstance,
@@ -22,7 +22,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("publishing posts - " + config.name, async () => {
         let plebbit, sub;
 

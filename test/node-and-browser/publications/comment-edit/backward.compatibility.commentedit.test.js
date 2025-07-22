@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
@@ -15,7 +15,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Backward compatibility for CommentEdit - ${config.name}`, async () => {
         // A subplebbit should accept a CommentEdit with unknown props
         // However, it should not process the unknown props, it should strip them out after validation

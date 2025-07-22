@@ -2,12 +2,12 @@ import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { createNewIpns, getRemotePlebbitConfigs, isPlebbitFetchingUsingGateways } from "../../../dist/node/test/test-util.js";
+import { createNewIpns, getAvailablePlebbitConfigsToTestAgainst, isPlebbitFetchingUsingGateways } from "../../../dist/node/test/test-util.js";
 
 const ensSubplebbitAddress = "plebbit.eth";
 const subplebbitSigner = signers[0];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.getSubplebbit (Remote) - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

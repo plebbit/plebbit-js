@@ -3,7 +3,7 @@ import {
     publishRandomPost,
     mockGatewayPlebbit,
     addStringToIpfs,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     loadAllPagesBySortName,
     waitTillPostInSubplebbitPages,
@@ -37,7 +37,7 @@ const testPostsSort = async (sortName, subplebbit) => {
     return posts;
 };
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`subplebbit.posts - ${config.name}`, async () => {
         let plebbit, newPost, subplebbit;
         before(async () => {
@@ -330,7 +330,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`getPage - ${config.name}`, async () => {
         it(`.getPage will throw if retrieved page has an invalid signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
@@ -358,7 +358,7 @@ getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-lib
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`getPage - ${config.name}`, async () => {
         it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
             const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content

@@ -7,7 +7,7 @@ import {
     generateMockVote,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPagesToFindCommentInParentPagesInstance,
     iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
@@ -21,7 +21,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Removing post - ${config.name}`, async () => {
         let plebbit, postToRemove, postReply;
         before(async () => {

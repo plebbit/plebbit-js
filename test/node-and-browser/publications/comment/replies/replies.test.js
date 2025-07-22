@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
     loadAllPages,
     publishRandomPost,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomReply,
     mockPlebbitV2,
     forceSubplebbitToGenerateAllRepliesPages,
@@ -42,7 +42,7 @@ const testReplyRepliesSort = async (reply, replySortName, subplebbit) => {
     }
 };
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("post.replies - " + config.name, async () => {
         let plebbit, subplebbit;
         let post, firstLevelReply, secondLevelReply, thirdLevelReply;
@@ -144,7 +144,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     let plebbit, reply, subplebbit;
     describe(`reply.replies - ${config.name}`, async () => {
         before(async () => {
@@ -222,7 +222,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
     });
 });
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("comment.replies - " + config.name, async () => {
         let plebbit, post;
         before(async () => {

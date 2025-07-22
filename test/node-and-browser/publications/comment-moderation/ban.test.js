@@ -5,7 +5,7 @@ import {
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPagesToFindCommentInParentPagesInstance
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
@@ -18,7 +18,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Banning authors`, async () => {
         let plebbit, commentToBeBanned, authorBanExpiresAt, reasonOfBan;
 

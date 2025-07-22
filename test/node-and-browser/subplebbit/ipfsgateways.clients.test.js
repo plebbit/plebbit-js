@@ -2,7 +2,7 @@ import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import {
     publishRandomPost,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     mockGatewayPlebbit,
     mockPlebbitToReturnSpecificSubplebbit,
     resolveWhenConditionIsTrue
@@ -10,7 +10,7 @@ import {
 
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`subplebbit.clients.ipfsGateways - ${config.name}`, async () => {
         // All tests below use Plebbit instance that doesn't have clients.kuboRpcClients
         let gatewayPlebbit;

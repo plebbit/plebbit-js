@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 
-import { describeSkipIfRpc, mockGatewayPlebbit, getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, mockGatewayPlebbit, getAvailablePlebbitConfigsToTestAgainst, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
@@ -10,7 +10,7 @@ const clientsFieldName = {
     "remote-libp2pjs": "libp2pJsClients"
 };
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     const clientFieldName = clientsFieldName[config.testConfigCode];
     describeSkipIfRpc(`subplebbit.posts.clients.${clientFieldName} - ${config.name}`, async () => {
         let plebbit;

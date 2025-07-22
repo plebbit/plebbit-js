@@ -3,14 +3,14 @@ import Plebbit from "../../../dist/node/index.js";
 import signers from "../../fixtures/signers.js";
 import {
     addStringToIpfs,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     mockGatewayPlebbit,
     isPlebbitFetchingUsingGateways
 } from "../../../dist/node/test/test-util.js";
 const fixtureSigner = signers[0];
 
-// TODO this has to be ran inside getRemotePlebbitConfigs
-getRemotePlebbitConfigs().map((config) => {
+// TODO this has to be ran inside getAvailablePlebbitConfigsToTestAgainst
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.fetchCid - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
@@ -70,7 +70,7 @@ getRemotePlebbitConfigs().map((config) => {
     });
 });
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe("plebbit.fetchCid - " + config.name, () => {
         it(`Throws an error if malicious gateway modifies content of file`, async () => {
             // RPC exception

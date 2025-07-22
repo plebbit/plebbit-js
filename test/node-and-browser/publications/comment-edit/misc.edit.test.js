@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
@@ -9,7 +9,7 @@ import {
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("plebbit.createCommentEdit - " + config.name, async () => {
         let plebbit;
         let commentToEdit;

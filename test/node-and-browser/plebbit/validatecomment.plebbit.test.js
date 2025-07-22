@@ -4,7 +4,7 @@ import {
     describeSkipIfRpc,
     resolveWhenConditionIsTrue,
     findOrGeneratePostWithMultiplePages,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomReply
 } from "../../../dist/node/test/test-util.js";
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
@@ -12,7 +12,7 @@ import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { signCommentUpdate } from "../../../dist/node/signer/signatures.js";
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describeSkipIfRpc(`plebbit.validateComment - ${config.name}`, async () => {
         let plebbit, subplebbit, postCommentInstance, postPageComment, replyFromFlatPage, replyFromBestPage;
 

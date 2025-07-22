@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
-import { getRemotePlebbitConfigs, publishWithExpectedResult, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst, publishWithExpectedResult, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 import * as remeda from "remeda";
 
@@ -10,7 +10,7 @@ const roles = [
     { role: "admin", signer: signers[2] },
     { role: "mod", signer: signers[3] }
 ];
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`plebbit.createSubplebbitEdit - ${config.name}`, async () => {
         let plebbit;
 

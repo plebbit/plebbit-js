@@ -3,7 +3,7 @@ import signers from "../../fixtures/signers.js";
 
 import {
     publishRandomPost,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     isPlebbitFetchingUsingGateways,
     createNewIpns,
     resolveWhenConditionIsTrue
@@ -13,7 +13,7 @@ import * as remeda from "remeda";
 import { _signJson } from "../../../dist/node/signer/signatures.js";
 const ensSubplebbitSigner = signers[3];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("subplebbit.update (remote) - " + config.name, async () => {
         let plebbit;
         before(async () => {

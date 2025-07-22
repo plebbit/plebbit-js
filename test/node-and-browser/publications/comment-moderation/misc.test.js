@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import signers from "../../../fixtures/signers.js";
 import {
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
@@ -15,7 +15,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("plebbit.createCommentModeration misc - " + config.name, async () => {
         let plebbit;
         let commentToMod;

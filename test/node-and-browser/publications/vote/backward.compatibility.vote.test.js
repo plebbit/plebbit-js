@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import {
     generateMockVote,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     publishRandomPost,
     publishWithExpectedResult,
     setExtraPropOnVoteAndSign
@@ -10,7 +10,7 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 import signers from "../../../fixtures/signers.js";
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Backward compatibility for Vote - ${config.name}`, async () => {
         // A subplebbit should accept a vote with unknown props
         // However, it should not process the unknown props, it should strip them out after validation

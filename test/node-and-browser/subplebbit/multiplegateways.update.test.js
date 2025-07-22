@@ -6,12 +6,12 @@ const subplebbitAddress = signers[0].address;
 
 import {
     publishRandomPost,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     waitTillPostInSubplebbitPages,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         // these test gateways will be set in test-server.js
         const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond

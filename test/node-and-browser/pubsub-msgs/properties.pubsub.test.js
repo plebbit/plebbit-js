@@ -1,12 +1,12 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import { generatePostToAnswerMathQuestion, getRemotePlebbitConfigs } from "../../../dist/node/test/test-util.js";
+import { generatePostToAnswerMathQuestion, getAvailablePlebbitConfigsToTestAgainst } from "../../../dist/node/test/test-util.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const mathCliSubplebbitAddress = signers[1].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`Validate props of publication Pubsub messages - ${config.name}`, async () => {
         let plebbit;
         before(async () => {

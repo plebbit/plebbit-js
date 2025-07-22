@@ -1,9 +1,9 @@
 import { expect } from "chai";
-import { getRemotePlebbitConfigs, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
+import { getAvailablePlebbitConfigsToTestAgainst, addStringToIpfs } from "../../../../dist/node/test/test-util.js";
 import signers from "../../../fixtures/signers.js";
 const subplebbitAddress = signers[0].address;
 
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-plebbit-rpc"] }).map((config) => {
     describe(`subplebbit.posts.clients.plebbitRpcClients - ${config.name}`, async () => {
         let plebbit;
 

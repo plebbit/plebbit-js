@@ -7,7 +7,7 @@ import {
     generateMockVote,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     waitTillReplyInParentPages,
     mockPlebbitNoDataPathWithOnlyKuboClient,
     describeSkipIfRpc
@@ -26,7 +26,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     [0, 1, 2, 3].map((commentDepth) => {
         describeSkipIfRpc(`Purging comment with depth ${commentDepth} - ${config.name}`, async () => {
             let plebbit, commentToPurge, replyOfCommentToPurge, replyUnderReplyOfCommentToPurge;

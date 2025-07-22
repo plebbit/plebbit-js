@@ -8,7 +8,7 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbit,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     iterateThroughPagesToFindCommentInParentPagesInstance,
     iterateThroughPageCidToFindComment
 } from "../../../../dist/node/test/test-util.js";
@@ -21,7 +21,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`Locking posts - ${config.name}`, async () => {
         let plebbit, postToBeLocked, replyUnderPostToBeLocked, modPost, sub;
         before(async () => {

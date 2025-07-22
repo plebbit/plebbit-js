@@ -8,7 +8,7 @@ import {
     publishChallengeMessageWithExtraProps,
     publishChallengeAnswerMessageWithExtraProps,
     publishChallengeVerificationMessageWithExtraProps,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" with { type: "json" };
@@ -20,7 +20,7 @@ import { messages } from "../../../dist/node/errors.js";
 const mathCliSubplebbitAddress = signers[1].address;
 
 // TODO make these tests work with RPC clients
-getRemotePlebbitConfigs({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
+getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
     describe(`Publishing  and receiving pubsub messages with extra props - ${config.name}`, async () => {
         let plebbit;
 

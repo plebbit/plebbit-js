@@ -2,10 +2,10 @@ import { expect } from "chai";
 import {
     itSkipIfRpc,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs,
+    getAvailablePlebbitConfigsToTestAgainst,
     isPlebbitFetchingUsingGateways
 } from "../../../../../dist/node/test/test-util.js";
-getRemotePlebbitConfigs().map((config) => {
+getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe(`comment.update() waiting-retry errors - ${config.name}`, () => {
         itSkipIfRpc(
             `comment.update() emits error and changes updatingState to waiting-retry and keeps retrying if CommentIpfs loading times out`,
