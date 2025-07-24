@@ -188,6 +188,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         { resolve: (answers: DecryptedChallengeAnswer["challengeAnswers"]) => void; reject: (error: Error) => void }
     >;
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
+    private _challengeExchangesFromLocalPublishers: Record<string, boolean> = {}; // key is stringified challengeRequestId and value is true if the challenge exchange is ongoing
 
     private _cidsToUnPin: Set<string> = new Set<string>();
     private _mfsPathsToRemove: Set<string> = new Set<string>();
@@ -1088,7 +1089,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge", pubsubClient.url);
 
-        await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
+        // we only publish over pubsub if the challenge exchange is not ongoing for local publishers
+        if (!this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()])
+            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log(
             `Subplebbit ${this.address} with pubsub topic ${this.pubsubTopicWithfallback()} published ${challengeMessage.type} over pubsub: `,
             remeda.pick(toSignChallenge, ["timestamp"]),
@@ -1131,11 +1134,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             remeda.omit(toSignVerification, ["challengeRequestId"])
         );
 
-        await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
+        if (!this._challengeExchangesFromLocalPublishers[challengeRequestId.toString()])
+            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
         this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
 
         this.emit("challengeverification", challengeVerification);
         this._ongoingChallengeExchanges.delete(challengeRequestId.toString());
+        delete this._challengeExchangesFromLocalPublishers[challengeRequestId.toString()];
         this._cleanUpChallengeAnswerPromise(challengeRequestId.toString());
     }
 
@@ -1202,13 +1207,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
 
-            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
+            if (!this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()])
+                await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
 
             this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
 
             const objectToEmit = <DecryptedChallengeVerificationMessageType>{ ...challengeVerification, ...toEncrypt };
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
+            delete this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()];
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
             log.trace(
                 `Published ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`,
@@ -1424,17 +1431,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return decryptedJson;
     }
 
-    private async handleChallengeRequest(request: ChallengeRequestMessageType) {
+    async handleChallengeRequest(request: ChallengeRequestMessageType, isLocalPublisher: boolean) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest");
 
         if (this._ongoingChallengeExchanges.has(request.challengeRequestId.toString())) {
             log("Received a duplicate challenge request", request.challengeRequestId.toString());
             return; // This is a duplicate challenge request
         }
+        if (isLocalPublisher) {
+            // we need to mark the challenge exchange as ongoing for local publishers and skip publishing it over pubsub
+            log("Marking challenge exchange as ongoing for local publisher");
+            this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()] = true;
+        }
         this._ongoingChallengeExchanges.set(request.challengeRequestId.toString(), true);
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid)
-            throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), {
+            throw new PlebbitError(getErrorCodeFromMessage(requestSignatureValidation.reason), {
                 challengeRequest: remeda.omit(request, ["encrypted"])
             });
 
@@ -1535,6 +1547,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _cleanUpChallengeAnswerPromise(challengeRequestIdString: string) {
         this._challengeAnswerPromises.delete(challengeRequestIdString);
         this._challengeAnswerResolveReject.delete(challengeRequestIdString);
+        delete this._challengeExchangesFromLocalPublishers[challengeRequestIdString];
     }
 
     private async _parseChallengeAnswerOrRespondWithFailure(challengeAnswer: ChallengeAnswerMessageType, decryptedRawString: string) {
@@ -1575,7 +1588,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!answerSignatureValidation.valid) {
             this._cleanUpChallengeAnswerPromise(challengeAnswer.challengeRequestId.toString());
             this._ongoingChallengeExchanges.delete(challengeAnswer.challengeRequestId.toString());
-            throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
+            delete this._challengeExchangesFromLocalPublishers[challengeAnswer.challengeRequestId.toString()];
+            throw new PlebbitError(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
         }
 
         const decryptedRawString = await this._decryptOrRespondWithFailure(challengeAnswer);
@@ -1645,7 +1659,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             return;
         } else if (parsedPubsubMsg.type === "CHALLENGEREQUEST") {
             try {
-                await this.handleChallengeRequest(parsedPubsubMsg);
+                await this.handleChallengeRequest(parsedPubsubMsg, false);
             } catch (e) {
                 log.error(`Failed to process challenge request message received at (${timeReceived})`, e);
                 this._dbHandler.rollbackTransaction();

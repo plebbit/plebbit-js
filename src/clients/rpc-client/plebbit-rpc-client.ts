@@ -284,26 +284,31 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
 
     async publishComment(commentProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
         const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishComment", [commentProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
 
     async publishCommentEdit(commentEditProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
         const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
 
     async publishCommentModeration(commentModProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
         const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishCommentModeration", [commentModProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
 
     async publishVote(voteProps: DecryptedChallengeRequest): Promise<RpcPublishResult> {
         const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishVote", [voteProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
 
     async publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest): Promise<RpcPublishResult> {
         const publishRes = <RpcPublishResult>await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
 

@@ -69,12 +69,12 @@ import type {
     PublicationEvents,
     PublicationPublishingState,
     PublicationRpcErrorToTransmit,
-    PublicationState,
-    RpcPublishResult
+    PublicationState
 } from "./types.js";
 import type { SignerType } from "../signer/types.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PublicationClientsManager } from "./publication-client-manager.js";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -97,6 +97,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     // private
     _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
+    _publishingToLocalSubplebbit?: LocalSubplebbit;
 
     _challengeExchanges: Record<
         string, // challengeRequestId stringified
@@ -423,6 +424,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _updatePubsubState(pubsubState: Publication["clients"]["pubsubKuboRpcClients"][string]["state"], keyOrUrl: string) {
+        if (this._publishingToLocalSubplebbit) return; // there's no pubsub for local subplebbit
         const kuboOrHelia = this._clientsManager.getDefaultPubsubKuboRpcClientOrHelia();
         if ("_helia" in kuboOrHelia) this._clientsManager.updateLibp2pJsClientState(pubsubState, keyOrUrl);
         else this._clientsManager.updateKuboRpcPubsubState(pubsubState, keyOrUrl);
@@ -476,19 +478,30 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._updatePublishingStateWithEmission("publishing-challenge-answer");
         this._updatePubsubState("publishing-challenge-answer", challengeExchange.providerUrl);
 
-        try {
-            await this._clientsManager.pubsubPublishOnProvider(
-                this._pubsubTopicWithfallback(),
-                answerMsgToPublish,
-                challengeExchange.providerUrl
-            );
-        } catch (e) {
-            this._challengeExchanges[challengeExchange.challengeRequest.challengeRequestId.toString()].challengeAnswerPublishError = e as
-                | Error
-                | PlebbitError;
-            this._updatePublishingStateWithEmission("failed");
-            this._updatePubsubState("stopped", challengeExchange.providerUrl);
-            throw e;
+        if (this._publishingToLocalSubplebbit) {
+            try {
+                await this._publishingToLocalSubplebbit.handleChallengeAnswer(answerMsgToPublish);
+            } catch (e) {
+                this._challengeExchanges[challengeExchange.challengeRequest.challengeRequestId.toString()].challengeAnswerPublishError =
+                    e as Error | PlebbitError;
+                this._updatePublishingStateWithEmission("failed");
+                this._updatePubsubState("stopped", challengeExchange.providerUrl);
+                throw e;
+            }
+        } else {
+            try {
+                await this._clientsManager.pubsubPublishOnProvider(
+                    this._pubsubTopicWithfallback(),
+                    answerMsgToPublish,
+                    challengeExchange.providerUrl
+                );
+            } catch (e) {
+                this._challengeExchanges[challengeExchange.challengeRequest.challengeRequestId.toString()].challengeAnswerPublishError =
+                    e as Error | PlebbitError;
+                this._updatePublishingStateWithEmission("failed");
+                this._updatePubsubState("stopped", challengeExchange.providerUrl);
+                throw e;
+            }
         }
 
         const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>{
@@ -992,17 +1005,79 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return providers;
     }
 
+    private async _publishWithLocalSubplebbit(sub: LocalSubplebbit, challengeRequest: ChallengeRequestMessageType) {
+        this._publishingToLocalSubplebbit = sub;
+        const log = Logger("plebbit-js:publication:publish:_publishWithLocalSubplebbit");
+        log(
+            "Sub is local, will not publish over pubsub, and instead will publish directly to the subplebbit by accessing plebbit._startedSubplebbits"
+        );
+
+        const subChallengeListener = async (challenge: DecryptedChallengeMessageType) => {
+            if (challenge.challengeRequestId.toString() === challengeRequest.challengeRequestId.toString()) {
+                // need to remove encrypted fields from challenge otherwise _handleIncomingChallengePubsubMessage will throw
+                const encryptedFields = ["challenges"] as const;
+
+                log("Received a challenge from the local subplebbit", challenge);
+                await this._handleIncomingChallengePubsubMessage(remeda.omit(challenge, encryptedFields));
+            }
+        };
+
+        sub.on("challenge", subChallengeListener);
+
+        const subChallengeVerificationListener = async (decryptedChallengeVerification: DecryptedChallengeVerificationMessageType) => {
+            if (decryptedChallengeVerification.challengeRequestId.toString() === challengeRequest.challengeRequestId.toString()) {
+                log("Received a challenge verification from the local subplebbit", decryptedChallengeVerification);
+                // need to remove publicatioon fields from challenge verification otherwise verifyChallengeVerification will throw
+                const publicationFieldsToRemove = ["comment", "commentUpdate"] as const;
+                await this._handleIncomingChallengeVerificationPubsubMessage(
+                    remeda.omit(decryptedChallengeVerification, publicationFieldsToRemove)
+                );
+            }
+        };
+
+        sub.on("challengeverification", subChallengeVerificationListener);
+
+        sub.handleChallengeRequest(challengeRequest, true)
+            .then(() => {
+                this._challengeExchanges[challengeRequest.challengeRequestId.toString()] = {
+                    ...this._challengeExchanges[challengeRequest.challengeRequestId.toString()],
+                    challengeRequestPublishTimestamp: timestamp()
+                };
+            })
+            .catch((e) => {
+                log.error("Failed to handle challenge request with local subplebbit", e);
+                this._challengeExchanges[challengeRequest.challengeRequestId.toString()].challengeRequestPublishError = e as
+                    | Error
+                    | PlebbitError;
+                throw e;
+            })
+            .finally(() => {
+                sub.removeListener("challenge", subChallengeListener);
+                sub.removeListener("challengeverification", subChallengeVerificationListener);
+            });
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
 
         if (this._plebbit._plebbitRpcClient) return this._publishWithRpc();
+
         this._setStateWithEmission("publishing");
 
-        const providers = this._getPubsubProviders();
+        const options = { acceptedChallengeTypes: [] };
         await this._initSubplebbit();
 
-        const options = { acceptedChallengeTypes: [] };
+        const providers = this._getPubsubProviders();
+        if (this._plebbit._startedSubplebbits[this.subplebbitAddress] as LocalSubplebbit) {
+            return this._publishWithLocalSubplebbit(
+                this._plebbit._startedSubplebbits[this.subplebbitAddress] as LocalSubplebbit,
+                await this._generateChallengeRequestToPublish(
+                    "publishing directly to local subplebbit instance",
+                    options.acceptedChallengeTypes
+                )
+            );
+        }
 
         let currentPubsubProviderIndex = 0;
         while (!this._didWeReceiveChallengeOrChallengeVerification() && currentPubsubProviderIndex < providers.length) {
