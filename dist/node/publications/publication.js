@@ -784,6 +784,7 @@ class Publication extends TypedEmitter {
             }
         };
         sub.on("challengeverification", subChallengeVerificationListener);
+        this.emit("challengerequest", challengeRequest);
         sub.handleChallengeRequest(challengeRequest, true)
             .then(() => {
             this._challengeExchanges[challengeRequest.challengeRequestId.toString()] = {

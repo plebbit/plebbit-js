@@ -1541,7 +1541,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 log,
                 src: "/ipfs/" + commentUpdateFile.cid.toString(),
                 dest: commentUpdateFilePath,
-                options: { parents: true, flush: false }
+                options: { parents: true, flush: false, force: true }
             }));
             copyPromises.push(copyPromise);
         }
