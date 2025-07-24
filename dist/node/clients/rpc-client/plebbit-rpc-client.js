@@ -218,22 +218,27 @@ export default class PlebbitRpcClient extends TypedEmitter {
     }
     async publishComment(commentProps) {
         const publishRes = await this._webSocketClient.call("publishComment", [commentProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
     async publishCommentEdit(commentEditProps) {
         const publishRes = await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
     async publishCommentModeration(commentModProps) {
         const publishRes = await this._webSocketClient.call("publishCommentModeration", [commentModProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
     async publishVote(voteProps) {
         const publishRes = await this._webSocketClient.call("publishVote", [voteProps]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
     async publishSubplebbitEdit(subplebbitEdit) {
         const publishRes = await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]);
+        this._initSubscriptionEvent(publishRes);
         return publishRes;
     }
     async commentUpdateSubscribe(commentCid) {

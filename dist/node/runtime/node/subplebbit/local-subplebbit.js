@@ -45,6 +45,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
             }
         ];
+        this._challengeExchangesFromLocalPublishers = {}; // key is stringified challengeRequestId and value is true if the challenge exchange is ongoing
         this._cidsToUnPin = new Set();
         this._mfsPathsToRemove = new Set();
         this._subplebbitUpdateTrigger = false;
@@ -764,7 +765,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge", pubsubClient.url);
-        await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
+        // we only publish over pubsub if the challenge exchange is not ongoing for local publishers
+        if (!this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()])
+            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log(`Subplebbit ${this.address} with pubsub topic ${this.pubsubTopicWithfallback()} published ${challengeMessage.type} over pubsub: `, remeda.pick(toSignChallenge, ["timestamp"]), toEncryptChallenge.challenges.map((challenge) => challenge.type));
         this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-answers", pubsubClient.url);
         this.emit("challenge", {
@@ -792,10 +795,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
         log(`Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`, remeda.omit(toSignVerification, ["challengeRequestId"]));
-        await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
+        if (!this._challengeExchangesFromLocalPublishers[challengeRequestId.toString()])
+            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
         this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
         this.emit("challengeverification", challengeVerification);
         this._ongoingChallengeExchanges.delete(challengeRequestId.toString());
+        delete this._challengeExchangesFromLocalPublishers[challengeRequestId.toString()];
         this._cleanUpChallengeAnswerPromise(challengeRequestId.toString());
     }
     async _storePublicationAndEncryptForChallengeVerification(request) {
@@ -843,11 +848,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             };
             const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
             this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
-            await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
+            if (!this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()])
+                await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
             this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
             const objectToEmit = { ...challengeVerification, ...toEncrypt };
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
+            delete this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()];
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
             log.trace(`Published ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`, remeda.omit(objectToEmit, ["signature", "encrypted", "challengeRequestId"]));
         }
@@ -1025,16 +1032,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         return decryptedJson;
     }
-    async handleChallengeRequest(request) {
+    async handleChallengeRequest(request, isLocalPublisher) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest");
         if (this._ongoingChallengeExchanges.has(request.challengeRequestId.toString())) {
             log("Received a duplicate challenge request", request.challengeRequestId.toString());
             return; // This is a duplicate challenge request
         }
+        if (isLocalPublisher) {
+            // we need to mark the challenge exchange as ongoing for local publishers and skip publishing it over pubsub
+            log("Marking challenge exchange as ongoing for local publisher");
+            this._challengeExchangesFromLocalPublishers[request.challengeRequestId.toString()] = true;
+        }
         this._ongoingChallengeExchanges.set(request.challengeRequestId.toString(), true);
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid)
-            throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), {
+            throw new PlebbitError(getErrorCodeFromMessage(requestSignatureValidation.reason), {
                 challengeRequest: remeda.omit(request, ["encrypted"])
             });
         const decryptedRawString = await this._decryptOrRespondWithFailure(request);
@@ -1113,6 +1125,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     _cleanUpChallengeAnswerPromise(challengeRequestIdString) {
         this._challengeAnswerPromises.delete(challengeRequestIdString);
         this._challengeAnswerResolveReject.delete(challengeRequestIdString);
+        delete this._challengeExchangesFromLocalPublishers[challengeRequestIdString];
     }
     async _parseChallengeAnswerOrRespondWithFailure(challengeAnswer, decryptedRawString) {
         let parsedJson;
@@ -1140,7 +1153,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!answerSignatureValidation.valid) {
             this._cleanUpChallengeAnswerPromise(challengeAnswer.challengeRequestId.toString());
             this._ongoingChallengeExchanges.delete(challengeAnswer.challengeRequestId.toString());
-            throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
+            delete this._challengeExchangesFromLocalPublishers[challengeAnswer.challengeRequestId.toString()];
+            throw new PlebbitError(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
         }
         const decryptedRawString = await this._decryptOrRespondWithFailure(challengeAnswer);
         const decryptedAnswers = await this._parseChallengeAnswerOrRespondWithFailure(challengeAnswer, decryptedRawString);
@@ -1191,7 +1205,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         else if (parsedPubsubMsg.type === "CHALLENGEREQUEST") {
             try {
-                await this.handleChallengeRequest(parsedPubsubMsg);
+                await this.handleChallengeRequest(parsedPubsubMsg, false);
             }
             catch (e) {
                 log.error(`Failed to process challenge request message received at (${timeReceived})`, e);

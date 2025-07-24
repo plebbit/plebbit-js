@@ -9,6 +9,7 @@ import type { CommentIpfsType } from "./comment/types.js";
 import type { PublicationEvents, PublicationPublishingState, PublicationState } from "./types.js";
 import type { SignerType } from "../signer/types.js";
 import { PublicationClientsManager } from "./publication-client-manager.js";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 declare class Publication extends TypedEmitter<PublicationEvents> {
     clients: PublicationClientsManager["clients"];
     subplebbitAddress: PublicationFromDecryptedChallengeRequest["subplebbitAddress"];
@@ -25,6 +26,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
         pubsubMessageToPublish?: PublicationFromDecryptedChallengeRequest;
     };
     _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
+    _publishingToLocalSubplebbit?: LocalSubplebbit;
     _challengeExchanges: Record<string, // challengeRequestId stringified
     {
         challengeAnswer?: DecryptedChallengeAnswerMessageType;
@@ -362,6 +364,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     private _challengeExchangesFormattedForErrors;
     private _handleNotReceivingResponseToChallengeRequest;
     private _getPubsubProviders;
+    private _publishWithLocalSubplebbit;
     publish(): Promise<void>;
 }
 export default Publication;

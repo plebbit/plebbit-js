@@ -103,7 +103,7 @@ type PlebbitConfigWithName = {
     testConfigCode: PlebbitTestConfigCode;
 };
 export declare function setPlebbitConfigs(configs: PlebbitTestConfigCode[]): void;
-export declare function getRemotePlebbitConfigs(opts?: {
+export declare function getAvailablePlebbitConfigsToTestAgainst(opts?: {
     includeOnlyTheseTests?: PlebbitTestConfigCode[];
 }): PlebbitConfigWithName[];
 export declare function createNewIpns(): Promise<{

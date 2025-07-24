@@ -1,5 +1,6 @@
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 import * as remeda from "remeda";
+const defaultDescription = "Match publication properties against regex patterns.";
 const optionInputs = [
     {
         option: "matches",
@@ -21,10 +22,16 @@ const optionInputs = [
         default: "true",
         description: "If true, all patterns must match. If false, at least one pattern must match.",
         placeholder: "true"
+    },
+    {
+        option: "description",
+        label: "Description",
+        default: defaultDescription,
+        description: "Custom description for the challenge that explains what patterns are being matched.",
+        placeholder: "Authors must have .eth addresses"
     }
 ];
 const type = "text/plain";
-const description = "Match publication properties against regex patterns.";
 const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
     // Get the publication from the challenge request
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
@@ -121,6 +128,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
         };
 };
 function ChallengeFileFactory(subplebbitChallengeSettings) {
+    const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
     return { getChallenge, optionInputs, type, description };
 }
 export default ChallengeFileFactory;

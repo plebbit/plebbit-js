@@ -869,7 +869,7 @@ export function setPlebbitConfigs(configs) {
         });
     }
 }
-export function getRemotePlebbitConfigs(opts) {
+export function getAvailablePlebbitConfigsToTestAgainst(opts) {
     // Check if configs are passed via environment variable
     const plebbitConfigsFromEnv = process?.env?.PLEBBIT_CONFIGS;
     if (plebbitConfigsFromEnv) {

@@ -2,7 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit/plebbit.js";
 import type { CreateNewLocalSubplebbitParsedOptions, InternalSubplebbitRecordBeforeFirstUpdateType, InternalSubplebbitRecordAfterFirstUpdateType, ParsedSubplebbitEditOptions, SubplebbitEditOptions, RpcInternalSubplebbitRecordBeforeFirstUpdateType, RpcInternalSubplebbitRecordAfterFirstUpdateType } from "../../../subplebbit/types.js";
 import { DbHandler } from "./db-handler.js";
-import type { ChallengeAnswerMessageType } from "../../../pubsub-messages/types.js";
+import type { ChallengeAnswerMessageType, ChallengeRequestMessageType } from "../../../pubsub-messages/types.js";
 import { SignerWithPublicKeyAddress } from "../../../signer/index.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 export declare class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -12,6 +12,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _challengeAnswerPromises;
     private _challengeAnswerResolveReject;
     private _ongoingChallengeExchanges;
+    private _challengeExchangesFromLocalPublishers;
     private _cidsToUnPin;
     private _mfsPathsToRemove;
     private _subplebbitUpdateTrigger;
@@ -68,7 +69,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _isPublicationAuthorPartOfRoles;
     private _checkPublicationValidity;
     private _parseChallengeRequestPublicationOrRespondWithFailure;
-    private handleChallengeRequest;
+    handleChallengeRequest(request: ChallengeRequestMessageType, isLocalPublisher: boolean): Promise<void>;
     private _cleanUpChallengeAnswerPromise;
     private _parseChallengeAnswerOrRespondWithFailure;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessageType): Promise<void>;

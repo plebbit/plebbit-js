@@ -623,11 +623,16 @@ class PlebbitWsServer extends TypedEmitter {
         const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
         const vote = await this._createVoteInstanceFromPublishVoteParams(publishOptions);
         this.publishing[subscriptionId] = vote;
-        vote.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
-        vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
-        vote.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
-        vote.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
-        vote.on("publishingstatechange", () => sendEvent("publishingstatechange", vote.publishingState));
+        const challengeListener = (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge));
+        vote.on("challenge", challengeListener);
+        const challengeAnswerListener = (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
+        vote.on("challengeanswer", challengeAnswerListener);
+        const challengeRequestListener = (request) => sendEvent("challengerequest", encodeChallengeRequest(request));
+        vote.on("challengerequest", challengeRequestListener);
+        const challengeVerificationListener = (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
+        vote.on("challengeverification", challengeVerificationListener);
+        const publishingStateListener = () => sendEvent("publishingstatechange", vote.publishingState);
+        vote.on("publishingstatechange", publishingStateListener);
         const errorListener = (error) => {
             const voteRpcError = error;
             voteRpcError.details = { ...voteRpcError.details, newPublishingState: vote.publishingState };
@@ -638,11 +643,11 @@ class PlebbitWsServer extends TypedEmitter {
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             delete this.publishing[subscriptionId];
             vote.stop().catch((error) => log.error("publishVote stop error", { error, params }));
-            vote.removeAllListeners("challenge");
-            vote.removeAllListeners("challengeanswer");
-            vote.removeAllListeners("challengerequest");
-            vote.removeAllListeners("challengeverification");
-            vote.removeAllListeners("publishingstatechange");
+            vote.removeListener("challenge", challengeListener);
+            vote.removeListener("challengeanswer", challengeAnswerListener);
+            vote.removeListener("challengerequest", challengeRequestListener);
+            vote.removeListener("challengeverification", challengeVerificationListener);
+            vote.removeListener("publishingstatechange", publishingStateListener);
             vote.removeListener("error", errorListener);
         };
         // if fail, cleanup
@@ -674,11 +679,16 @@ class PlebbitWsServer extends TypedEmitter {
         });
         const subplebbitEdit = await this._createSubplebbitEditInstanceFromPublishSubplebbitEditParams(publishOptions);
         this.publishing[subscriptionId] = subplebbitEdit;
-        subplebbitEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
-        subplebbitEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
-        subplebbitEdit.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
-        subplebbitEdit.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
-        subplebbitEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", subplebbitEdit.publishingState));
+        const challengeListener = (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge));
+        subplebbitEdit.on("challenge", challengeListener);
+        const challengeAnswerListener = (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
+        subplebbitEdit.on("challengeanswer", challengeAnswerListener);
+        const challengeRequestListener = (request) => sendEvent("challengerequest", encodeChallengeRequest(request));
+        subplebbitEdit.on("challengerequest", challengeRequestListener);
+        const challengeVerificationListener = (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
+        subplebbitEdit.on("challengeverification", challengeVerificationListener);
+        const publishingStateListener = () => sendEvent("publishingstatechange", subplebbitEdit.publishingState);
+        subplebbitEdit.on("publishingstatechange", publishingStateListener);
         const errorListener = (error) => {
             const editRpcError = error;
             editRpcError.details = { ...editRpcError.details, newPublishingState: subplebbitEdit.publishingState };
@@ -689,11 +699,11 @@ class PlebbitWsServer extends TypedEmitter {
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             delete this.publishing[subscriptionId];
             subplebbitEdit.stop().catch((error) => log.error("publishSubplebbitEdit stop error", { error, params }));
-            subplebbitEdit.removeAllListeners("challenge");
-            subplebbitEdit.removeAllListeners("challengeanswer");
-            subplebbitEdit.removeAllListeners("challengerequest");
-            subplebbitEdit.removeAllListeners("challengeverification");
-            subplebbitEdit.removeAllListeners("publishingstatechange");
+            subplebbitEdit.removeListener("challenge", challengeListener);
+            subplebbitEdit.removeListener("challengeanswer", challengeAnswerListener);
+            subplebbitEdit.removeListener("challengerequest", challengeRequestListener);
+            subplebbitEdit.removeListener("challengeverification", challengeVerificationListener);
+            subplebbitEdit.removeListener("publishingstatechange", publishingStateListener);
             subplebbitEdit.removeListener("error", errorListener);
         };
         // if fail, cleanup
@@ -725,11 +735,16 @@ class PlebbitWsServer extends TypedEmitter {
         });
         const commentEdit = await this._createCommentEditInstanceFromPublishCommentEditParams(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
-        commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
-        commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
-        commentEdit.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
-        commentEdit.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
-        commentEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", commentEdit.publishingState));
+        const challengeListener = (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge));
+        commentEdit.on("challenge", challengeListener);
+        const challengeAnswerListener = (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
+        commentEdit.on("challengeanswer", challengeAnswerListener);
+        const challengeRequestListener = (request) => sendEvent("challengerequest", encodeChallengeRequest(request));
+        commentEdit.on("challengerequest", challengeRequestListener);
+        const challengeVerificationListener = (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
+        commentEdit.on("challengeverification", challengeVerificationListener);
+        const publishingStateListener = () => sendEvent("publishingstatechange", commentEdit.publishingState);
+        commentEdit.on("publishingstatechange", publishingStateListener);
         const errorListener = (error) => {
             const commentEditRpcError = error;
             commentEditRpcError.details = {
@@ -743,11 +758,11 @@ class PlebbitWsServer extends TypedEmitter {
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             delete this.publishing[subscriptionId];
             commentEdit.stop().catch((error) => log.error("publishCommentEdit stop error", { error, params }));
-            commentEdit.removeAllListeners("challengerequest");
-            commentEdit.removeAllListeners("challenge");
-            commentEdit.removeAllListeners("challengeanswer");
-            commentEdit.removeAllListeners("challengeverification");
-            commentEdit.removeAllListeners("publishingstatechange");
+            commentEdit.removeListener("challenge", challengeListener);
+            commentEdit.removeListener("challengeanswer", challengeAnswerListener);
+            commentEdit.removeListener("challengerequest", challengeRequestListener);
+            commentEdit.removeListener("challengeverification", challengeVerificationListener);
+            commentEdit.removeListener("publishingstatechange", publishingStateListener);
             commentEdit.removeListener("error", errorListener);
         };
         // if fail, cleanup
@@ -779,11 +794,16 @@ class PlebbitWsServer extends TypedEmitter {
         });
         const commentMod = await this._createCommentModerationInstanceFromPublishCommentModerationParams(publishOptions);
         this.publishing[subscriptionId] = commentMod;
-        commentMod.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
-        commentMod.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
-        commentMod.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
-        commentMod.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
-        commentMod.on("publishingstatechange", () => sendEvent("publishingstatechange", commentMod.publishingState));
+        const challengeListener = (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge));
+        commentMod.on("challenge", challengeListener);
+        const challengeAnswerListener = (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
+        commentMod.on("challengeanswer", challengeAnswerListener);
+        const challengeRequestListener = (request) => sendEvent("challengerequest", encodeChallengeRequest(request));
+        commentMod.on("challengerequest", challengeRequestListener);
+        const challengeVerificationListener = (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
+        commentMod.on("challengeverification", challengeVerificationListener);
+        const publishingStateListener = () => sendEvent("publishingstatechange", commentMod.publishingState);
+        commentMod.on("publishingstatechange", publishingStateListener);
         const errorListener = (error) => {
             const commentModRpcError = error;
             commentModRpcError.details = {
@@ -797,11 +817,12 @@ class PlebbitWsServer extends TypedEmitter {
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             delete this.publishing[subscriptionId];
             commentMod.stop().catch((error) => log.error("publishCommentModeration stop error", { error, params }));
-            commentMod.removeAllListeners("challengerequest");
-            commentMod.removeAllListeners("challenge");
-            commentMod.removeAllListeners("challengeanswer");
-            commentMod.removeAllListeners("challengeverification");
-            commentMod.removeAllListeners("publishingstatechange");
+            commentMod.removeListener("challenge", challengeListener);
+            commentMod.removeListener("challengeanswer", challengeAnswerListener);
+            commentMod.removeListener("challengerequest", challengeRequestListener);
+            commentMod.removeListener("challengeverification", challengeVerificationListener);
+            commentMod.removeListener("publishingstatechange", publishingStateListener);
+            commentMod.removeListener("error", errorListener);
         };
         // if fail, cleanup
         try {
