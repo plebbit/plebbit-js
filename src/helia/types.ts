@@ -1,5 +1,5 @@
 import type { createHelia } from "helia";
-import type { KuboRpcClient } from "../types";
+import type { KuboRpcClient } from "../types.js";
 import type { PubsubRoutingComponents } from "@helia/ipns/routing";
 
 export interface HeliaWithKuboRpcClientFunctions extends Pick<NonNullable<KuboRpcClient["_client"]>, "add" | "cat" | "pubsub" | "stop"> {
