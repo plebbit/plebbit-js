@@ -43,6 +43,7 @@ Comment extends Publication /* (IPFS file) */ {
   thumbnailUrl?: string // optionally fetched by subplebbit owner, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
   thumbnailUrlWidth?: number // subplebbit owner can optionally provide dimensions of thumbails which helps UI clients with infinite scrolling feeds
   thumbnailUrlHeight?: number
+  gallery?: {url?: string, htmlTagName?: 'img' | 'video' | 'audio'}[]
 }
 Vote extends Publication {
   commentCid: string
