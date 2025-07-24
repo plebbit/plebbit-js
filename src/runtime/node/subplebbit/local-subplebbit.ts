@@ -158,6 +158,7 @@ import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
 import pTimeout from "p-timeout";
+import { FilesCpOptions } from "kubo-rpc-client";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
@@ -2089,7 +2090,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     log,
                     src: "/ipfs/" + commentUpdateFile.cid.toString(),
                     dest: commentUpdateFilePath,
-                    options: { parents: true, flush: false }
+                    options: { parents: true, flush: false, force: true } as FilesCpOptions
                 })
             );
 
