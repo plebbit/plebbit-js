@@ -444,8 +444,8 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             const mockPost = await generateMockPost(sub.address, plebbit);
 
-            mockPost.once("challenge", (challengeMessage) => {
-                mockPost.publishChallengeAnswers(["2"]);
+            mockPost.once("challenge", async (challengeMessage) => {
+                await mockPost.publishChallengeAnswers(["2"]);
             });
 
             await publishWithExpectedResult(mockPost, true);
