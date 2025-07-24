@@ -3,10 +3,11 @@ import {
     mockPlebbit,
     generateMockPost,
     generatePostToAnswerMathQuestion,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    describeSkipIfRpc
 } from "../../../dist/node/test/test-util.js";
 
-describe("Local publishing to subplebbit", async () => {
+describeSkipIfRpc("Local publishing to subplebbit", async () => {
     let plebbit, subplebbit, commentSigner;
     const receivedPubsubMessages = [];
     let pubsubTopic;
