@@ -336,29 +336,29 @@ describe("getChallengeVerification", () => {
     });
 });
 
-describe("getSubplebbitChallengeFromSubplebbitChallengeSettings", () => {
+describe("await getSubplebbitChallengeFromSubplebbitChallengeSettings", () => {
     // skip these tests when soloing subplebbits
     if (subplebbits.length < 5) {
         return;
     }
 
-    it("has challenge prop", () => {
+    it("has challenge prop", async () => {
         const subplebbit = subplebbits.filter((subplebbit) => subplebbit.title === "password challenge subplebbit")[0];
-        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbit.settings.challenges[0]);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbit.settings.challenges[0]);
         expect(typeof subplebbitChallenge.challenge).to.equal("string");
         expect(subplebbitChallenge.challenge).to.equal(subplebbit.settings.challenges[0].options.question);
     });
 
-    it("has description prop", () => {
+    it("has description prop", async () => {
         const subplebbit = subplebbits.filter((subplebbit) => subplebbit.title === "text-math challenge subplebbit")[0];
-        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbit.settings.challenges[0]);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbit.settings.challenges[0]);
         expect(typeof subplebbitChallenge.description).to.equal("string");
         expect(subplebbitChallenge.description).to.equal(subplebbit.settings.challenges[0].description);
     });
 
-    it("has exclude prop", () => {
+    it("has exclude prop", async () => {
         const subplebbit = subplebbits.filter((subplebbit) => subplebbit.title === "exclude high karma challenge subplebbit")[0];
-        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbit.settings.challenges[0]);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbit.settings.challenges[0]);
         expect(subplebbitChallenge.exclude).to.not.equal(undefined);
         expect(subplebbitChallenge.exclude).to.deep.equal(subplebbit.settings.challenges[0].exclude);
     });
