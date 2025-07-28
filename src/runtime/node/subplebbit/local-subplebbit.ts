@@ -1131,7 +1131,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
         log(
-            `Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`,
+            `Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()} on subplebbit ${this.address}:`,
             remeda.omit(toSignVerification, ["challengeRequestId"])
         );
 
