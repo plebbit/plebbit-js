@@ -186,4 +186,41 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(post.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
         });
     });
+
+    describe(`commentUpdate.childCount - ${config.name}`, async () => {
+        let plebbit, post, reply;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            post = await publishRandomPost(subplebbitAddress, plebbit);
+            await post.update();
+            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            expect(post.childCount).to.equal(0);
+        });
+
+        after(async () => {
+            await plebbit.destroy();
+        });
+
+        it(`post.childCount increases with a direct reply`, async () => {
+            reply = await publishRandomReply(post, plebbit);
+            await reply.update();
+            await new Promise((resolve) => reply.once("update", resolve));
+            await resolveWhenConditionIsTrue(post, () => post.childCount === 1);
+            expect(post.childCount).to.equal(1);
+        });
+
+        it(`post.childCount does not increase with a reply of a reply`, async () => {
+            await publishRandomReply(reply, plebbit);
+            await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+            await resolveWhenConditionIsTrue(reply, () => reply.replyCount === 1);
+            expect(post.childCount).to.equal(1); // Only direct children, not grandchildren
+            expect(reply.childCount).to.equal(1);
+        });
+
+        it(`post.childCount increases with multiple direct replies`, async () => {
+            await publishRandomReply(post, plebbit);
+            await resolveWhenConditionIsTrue(post, () => post.childCount === 2);
+            expect(post.childCount).to.equal(2);
+        });
+    });
 });
