@@ -19,8 +19,7 @@ import { EventEmitter } from "events";
 import type { HeliaWithLibp2pPubsub } from "./types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { Libp2pJsClient } from "./libp2pjsClient.js";
-import { sha256 } from "multiformats/hashes/sha2";
-import { connectToPeersProvidingCid, waitForTopicPeers } from "./util.js";
+import { connectToPubsubPeers } from "./util.js";
 
 const log = Logger("plebbit-js:libp2p-js");
 
@@ -156,17 +155,14 @@ export async function createLibp2pJsClientOrUseExistingOne(
             publish: async (topic, data, options) => {
                 throwIfHeliaIsStoppingOrStopped();
                 if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
-                    const topicHash = await sha256.digest(new TextEncoder().encode(topic));
-                    const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
-
-                    await connectToPeersProvidingCid({
+                    await connectToPubsubPeers({
                         helia,
-                        contentCid: topicCid.toString(),
+                        pubsubTopic: topic,
                         maxPeers: 2,
                         options,
                         log: Logger("plebbit-js:helia:pubsub:publish:connectToPeersProvidingCid")
                     });
-                    await waitForTopicPeers(helia, topic, 1);
+                    console.log("after", "pubsub publish", "connectToPeersProvidingCid", topic);
                 }
 
                 const res = await helia.libp2p.services.pubsub.publish(topic, data);
@@ -176,16 +172,14 @@ export async function createLibp2pJsClientOrUseExistingOne(
                 throwIfHeliaIsStoppingOrStopped();
 
                 if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
-                    const topicHash = await sha256.digest(new TextEncoder().encode(topic));
-                    const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
-
-                    await connectToPeersProvidingCid({
+                    await connectToPubsubPeers({
                         helia,
-                        contentCid: topicCid.toString(),
+                        pubsubTopic: topic,
                         maxPeers: 2,
                         options,
                         log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
                     });
+                    console.log("after pubsub-subscribe", "connectToPeersProvidingCid", topic);
                 }
 
                 //@ts-expect-error
@@ -224,15 +218,13 @@ export async function createLibp2pJsClientOrUseExistingOne(
     const originalSubscribe = helia.libp2p.services.pubsub.subscribe.bind(helia.libp2p.services.pubsub);
 
     const connectToPeersProvidingTopic = async (topic: string) => {
-        const topicHash = await sha256.digest(new TextEncoder().encode(topic));
-        const topicCid = CID.createV1(0x55, topicHash); // 0x55 = raw codec
-
-        await connectToPeersProvidingCid({
+        await connectToPubsubPeers({
             helia,
-            contentCid: topicCid.toString(),
+            pubsubTopic: topic,
             maxPeers: 2,
             log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
         });
+        console.log("after", "native pubsub-subscribe", "connectToPeersProvidingCid", topic, "done");
     };
 
     helia.libp2p.services.pubsub.subscribe = (topic) => {
