@@ -4,11 +4,12 @@ import {
     generateMockPost,
     publishWithExpectedResult,
     mockPlebbitNoDataPathWithOnlyKuboClient,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import path from "path";
 
-describe(`subplebbit.settings.challenges with path`, async () => {
+describeSkipIfRpc(`subplebbit.settings.challenges with path`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
