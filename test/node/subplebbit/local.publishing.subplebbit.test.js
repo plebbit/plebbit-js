@@ -1,10 +1,11 @@
 import { expect } from "chai";
 import {
     mockPlebbit,
-    generateMockPost,
     generatePostToAnswerMathQuestion,
     resolveWhenConditionIsTrue,
-    describeSkipIfRpc
+    describeSkipIfRpc,
+    createSubWithNoChallenge,
+    publishRandomPost
 } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("Local publishing to subplebbit", async () => {
@@ -79,5 +80,12 @@ describeSkipIfRpc("Local publishing to subplebbit", async () => {
         // Verify that no pubsub messages were received during local publishing
         // If we receive any messages, it means pubsub was used when it shouldn't be for local publishing
         expect(receivedPubsubMessages.length).to.equal(0);
+    });
+
+    it("Should be able to publish comment without needing to await for updatedAt to be defined", async () => {
+        const subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.start();
+
+        await publishRandomPost(subplebbit.address, plebbit);
     });
 });
