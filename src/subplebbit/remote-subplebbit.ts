@@ -178,7 +178,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
         if (!this.pubsubTopicRoutingCid) {
             if ("pubsubTopicRoutingCid" in newProps) this.pubsubTopicRoutingCid = newProps.pubsubTopicRoutingCid;
-            else this.pubsubTopicRoutingCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
+            else if (this.raw.subplebbitIpfs)
+                this.pubsubTopicRoutingCid = pubsubTopicToDhtKey(newProps.pubsubTopic || this.pubsubTopic || newProps.address);
         }
     }
 
