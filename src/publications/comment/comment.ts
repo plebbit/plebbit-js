@@ -72,6 +72,7 @@ export class Comment
     upvoteCount?: CommentUpdateType["upvoteCount"];
     downvoteCount?: CommentUpdateType["downvoteCount"];
     replyCount?: CommentUpdateType["replyCount"];
+    childCount?: CommentUpdateType["childCount"];
     updatedAt?: CommentUpdateType["updatedAt"];
     replies!: RepliesPages;
     edit?: CommentUpdateType["edit"];
@@ -219,6 +220,7 @@ export class Comment
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
         this.replyCount = props.replyCount;
+        this.childCount = props.childCount;
         this.updatedAt = props.updatedAt;
         this.deleted = props.edit?.deleted;
         this.pinned = props.pinned;

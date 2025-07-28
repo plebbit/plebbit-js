@@ -281,6 +281,7 @@ export class DbHandler {
                 upvoteCount INTEGER NOT NULL,
                 downvoteCount INTEGER NOT NULL,
                 replyCount INTEGER NOT NULL,
+                childCount INTEGER NOT NULL,
                 flair TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
@@ -750,10 +751,10 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
-            (cid, edit, upvoteCount, downvoteCount, replyCount, flair, spoiler, nsfw, pinned, locked, removed, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, postCommentUpdateCid, publishedToPostUpdatesMFS, insertedAt) 
-            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @postCommentUpdateCid, @publishedToPostUpdatesMFS, @insertedAt)
+            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, postCommentUpdateCid, publishedToPostUpdatesMFS, insertedAt) 
+            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @postCommentUpdateCid, @publishedToPostUpdatesMFS, @insertedAt)
             ON CONFLICT(cid) DO UPDATE SET
-                edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount,
+                edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount, childCount = excluded.childCount,
                 flair = excluded.flair, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
                 removed = excluded.removed, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
                 signature = excluded.signature, author = excluded.author, replies = excluded.replies, lastChildCid = excluded.lastChildCid,
@@ -1199,7 +1200,7 @@ export class DbHandler {
         return removeNullUndefinedValues(result);
     }
 
-    private _queryCommentCounts(cid: string): Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount"> {
+    private _queryCommentCounts(cid: string): Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"> {
         const query = `
         SELECT 
             (SELECT COUNT(*) FROM ${TABLES.VOTES} WHERE commentCid = :cid AND vote = 1) AS upvoteCount,
@@ -1217,11 +1218,17 @@ export class DbHandler {
                     JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
                     WHERE c.subplebbitAddress = :subplebbitAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
                 ) SELECT COUNT(*) FROM descendants
-            ) AS replyCount
+            ) AS replyCount,
+            (
+                SELECT COUNT(*) FROM ${TABLES.COMMENTS} c
+                INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
+                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
+                WHERE c.parentCid = :cid AND c.subplebbitAddress = :subplebbitAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+            ) AS childCount
         `;
         return this._db.prepare(query).get({ cid, subplebbitAddress: this._subplebbit.address }) as Pick<
             CommentUpdateType,
-            "replyCount" | "upvoteCount" | "downvoteCount"
+            "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"
         >;
     }
 
