@@ -31,6 +31,7 @@ import { LocalSubplebbit } from "../local-subplebbit.js";
 import * as remeda from "remeda";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
+import { pathToFileURL } from "node:url";
 
 type PendingChallenge = Challenge & { index: number };
 
@@ -113,7 +114,7 @@ const getPendingChallengesOrChallengeVerification = async (
         try {
             ChallengeFileFactory = ChallengeFileFactorySchema.parse(
                 subplebbitChallengeSettings.path
-                    ? (await import(subplebbitChallengeSettings.path)).default
+                    ? (await import(pathToFileURL(subplebbitChallengeSettings.path).href)).default
                     : plebbitJsChallenges[subplebbitChallengeSettings.name!]
             );
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
@@ -321,7 +322,7 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
     let challengeFile: ChallengeFile | undefined = undefined;
     if (subplebbitChallengeSettings.path) {
         try {
-            const importedFile = await import(subplebbitChallengeSettings.path);
+            const importedFile = await import(pathToFileURL(subplebbitChallengeSettings.path).href);
             const ChallengeFileFactory = ChallengeFileFactorySchema.parse(importedFile.default);
             challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
         } catch (e) {
