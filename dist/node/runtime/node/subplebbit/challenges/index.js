@@ -11,6 +11,7 @@ import publicationMatch from "./plebbit-js-challenges/publication-match.js";
 import * as remeda from "remeda";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
+import { pathToFileURL } from "node:url";
 const plebbitJsChallenges = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
@@ -65,7 +66,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
         let ChallengeFileFactory;
         try {
             ChallengeFileFactory = ChallengeFileFactorySchema.parse(subplebbitChallengeSettings.path
-                ? require(subplebbitChallengeSettings.path)
+                ? (await import(pathToFileURL(subplebbitChallengeSettings.path).href)).default
                 : plebbitJsChallenges[subplebbitChallengeSettings.name]);
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
         }
@@ -104,7 +105,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
         // exclude author from challenge based on the subplebbit minimum karma settings
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, subplebbit)) {
             continue;
@@ -228,16 +229,23 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     return challengeVerification;
 };
 // get the data to be published publicly to subplebbit.challenges
-const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallengeSettings) => {
+const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (subplebbitChallengeSettings) => {
     subplebbitChallengeSettings = SubplebbitChallengeSettingSchema.parse(subplebbitChallengeSettings);
     // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
     let challengeFile = undefined;
     if (subplebbitChallengeSettings.path) {
         try {
-            const ChallengeFileFactory = ChallengeFileFactorySchema.parse(require(subplebbitChallengeSettings.path));
+            const importedFile = await import(pathToFileURL(subplebbitChallengeSettings.path).href);
+            const ChallengeFileFactory = ChallengeFileFactorySchema.parse(importedFile.default);
             challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
         }
         catch (e) {
+            e.details = {
+                ...e.details,
+                path: subplebbitChallengeSettings.path,
+                subplebbitChallengeSettings,
+                error: e
+            };
             if (e instanceof Error)
                 e.message = `getSubplebbitChallengeFromSubplebbitChallengeSettings failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
             throw e;

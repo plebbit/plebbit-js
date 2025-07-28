@@ -1,8 +1,8 @@
 import type { HeliaWithLibp2pPubsub } from "./types.js";
 import Logger from "@plebbit/plebbit-logger";
-export declare function connectToPeersProvidingCid({ helia, contentCid, maxPeers, options, log }: {
+export declare function connectToPubsubPeers({ helia, pubsubTopic, maxPeers, options, log }: {
     helia: HeliaWithLibp2pPubsub;
-    contentCid: string;
+    pubsubTopic: string;
     maxPeers: number;
     log: Logger;
     options?: {

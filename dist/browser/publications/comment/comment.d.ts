@@ -32,6 +32,7 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     upvoteCount?: CommentUpdateType["upvoteCount"];
     downvoteCount?: CommentUpdateType["downvoteCount"];
     replyCount?: CommentUpdateType["replyCount"];
+    childCount?: CommentUpdateType["childCount"];
     updatedAt?: CommentUpdateType["updatedAt"];
     replies: RepliesPages;
     edit?: CommentUpdateType["edit"];

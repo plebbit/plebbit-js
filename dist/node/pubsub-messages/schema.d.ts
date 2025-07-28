@@ -37427,6 +37427,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         upvoteCount: z.ZodNumber;
         downvoteCount: z.ZodNumber;
         replyCount: z.ZodNumber;
+        childCount: z.ZodOptional<z.ZodNumber>;
         edit: z.ZodOptional<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
@@ -38951,6 +38952,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         upvoteCount: z.ZodNumber;
         downvoteCount: z.ZodNumber;
         replyCount: z.ZodNumber;
+        childCount: z.ZodOptional<z.ZodNumber>;
         edit: z.ZodOptional<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{
@@ -40475,6 +40477,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         upvoteCount: z.ZodNumber;
         downvoteCount: z.ZodNumber;
         replyCount: z.ZodNumber;
+        childCount: z.ZodOptional<z.ZodNumber>;
         edit: z.ZodOptional<z.ZodObject<{
             timestamp: z.ZodNumber;
             signature: z.ZodObject<{

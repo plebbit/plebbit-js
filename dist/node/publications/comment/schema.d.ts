@@ -7436,6 +7436,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     upvoteCount: z.ZodNumber;
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
+    childCount: z.ZodOptional<z.ZodNumber>;
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -9129,6 +9130,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     reason?: string | undefined;
+    childCount?: number | undefined;
     edit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -9646,6 +9648,7 @@ export declare const CommentUpdateNoRepliesSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     reason?: string | undefined;
+    childCount?: number | undefined;
     edit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -9984,6 +9987,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     upvoteCount: z.ZodNumber;
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
+    childCount: z.ZodOptional<z.ZodNumber>;
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -11688,6 +11692,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     reason?: string | undefined;
+    childCount?: number | undefined;
     edit?: z.objectOutputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -12209,6 +12214,7 @@ export declare const CommentUpdateSchema: z.ZodObject<{
     spoiler?: boolean | undefined;
     nsfw?: boolean | undefined;
     reason?: string | undefined;
+    childCount?: number | undefined;
     edit?: z.objectInputType<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{
@@ -12546,12 +12552,13 @@ export declare const CommentUpdateSchema: z.ZodObject<{
         pageCids?: Record<string, string> | undefined;
     } | undefined;
 }>;
-export declare const CommentUpdateSignedPropertyNames: ("flair" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "upvoteCount" | "downvoteCount" | "replyCount" | "edit" | "pinned" | "locked" | "removed" | "updatedAt" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
+export declare const CommentUpdateSignedPropertyNames: ("flair" | "author" | "protocolVersion" | "spoiler" | "nsfw" | "reason" | "cid" | "upvoteCount" | "downvoteCount" | "replyCount" | "childCount" | "edit" | "pinned" | "locked" | "removed" | "updatedAt" | "lastChildCid" | "lastReplyTimestamp" | "replies")[];
 export declare const CommentUpdateForChallengeVerificationSchema: z.ZodObject<Pick<{
     cid: z.ZodEffects<z.ZodString, string, string>;
     upvoteCount: z.ZodNumber;
     downvoteCount: z.ZodNumber;
     replyCount: z.ZodNumber;
+    childCount: z.ZodOptional<z.ZodNumber>;
     edit: z.ZodOptional<z.ZodObject<{
         timestamp: z.ZodNumber;
         signature: z.ZodObject<{

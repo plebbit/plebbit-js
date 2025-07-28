@@ -306,7 +306,8 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
     const errorListener = (err) => (updateError = err);
     subplebbit.on("error", errorListener);
     try {
-        await subplebbit.update();
+        if (subplebbit.state !== "started")
+            await subplebbit.update();
         await pTimeout(Promise.race([updatePromise, new Promise((resolve) => subplebbit.once("error", resolve))]), {
             milliseconds: timeoutMs,
             message: updateError ||
@@ -331,7 +332,7 @@ export async function waitForUpdateInSubInstanceWithErrorAndTimeout(subplebbit, 
     finally {
         subplebbit.removeListener("error", errorListener);
         subplebbit.removeListener("updatingstatechange", updatingStateChangeListener);
-        if (!wasUpdating)
+        if (!wasUpdating && subplebbit.state !== "started")
             await subplebbit.stop();
     }
 }

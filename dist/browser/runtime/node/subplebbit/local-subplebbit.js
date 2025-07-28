@@ -312,7 +312,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._usingDefaultChallenge = true;
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
-        this.challenges = this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+        this.challenges = await Promise.all(this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings));
         if (await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
             throw Error("Internal state exists already");
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternalBeforeFirstUpdate());
@@ -794,7 +794,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
         const pubsubClient = this._clientsManager.getDefaultKuboPubsubClient();
         this._clientsManager.updateKuboRpcPubsubState("publishing-challenge-verification", pubsubClient.url);
-        log(`Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()}:`, remeda.omit(toSignVerification, ["challengeRequestId"]));
+        log(`Will publish ${challengeVerification.type} over pubsub topic ${this.pubsubTopicWithfallback()} on subplebbit ${this.address}:`, remeda.omit(toSignVerification, ["challengeRequestId"]));
         if (!this._challengeExchangesFromLocalPublishers[challengeRequestId.toString()])
             await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
         this._clientsManager.updateKuboRpcPubsubState("waiting-challenge-requests", pubsubClient.url);
@@ -1705,9 +1705,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     _parseRolesToEdit(newRawRoles) {
         return remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
     }
-    _parseChallengesToEdit(newChallengeSettings) {
+    async _parseChallengesToEdit(newChallengeSettings) {
         return {
-            challenges: newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings),
+            challenges: await Promise.all(newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)),
             _usingDefaultChallenge: remeda.isDeepEqual(newChallengeSettings, this._defaultSubplebbitChallenges)
         };
     }
@@ -1816,7 +1816,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const parsedEditOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(newSubplebbitOptions);
         const newInternalProps = {
             ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
-            ...(parsedEditOptions?.settings?.challenges ? this._parseChallengesToEdit(parsedEditOptions.settings.challenges) : undefined)
+            ...(parsedEditOptions?.settings?.challenges
+                ? await this._parseChallengesToEdit(parsedEditOptions.settings.challenges)
+                : undefined)
         };
         const newProps = {
             ...remeda.omit(parsedEditOptions, ["roles"]), // we omit here to make tsc shut up
@@ -1863,7 +1865,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
-            this.challenges = this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings); // make sure subplebbit.challenges is using latest props from settings.challenges
+            this.challenges = await Promise.all(this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)); // make sure subplebbit.challenges is using latest props from settings.challenges
         }
         catch (e) {
             await this.stop(); // Make sure to reset the sub state

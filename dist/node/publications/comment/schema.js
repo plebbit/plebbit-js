@@ -68,7 +68,8 @@ export const CommentUpdateNoRepliesSchema = z.object({
     cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
     upvoteCount: z.number().nonnegative().int(),
     downvoteCount: z.number().nonnegative().int(),
-    replyCount: z.number().nonnegative().int(),
+    replyCount: z.number().nonnegative().int(), // the total of reply trees underneath this comment, which includes direct and indirect children
+    childCount: z.number().nonnegative().int().optional(), // the total of direct children of the comment, does not include indirect children
     edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
     flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler: z.boolean().optional(),
