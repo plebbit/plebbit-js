@@ -464,7 +464,9 @@ export class DbHandler {
                         ? internalState.updateCid
                         : "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f";
                 const newSettings = this._migrateOldSettings(internalState.settings);
-                const newChallenges = newSettings.challenges?.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+                const newChallenges = newSettings.challenges
+                    ? await Promise.all(newSettings.challenges?.map(getSubplebbitChallengeFromSubplebbitChallengeSettings))
+                    : newSettings.challenges;
                 await this._subplebbit._updateDbInternalState({
                     posts: undefined,
                     challenges: newChallenges,

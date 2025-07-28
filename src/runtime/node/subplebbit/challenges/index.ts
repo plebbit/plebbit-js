@@ -113,7 +113,7 @@ const getPendingChallengesOrChallengeVerification = async (
         try {
             ChallengeFileFactory = ChallengeFileFactorySchema.parse(
                 subplebbitChallengeSettings.path
-                    ? require(subplebbitChallengeSettings.path)
+                    ? (await import(subplebbitChallengeSettings.path)).default
                     : plebbitJsChallenges[subplebbitChallengeSettings.name!]
             );
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
@@ -160,7 +160,7 @@ const getPendingChallengesOrChallengeVerification = async (
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
 
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
+        const subplebbitChallenge = await getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
 
         // exclude author from challenge based on the subplebbit minimum karma settings
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, subplebbit)) {
@@ -312,18 +312,25 @@ const getChallengeVerification = async (
 };
 
 // get the data to be published publicly to subplebbit.challenges
-const getSubplebbitChallengeFromSubplebbitChallengeSettings = (
+const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting
-): SubplebbitChallenge => {
+): Promise<SubplebbitChallenge> => {
     subplebbitChallengeSettings = SubplebbitChallengeSettingSchema.parse(subplebbitChallengeSettings);
 
     // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
     let challengeFile: ChallengeFile | undefined = undefined;
     if (subplebbitChallengeSettings.path) {
         try {
-            const ChallengeFileFactory = ChallengeFileFactorySchema.parse(require(subplebbitChallengeSettings.path));
+            const importedFile = await import(subplebbitChallengeSettings.path);
+            const ChallengeFileFactory = ChallengeFileFactorySchema.parse(importedFile.default);
             challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
         } catch (e) {
+            (e as PlebbitError).details = {
+                ...(e as PlebbitError).details,
+                path: subplebbitChallengeSettings.path,
+                subplebbitChallengeSettings,
+                error: e
+            };
             if (e instanceof Error)
                 e.message = `getSubplebbitChallengeFromSubplebbitChallengeSettings failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
             throw e;

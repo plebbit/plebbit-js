@@ -489,7 +489,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
 
-        this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+        this.challenges = await Promise.all(this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings));
 
         if (await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
 
@@ -2294,11 +2294,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return <NonNullable<SubplebbitIpfsType["roles"]>>remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
     }
 
-    private _parseChallengesToEdit(
+    private async _parseChallengesToEdit(
         newChallengeSettings: NonNullable<NonNullable<SubplebbitEditOptions["settings"]>["challenges"]>
-    ): NonNullable<Pick<InternalSubplebbitRecordAfterFirstUpdateType, "challenges" | "_usingDefaultChallenge">> {
+    ): Promise<NonNullable<Pick<InternalSubplebbitRecordAfterFirstUpdateType, "challenges" | "_usingDefaultChallenge">>> {
         return {
-            challenges: newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings),
+            challenges: await Promise.all(newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)),
             _usingDefaultChallenge: remeda.isDeepEqual(newChallengeSettings, this._defaultSubplebbitChallenges)
         };
     }
@@ -2424,7 +2424,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const newInternalProps = <Pick<InternalSubplebbitRecordAfterFirstUpdateType, "roles" | "challenges" | "_usingDefaultChallenge">>{
             ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
-            ...(parsedEditOptions?.settings?.challenges ? this._parseChallengesToEdit(parsedEditOptions.settings.challenges) : undefined)
+            ...(parsedEditOptions?.settings?.challenges
+                ? await this._parseChallengesToEdit(parsedEditOptions.settings.challenges)
+                : undefined)
         };
 
         const newProps = <ParsedSubplebbitEditOptions>{
@@ -2476,7 +2478,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
-            this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings); // make sure subplebbit.challenges is using latest props from settings.challenges
+            this.challenges = await Promise.all(this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings)); // make sure subplebbit.challenges is using latest props from settings.challenges
         } catch (e) {
             await this.stop(); // Make sure to reset the sub state
             //@ts-expect-error
