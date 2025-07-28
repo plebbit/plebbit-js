@@ -22,6 +22,7 @@ export const testCommentFieldsInPageJson = (comment) => {
 
     expect(comment.protocolVersion).to.be.a("string");
     expect(comment.replyCount).to.be.a("number");
+    expect(comment.childCount).to.be.a("number");
 
     expect(comment.signature).to.be.a("object");
     expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
