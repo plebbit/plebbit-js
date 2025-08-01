@@ -575,6 +575,40 @@ describe("shouldExcludeChallengeSuccess", () => {
         expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed4)).to.equal(false);
         expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsEmpty)).to.equal(false);
     });
+
+    it("should handle undefined challenge results", () => {
+        const subplebbitChallenge = {
+            exclude: [{ challenges: [0, 1] }]
+        };
+        // This reproduces the error: challengeResults[1] is undefined
+        const challengeResultsWithUndefined = [{ success: true }];
+
+        // This should not throw an error and should return false
+        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsWithUndefined)).to.not.throw();
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsWithUndefined)).to.equal(false);
+    });
+
+    it("should handle out of bounds challenge indices", () => {
+        const subplebbitChallenge = {
+            exclude: [{ challenges: [5, 10] }] // indices that don't exist in the array
+        };
+        const challengeResults = [{ success: true }, { success: false }];
+
+        // This should not throw an error and should return false
+        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.not.throw();
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.equal(false);
+    });
+
+    it("should handle mixed undefined and valid challenge results", () => {
+        const subplebbitChallenge = {
+            exclude: [{ challenges: [0, 2] }] // index 2 doesn't exist
+        };
+        const challengeResults = [{ success: true }, { success: false }]; // only 2 elements, index 2 is undefined
+
+        // This should not throw an error and should return false
+        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.not.throw();
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.equal(false);
+    });
 });
 
 describe("shouldExcludeChallengeCommentCids", () => {
