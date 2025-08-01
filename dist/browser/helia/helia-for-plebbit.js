@@ -133,6 +133,7 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             publish: async (topic, data, options) => {
                 throwIfHeliaIsStoppingOrStopped();
                 if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
+                    console.log("before", "pubsub publish", "connectToPeersProvidingCid", topic);
                     await connectToPubsubPeers({
                         helia,
                         pubsubTopic: topic,
@@ -148,6 +149,7 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
             subscribe: async (topic, handler, options) => {
                 throwIfHeliaIsStoppingOrStopped();
                 if (helia.libp2p.services.pubsub.getSubscribers(topic).length === 0) {
+                    console.log("before pubsub-subscribe", "connectToPeersProvidingCid", topic);
                     await connectToPubsubPeers({
                         helia,
                         pubsubTopic: topic,
@@ -191,13 +193,14 @@ export async function createLibp2pJsClientOrUseExistingOne(plebbitOptions) {
     };
     const originalSubscribe = helia.libp2p.services.pubsub.subscribe.bind(helia.libp2p.services.pubsub);
     const connectToPeersProvidingTopic = async (topic) => {
+        console.log("before", "native pubsub-subscribe", "connectToPeersProvidingTopic", topic);
         await connectToPubsubPeers({
             helia,
             pubsubTopic: topic,
             maxPeers: 2,
-            log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingCid")
+            log: Logger("plebbit-js:helia:pubsub:subscribe:connectToPeersProvidingTopic")
         });
-        console.log("after", "native pubsub-subscribe", "connectToPeersProvidingCid", topic, "done");
+        console.log("after", "native pubsub-subscribe", "connectToPeersProvidingTopic", topic, "done");
     };
     helia.libp2p.services.pubsub.subscribe = (topic) => {
         throwIfHeliaIsStoppingOrStopped();
