@@ -108,7 +108,8 @@ const shouldExcludeChallengeSuccess = (
         let shouldExclude = true;
         for (const challengeIndex of excludeItem.challenges) {
             const challengeRes = challengeResults[challengeIndex];
-            if (!("success" in challengeRes) || ("success" in challengeRes && challengeRes.success !== true)) {
+            // Check if challengeRes exists before using 'in' operator
+            if (!challengeRes || !("success" in challengeRes) || ("success" in challengeRes && challengeRes.success !== true)) {
                 // found a false, should not exclude based on this exclude item,
                 // but try again in the next exclude item
                 shouldExclude = false;
