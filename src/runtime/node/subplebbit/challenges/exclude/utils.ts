@@ -13,8 +13,11 @@ const testFirstCommentTimestamp = (excludeTime: number | undefined, authorFirstC
     excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity);
 
 const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: SubplebbitIpfsType["roles"]) => {
-    if (excludeRole === undefined || subplebbitRoles === undefined) {
-        return true;
+    if (excludeRole === undefined) {
+        return true; // No role exclusion rule, so this test passes
+    }
+    if (subplebbitRoles === undefined) {
+        return false; // Can't verify roles, so assume user doesn't have excluded role
     }
     for (const roleName of excludeRole) {
         if (subplebbitRoles[authorAddress]?.role === roleName) {
