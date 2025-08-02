@@ -308,10 +308,62 @@ describe("shouldExcludePublication", () => {
         const voteOfMod = remeda.clone(validVoteFixture);
         voteOfMod.author = modAuthor;
 
-        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration: commentEditOfMod })).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, { comment: postOfMod })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { comment: replyOfMod })).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, { vote: voteOfMod })).to.equal(false);
+        // Mock subplebbit with roles - high-karma.eth is a moderator
+        const subplebbit = {
+            roles: {
+                "high-karma.eth": { role: "moderator" }
+            }
+        };
+
+        expect(shouldExcludePublication(subplebbitChallenge, { commentModeration: commentEditOfMod }, subplebbit)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: postOfMod }, subplebbit)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: replyOfMod }, subplebbit)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: voteOfMod }, subplebbit)).to.equal(false);
+    });
+
+    it("should only exclude authors with specified roles, not all authors (bug reproduction)", () => {
+        const subplebbitChallenge = {
+            exclude: [{ role: ["moderator", "admin", "owner"] }]
+        };
+
+        // Author without any roles
+        const regularAuthor = { address: "regular-user.eth" };
+        const postByRegularUser = {
+            content: "test post",
+            author: regularAuthor
+        };
+
+        // Author with moderator role
+        const modAuthor = { address: "high-karma.eth" };
+        const postByMod = {
+            content: "test post",
+            author: modAuthor
+        };
+
+        // Mock subplebbit with roles
+        const subplebbit = {
+            roles: {
+                "high-karma.eth": { role: "moderator" }
+            }
+        };
+
+        // BUG: When subplebbit parameter is missing, both should return false but might not
+        const resultRegularUserWithoutSubplebbit = shouldExcludePublication(subplebbitChallenge, { comment: postByRegularUser });
+        const resultModWithoutSubplebbit = shouldExcludePublication(subplebbitChallenge, { comment: postByMod });
+
+        // Expected behavior: regular user should NOT be excluded
+        expect(resultRegularUserWithoutSubplebbit).to.equal(false);
+        // Expected behavior: mod should also NOT be excluded without role info
+        expect(resultModWithoutSubplebbit).to.equal(false);
+
+        // CORRECT: When subplebbit parameter is provided with roles
+        const resultRegularUserWithSubplebbit = shouldExcludePublication(subplebbitChallenge, { comment: postByRegularUser }, subplebbit);
+        const resultModWithSubplebbit = shouldExcludePublication(subplebbitChallenge, { comment: postByMod }, subplebbit);
+
+        // Expected behavior: regular user should NOT be excluded
+        expect(resultRegularUserWithSubplebbit).to.equal(false);
+        // Expected behavior: mod should be excluded
+        expect(resultModWithSubplebbit).to.equal(true);
     });
 
     it("rateLimit", () => {
