@@ -83,7 +83,8 @@ const shouldExcludePublication = (
 
 const shouldExcludeChallengeSuccess = (
     subplebbitChallenge: NonNullable<SubplebbitSettings["challenges"]>[0],
-    challengeResults: (Challenge | ChallengeResult)[]
+    subplebbitChallengeIndex: number,
+    challengeResults: (Challenge | ChallengeResult)[],
 ) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludeChallengeSuccess invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
@@ -97,6 +98,12 @@ const shouldExcludeChallengeSuccess = (
         return false;
     }
 
+    const challengeToExclude = challengeResults[subplebbitChallengeIndex]
+    if (!challengeToExclude) {
+        throw Error(`shouldExcludeChallengeSuccess invalid subplebbitChallengeIndex '${subplebbitChallengeIndex}'`);
+    }
+    const challengeToExcludeIsPending = "challenge" in challengeToExclude
+
     // if match any of the exclude array, should exclude
     for (const excludeItem of subplebbitChallenge.exclude) {
         // has no challenge success exclude rules
@@ -107,9 +114,18 @@ const shouldExcludeChallengeSuccess = (
         // if any of exclude.challenges failed, don't exclude
         let shouldExclude = true;
         for (const challengeIndex of excludeItem.challenges) {
-            const challengeRes = challengeResults[challengeIndex];
-            // Check if challengeRes exists before using 'in' operator
-            if (!challengeRes || !("success" in challengeRes) || ("success" in challengeRes && challengeRes.success !== true)) {
+            const challengeResult = challengeResults[challengeIndex];
+            // config mistake, excluded challenge index doesn't exist
+            if (!challengeResult) {
+                shouldExclude = false;
+                break;
+            }
+            const challengeSuccess = "success" in challengeResult && challengeResult.success === true;
+
+            // if a challenge is pending, it can exclude another non-pending challenge
+            const challengePending = "challenge" in challengeResult && !challengeToExcludeIsPending;
+
+            if (!challengeSuccess && !challengePending) {
                 // found a false, should not exclude based on this exclude item,
                 // but try again in the next exclude item
                 shouldExclude = false;
