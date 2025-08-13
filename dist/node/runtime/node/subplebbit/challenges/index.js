@@ -114,7 +114,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
             continue;
         }
         // exclude based on other challenges successes
-        if (shouldExcludeChallengeSuccess(subplebbitChallenge, challengeOrChallengeResults)) {
+        if (shouldExcludeChallengeSuccess(subplebbitChallenge, challengeIndex, challengeOrChallengeResults)) {
             continue;
         }
         if ("success" in challengeOrChallengeResult && challengeOrChallengeResult.success === false) {
@@ -181,7 +181,7 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
             continue;
         }
         // exclude based on other challenges successes
-        if (shouldExcludeChallengeSuccess(subplebbit.settings.challenges[challengeIndex], challengeResults)) {
+        if (shouldExcludeChallengeSuccess(subplebbit.settings.challenges[challengeIndex], challengeIndex, challengeResults)) {
             continue;
         }
         if (challengeResult.success === false) {
