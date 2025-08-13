@@ -44,6 +44,8 @@ jobs:
       # disable hosts we shouldn't use
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+      # installing the browsers shouldn't be needed, but doesn't work without it for some reason
+      - run: yarn playwright install
       # test
       - run: DEBUG=plebbit-js:* yarn test:server & yarn test:server:wait-on
       - run: CHROME_BIN=$(which chromium-browser) yarn test:e2e:mock
