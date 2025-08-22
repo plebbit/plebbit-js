@@ -363,6 +363,31 @@ const excludeModsChallengeSubplebbit = {
         ]
     }
 };
+// test a challenge answer excluding a non challenge answer
+const questionOrWhitelistChallengeSubplebbit = {
+    title: "question or whitelist challenge subplebbit",
+    settings: {
+        challenges: [
+            {
+                name: 'question',
+                options: {
+                    question: 'What is the password?',
+                    answer: 'password'
+                },
+                // excluding the question challenge if subplebbit.challenges[1] (the whitelist)
+                // passes creates a question OR whitelist condition
+                exclude: [{ challenges: [1] }]
+            },
+            {
+                name: 'whitelist',
+                options: { addresses: 'high-karma.eth' },
+                // excluding the whitelist challenge if subplebbit.challenges[0] (the question)
+                // passes creates a question OR whitelist condition
+                exclude: [{ challenges: [0] }]
+            }
+        ]
+    }
+};
 
 // define mock author karma scores and account age
 const subplebbitAuthors = {};
@@ -407,7 +432,8 @@ const subplebbits = [
     twoOutOf4SuccessInverseChallengeSubplebbit,
     rateLimitChallengeSubplebbit,
     rateLimitChallengeSuccessChallengeSubplebbit,
-    excludeModsChallengeSubplebbit
+    excludeModsChallengeSubplebbit,
+    questionOrWhitelistChallengeSubplebbit
 ];
 
 const results = {};
@@ -545,6 +571,12 @@ results[excludeModsChallengeSubplebbit.title] = {
         challengeErrors: { 0: "You're not a mod." }
     }
 };
+results[questionOrWhitelistChallengeSubplebbit.title] = {
+    "high-karma.eth": { challengeSuccess: true },
+    "low-karma.eth": {
+        pendingChallenges: [{ challenge: "What is the password?", type: "text/plain" }]
+    }
+}
 
 // add mock plebbit to add the mock subplebbit instances
 for (const subplebbit of subplebbits) {

@@ -604,12 +604,12 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResultsFail2 = [{ success: false }, { success: false }];
         const challengeResultsEmpty = [];
         const challengeResultsMixed = [{ success: true }, { success: false }, { success: true }, { success: false }];
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed2)).to.equal(true);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed3)).to.equal(true);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsFail1)).to.equal(false);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsFail2)).to.equal(false);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsEmpty)).to.equal(false);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsMixed)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed2)).to.equal(true);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed3)).to.equal(true);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsFail1)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsFail2)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsEmpty)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsMixed)).to.equal(false);
     });
 
     it("exclude (0, 1) or 2", () => {
@@ -621,11 +621,11 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResultsSucceed3 = [{ success: false }, { success: false }, { success: true }];
         const challengeResultsSucceed4 = [{ success: false }, { success: false }, { success: false }, { success: true }];
         const challengeResultsEmpty = [];
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed12)).to.equal(true);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed123)).to.equal(true);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed3)).to.equal(true);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsSucceed4)).to.equal(false);
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsEmpty)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed12)).to.equal(true);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed123)).to.equal(true);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed3)).to.equal(true);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsSucceed4)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsEmpty)).to.equal(false);
     });
 
     it("should handle undefined challenge results", () => {
@@ -636,8 +636,8 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResultsWithUndefined = [{ success: true }];
 
         // This should not throw an error and should return false
-        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsWithUndefined)).to.not.throw();
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResultsWithUndefined)).to.equal(false);
+        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsWithUndefined)).to.not.throw();
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResultsWithUndefined)).to.equal(false);
     });
 
     it("should handle out of bounds challenge indices", () => {
@@ -647,8 +647,8 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResults = [{ success: true }, { success: false }];
 
         // This should not throw an error and should return false
-        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.not.throw();
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.equal(false);
+        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.not.throw();
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.equal(false);
     });
 
     it("should handle mixed undefined and valid challenge results", () => {
@@ -658,8 +658,28 @@ describe("shouldExcludeChallengeSuccess", () => {
         const challengeResults = [{ success: true }, { success: false }]; // only 2 elements, index 2 is undefined
 
         // This should not throw an error and should return false
-        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.not.throw();
-        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)).to.equal(false);
+        expect(() => shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.not.throw();
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.equal(false);
+    });
+
+    it("pending challenges excludes failed non pending challenge", () => {
+        const subplebbitChallenge = {
+            exclude: [{ challenges: [1] }]
+        };
+        const challengeResults = [{ success: false }, { challenge: 'What is the password?' }]
+
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.equal(true);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 1, challengeResults)).to.equal(false);
+    });
+
+    it("pending challenges does not exclude another pending challenge", () => {
+        const subplebbitChallenge = {
+            exclude: [{ challenges: [1] }]
+        };
+        const challengeResults = [{ challenge: 'What is the password?' }, { challenge: 'What is the other password?' }]
+
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 0, challengeResults)).to.equal(false);
+        expect(shouldExcludeChallengeSuccess(subplebbitChallenge, 1, challengeResults)).to.equal(false);
     });
 });
 

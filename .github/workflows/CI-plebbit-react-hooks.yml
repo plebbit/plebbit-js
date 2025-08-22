@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       # move plebbit-js (working dir) to temp folder
       - run: cp -r . ../plebbit-js-tmp && rm -fr `ls -A1`
@@ -41,13 +41,13 @@ jobs:
       # build
       - run: yarn test --pool=forks
       - run: yarn build
-      - run: yarn webpack
       # disable hosts we shouldn't use
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+      # installing the browsers shouldn't be needed, but doesn't work without it for some reason
+      - run: yarn playwright install
       # test
       - run: DEBUG=plebbit-js:* yarn test:server & yarn test:server:wait-on
-      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e:mock
-      - run: CHROME_BIN=$(which chrome) FIREFOX_BIN=$(which firefox) yarn test:e2e:browser
-      # electron cannot run headless needs virtual display xvfb
-      - run: DEBUG="plebbit-js:*" xvfb-run yarn test:e2e:electron
+      - run: CHROME_BIN=$(which chromium-browser) yarn test:e2e:mock
+      - run: DEBUG="plebbit-js:*" CHROME_BIN=$(which chromium-browser) yarn test:e2e:chrome
+      - run: DEBUG="plebbit-js:*" FIREFOX_BIN=$(which firefox) yarn test:e2e:firefox
