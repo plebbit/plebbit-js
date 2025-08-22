@@ -273,7 +273,6 @@ const shouldExcludeChallengeCommentCids = async (
 
         // if doesn't throw, at least 1 comment was valid
         try {
-            //@ts-expect-error
             await Promise.any(validateCommentPromises);
         } catch (e) {
             // console.log(validateCommentPromises) // debug all validate comments
@@ -292,7 +291,6 @@ const shouldExcludeChallengeCommentCids = async (
 
     // if at least 1 valid exclude, should exclude
     try {
-        // @ts-expect-error
         await Promise.any(validateExcludePromises);
         return true;
     } catch (e) {
