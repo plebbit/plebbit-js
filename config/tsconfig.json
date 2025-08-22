@@ -1,9 +1,10 @@
 {
     "compilerOptions": {
         "outDir": "../dist/node",
-        "module": "ES2020",
+        "module": "ES2022",
         "declaration": true,
-        "target": "ES2020",
+        "target": "ES2021",
+        "lib": ["ES2021"],
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
