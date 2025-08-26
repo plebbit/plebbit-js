@@ -12,6 +12,7 @@ import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
 import whitelist from "./plebbit-js-challenges/whitelist.js";
 import question from "./plebbit-js-challenges/question.js";
+import voucher from "./plebbit-js-challenges/voucher.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 import publicationMatch from "./plebbit-js-challenges/publication-match.js";
 import type {
@@ -44,6 +45,7 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
     blacklist: blacklist,
     whitelist: whitelist,
     question: question,
+    voucher: voucher,
     "evm-contract-call": evmContractCall,
     "publication-match": publicationMatch
 };
