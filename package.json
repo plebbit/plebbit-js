@@ -180,5 +180,8 @@
     "homepage": "https://github.com/plebbit/plebbit-js#readme",
     "engines": {
         "node": ">=20.18.0"
+    },
+    "resolutions": {
+        "ms": "2.1.3"
     }
 }
