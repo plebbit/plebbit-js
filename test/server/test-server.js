@@ -139,61 +139,62 @@ const startIpfsNode = async (nodeArgs) => {
     const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs?.length ? nodeArgs.daemonArgs : ""}`;
     console.log(ipfsCmd);
 
-    // 🔧 ENHANCED: Create environment for IPFS process, inheriting from process.env
+    // 🔧 ENHANCED: Create environment for IPFS process with debug logging enabled by default
     const debugEnv = {
         ...process.env, // Inherit ALL environment variables from parent process
         IPFS_PATH: nodeArgs.dir,
-        // Only override GOLOG_TRACING_FILE if it contains {NODE} placeholder
-        ...(process.env.GOLOG_FILE?.includes("{NODE}") && {
-            GOLOG_FILE: process.env.GOLOG_FILE.replace("{NODE}", path.basename(nodeArgs.dir))
-        })
+        // Set debug logging by default
+        IPFS_LOGGING: process.env.IPFS_LOGGING || "debug",
+        GOLOG_LOG_LEVEL: process.env.GOLOG_LOG_LEVEL || "debug",
+        // Only override GOLOG_FILE if it contains {NODE} placeholder or if not set
+        GOLOG_FILE: process.env.GOLOG_FILE?.includes("{NODE}") 
+            ? process.env.GOLOG_FILE.replace("{NODE}", path.basename(nodeArgs.dir))
+            : process.env.GOLOG_FILE || path.join(nodeArgs.dir, `kubo_${path.basename(nodeArgs.dir)}_golog_${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.log`)
     };
 
-    // 🔧 ENHANCED: Create log files for each IPFS node if debug logging is enabled
+    // 🔧 ENHANCED: Create log files for each IPFS node within the node directory
     const nodeBaseName = path.basename(nodeArgs.dir);
     let stdoutStream, stderrStream;
 
-    if (process.env.IPFS_LOGGING === "debug" || process.env.GOLOG_LOG_LEVEL === "debug") {
-        const logTimestamp = process.env.KUBO_LOG_TIMESTAMP || new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        const stdoutLogFile = `kubo_${nodeBaseName}_stdout_${logTimestamp}.log`;
-        const stderrLogFile = `kubo_${nodeBaseName}_stderr_${logTimestamp}.log`;
+    const logTimestamp = process.env.KUBO_LOG_TIMESTAMP || new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const stdoutLogFile = path.join(nodeArgs.dir, `kubo_${nodeBaseName}_stdout_${logTimestamp}.log`);
+    const stderrLogFile = path.join(nodeArgs.dir, `kubo_${nodeBaseName}_stderr_${logTimestamp}.log`);
 
-        console.log(`📝 Kubo debug logs for ${nodeBaseName}:`);
-        console.log(`   📄 stdout: ${stdoutLogFile}`);
-        console.log(`   📄 stderr: ${stderrLogFile}`);
-        if (debugEnv.GOLOG_FILE) {
-            console.log(`   📄 log: ${debugEnv.GOLOG_FILE}`);
-        }
-
-        stdoutStream = fs.createWriteStream(stdoutLogFile, { flags: "a" });
-        stderrStream = fs.createWriteStream(stderrLogFile, { flags: "a" });
+    console.log(`📝 Kubo logs for ${nodeBaseName}:`);
+    console.log(`   📄 stdout: ${stdoutLogFile}`);
+    console.log(`   📄 stderr: ${stderrLogFile}`);
+    if (debugEnv.GOLOG_FILE) {
+        console.log(`   📄 log: ${debugEnv.GOLOG_FILE}`);
     }
+
+    stdoutStream = fs.createWriteStream(stdoutLogFile, { flags: "a" });
+    stderrStream = fs.createWriteStream(stderrLogFile, { flags: "a" });
 
     const ipfsProcess = exec(ipfsCmd, { env: debugEnv });
 
-    // 🔧 ENHANCED: Stream logs to both files and console (if debug logging enabled)
+    // 🔧 ENHANCED: Stream logs to both files and console
     ipfsProcess.stdout.on("data", (data) => {
         console.log(`[${nodeBaseName}] ${data}`);
-        if (stdoutStream) stdoutStream.write(data);
+        stdoutStream.write(data);
     });
 
     ipfsProcess.stderr.on("data", (data) => {
         console.error(`[${nodeBaseName}] ${data}`);
-        if (stderrStream) stderrStream.write(data);
+        stderrStream.write(data);
     });
 
     ipfsProcess.stdin.on("data", console.log);
     ipfsProcess.on("error", console.error);
     ipfsProcess.on("exit", () => {
         console.error(`${ipfsPath} process with dir ${path.basename(nodeArgs.dir)} with pid ${ipfsProcess.pid} exited`);
-        // Close log streams if they exist
-        if (stdoutStream) stdoutStream.end();
-        if (stderrStream) stderrStream.end();
+        // Close log streams
+        stdoutStream.end();
+        stderrStream.end();
     });
     process.on("exit", () => {
         exec(`kill ${ipfsProcess.pid + 1}`);
-        if (stdoutStream) stdoutStream.end();
-        if (stderrStream) stderrStream.end();
+        stdoutStream.end();
+        stderrStream.end();
     });
 
     const ipfsDaemonIsReady = () =>
