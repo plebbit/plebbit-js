@@ -99,7 +99,7 @@ export class Plebbit extends PlebbitTypedEmitter {
             subplebbitVerificationCache: new LRUCache({ max: 100 }),
             pageVerificationCache: new LRUCache({ max: 1000 }),
             commentVerificationCache: new LRUCache({ max: 5000 }),
-            commentUpdateVerificationCache: new LRUCache({ max: 100000 }),
+            commentUpdateVerificationCache: new LRUCache({ max: 100_000 }),
             subplebbitForPublishing: new LRUCache({
                 max: 100,
                 ttl: 600000

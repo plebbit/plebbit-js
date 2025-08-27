@@ -5,8 +5,11 @@ const testScore = (excludeScore, authorScore) => excludeScore === undefined || e
 // firstCommentTimestamp value first needs to be put through Date.now() - firstCommentTimestamp
 const testFirstCommentTimestamp = (excludeTime, authorFirstCommentTimestamp) => excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity);
 const testRole = (excludeRole, authorAddress, subplebbitRoles) => {
-    if (excludeRole === undefined || subplebbitRoles === undefined) {
-        return true;
+    if (excludeRole === undefined) {
+        return true; // No role exclusion rule, so this test passes
+    }
+    if (subplebbitRoles === undefined) {
+        return false; // Can't verify roles, so assume user doesn't have excluded role
     }
     for (const roleName of excludeRole) {
         if (subplebbitRoles[authorAddress]?.role === roleName) {

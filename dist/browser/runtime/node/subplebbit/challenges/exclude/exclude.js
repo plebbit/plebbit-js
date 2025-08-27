@@ -228,7 +228,6 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
         }
         // if doesn't throw, at least 1 comment was valid
         try {
-            //@ts-expect-error
             await Promise.any(validateCommentPromises);
         }
         catch (e) {
@@ -246,7 +245,6 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     }
     // if at least 1 valid exclude, should exclude
     try {
-        // @ts-expect-error
         await Promise.any(validateExcludePromises);
         return true;
     }
