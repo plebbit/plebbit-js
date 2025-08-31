@@ -1,6 +1,8 @@
 import http from "node:http";
 import https from "node:https";
 import { gunzipSync } from "node:zlib";
+import path from "node:path";
+import fs from "node:fs/promises";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { Plebbit } from "../../plebbit/plebbit.js";
@@ -12,8 +14,20 @@ type AddressesRewriterOptions = {
     port: number;
     hostname: string | undefined;
     proxyTargetUrl: string;
-    plebbit: Pick<Plebbit, "_storage">;
+    plebbit: Pick<Plebbit, "_storage" | "dataPath">;
     statsReportIntervalMs?: number; // Default 10 minutes
+};
+
+type RequestLogEntry = {
+    keys: string[];
+    receivedAt: number;
+    transmittedAt?: number;
+    success: boolean;
+    statusCode?: number;
+    method: string;
+    url: string;
+    error?: string;
+    retryCount?: number;
 };
 
 export class AddressesRewriterProxyServer {
@@ -24,7 +38,7 @@ export class AddressesRewriterProxyServer {
     proxyTarget: URL;
     server: ReturnType<(typeof http)["createServer"]>;
     _storageKeyName: string;
-    _plebbit: Pick<Plebbit, "_storage">;
+    _plebbit: Pick<Plebbit, "_storage" | "dataPath">;
 
     // Connection pooling agents
     private _httpAgent: http.Agent;
@@ -43,6 +57,12 @@ export class AddressesRewriterProxyServer {
     };
     private _statsReportIntervalMs: number;
 
+    // Request logging
+    private _requestLogBuffer: RequestLogEntry[] = [];
+    private _lastLogWriteTime: number = Date.now();
+    private _logWriteInterval!: ReturnType<typeof setInterval>;
+    private _logFilePath: string;
+
     private _updateAddressesInterval!: ReturnType<typeof setInterval>;
     private _statsReportInterval!: ReturnType<typeof setInterval>;
     constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit, statsReportIntervalMs }: AddressesRewriterOptions) {
@@ -56,6 +76,9 @@ export class AddressesRewriterProxyServer {
         this._storageKeyName = `httprouter_proxy_${proxyTargetUrl}`;
         this._plebbit = plebbit;
         this._statsReportIntervalMs = statsReportIntervalMs || 1000 * 60 * 10; // Default 10 minutes
+        
+        // Initialize log file path
+        this._logFilePath = this._initializeLogFilePath();
         
         // Initialize connection pooling agents
         this._httpAgent = new http.Agent({ 
@@ -75,6 +98,7 @@ export class AddressesRewriterProxyServer {
     async listen(callback?: () => void) {
         await this._startUpdateAddressesLoop();
         this._startStatsReporting();
+        this._startRequestLogging();
         this.server.on("error", (err) =>
             debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err)
         );
@@ -84,7 +108,8 @@ export class AddressesRewriterProxyServer {
             this.hostname + ":" + this.port,
             "started listening to forward requests to",
             this.proxyTarget.host,
-            `- stats reporting every ${this._statsReportIntervalMs / 1000 / 60}min`
+            `- stats reporting every ${this._statsReportIntervalMs / 1000 / 60}min`,
+            `- request logging to ${this._logFilePath}`
         );
         await this._plebbit._storage.setItem(this._storageKeyName, `http://${this.hostname}:${this.port}`);
     }
@@ -93,6 +118,10 @@ export class AddressesRewriterProxyServer {
         this.server.close();
         clearInterval(this._updateAddressesInterval);
         clearInterval(this._statsReportInterval);
+        clearInterval(this._logWriteInterval);
+        
+        // Write any remaining logs before destroying
+        await this._writeRequestLogs();
         
         // Destroy connection pooling agents
         this._httpAgent.destroy();
@@ -113,6 +142,23 @@ export class AddressesRewriterProxyServer {
         req.on("end", () => {
             // Only track and rewrite PUT/POST requests (provider registration)
             const shouldRewrite = req.method === "PUT" || req.method === "POST";
+            
+            // Create request log entry for PUT/POST requests
+            let requestLogEntry: RequestLogEntry | null = null;
+            if (shouldRewrite && this._plebbit.dataPath) {
+                const keys = this._extractKeysFromRequestBody(reqBody);
+                if (keys.length > 0) {
+                    requestLogEntry = {
+                        keys,
+                        receivedAt: Date.now(),
+                        success: false,
+                        method: req.method || "UNKNOWN",
+                        url: req.url || "/",
+                        retryCount: 0
+                    };
+                    this._requestLogBuffer.push(requestLogEntry);
+                }
+            }
 
             // rewrite body with up to date addresses (only for PUT/POST)
             let rewrittenBody = reqBody;
@@ -156,7 +202,7 @@ export class AddressesRewriterProxyServer {
             }
 
             // proxy the request with retry logic
-            this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, 0);
+            this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, 0, requestLogEntry);
 
         });
 
@@ -181,7 +227,8 @@ export class AddressesRewriterProxyServer {
         res: Parameters<http.RequestListener>[1], 
         rewrittenBody: string, 
         shouldRewrite: boolean, 
-        retryCount: number
+        retryCount: number,
+        requestLogEntry: RequestLogEntry | null = null
     ) {
         const maxRetries = 3;
         const baseDelay = 1000; // 1 second
@@ -207,6 +254,12 @@ export class AddressesRewriterProxyServer {
         };
 
         const proxyReq = httpRequest(requestOptions);
+        
+        // Log transmission time
+        if (requestLogEntry) {
+            requestLogEntry.transmittedAt = Date.now();
+            requestLogEntry.retryCount = retryCount;
+        }
 
         // Handle timeout with retry logic
         proxyReq.setTimeout(10000, () => {
@@ -236,12 +289,18 @@ export class AddressesRewriterProxyServer {
                 
                 setTimeout(() => {
                     if (!hasResponded) {
-                        this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, retryCount + 1);
+                        this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, retryCount + 1, requestLogEntry);
                     }
                 }, delay);
             } else if (!res.headersSent && !hasResponded) {
                 hasResponded = true;
                 this._recordRequestResult(shouldRewrite, req.method === "GET", false);
+                // Update log entry with failure
+                if (requestLogEntry) {
+                    requestLogEntry.success = false;
+                    requestLogEntry.statusCode = 504;
+                    requestLogEntry.error = "Gateway Timeout - Max retries exceeded";
+                }
                 res.writeHead(504);
                 res.end("Gateway Timeout - Max retries exceeded");
             }
@@ -284,12 +343,18 @@ export class AddressesRewriterProxyServer {
                 
                 setTimeout(() => {
                     if (!hasResponded) {
-                        this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, retryCount + 1);
+                        this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, retryCount + 1, requestLogEntry);
                     }
                 }, delay);
             } else if (!res.headersSent && !hasResponded) {
                 hasResponded = true;
                 this._recordRequestResult(shouldRewrite, req.method === "GET", false);
+                // Update log entry with failure
+                if (requestLogEntry) {
+                    requestLogEntry.success = false;
+                    requestLogEntry.statusCode = 502;
+                    requestLogEntry.error = `${errorCode}: ${errorMessage} (${retryCount + 1} attempts)`;
+                }
                 res.writeHead(502);
                 res.end(`Bad Gateway - ${errorCode}: ${errorMessage} (${retryCount + 1} attempts)`);
             }
@@ -307,6 +372,15 @@ export class AddressesRewriterProxyServer {
             const isSuccess = statusCode >= 200 && statusCode < 300;
 
             this._recordRequestResult(shouldRewrite, req.method === "GET", isSuccess);
+            
+            // Update log entry with final result
+            if (requestLogEntry) {
+                requestLogEntry.success = isSuccess;
+                requestLogEntry.statusCode = statusCode;
+                if (!isSuccess) {
+                    requestLogEntry.error = `HTTP ${statusCode}`;
+                }
+            }
             
             if (shouldRewrite) {
                 if (isSuccess) {
@@ -458,6 +532,95 @@ export class AddressesRewriterProxyServer {
         };
 
         this._statsReportInterval = setInterval(reportStats, this._statsReportIntervalMs);
+    }
+
+    private _startRequestLogging() {
+        if (!this._plebbit.dataPath) {
+            return;
+        }
+        
+        const writeInterval = 5 * 1000; // 5 seconds
+        this._logWriteInterval = setInterval(async () => {
+            await this._writeRequestLogs();
+        }, writeInterval);
+    }
+
+    private _initializeLogFilePath(): string {
+        if (!this._plebbit.dataPath) {
+            return "";
+        }
+        
+        // Get kubo client hostname:port (use first one)
+        const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
+        let kuboIdentifier = "unknown";
+        if (kuboConfig && typeof kuboConfig === 'object' && 'host' in kuboConfig && 'port' in kuboConfig) {
+            kuboIdentifier = `${kuboConfig.host}_${kuboConfig.port}`;
+        }
+        
+        // Get proxy target hostname:port
+        const proxyIdentifier = `${this.proxyTarget.hostname}_${this.proxyTarget.port || (this.proxyTarget.protocol === 'https:' ? '443' : '80')}`;
+        
+        const fileName = `${kuboIdentifier}_${proxyIdentifier}.json`;
+        return path.join(this._plebbit.dataPath, '.address-rewriter', fileName);
+    }
+
+    private _extractKeysFromRequestBody(body: string): string[] {
+        try {
+            const json = JSON.parse(body);
+            const keys: string[] = [];
+            if (json.Providers && Array.isArray(json.Providers)) {
+                for (const provider of json.Providers) {
+                    if (provider?.Payload?.Keys) {
+                        keys.push(...provider.Payload.Keys);
+                    }
+                }
+            }
+            return keys;
+        } catch {
+            return [];
+        }
+    }
+
+    private _isWritingLogs = false;
+
+    private async _writeRequestLogs(): Promise<void> {
+        if (this._requestLogBuffer.length === 0 || !this._plebbit.dataPath || this._isWritingLogs) {
+            return;
+        }
+
+        this._isWritingLogs = true;
+        const logsToWrite = [...this._requestLogBuffer];
+        this._requestLogBuffer = []; // Clear buffer immediately to prevent duplicates
+
+        try {
+            // Ensure directory exists
+            const logDir = path.dirname(this._logFilePath);
+            await fs.mkdir(logDir, { recursive: true });
+
+            // Read existing logs if file exists
+            let existingLogs: RequestLogEntry[] = [];
+            try {
+                const existingData = await fs.readFile(this._logFilePath, 'utf8');
+                existingLogs = JSON.parse(existingData);
+            } catch {
+                // File doesn't exist or is invalid, start fresh
+            }
+
+            // Append new logs
+            const allLogs = [...existingLogs, ...logsToWrite];
+
+            // Write back to file
+            await fs.writeFile(this._logFilePath, JSON.stringify(allLogs, null, 2));
+
+            this._lastLogWriteTime = Date.now();
+            debug.trace(`Wrote ${logsToWrite.length} new request log entries (${allLogs.length} total) to ${this._logFilePath}`);
+        } catch (error) {
+            debug.error(`Failed to write request logs to ${this._logFilePath}:`, error);
+            // Put logs back in buffer on failure
+            this._requestLogBuffer.unshift(...logsToWrite);
+        } finally {
+            this._isWritingLogs = false;
+        }
     }
 }
 
