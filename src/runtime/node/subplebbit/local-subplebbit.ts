@@ -29,13 +29,13 @@ import {
     isLinkOfMedia,
     isStringDomain,
     pubsubTopicToDhtKey,
-    retryKuboIpfsAdd,
     throwWithErrorCode,
     timestamp,
     getErrorCodeFromMessage,
     removeMfsFilesSafely,
     removeBlocksFromKuboNode,
-    ipfsCpWithRmIfFails
+    ipfsCpWithRmIfFails,
+    retryKuboIpfsAddAndProvide
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -569,11 +569,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
         const statsCid = (
-            await retryKuboIpfsAdd({
+            await retryKuboIpfsAddAndProvide({
                 ipfsClient: kuboRpcClient._client,
                 log,
                 content: deterministicStringify(stats),
-                options: { pin: true }
+                addOptions: { pin: true },
+                provideOptions: { recursive: true }
             })
         ).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
@@ -635,11 +636,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
-        const file = await retryKuboIpfsAdd({
+        const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
             content: deterministicStringify(newSubplebbitRecord),
-            options: { pin: true }
+            addOptions: { pin: true },
+            provideOptions: { recursive: true }
         });
 
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
@@ -974,12 +976,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
         };
 
-        const ipfsClient = this._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
-        const file = await retryKuboIpfsAdd({
-            ipfsClient: ipfsClient,
+        const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
+        const file = await retryKuboIpfsAddAndProvide({
+            ipfsClient: ipfsClient._client,
             log,
             content: deterministicStringify(commentIpfs),
-            options: { pin: true }
+            addOptions: { pin: true },
+            provideOptions: { recursive: true }
         });
 
         const commentCid = file.path;
@@ -1921,6 +1924,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
         const unpinnedCommentsFromDb = this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
+        const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
+
         // In the _repinCommentIpfs method:
         const limit = pLimit(50);
         const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) =>
@@ -1943,12 +1948,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 }
 
                 // TODO move this to addAll method
-                const ipfsClient = this._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
-                const addRes = await retryKuboIpfsAdd({
-                    ipfsClient: ipfsClient,
+                const addRes = await retryKuboIpfsAddAndProvide({
+                    ipfsClient: ipfsClient._client,
                     log,
                     content: commentIpfsContent,
-                    options: { pin: true }
+                    addOptions: { pin: true },
+                    provideOptions: { recursive: true }
                 });
                 if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
                 log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");

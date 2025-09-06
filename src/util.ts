@@ -9,7 +9,14 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesCpOptions } from "kubo-rpc-client";
+import type {
+    AddOptions,
+    AddResult,
+    BlockRmOptions,
+    create as CreateKuboRpcClient,
+    FilesCpOptions,
+    RoutingProvideOptions
+} from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -414,6 +421,49 @@ export const pubsubTopicToDhtKeyCid = (pubsubTopic: string): CID => {
     return cid;
 };
 
+export async function retryKuboIpfsAddAndProvide({
+    ipfsClient: kuboRpcClient,
+    log,
+    content,
+    inputNumOfRetries,
+    addOptions,
+    provideOptions
+}: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
+    log: Logger;
+    content: string;
+    inputNumOfRetries?: number;
+    addOptions?: AddOptions;
+    provideOptions?: RoutingProvideOptions;
+}): Promise<AddResult> {
+    const numOfRetries = inputNumOfRetries ?? 3;
+
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 2000
+        });
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const addRes = await kuboRpcClient.add(content, addOptions);
+                const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
+                for await (const event of provideEvents) {
+                    log.trace(`Provide event for ${addRes.cid}:`, event);
+                }
+                resolve(addRes);
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add and provide content to IPFS:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
+}
+
 export async function retryKuboIpfsAdd({
     ipfsClient: kuboRpcClient,
     log,
@@ -433,7 +483,7 @@ export async function retryKuboIpfsAdd({
         const operation = retry.operation({
             retries: numOfRetries,
             factor: 2,
-            minTimeout: 1000
+            minTimeout: 2000
         });
 
         operation.attempt(async (currentAttempt) => {
