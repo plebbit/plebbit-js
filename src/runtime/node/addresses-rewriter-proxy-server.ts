@@ -1,13 +1,13 @@
 import http from "node:http";
 import https from "node:https";
 import path from "node:path";
-import fs from "node:fs/promises";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import retry from "retry";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import { hideClassPrivateProps } from "../../util.js";
 import { RoutingQueryEvent } from "kubo-rpc-client";
+import { AddressRewriterDatabase, RequestLogEntry } from "./address-rewriter-db.js";
 const debug = Logger("plebbit-js:addresses-rewriter");
 
 type AddressesRewriterOptions = {
@@ -16,18 +16,6 @@ type AddressesRewriterOptions = {
     hostname: string | undefined;
     proxyTargetUrl: string;
     plebbit: Pick<Plebbit, "_storage" | "dataPath">;
-};
-
-type RequestLogEntry = {
-    keys: string[];
-    receivedAt: number;
-    transmittedAt?: number;
-    success: boolean;
-    statusCode?: number;
-    method: string;
-    url: string;
-    error?: string;
-    retryCount?: number;
 };
 
 export class AddressesRewriterProxyServer {
@@ -40,18 +28,15 @@ export class AddressesRewriterProxyServer {
     _storageKeyName: string;
     _plebbit: Pick<Plebbit, "_storage" | "dataPath">;
 
-    // Request logging
-    private _requestLogBuffer: RequestLogEntry[] = [];
-    private _lastLogWriteTime: number = Date.now();
+    // SQLite logging
+    private _db: AddressRewriterDatabase;
     private _logWriteInterval!: ReturnType<typeof setInterval>;
-    private _logFilePath: string;
+    private _requestLogBuffer: RequestLogEntry[] = [];
     private _isWritingLogs = false;
 
     // Failed keys retry logic
     private _failedKeys: Set<string> = new Set();
-    private _failedKeysFilePath: string;
     private _retryInterval!: ReturnType<typeof setInterval>;
-    private _isWritingFailedKeys = false;
 
     private _updateAddressesInterval!: ReturnType<typeof setInterval>;
 
@@ -69,11 +54,9 @@ export class AddressesRewriterProxyServer {
         this._storageKeyName = `httprouter_proxy_${proxyTargetUrl}`;
         this._plebbit = plebbit;
 
-        // Initialize log file path
-        this._logFilePath = this._initializeLogFilePath();
-
-        // Initialize failed keys file path
-        this._failedKeysFilePath = this._initializeFailedKeysFilePath();
+        // Initialize database
+        const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
+        this._db = new AddressRewriterDatabase(this._plebbit.dataPath!, kuboConfig, this.proxyTarget);
 
         // Create HTTP agents with connection pooling and keep-alive
         this._httpAgent = new http.Agent({
@@ -94,6 +77,7 @@ export class AddressesRewriterProxyServer {
     }
 
     async listen(callback?: () => void) {
+        await this._db.initialize();
         await this._startUpdateAddressesLoop();
         this._startRequestLogging();
         await this._startFailedKeysRetry();
@@ -106,8 +90,7 @@ export class AddressesRewriterProxyServer {
             this.hostname + ":" + this.port,
             "started listening to forward requests to",
             this.proxyTarget.host,
-            "- request logging to",
-            this._logFilePath
+            "- request logging enabled"
         );
         await this._plebbit._storage.setItem(this._storageKeyName, `http://${this.hostname}:${this.port}`);
     }
@@ -120,6 +103,9 @@ export class AddressesRewriterProxyServer {
 
         // Write any remaining logs before destroying
         await this._writeRequestLogs();
+
+        // Close database connection
+        this._db.close();
 
         // Destroy HTTP agents to clean up connections
         this._httpAgent.destroy();
@@ -243,8 +229,8 @@ export class AddressesRewriterProxyServer {
                     requestLogEntry.keys.forEach((key) => this._failedKeys.add(key));
                     const sizeAfter = this._failedKeys.size;
                     if (sizeAfter > sizeBefore) {
-                        // Save to file asynchronously when new keys are added
-                        this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys:", err));
+                        // Save to database when new keys are added
+                        this._saveFailedKeysToDatabase();
                     }
                 }
             }
@@ -271,8 +257,8 @@ export class AddressesRewriterProxyServer {
                     requestLogEntry.keys.forEach((key) => this._failedKeys.add(key));
                     const sizeAfter = this._failedKeys.size;
                     if (sizeAfter > sizeBefore) {
-                        // Save to file asynchronously when new keys are added
-                        this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys:", err));
+                        // Save to database when new keys are added
+                        this._saveFailedKeysToDatabase();
                     }
                 }
             }
@@ -300,8 +286,8 @@ export class AddressesRewriterProxyServer {
                         requestLogEntry.keys.forEach((key) => this._failedKeys.add(key));
                         const sizeAfter = this._failedKeys.size;
                         if (sizeAfter > sizeBefore) {
-                            // Save to file asynchronously when new keys are added
-                            this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys:", err));
+                            // Save to database when new keys are added
+                            this._saveFailedKeysToDatabase();
                         }
                     }
                 }
@@ -396,44 +382,6 @@ export class AddressesRewriterProxyServer {
         this._updateAddressesInterval = setInterval(tryUpdateAddresses, 1000 * 60);
     }
 
-    private _initializeLogFilePath(): string {
-        if (!this._plebbit.dataPath) {
-            throw new Error("plebbit.dataPath must be defined for request logging");
-        }
-
-        // Get kubo client hostname:port (use first one)
-        const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
-        let kuboIdentifier = "unknown";
-        if (kuboConfig && typeof kuboConfig === "object" && "host" in kuboConfig && "port" in kuboConfig) {
-            kuboIdentifier = `${kuboConfig.host}_${kuboConfig.port}`;
-        }
-
-        // Get proxy target hostname:port
-        const proxyIdentifier = `${this.proxyTarget.hostname}_${this.proxyTarget.port || (this.proxyTarget.protocol === "https:" ? "443" : "80")}`;
-
-        const fileName = `${kuboIdentifier}_${proxyIdentifier}.json`;
-        return path.join(this._plebbit.dataPath, ".address-rewriter", fileName);
-    }
-
-    private _initializeFailedKeysFilePath(): string {
-        if (!this._plebbit.dataPath) {
-            throw new Error("plebbit.dataPath must be defined for failed keys storage");
-        }
-
-        // Get kubo client hostname:port (use first one)
-        const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
-        let kuboIdentifier = "unknown";
-        if (kuboConfig && typeof kuboConfig === "object" && "host" in kuboConfig && "port" in kuboConfig) {
-            kuboIdentifier = `${kuboConfig.host}_${kuboConfig.port}`;
-        }
-
-        // Get proxy target hostname:port
-        const proxyIdentifier = `${this.proxyTarget.hostname}_${this.proxyTarget.port || (this.proxyTarget.protocol === "https:" ? "443" : "80")}`;
-
-        const fileName = `failed_keys_${kuboIdentifier}_${proxyIdentifier}.json`;
-        return path.join(this._plebbit.dataPath, ".address-rewriter", fileName);
-    }
-
     private _extractKeysFromRequestBody(body: string): string[] {
         try {
             const json = JSON.parse(body);
@@ -461,29 +409,10 @@ export class AddressesRewriterProxyServer {
         this._requestLogBuffer = []; // Clear buffer immediately to prevent duplicates
 
         try {
-            // Ensure directory exists
-            const logDir = path.dirname(this._logFilePath);
-            await fs.mkdir(logDir, { recursive: true });
-
-            // Read existing logs if file exists
-            let existingLogs: RequestLogEntry[] = [];
-            try {
-                const existingData = await fs.readFile(this._logFilePath, "utf8");
-                existingLogs = JSON.parse(existingData);
-            } catch {
-                // File doesn't exist or is invalid, start fresh
-            }
-
-            // Append new logs
-            const allLogs = [...existingLogs, ...logsToWrite];
-
-            // Write back to file
-            await fs.writeFile(this._logFilePath, JSON.stringify(allLogs, null, 2));
-
-            this._lastLogWriteTime = Date.now();
-            debug.trace(`Wrote ${logsToWrite.length} new request log entries (${allLogs.length} total) to ${this._logFilePath}`);
+            this._db.insertRequestLogs(logsToWrite);
+            debug.trace(`Wrote ${logsToWrite.length} new request log entries to SQLite database`);
         } catch (error) {
-            debug.error(`Failed to write request logs to ${this._logFilePath}:`, error);
+            debug.error(`Failed to write request logs to SQLite database:`, error);
             // Put logs back in buffer on failure
             this._requestLogBuffer.unshift(...logsToWrite);
         } finally {
@@ -499,8 +428,8 @@ export class AddressesRewriterProxyServer {
     }
 
     private async _startFailedKeysRetry() {
-        // Load failed keys from file on startup
-        await this._loadFailedKeysFromFile();
+        // Load failed keys from database on startup
+        this._loadFailedKeysFromDatabase();
 
         // Start 2-minute interval for retrying failed keys
         const retryInterval = 2 * 60 * 1000; // 2 minutes
@@ -511,40 +440,30 @@ export class AddressesRewriterProxyServer {
         debug(`Started failed keys retry with ${this._failedKeys.size} keys from previous sessions`);
     }
 
-    private async _loadFailedKeysFromFile() {
+    private _loadFailedKeysFromDatabase() {
         try {
-            const data = await fs.readFile(this._failedKeysFilePath, "utf8");
-            const keys = JSON.parse(data);
-            if (Array.isArray(keys)) {
-                keys.forEach((key) => this._failedKeys.add(key));
-            }
-            debug(`Loaded ${keys.length} failed keys from file`);
+            const keys = this._db.loadFailedKeys();
+            keys.forEach((key) => this._failedKeys.add(key));
+            debug(`Loaded ${keys.length} failed keys from database`);
         } catch (error) {
-            // File doesn't exist or is corrupted, start with empty set
-            debug("No existing failed keys file found, starting fresh");
+            debug.error("Failed to load failed keys from database:", error);
+            throw error;
         }
     }
 
-    private async _saveFailedKeysToFile() {
-        if (this._isWritingFailedKeys) {
-            debug.trace("Skipping failed keys write - already in progress");
-            return;
-        }
-
-        this._isWritingFailedKeys = true;
+    private _saveFailedKeysToDatabase() {
         try {
-            await fs.mkdir(path.dirname(this._failedKeysFilePath), { recursive: true });
             const keys = Array.from(this._failedKeys);
-            await fs.writeFile(this._failedKeysFilePath, JSON.stringify(keys, null, 2));
+            this._db.saveFailedKeys(keys);
+
             if (keys.length === 0) {
                 debug(`All keys successfully provided - no failed keys to save`);
             } else {
-                debug(`Saved ${keys.length} failed keys to file`);
+                debug(`Saved ${keys.length} failed keys to database`);
             }
         } catch (error) {
-            debug.error("Failed to save failed keys to file:", error);
-        } finally {
-            this._isWritingFailedKeys = false;
+            debug.error("Failed to save failed keys to database:", error);
+            throw error;
         }
     }
 
@@ -581,11 +500,18 @@ export class AddressesRewriterProxyServer {
 
                 successfulKeys.push(key);
                 debug(`Successfully provided key: ${key}`);
+
+                // Log successful reprovide attempt
+                this._logReprovideAttempt(key, true, undefined, false);
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                
+                const isBlockNotLocal = errorMessage.includes("block") && errorMessage.includes("not found locally");
+
+                // Log failed reprovide attempt
+                this._logReprovideAttempt(key, false, errorMessage, isBlockNotLocal);
+
                 // If block not found locally, discard this key - no point in retrying
-                if (errorMessage.includes('block') && errorMessage.includes('not found locally')) {
+                if (isBlockNotLocal) {
                     keysToDiscard.push(key);
                     debug(`Discarding key ${key} - block not found locally, will not retry`);
                 } else {
@@ -599,46 +525,21 @@ export class AddressesRewriterProxyServer {
         successfulKeys.forEach((key) => this._failedKeys.delete(key));
         keysToDiscard.forEach((key) => this._failedKeys.delete(key));
 
-        // Save updated failed keys to file
-        this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys after retry:", err));
+        // Save updated failed keys to database
+        this._saveFailedKeysToDatabase();
 
-        debug(`Retry completed: ${successfulKeys.length} successful, ${stillFailedKeys.length} still failed, ${keysToDiscard.length} discarded`);
+        debug(
+            `Retry completed: ${successfulKeys.length} successful, ${stillFailedKeys.length} still failed, ${keysToDiscard.length} discarded`
+        );
+    }
+
+    private _logReprovideAttempt(key: string, success: boolean, error?: string, blockNotLocal?: boolean): void {
+        try {
+            this._db.insertReprovideLog(key, success, error, blockNotLocal);
+            debug.trace(`Logged reprovide attempt for key ${key}: success=${success}, blockNotLocal=${blockNotLocal}`);
+        } catch (error) {
+            debug.error(`Failed to log reprovide attempt for key ${key}:`, error);
+            throw error;
+        }
     }
 }
-
-// example
-// const addressesRewriterProxyServer = new AddressesRewriterProxyServer({
-//     plebbitOptions: { ipfsHttpClientsOptions: ["http://127.0.0.1:5001/api/v0"] },
-//     port: 8888,
-//     proxyTargetUrl: "https://peers.pleb.bot"
-//     // proxyTargetUrl: 'http://127.0.0.1:8889',
-// });
-// addressesRewriterProxyServer.listen(() => {
-//     debug(`addresses rewriter proxy listening on http://${addressesRewriterProxyServer.hostname}:${addressesRewriterProxyServer.port}`);
-// });
-
-/* example of how to use in plebbit-js
-
-const httpRouterProxyUrls = []
-if (isNodeJs && plebbitOptions.ipfsHttpClientsOptions?.length && plebbitOptions.httpRoutersOptions?.length) {
-  let addressesRewriterStartPort = 19575 // use port 19575 as first port, looks like IPRTR (IPFS ROUTER)
-  for (const httpRoutersOptions of plebbitOptions.httpRoutersOptions) {
-    // launch the proxy server
-    const port = addressesRewriterStartPort++
-    const hostname = '127.0.0.1'
-    const addressesRewriterProxyServer = new AddressesRewriterProxyServer({
-      plebbitOptions: plebbitOptions,
-      port, 
-      hostname,
-      proxyTargetUrl: httpRoutersOptions.url || httpRoutersOptions,
-    })
-    addressesRewriterProxyServer.listen()
-
-    // save the proxy urls to use them later
-    httpRouterProxyUrls.push(`http://${hostname}:${port}`)
-  }
-
-  // set kubo to the new routers with the proxy urls
-  setKuboHttpRouterUrls(httpRouterProxyUrls)
-}
-*/
