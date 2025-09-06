@@ -1,12 +1,13 @@
 import http from "node:http";
 import https from "node:https";
-import { gunzipSync } from "node:zlib";
 import path from "node:path";
 import fs from "node:fs/promises";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import retry from "retry";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import { hideClassPrivateProps } from "../../util.js";
+import { RoutingQueryEvent } from "kubo-rpc-client";
 const debug = Logger("plebbit-js:addresses-rewriter");
 
 type AddressesRewriterOptions = {
@@ -15,7 +16,6 @@ type AddressesRewriterOptions = {
     hostname: string | undefined;
     proxyTargetUrl: string;
     plebbit: Pick<Plebbit, "_storage" | "dataPath">;
-    statsReportIntervalMs?: number; // Default 10 minutes
 };
 
 type RequestLogEntry = {
@@ -40,32 +40,25 @@ export class AddressesRewriterProxyServer {
     _storageKeyName: string;
     _plebbit: Pick<Plebbit, "_storage" | "dataPath">;
 
-    // Connection pooling agents
-    private _httpAgent: http.Agent;
-    private _httpsAgent: https.Agent;
-
-    // Stats tracking
-    private _stats = {
-        putPostSuccessful: 0, // 2xx PUT/POST responses
-        putPostFailed: 0, // non-2xx PUT/POST responses
-        putPostTotal: 0, // Total PUT/POST requests
-        getSuccessful: 0, // 2xx GET responses
-        getFailed: 0, // non-2xx GET responses
-        getTotal: 0, // Total GET requests
-        retries: 0, // Total retry attempts
-        startTime: Date.now()
-    };
-    private _statsReportIntervalMs: number;
-
     // Request logging
     private _requestLogBuffer: RequestLogEntry[] = [];
     private _lastLogWriteTime: number = Date.now();
     private _logWriteInterval!: ReturnType<typeof setInterval>;
     private _logFilePath: string;
+    private _isWritingLogs = false;
+
+    // Failed keys retry logic
+    private _failedKeys: Set<string> = new Set();
+    private _failedKeysFilePath: string;
+    private _retryInterval!: ReturnType<typeof setInterval>;
+    private _isWritingFailedKeys = false;
 
     private _updateAddressesInterval!: ReturnType<typeof setInterval>;
-    private _statsReportInterval!: ReturnType<typeof setInterval>;
-    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit, statsReportIntervalMs }: AddressesRewriterOptions) {
+
+    // HTTP agents for connection reuse
+    private _httpAgent: http.Agent;
+    private _httpsAgent: https.Agent;
+    constructor({ kuboClients: kuboClient, port, hostname, proxyTargetUrl, plebbit }: AddressesRewriterOptions) {
         this.addresses = {};
 
         this.kuboClients = kuboClient;
@@ -75,30 +68,35 @@ export class AddressesRewriterProxyServer {
         this.server = http.createServer((req, res) => this._proxyRequestRewrite(req, res));
         this._storageKeyName = `httprouter_proxy_${proxyTargetUrl}`;
         this._plebbit = plebbit;
-        this._statsReportIntervalMs = statsReportIntervalMs || 1000 * 60 * 10; // Default 10 minutes
-        
+
         // Initialize log file path
         this._logFilePath = this._initializeLogFilePath();
-        
-        // Initialize connection pooling agents
-        this._httpAgent = new http.Agent({ 
-            keepAlive: true, 
-            maxSockets: 10,
-            timeout: 10000 
+
+        // Initialize failed keys file path
+        this._failedKeysFilePath = this._initializeFailedKeysFilePath();
+
+        // Create HTTP agents with connection pooling and keep-alive
+        this._httpAgent = new http.Agent({
+            keepAlive: true,
+            keepAliveMsecs: 30000,
+            maxSockets: 50,
+            timeout: 10000
         });
-        this._httpsAgent = new https.Agent({ 
-            keepAlive: true, 
-            maxSockets: 10,
-            timeout: 10000 
+
+        this._httpsAgent = new https.Agent({
+            keepAlive: true,
+            keepAliveMsecs: 30000,
+            maxSockets: 50,
+            timeout: 10000
         });
-        
+
         hideClassPrivateProps(this);
     }
 
     async listen(callback?: () => void) {
         await this._startUpdateAddressesLoop();
-        this._startStatsReporting();
         this._startRequestLogging();
+        await this._startFailedKeysRetry();
         this.server.on("error", (err) =>
             debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err)
         );
@@ -108,8 +106,8 @@ export class AddressesRewriterProxyServer {
             this.hostname + ":" + this.port,
             "started listening to forward requests to",
             this.proxyTarget.host,
-            `- stats reporting every ${this._statsReportIntervalMs / 1000 / 60}min`,
-            `- request logging to ${this._logFilePath}`
+            "- request logging to",
+            this._logFilePath
         );
         await this._plebbit._storage.setItem(this._storageKeyName, `http://${this.hostname}:${this.port}`);
     }
@@ -117,16 +115,16 @@ export class AddressesRewriterProxyServer {
     async destroy() {
         this.server.close();
         clearInterval(this._updateAddressesInterval);
-        clearInterval(this._statsReportInterval);
         clearInterval(this._logWriteInterval);
-        
+        clearInterval(this._retryInterval);
+
         // Write any remaining logs before destroying
         await this._writeRequestLogs();
-        
-        // Destroy connection pooling agents
+
+        // Destroy HTTP agents to clean up connections
         this._httpAgent.destroy();
         this._httpsAgent.destroy();
-        
+
         await this._plebbit._storage.removeItem(this._storageKeyName);
     }
 
@@ -142,10 +140,10 @@ export class AddressesRewriterProxyServer {
         req.on("end", () => {
             // Only track and rewrite PUT/POST requests (provider registration)
             const shouldRewrite = req.method === "PUT" || req.method === "POST";
-            
+
             // Create request log entry for PUT/POST requests
             let requestLogEntry: RequestLogEntry | null = null;
-            if (shouldRewrite && this._plebbit.dataPath) {
+            if (shouldRewrite) {
                 const keys = this._extractKeysFromRequestBody(reqBody);
                 if (keys.length > 0) {
                     requestLogEntry = {
@@ -162,48 +160,26 @@ export class AddressesRewriterProxyServer {
 
             // rewrite body with up to date addresses (only for PUT/POST)
             let rewrittenBody = reqBody;
-            let addressRewriteCount = 0;
-            let skippedPeerIds: string[] = [];
-
             if (shouldRewrite && rewrittenBody) {
                 try {
                     const json = JSON.parse(rewrittenBody);
                     if (json.Providers && Array.isArray(json.Providers)) {
                         for (const provider of json.Providers) {
                             const peerId = provider?.Payload?.ID;
-                            const keys = provider?.Payload?.Keys;
                             if (peerId && this.addresses[peerId]) {
-                                const oldAddrs = provider.Payload.Addrs?.length || 0;
                                 provider.Payload.Addrs = this.addresses[peerId];
-                                addressRewriteCount++;
-                                debug.trace(`Rewrote addresses for keys ${keys?.join(', ')} (${oldAddrs} -> ${this.addresses[peerId].length}) [${this.proxyTarget.host}]`);
-                            } else if (peerId) {
-                                skippedPeerIds.push(peerId);
-                                debug(`No addresses found for peer ${peerId}, using original addresses`);
                             }
                         }
                         rewrittenBody = JSON.stringify(json);
-
-                        if (skippedPeerIds.length > 0) {
-                            debug(`Skipped address rewriting for ${skippedPeerIds.length} peers: ${skippedPeerIds.join(", ")}`);
-                        }
                     }
                 } catch (e) {
                     const error = <Error>e;
-                    debug.error(
-                        "proxy body rewrite error - continuing with original body:",
-                        error.message,
-                        "body length:",
-                        rewrittenBody.length,
-                        req.url,
-                        req.method
-                    );
+                    debug("proxy body rewrite error:", error, "body", rewrittenBody, req.url, req.method);
                 }
             }
 
-            // proxy the request with retry logic
-            this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, 0, requestLogEntry);
-
+            // proxy the request
+            this._proxyRequest(req, res, rewrittenBody, requestLogEntry);
         });
 
         // Handle client disconnect
@@ -222,346 +198,240 @@ export class AddressesRewriterProxyServer {
         });
     }
 
-    private _makeProxyRequestWithRetry(
-        req: Parameters<http.RequestListener>[0], 
-        res: Parameters<http.RequestListener>[1], 
-        rewrittenBody: string, 
-        shouldRewrite: boolean, 
-        retryCount: number,
-        requestLogEntry: RequestLogEntry | null = null
+    private _proxyRequest(
+        req: Parameters<http.RequestListener>[0],
+        res: Parameters<http.RequestListener>[1],
+        rewrittenBody: string,
+        requestLogEntry: RequestLogEntry | null
     ) {
-        const maxRetries = 3;
-        const baseDelay = 1000; // 1 second
-        
-        // Track if we've already responded to avoid double responses
-        let hasResponded = false;
-        let requestDestroyed = false;
-        
+        if (requestLogEntry) {
+            requestLogEntry.retryCount = 0;
+            requestLogEntry.transmittedAt = Date.now();
+        }
+
         const { request: httpRequest } = this.proxyTarget.protocol === "https:" ? https : http;
+        const agent = this.proxyTarget.protocol === "https:" ? this._httpsAgent : this._httpAgent;
+
         const requestOptions: Exclude<Parameters<typeof httpRequest>[0], string> = {
             hostname: this.proxyTarget.hostname,
             protocol: this.proxyTarget.protocol,
             //@ts-expect-error
             path: req.url,
             method: req.method,
-            agent: this.proxyTarget.protocol === "https:" ? this._httpsAgent : this._httpAgent,
             headers: {
                 ...req.headers,
                 "Content-Length": Buffer.byteLength(rewrittenBody),
                 "content-length": Buffer.byteLength(rewrittenBody),
                 host: this.proxyTarget.host
-            }
+            },
+            agent,
+            timeout: 10000
         };
 
         const proxyReq = httpRequest(requestOptions);
-        
-        // Log transmission time
-        if (requestLogEntry) {
-            requestLogEntry.transmittedAt = Date.now();
-            requestLogEntry.retryCount = retryCount;
-        }
 
-        // Handle timeout with retry logic
+        // Handle timeout
         proxyReq.setTimeout(10000, () => {
-            if (hasResponded || requestDestroyed) return;
-            
-            debug.trace(`Proxy request timed out (attempt ${retryCount + 1}/${maxRetries + 1})`, requestOptions);
-            requestDestroyed = true;
+            debug.trace("Proxy request timed out", requestOptions);
+            if (requestLogEntry) {
+                requestLogEntry.success = false;
+                requestLogEntry.statusCode = 504;
+                requestLogEntry.error = "Request timeout";
+                // Add failed keys to retry set
+                if (requestLogEntry.keys) {
+                    const sizeBefore = this._failedKeys.size;
+                    requestLogEntry.keys.forEach((key) => this._failedKeys.add(key));
+                    const sizeAfter = this._failedKeys.size;
+                    if (sizeAfter > sizeBefore) {
+                        // Save to file asynchronously when new keys are added
+                        this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys:", err));
+                    }
+                }
+            }
             proxyReq.destroy();
-            
-            if (retryCount < maxRetries && !res.headersSent && !hasResponded) {
-                this._stats.retries++;
-                const delay = baseDelay * Math.pow(2, retryCount);
-                
-                // Extract keys from request body for better logging
-                let keys = 'unknown';
-                try {
-                    if (rewrittenBody && shouldRewrite) {
-                        const json = JSON.parse(rewrittenBody);
-                        const firstProvider = json.Providers?.[0];
-                        keys = firstProvider?.Payload?.Keys?.join(', ') || 'unknown';
-                    }
-                } catch (e) {
-                    // Keep default 'unknown'
-                }
-                
-                debug(`Retrying timeout request in ${delay}ms (attempt ${retryCount + 2}/${maxRetries + 1}) - keys: ${keys}, target: ${this.proxyTarget.host}`);
-                
-                setTimeout(() => {
-                    if (!hasResponded) {
-                        this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, retryCount + 1, requestLogEntry);
-                    }
-                }, delay);
-            } else if (!res.headersSent && !hasResponded) {
-                hasResponded = true;
-                this._recordRequestResult(shouldRewrite, req.method === "GET", false);
-                // Update log entry with failure
-                if (requestLogEntry) {
-                    requestLogEntry.success = false;
-                    requestLogEntry.statusCode = 504;
-                    requestLogEntry.error = "Gateway Timeout - Max retries exceeded";
-                }
+
+            if (!res.headersSent) {
                 res.writeHead(504);
-                res.end("Gateway Timeout - Max retries exceeded");
+                res.end("Gateway Timeout");
             }
         });
 
-        // Handle proxy request errors with retry logic
-        proxyReq.on("error", (e: any) => {
-            if (hasResponded || requestDestroyed) return;
-            
-            const errorCode = e.code || 'UNKNOWN';
-            const errorMessage = e.message || 'Unknown error';
-            
-            // Only log errors for PUT/POST requests
-            if (shouldRewrite) {
-                debug.trace(`Proxy error (attempt ${retryCount + 1}/${maxRetries + 1}):`, errorCode, errorMessage);
-            }
-            
-            requestDestroyed = true;
+        // Handle proxy request errors
+        proxyReq.on("error", (e) => {
             proxyReq.destroy();
-            
-            if (retryCount < maxRetries && !res.headersSent && !hasResponded && this._shouldRetryError(e)) {
-                this._stats.retries++;
-                const delay = baseDelay * Math.pow(2, retryCount);
-                
-                if (shouldRewrite) {
-                    // Extract keys from request body for better logging
-                    let keys = 'unknown';
-                    try {
-                        if (rewrittenBody) {
-                            const json = JSON.parse(rewrittenBody);
-                            const firstProvider = json.Providers?.[0];
-                            keys = firstProvider?.Payload?.Keys?.join(', ') || 'unknown';
-                        }
-                    } catch (e) {
-                        // Keep default 'unknown'
+
+            if (requestLogEntry) {
+                requestLogEntry.success = false;
+                requestLogEntry.statusCode = 500;
+                requestLogEntry.error = `Proxy error: ${e.message}`;
+                debug.trace(`Updated log entry with error for keys: ${requestLogEntry.keys.join(", ")}`);
+                // Add failed keys to retry set
+                if (requestLogEntry.keys) {
+                    const sizeBefore = this._failedKeys.size;
+                    requestLogEntry.keys.forEach((key) => this._failedKeys.add(key));
+                    const sizeAfter = this._failedKeys.size;
+                    if (sizeAfter > sizeBefore) {
+                        // Save to file asynchronously when new keys are added
+                        this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys:", err));
                     }
-                    
-                    debug(`Retrying request in ${delay}ms due to ${errorCode} (attempt ${retryCount + 2}/${maxRetries + 1}) - keys: ${keys}, target: ${this.proxyTarget.host}`);
                 }
-                
-                setTimeout(() => {
-                    if (!hasResponded) {
-                        this._makeProxyRequestWithRetry(req, res, rewrittenBody, shouldRewrite, retryCount + 1, requestLogEntry);
-                    }
-                }, delay);
-            } else if (!res.headersSent && !hasResponded) {
-                hasResponded = true;
-                this._recordRequestResult(shouldRewrite, req.method === "GET", false);
-                // Update log entry with failure
-                if (requestLogEntry) {
-                    requestLogEntry.success = false;
-                    requestLogEntry.statusCode = 502;
-                    requestLogEntry.error = `${errorCode}: ${errorMessage} (${retryCount + 1} attempts)`;
-                }
-                res.writeHead(502);
-                res.end(`Bad Gateway - ${errorCode}: ${errorMessage} (${retryCount + 1} attempts)`);
+            }
+
+            if (!res.headersSent) {
+                debug.error("proxy error:", e, "Request options", requestOptions);
+                res.writeHead(500);
+                res.end("Internal Server Error");
             }
         });
 
         // Handle the proxy response
-        proxyReq.on("response", (proxyRes: http.IncomingMessage) => {
-            if (hasResponded || requestDestroyed) {
-                proxyRes.destroy();
-                return;
-            }
-            
-            hasResponded = true;
+        proxyReq.on("response", (proxyRes) => {
             const statusCode = proxyRes.statusCode || 500;
             const isSuccess = statusCode >= 200 && statusCode < 300;
 
-            this._recordRequestResult(shouldRewrite, req.method === "GET", isSuccess);
-            
-            // Update log entry with final result
             if (requestLogEntry) {
                 requestLogEntry.success = isSuccess;
                 requestLogEntry.statusCode = statusCode;
                 if (!isSuccess) {
                     requestLogEntry.error = `HTTP ${statusCode}`;
-                }
-            }
-            
-            if (shouldRewrite) {
-                if (isSuccess) {
-                    debug.trace(`PUT/POST succeeded with status ${statusCode} - ${req.method} ${req.url}`);
-                } else {
-                    const responseChunks: Buffer[] = [];
-                    proxyRes.on("data", (chunk: Buffer) => {
-                        responseChunks.push(chunk);
-                    });
-                    proxyRes.on("end", () => {
-                        let responseBody = "";
-                        try {
-                            const rawResponse = Buffer.concat(responseChunks);
-                            if (proxyRes.headers["content-encoding"] === "gzip") {
-                                responseBody = gunzipSync(rawResponse).toString("utf8");
-                            } else {
-                                responseBody = rawResponse.toString("utf8");
-                            }
-                        } catch (e) {
-                            const error = e as Error;
-                            responseBody = `[Error decoding response: ${error.message}]`;
+                    // Add failed keys to retry set
+                    if (requestLogEntry.keys) {
+                        const sizeBefore = this._failedKeys.size;
+                        requestLogEntry.keys.forEach((key) => this._failedKeys.add(key));
+                        const sizeAfter = this._failedKeys.size;
+                        if (sizeAfter > sizeBefore) {
+                            // Save to file asynchronously when new keys are added
+                            this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys:", err));
                         }
-
-                        debug.error(
-                            `${req.method} request failed with status ${statusCode} - ${req.method} ${req.url} to ${this.proxyTarget.host}${req.url}`,
-                            {
-                                statusCode,
-                                headers: proxyRes.headers,
-                                responseBody: responseBody.length > 500 ? responseBody.substring(0, 500) + "..." : responseBody,
-                                requestHeaders: req.headers,
-                                requestBodyLength: rewrittenBody?.length || 0
-                            }
-                        );
-                    });
+                    }
                 }
             }
 
-            proxyRes.on("error", (err: Error) => {
-                if (shouldRewrite) {
-                    debug.error("Proxy response error:", err, "Proxy response", proxyRes);
-                }
+            // Handle proxy response errors
+            proxyRes.on("error", (err) => {
+                debug.error("Proxy response error:", err);
                 if (!res.headersSent) {
                     res.writeHead(500);
                     res.end("Proxy Response Error");
                 }
+                if (requestLogEntry) {
+                    requestLogEntry.success = false;
+                    requestLogEntry.statusCode = 500;
+                    requestLogEntry.error = `Proxy response error: ${err.message}`;
+                }
                 proxyRes.destroy(err);
             });
 
+            // Forward successful response
             if (!res.headersSent) {
                 res.writeHead(statusCode, proxyRes.headers);
                 proxyRes.pipe(res);
-
-                res.on("finish", () => {
-                    proxyRes.resume();
-                });
             }
+
+            res.on("finish", () => {
+                proxyRes.resume();
+            });
         });
 
         proxyReq.write(rewrittenBody);
         proxyReq.end();
-    }
-    
-    private _shouldRetryError(error: any): boolean {
-        const retryableCodes = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENETUNREACH', 'ENOTFOUND'];
-        return retryableCodes.includes(error.code);
-    }
-
-    private _recordRequestResult(shouldRewrite: boolean, isGet: boolean, isSuccess: boolean) {
-        if (shouldRewrite) {
-            this._stats.putPostTotal++;
-            if (isSuccess) {
-                this._stats.putPostSuccessful++;
-            } else {
-                this._stats.putPostFailed++;
-            }
-        } else if (isGet) {
-            this._stats.getTotal++;
-            if (isSuccess) {
-                this._stats.getSuccessful++;
-            } else {
-                this._stats.getFailed++;
-            }
-        }
     }
 
     // get up to date listen addresses from kubo every x minutes
     async _startUpdateAddressesLoop() {
         if (!this.kuboClients?.length) throw Error("should have a defined kubo rpc client option to start the address rewriter");
 
-        const tryUpdateAddresses = async () => {
-            let successCount = 0;
-            let totalAddresses = 0;
+        const isRetriableError = (error: any): boolean => {
+            return error?.response?.status === 500 || error?.status === 500 || error?.statusCode === 500;
+        };
 
-            for (const kuboClient of this.kuboClients) {
-                try {
-                    const idRes = await kuboClient.id();
-                    const swarmAddrsRes = await kuboClient.swarm.addrs();
+        const tryUpdateAddressesForClient = async (kuboClient: Plebbit["clients"]["kuboRpcClients"][string]["_client"]): Promise<void> => {
+            return new Promise((resolve) => {
+                const operation = retry.operation({
+                    retries: 3,
+                    factor: 2,
+                    minTimeout: 1000,
+                    maxTimeout: 8000
+                });
 
-                    const peerId: string = idRes.id.toString();
-                    if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
+                operation.attempt(async (currentAttempt) => {
+                    try {
+                        const idRes = await kuboClient.id();
+                        const swarmAddrsRes = await kuboClient.swarm.addrs();
 
-                    const swarmListeningAddresses = swarmAddrsRes.filter((swarmAddr) => swarmAddr.id.toString() === peerId);
+                        const peerId: string = idRes.id.toString();
+                        if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
 
-                    const addresses: string[] = remeda.unique([
-                        ...idRes.addresses.map((addr) => addr.toString()),
-                        ...remeda.flatten(swarmListeningAddresses.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
-                    ]);
+                        const swarmListeningAddresses = swarmAddrsRes.filter((swarmAddr) => swarmAddr.id.toString() === peerId);
 
-                    if (addresses.length === 0) {
-                        debug.error(`No addresses found for peer ${peerId} from kubo client`);
-                        continue;
+                        const addresses: string[] = remeda.unique([
+                            ...idRes.addresses.map((addr) => addr.toString()),
+                            ...remeda.flatten(swarmListeningAddresses.map((swarmAddr) => swarmAddr.addrs.map((addr) => addr.toString())))
+                        ]);
+
+                        this.addresses[peerId] = addresses;
+                        resolve();
+                    } catch (e) {
+                        const error = <Error>e;
+
+                        if (isRetriableError(error)) {
+                            debug(`tryUpdateAddresses attempt ${currentAttempt}/4 failed with 500 error:`, error.message, {
+                                kuboConfig: kuboClient.getEndpointConfig()
+                            });
+                            if (operation.retry(error)) return;
+                        }
+
+                        debug("tryUpdateAddresses error:", error.message, { kuboConfig: kuboClient.getEndpointConfig() });
+                        resolve(); // Don't reject, just log and continue with other clients
                     }
+                });
+            });
+        };
 
-                    const previousCount = this.addresses[peerId]?.length || 0;
-                    this.addresses[peerId] = addresses;
-                    successCount++;
-                    totalAddresses += addresses.length;
-
-                    debug.trace(`Updated addresses for peer ${peerId}: ${previousCount} -> ${addresses.length} addresses`);
-                } catch (e) {
-                    const error = <Error>e;
-                    debug.error("tryUpdateAddresses error:", error.message, { kuboConfig: kuboClient.getEndpointConfig() });
-                }
-            }
-
-            if (successCount === 0) {
-                debug.error(`Failed to update addresses for all ${this.kuboClients.length} kubo clients`);
-            } else {
-                debug.trace(`Updated addresses for ${successCount}/${this.kuboClients.length} clients, total ${totalAddresses} addresses`);
-            }
+        const tryUpdateAddresses = async () => {
+            const promises = this.kuboClients.map(tryUpdateAddressesForClient);
+            await Promise.allSettled(promises);
         };
         await tryUpdateAddresses();
         this._updateAddressesInterval = setInterval(tryUpdateAddresses, 1000 * 60);
     }
 
-    private _startStatsReporting() {
-        const reportStats = () => {
-            const timeSinceStart = (Date.now() - this._stats.startTime) / 1000 / 60; // minutes
-            const putPostSuccessRate =
-                this._stats.putPostTotal > 0 ? ((this._stats.putPostSuccessful / this._stats.putPostTotal) * 100).toFixed(1) : "0.0";
-            const getSuccessRate = this._stats.getTotal > 0 ? ((this._stats.getSuccessful / this._stats.getTotal) * 100).toFixed(1) : "0.0";
-
-            debug(
-                `Proxy Stats (${timeSinceStart.toFixed(1)}min) [${this.proxyTarget.host}]: ` +
-                    `GET: ${this._stats.getTotal} total, ${this._stats.getSuccessful} success, ${this._stats.getFailed} failed (${getSuccessRate}%) | ` +
-                    `PUT/POST: ${this._stats.putPostTotal} total, ${this._stats.putPostSuccessful} success, ${this._stats.putPostFailed} failed (${putPostSuccessRate}%) | ` +
-                    `Retries: ${this._stats.retries}`
-            );
-        };
-
-        this._statsReportInterval = setInterval(reportStats, this._statsReportIntervalMs);
-    }
-
-    private _startRequestLogging() {
-        if (!this._plebbit.dataPath) {
-            return;
-        }
-        
-        const writeInterval = 5 * 1000; // 5 seconds
-        this._logWriteInterval = setInterval(async () => {
-            await this._writeRequestLogs();
-        }, writeInterval);
-    }
-
     private _initializeLogFilePath(): string {
         if (!this._plebbit.dataPath) {
-            return "";
+            throw new Error("plebbit.dataPath must be defined for request logging");
         }
-        
+
         // Get kubo client hostname:port (use first one)
         const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
         let kuboIdentifier = "unknown";
-        if (kuboConfig && typeof kuboConfig === 'object' && 'host' in kuboConfig && 'port' in kuboConfig) {
+        if (kuboConfig && typeof kuboConfig === "object" && "host" in kuboConfig && "port" in kuboConfig) {
             kuboIdentifier = `${kuboConfig.host}_${kuboConfig.port}`;
         }
-        
+
         // Get proxy target hostname:port
-        const proxyIdentifier = `${this.proxyTarget.hostname}_${this.proxyTarget.port || (this.proxyTarget.protocol === 'https:' ? '443' : '80')}`;
-        
+        const proxyIdentifier = `${this.proxyTarget.hostname}_${this.proxyTarget.port || (this.proxyTarget.protocol === "https:" ? "443" : "80")}`;
+
         const fileName = `${kuboIdentifier}_${proxyIdentifier}.json`;
-        return path.join(this._plebbit.dataPath, '.address-rewriter', fileName);
+        return path.join(this._plebbit.dataPath, ".address-rewriter", fileName);
+    }
+
+    private _initializeFailedKeysFilePath(): string {
+        if (!this._plebbit.dataPath) {
+            throw new Error("plebbit.dataPath must be defined for failed keys storage");
+        }
+
+        // Get kubo client hostname:port (use first one)
+        const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
+        let kuboIdentifier = "unknown";
+        if (kuboConfig && typeof kuboConfig === "object" && "host" in kuboConfig && "port" in kuboConfig) {
+            kuboIdentifier = `${kuboConfig.host}_${kuboConfig.port}`;
+        }
+
+        // Get proxy target hostname:port
+        const proxyIdentifier = `${this.proxyTarget.hostname}_${this.proxyTarget.port || (this.proxyTarget.protocol === "https:" ? "443" : "80")}`;
+
+        const fileName = `failed_keys_${kuboIdentifier}_${proxyIdentifier}.json`;
+        return path.join(this._plebbit.dataPath, ".address-rewriter", fileName);
     }
 
     private _extractKeysFromRequestBody(body: string): string[] {
@@ -581,10 +451,8 @@ export class AddressesRewriterProxyServer {
         }
     }
 
-    private _isWritingLogs = false;
-
     private async _writeRequestLogs(): Promise<void> {
-        if (this._requestLogBuffer.length === 0 || !this._plebbit.dataPath || this._isWritingLogs) {
+        if (this._requestLogBuffer.length === 0 || this._isWritingLogs) {
             return;
         }
 
@@ -600,7 +468,7 @@ export class AddressesRewriterProxyServer {
             // Read existing logs if file exists
             let existingLogs: RequestLogEntry[] = [];
             try {
-                const existingData = await fs.readFile(this._logFilePath, 'utf8');
+                const existingData = await fs.readFile(this._logFilePath, "utf8");
                 existingLogs = JSON.parse(existingData);
             } catch {
                 // File doesn't exist or is invalid, start fresh
@@ -621,6 +489,120 @@ export class AddressesRewriterProxyServer {
         } finally {
             this._isWritingLogs = false;
         }
+    }
+
+    private _startRequestLogging() {
+        const writeInterval = 5 * 1000; // 5 seconds
+        this._logWriteInterval = setInterval(async () => {
+            await this._writeRequestLogs();
+        }, writeInterval);
+    }
+
+    private async _startFailedKeysRetry() {
+        // Load failed keys from file on startup
+        await this._loadFailedKeysFromFile();
+
+        // Start 2-minute interval for retrying failed keys
+        const retryInterval = 2 * 60 * 1000; // 2 minutes
+        this._retryInterval = setInterval(async () => {
+            await this._retryFailedKeys();
+        }, retryInterval);
+
+        debug(`Started failed keys retry with ${this._failedKeys.size} keys from previous sessions`);
+    }
+
+    private async _loadFailedKeysFromFile() {
+        try {
+            const data = await fs.readFile(this._failedKeysFilePath, "utf8");
+            const keys = JSON.parse(data);
+            if (Array.isArray(keys)) {
+                keys.forEach((key) => this._failedKeys.add(key));
+            }
+            debug(`Loaded ${keys.length} failed keys from file`);
+        } catch (error) {
+            // File doesn't exist or is corrupted, start with empty set
+            debug("No existing failed keys file found, starting fresh");
+        }
+    }
+
+    private async _saveFailedKeysToFile() {
+        if (this._isWritingFailedKeys) {
+            debug.trace("Skipping failed keys write - already in progress");
+            return;
+        }
+
+        this._isWritingFailedKeys = true;
+        try {
+            await fs.mkdir(path.dirname(this._failedKeysFilePath), { recursive: true });
+            const keys = Array.from(this._failedKeys);
+            await fs.writeFile(this._failedKeysFilePath, JSON.stringify(keys, null, 2));
+            if (keys.length === 0) {
+                debug(`All keys successfully provided - no failed keys to save`);
+            } else {
+                debug(`Saved ${keys.length} failed keys to file`);
+            }
+        } catch (error) {
+            debug.error("Failed to save failed keys to file:", error);
+        } finally {
+            this._isWritingFailedKeys = false;
+        }
+    }
+
+    private async _retryFailedKeys() {
+        if (this._failedKeys.size === 0) {
+            debug(`No failed keys to retry - all keys successfully provided`);
+            return;
+        }
+
+        debug(`Retrying ${this._failedKeys.size} failed keys`);
+
+        const keysToRetry = Array.from(this._failedKeys);
+        const kuboClient = this.kuboClients?.[0];
+
+        if (!kuboClient) {
+            debug.error("No kubo client available for retry");
+            return;
+        }
+
+        const successfulKeys: string[] = [];
+        const stillFailedKeys: string[] = [];
+        const keysToDiscard: string[] = [];
+
+        // Process each key individually to get better granular control
+        for (const key of keysToRetry) {
+            try {
+                debug(`Providing key to HTTP routers: ${key}`);
+
+                const events: RoutingQueryEvent[] = [];
+                for await (const event of kuboClient.routing.provide(key, { recursive: true, verbose: true })) {
+                    events.push(event);
+                    debug(`Routing provide event for ${key}:`, event);
+                }
+
+                successfulKeys.push(key);
+                debug(`Successfully provided key: ${key}`);
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                
+                // If block not found locally, discard this key - no point in retrying
+                if (errorMessage.includes('block') && errorMessage.includes('not found locally')) {
+                    keysToDiscard.push(key);
+                    debug(`Discarding key ${key} - block not found locally, will not retry`);
+                } else {
+                    stillFailedKeys.push(key);
+                    debug.error(`Failed to provide key ${key}:`, error);
+                }
+            }
+        }
+
+        // Remove successful keys and keys to discard from failed set
+        successfulKeys.forEach((key) => this._failedKeys.delete(key));
+        keysToDiscard.forEach((key) => this._failedKeys.delete(key));
+
+        // Save updated failed keys to file
+        this._saveFailedKeysToFile().catch((err) => debug.error("Failed to save keys after retry:", err));
+
+        debug(`Retry completed: ${successfulKeys.length} successful, ${stillFailedKeys.length} still failed, ${keysToDiscard.length} discarded`);
     }
 }
 
