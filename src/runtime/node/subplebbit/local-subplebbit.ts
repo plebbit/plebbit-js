@@ -35,7 +35,8 @@ import {
     removeMfsFilesSafely,
     removeBlocksFromKuboNode,
     ipfsCpWithRmIfFails,
-    retryKuboIpfsAddAndProvide
+    retryKuboIpfsAddAndProvide,
+    getIpnsRecordInLocalKuboNode
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -159,6 +160,7 @@ import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
 import pTimeout from "p-timeout";
 import { FilesCpOptions } from "kubo-rpc-client";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
@@ -200,7 +202,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
     private _updateLoopPromise?: Promise<void> = undefined;
-    private _firstTimePublishingIpns: boolean = false;
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
     private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
         SubplebbitEvents,
@@ -517,31 +518,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return postUpdates;
     }
 
-    async _resolveIpnsAndLogIfPotentialProblematicSequence() {
-        const log = Logger("plebbit-js:local-subplebbit:_resolveIpnsAndLogIfPotentialProblematicSequence");
-        if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
-        if (!this.updateCid) return;
-        try {
-            const ipnsCid = await this._clientsManager.resolveIpnsToCidP2P(this.signer.ipnsKeyName, { timeoutMs: 120000 });
-            log.trace("Resolved sub", this.address, "IPNS key", this.signer.ipnsKeyName, "to", ipnsCid);
-            if (ipnsCid && this.updateCid && ipnsCid !== this.updateCid) {
-                log.error(
-                    "subplebbit",
-                    this.address,
-                    "IPNS key",
-                    this.signer.ipnsKeyName,
-                    "points to",
-                    ipnsCid,
-                    "but we expected it to point to",
-                    this.updateCid,
-                    "This could result an IPNS record with invalid sequence number"
-                );
-            }
-        } catch (e) {
-            log.trace("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
-        }
-    }
-
     private _calculateLatestUpdateTrigger() {
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
@@ -645,17 +621,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         });
 
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
-        if (this._firstTimePublishingIpns) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
+        const lastPublishedIpnsRecordData = <any | undefined>await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
+        const decodedIpnsRecord: any | undefined = lastPublishedIpnsRecordData
+            ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
+            : undefined;
+        const ipnsSequence: BigInt | undefined = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
         const publishRes = await kuboRpcClient._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
-            ttl
+            ttl,
+            ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
+
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
         await this._unpinStaleCids();
         if (this._blocksToRm.length > 0) {
@@ -675,6 +657,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         this._subplebbitUpdateTrigger = false;
 
+        const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
+
+        await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
+
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
         this._changeStateEmitEventEmitStateChangeEvent({
@@ -684,7 +670,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private shouldResolveDomainForVerification() {
-        return this.address.includes(".") && (Math.random() < 0.005 || this._firstTimePublishingIpns); // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
+        return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
     private async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
@@ -2184,7 +2170,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
-            this._firstTimePublishingIpns = false;
         } catch (e) {
             //@ts-expect-error
             e.details = { ...e.details, subplebbitAddress: this.address };
@@ -2478,7 +2463,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
 
             this._subplebbitUpdateTrigger = true;
-            this._firstTimePublishingIpns = true;
             this._setStartedStateWithEmission("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();

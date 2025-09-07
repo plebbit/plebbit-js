@@ -38,6 +38,7 @@ import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
 import retry from "retry";
 import PeerId from "peer-id";
+import { unmarshalIPNSRecord } from "ipns";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -704,4 +705,15 @@ export async function ipfsCpWithRmIfFails({
             }
         });
     });
+}
+
+export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient, ipnsName: string) {
+    // Fetch IPNS record from local routing
+    for await (const event of kuboRpcClient._client.routing.get(`/ipns/${ipnsName}`, {})) {
+        if (event.name === "VALUE") {
+            return unmarshalIPNSRecord(event.value);
+        }
+    }
+
+    throw new PlebbitError("ERR_IPNS_RECORD_NOT_FOUND", { ipnsName });
 }
