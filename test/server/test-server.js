@@ -5,7 +5,6 @@ import { execSync, exec } from "child_process";
 import {
     startSubplebbits,
     mockRpcServerPlebbit,
-    mockGatewayPlebbit,
     mockRpcServerForTests,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../dist/node/test/test-util.js";
@@ -24,6 +23,46 @@ import querystring from "querystring";
 import fs from "fs";
 
 process.env["PLEBBIT_CONFIGS"] = process.env["PLEBBIT_CONFIGS"] || "local-kubo-rpc";
+process.env["DEBUG"] = process.env["DEBUG"] || "*";
+
+// 🔧 ENHANCED: Capture test-server.js stdout and stderr
+const testServerLogDir = path.join(process.cwd(), "test-server");
+const logTimestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+const testServerStdoutLog = path.join(testServerLogDir, "stdout.log");
+const testServerStderrLog = path.join(testServerLogDir, "stderr.log");
+
+// Create test-server directory if it doesn't exist
+fs.mkdirSync(testServerLogDir, { recursive: true });
+
+// Create log streams
+const testServerStdoutStream = fs.createWriteStream(testServerStdoutLog, { flags: "a" });
+const testServerStderrStream = fs.createWriteStream(testServerStderrLog, { flags: "a" });
+
+// Capture original stdout/stderr write functions
+const originalStdoutWrite = process.stdout.write;
+const originalStderrWrite = process.stderr.write;
+
+// Override stdout write to capture output
+process.stdout.write = function(chunk, encoding, fd) {
+    testServerStdoutStream.write(chunk);
+    return originalStdoutWrite.call(process.stdout, chunk, encoding, fd);
+};
+
+// Override stderr write to capture output
+process.stderr.write = function(chunk, encoding, fd) {
+    testServerStderrStream.write(chunk);
+    return originalStderrWrite.call(process.stderr, chunk, encoding, fd);
+};
+
+// Handle process exit to close streams
+process.on('exit', () => {
+    testServerStdoutStream.end();
+    testServerStderrStream.end();
+});
+
+console.log(`📝 Test server logs:`);
+console.log(`   📄 stdout: ${testServerStdoutLog}`);
+console.log(`   📄 stderr: ${testServerStderrLog}`);
 
 const ipfsPath = getIpfsPath();
 
@@ -144,6 +183,7 @@ const startIpfsNode = async (nodeArgs) => {
         ...process.env, // Inherit ALL environment variables from parent process
         IPFS_PATH: nodeArgs.dir,
         // Set debug logging by default
+        DEBUG: process.env.DEBUG || "*",
         IPFS_LOGGING: process.env.IPFS_LOGGING || "debug",
         GOLOG_LOG_LEVEL: process.env.GOLOG_LOG_LEVEL || "debug",
         // Only override GOLOG_FILE if it contains {NODE} placeholder or if not set
@@ -625,6 +665,7 @@ const setUpMockPubsubServer = async () => {
         ".plebbit2",
         ".plebbit-rpc-server",
         ".plebbit-rpc-server-remote",
+        "test-server", // Add test-server directory cleanup
         ...ipfsNodesToRun.map((node) => path.basename(node.dir))
     ];
     for (const dir of dirsToDelete) await fs.promises.rm(path.join(process.cwd(), dir), { recursive: true, force: true });
