@@ -43,19 +43,19 @@ const originalStdoutWrite = process.stdout.write;
 const originalStderrWrite = process.stderr.write;
 
 // Override stdout write to capture output
-process.stdout.write = function(chunk, encoding, fd) {
+process.stdout.write = function (chunk, encoding, fd) {
     testServerStdoutStream.write(chunk);
     return originalStdoutWrite.call(process.stdout, chunk, encoding, fd);
 };
 
 // Override stderr write to capture output
-process.stderr.write = function(chunk, encoding, fd) {
+process.stderr.write = function (chunk, encoding, fd) {
     testServerStderrStream.write(chunk);
     return originalStderrWrite.call(process.stderr, chunk, encoding, fd);
 };
 
 // Handle process exit to close streams
-process.on('exit', () => {
+process.on("exit", () => {
     testServerStdoutStream.end();
     testServerStderrStream.end();
 });
@@ -110,7 +110,6 @@ const anotherOfflineNodeArgs = {
     apiPort: 15004,
     gatewayPort: 18083,
     swarmPort: 4004,
-    daemonArgs: "--offline",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
@@ -187,9 +186,13 @@ const startIpfsNode = async (nodeArgs) => {
         IPFS_LOGGING: process.env.IPFS_LOGGING || "debug",
         GOLOG_LOG_LEVEL: process.env.GOLOG_LOG_LEVEL || "debug",
         // Only override GOLOG_FILE if it contains {NODE} placeholder or if not set
-        GOLOG_FILE: process.env.GOLOG_FILE?.includes("{NODE}") 
+        GOLOG_FILE: process.env.GOLOG_FILE?.includes("{NODE}")
             ? process.env.GOLOG_FILE.replace("{NODE}", path.basename(nodeArgs.dir))
-            : process.env.GOLOG_FILE || path.join(nodeArgs.dir, `kubo_${path.basename(nodeArgs.dir)}_golog_${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.log`)
+            : process.env.GOLOG_FILE ||
+              path.join(
+                  nodeArgs.dir,
+                  `kubo_${path.basename(nodeArgs.dir)}_golog_${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.log`
+              )
     };
 
     // 🔧 ENHANCED: Create log files for each IPFS node within the node directory

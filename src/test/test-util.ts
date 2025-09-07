@@ -534,6 +534,14 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
     plebbit.on("error", (e) => {
         log.error("Plebbit error", e);
     });
+
+    for (const element of Object.keys(plebbit.clients.kuboRpcClients)) {
+        // provide will throw on tests because we're not connected to any peers
+        plebbit.clients.kuboRpcClients[element]._client.routing.provide = async function* () {
+            yield { type: "mock", data: {} } as any; // Cast to satisfy RoutingQueryEvent type
+        };
+    }
+
     return plebbit;
 }
 
