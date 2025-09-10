@@ -708,12 +708,12 @@ export async function ipfsCpWithRmIfFails({
 }
 
 export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient, ipnsName: string) {
-    // Fetch IPNS record from local routing
-    for await (const event of kuboRpcClient._client.routing.get(`/ipns/${ipnsName}`, {})) {
-        if (event.name === "VALUE") {
-            return unmarshalIPNSRecord(event.value);
-        }
-    }
-
+    const gatewayMultiaddr = await kuboRpcClient._client.config.get("Addresses.Gateway"); // need to be fetched from config Addresses.Gateway
+    const parts = gatewayMultiaddr.split("/").filter(Boolean);
+    const gatewayUrl = `http://${parts[1]}:${parts[3]}`;
+    const ipnsFetchUrl = `${gatewayUrl}/ipns/${ipnsName}?format=ipns-record`;
+    const ipnsRecordRaw = await (await fetch(ipnsFetchUrl)).bytes();
+    const ipnsRecord = unmarshalIPNSRecord(ipnsRecordRaw);
+    return ipnsRecord;
     throw new PlebbitError("ERR_IPNS_RECORD_NOT_FOUND", { ipnsName });
 }
