@@ -30,3 +30,7 @@ export const RepliesPagesIpfsSchema = z.object({
     pages: z.record(ReplySortNameSchema, PageIpfsSchema), // pre loaded pages
     pageCids: z.record(ReplySortNameSchema, CidStringSchema).optional() // pageCids is optional if all replies can fit in one preloaded page
 });
+
+export const ModQueuePageIpfsSchema = z.object({
+    pageCids: z.record(z.string().min(1), CidStringSchema)
+});

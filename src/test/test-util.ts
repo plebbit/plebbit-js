@@ -169,9 +169,10 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
 
 export async function loadAllPagesBySortName(pageSortName: string, pagesInstance: BasePages) {
     if (!pageSortName) throw Error("Can't load all pages with undefined pageSortName");
-    if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages[pageSortName])
+    if (Object.keys(pagesInstance.pageCids).length === 0 && pagesInstance.pages && pagesInstance.pages[pageSortName])
         return pagesInstance.pages[pageSortName].comments;
-    let sortedCommentsPage = pagesInstance.pages[pageSortName] || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
+    let sortedCommentsPage =
+        (pagesInstance.pages && pagesInstance.pages[pageSortName]) || (await pagesInstance.getPage(pagesInstance.pageCids[pageSortName]));
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);

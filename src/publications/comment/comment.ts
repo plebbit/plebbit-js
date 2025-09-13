@@ -273,7 +273,7 @@ export class Comment
         } else if (!newReplies.pageCids && "pages" in newReplies && newReplies.pages) {
             // only pages is provided
             this.replies.updateProps({
-                ...parseRawPages(newReplies, repliesCreationTimestamp),
+                ...parseRawPages(newReplies),
                 subplebbit: this.replies._subplebbit,
                 pageCids: {}
             });
@@ -284,7 +284,7 @@ export class Comment
             if (shouldUpdateReplies) {
                 log.trace(`Updating the props of comment instance (${this.cid}) replies`);
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
-                    parseRawPages(newReplies, repliesCreationTimestamp)
+                    parseRawPages(newReplies)
                 );
                 this.replies.updateProps({
                     ...parsedPages,

@@ -201,6 +201,7 @@ export enum messages {
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
     ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT = "The parent cid of comment in page is not correct",
     ERR_PAGE_SIGNATURE_IS_INVALID = "The signature of one of the comment in the page is invalid",
+    ERR_MOD_QUEUE_PAGE_IS_INVALID = "The signature of mod queue page is invalid",
 
     // Subplebbit rejections of pubsub messages
     ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST = "Received a challenge answer without a prior challenge request",

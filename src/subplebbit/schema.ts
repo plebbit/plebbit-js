@@ -11,7 +11,7 @@ import {
     SignerWithAddressPublicKeySchema,
     SubplebbitAddressSchema
 } from "../schema/schema.js";
-import { PostsPagesIpfsSchema } from "../pages/schema.js";
+import { ModQueuePageIpfsSchema, PostsPagesIpfsSchema } from "../pages/schema.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import * as remeda from "remeda";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
@@ -160,7 +160,8 @@ export const SubplebbitChallengeSettingSchema = z
         name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
         options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
         exclude: ChallengeExcludeSchema.array().nonempty().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
-        description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
+        description: z.string().optional(), // describe in the frontend what kind of challenge the user will receive when publishing
+        pendingApproval: z.boolean().optional()
     })
     .strict()
     .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
@@ -191,7 +192,8 @@ export const SubplebbitChallengeSchema = z
         description: ChallengeFileSchema.shape.description,
         challenge: ChallengeFileSchema.shape.challenge,
         type: ChallengeFileSchema.shape.type,
-        caseInsensitive: ChallengeFileSchema.shape.caseInsensitive
+        caseInsensitive: ChallengeFileSchema.shape.caseInsensitive,
+        pendingApproval: z.boolean().optional()
     })
     .passthrough();
 export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeSettingSchema).returns(ChallengeFileSchema);
@@ -201,6 +203,7 @@ export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeS
 export const SubplebbitIpfsSchema = z
     .object({
         posts: PostsPagesIpfsSchema.optional(),
+        modQueue: ModQueuePageIpfsSchema.optional(),
         challenges: SubplebbitChallengeSchema.array(),
         signature: JsonSignatureSchema,
         encryption: SubplebbitEncryptionSchema,

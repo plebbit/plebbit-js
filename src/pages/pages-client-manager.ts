@@ -2,7 +2,7 @@ import { BaseClientsManager, OptionsToLoadFromGateway } from "../clients/base-cl
 import type { PageIpfs } from "./types.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
-import { BasePages, PostsPages, RepliesPages } from "./pages.js";
+import { BasePages, ModQueuePages, PostsPages, RepliesPages } from "./pages.js";
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "./util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
@@ -18,9 +18,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
         libp2pJsClients: { [sortType: string]: { [libp2pJsClientKey: string]: PagesLibp2pJsClient } };
     };
 
-    protected _pages: RepliesPages | PostsPages;
+    protected _pages: RepliesPages | PostsPages | ModQueuePages; // can be undefined if it's a mod queue
 
-    constructor(opts: { pages: RepliesPages | PostsPages; plebbit: Plebbit }) {
+    constructor(opts: { pages: BasePagesClientsManager["_pages"]; plebbit: Plebbit }) {
         super(opts.plebbit);
         this._pages = opts.pages;
         //@ts-expect-error
@@ -306,6 +306,19 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
 }
 
 export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager {
+    override clients!: {
+        ipfsGateways: Record<keyof typeof POSTS_SORT_TYPES, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
+        kuboRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
+        plebbitRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
+        libp2pJsClients: Record<keyof typeof POSTS_SORT_TYPES, { [libp2pJsClientKey: string]: PagesIpfsGatewayClient }>;
+    };
+
+    protected override getSortTypes() {
+        return remeda.keys.strict(POSTS_SORT_TYPES);
+    }
+}
+
+export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
     override clients!: {
         ipfsGateways: Record<keyof typeof POSTS_SORT_TYPES, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         kuboRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
