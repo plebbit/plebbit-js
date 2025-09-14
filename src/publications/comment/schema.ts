@@ -147,7 +147,9 @@ export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.p
     cid: true,
     signature: true,
     protocolVersion: true
-}).strict();
+})
+    .merge(z.object({ pendingApproval: z.boolean().optional() }))
+    .strict();
 
 export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CommentUpdateForChallengeVerificationSchema.shape, ["signature"])
@@ -178,7 +180,8 @@ export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     rowid: z.number().nonnegative().int(), // this field is from sqlite
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    extraProps: z.object({}).passthrough().optional()
+    extraProps: z.object({}).passthrough().optional(),
+    pendingApproval: z.boolean().optional()
 }).strict();
 
 // Comment pubsub message here
@@ -189,6 +192,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
         ...remeda.keys.strict(CommentsTableRowSchema.shape),
         ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
         ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
+        ...CommentUpdateForChallengeVerificationSignedPropertyNames,
         ...CommentUpdateSignedPropertyNames,
         "original",
         "shortCid",

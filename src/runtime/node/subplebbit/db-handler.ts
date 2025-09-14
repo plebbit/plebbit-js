@@ -265,6 +265,7 @@ export class DbHandler {
                 linkHtmlTagName TEXT NULLABLE,
                 flair TEXT NULLABLE, -- JSON
                 spoiler INTEGER NULLABLE, -- BOOLEAN (0/1)
+                pendingApproval INTEGER NULLABLE, -- BOOLEAN (0/1)
                 nsfw INTEGER NULLABLE, -- BOOLEAN (0/1)
                 extraProps TEXT NULLABLE, -- JSON
                 protocolVersion TEXT NOT NULL,
@@ -597,7 +598,7 @@ export class DbHandler {
 
         const allCommentEdits = allCommentEditsRaw.map((r) => {
             let parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            return this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit"]);
+            return this._intToBoolean(parsed, ["deleted", "spoiler", "nsfw", "isAuthorEdit", "pendingApproval"]);
         });
 
         const commentModerationSchemaKeys = remeda.keys.strict(ModeratorOptionsSchema.shape);
@@ -727,8 +728,8 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENTS} 
-            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, nsfw, extraProps, protocolVersion, insertedAt) 
-            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @nsfw, @extraProps, @protocolVersion, @insertedAt)
+            (cid, authorSignerAddress, author, link, linkWidth, linkHeight, thumbnailUrl, thumbnailUrlWidth, thumbnailUrlHeight, parentCid, postCid, previousCid, subplebbitAddress, content, timestamp, signature, title, depth, linkHtmlTagName, flair, spoiler, pendingApproval, nsfw, extraProps, protocolVersion, insertedAt) 
+            VALUES (@cid, @authorSignerAddress, @author, @link, @linkWidth, @linkHeight, @thumbnailUrl, @thumbnailUrlWidth, @thumbnailUrlHeight, @parentCid, @postCid, @previousCid, @subplebbitAddress, @content, @timestamp, @signature, @title, @depth, @linkHtmlTagName, @flair, @spoiler, @pendingApproval, @nsfw, @extraProps, @protocolVersion, @insertedAt)
         `);
 
         // Create default object with null values for all columns
@@ -862,6 +863,8 @@ export class DbHandler {
                 `(json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') IS NULL OR json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') != 1)`
             );
         }
+        // Always exclude comments pending approval from pages
+        whereClauses.push(`(${TABLES.COMMENTS}.pendingApproval IS NULL OR ${TABLES.COMMENTS}.pendingApproval != 1)`);
         return { whereClauses, params };
     }
 
@@ -985,6 +988,12 @@ export class DbHandler {
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
+        // Always exclude comments pending approval from replies pages
+
+        const clause = `(comments.pendingApproval IS NULL OR comments.pendingApproval != 1)`;
+        baseFilterClauses.push(clause);
+        recursiveFilterClauses.push(clause);
+
         baseWhereClausesStr = baseFilterClauses.length > 0 ? `AND ${baseFilterClauses.join(" AND ")}` : "";
         recursiveWhereClausesStr = recursiveFilterClauses.length > 0 ? `AND ${recursiveFilterClauses.join(" AND ")}` : "";
 
@@ -1099,30 +1108,39 @@ export class DbHandler {
             WITH RECURSIVE 
             direct_updates AS (
                 SELECT c.* FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE)
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
                 UNION
                 SELECT c.* FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1)
-                   OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1)
-                   OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1)
-                   OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.updatedAt - 1)
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND (
+                    EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1)
+                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1)
+                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1)
+                    OR EXISTS (SELECT 1 FROM ${TABLES.COMMENTS} cc WHERE cc.parentCid = c.cid AND cc.insertedAt >= cu.updatedAt - 1)
+                  )
             ),
             authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM direct_updates),
             parent_chain AS (
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid WHERE p.cid IS NOT NULL
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
                 UNION
-                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid WHERE p.cid IS NOT NULL
+                SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
             ),
             all_updates AS (
                 SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             )
-            SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid ORDER BY c.rowid
+            SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
+            WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+            ORDER BY c.rowid
         `;
         const results = this._db.prepare(query).all() as CommentsTableRow[];
         return results.map((r) => {
             const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pendingApproval"]) as CommentsTableRow;
             return removeNullUndefinedValues(result);
         });
     }
@@ -1189,7 +1207,7 @@ export class DbHandler {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE parentCid = ?`).all(parentCid) as CommentsTableRow[];
         return results.map((r) => {
             const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pendingApproval"]) as CommentsTableRow;
             return removeNullUndefinedValues(result);
         });
     }
@@ -1198,7 +1216,7 @@ export class DbHandler {
         const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as CommentsTableRow | undefined;
         if (!row) return undefined;
         const parsed = this._parseJsonFields(row, ["author", "signature", "flair", "extraProps"]);
-        const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]);
+        const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pendingApproval"]);
         return removeNullUndefinedValues(result);
     }
 
@@ -1246,7 +1264,9 @@ export class DbHandler {
                 SELECT c.cid, c.timestamp, cu.postUpdatesBucket AS current_bucket,
                     CASE ${caseClauses} ELSE ${maxBucket} END AS new_bucket
                 FROM ${TABLES.COMMENTS} as c INNER JOIN ${TABLES.COMMENT_UPDATES} as cu ON c.cid = cu.cid
-                WHERE c.subplebbitAddress = ? AND cu.postUpdatesBucket IS NOT NULL AND cu.postUpdatesBucket != ?
+                WHERE c.subplebbitAddress = ?
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                  AND cu.postUpdatesBucket IS NOT NULL AND cu.postUpdatesBucket != ?
             ) SELECT cid, timestamp, current_bucket AS currentBucket, new_bucket AS newBucket
             FROM post_data WHERE current_bucket != new_bucket
         `;
@@ -1286,6 +1306,13 @@ export class DbHandler {
         const commentEditFields = remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape);
 
         return remeda.pick(parsed, ["signature", ...signedKeys, ...commentEditFields]) as CommentEditPubsubMessagePublication;
+    }
+
+    removeCommentFromPendingApproval(comment: Pick<CommentsTableRow, "cid">): void {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:removeCommentFromPendingApproval");
+        const stmt = this._db.prepare(`UPDATE ${TABLES.COMMENTS} SET pendingApproval = 0 WHERE cid = ?`);
+        const res = stmt.run(comment.cid);
+        log.trace(`Removed pendingApproval for cid=${comment.cid}, changes=${res.changes}`);
     }
 
     private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
@@ -1406,7 +1433,7 @@ export class DbHandler {
         const results = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all() as CommentsTableRow[];
         return results.map((r) => {
             const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
-            const result = this._intToBoolean(parsed, ["spoiler", "nsfw"]) as CommentsTableRow;
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pendingApproval"]) as CommentsTableRow;
             return removeNullUndefinedValues(result);
         });
     }
@@ -1784,6 +1811,8 @@ export class DbHandler {
         if (pageOptions.excludeRemovedComments) postsQueryStr += ` AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE)`;
         if (pageOptions.excludeDeletedComments)
             postsQueryStr += ` AND (json_extract(cu.edit, '$.deleted') IS NULL OR json_extract(cu.edit, '$.deleted') != 1)`;
+        // Always exclude posts pending approval from posts pages
+        postsQueryStr += ` AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)`;
 
         const postsRaw = this._db.prepare(postsQueryStr).all(params) as (PrefixedCommentRow & { active_score: number })[];
         return postsRaw.map((postRaw) => {

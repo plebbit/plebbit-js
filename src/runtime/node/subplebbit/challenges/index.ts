@@ -280,7 +280,7 @@ const getChallengeVerification = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     subplebbit: LocalSubplebbit,
     getChallengeAnswers: GetChallengeAnswers
-): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess">> => {
+): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess"> & { pendingApproval?: boolean }> => {
     if (!challengeRequestMessage) {
         throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`);
     }

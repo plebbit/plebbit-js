@@ -36,7 +36,8 @@ import {
     removeBlocksFromKuboNode,
     ipfsCpWithRmIfFails,
     retryKuboIpfsAddAndProvide,
-    getIpnsRecordInLocalKuboNode
+    getIpnsRecordInLocalKuboNode,
+    calculateIpfsCidV0
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -809,6 +810,29 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             modTableRow.extraProps = remeda.pick(commentModRaw, extraPropsInMod);
         }
 
+        if ("approved" in modTableRow.commentModeration) {
+            if (modTableRow.commentModeration.approved) {
+                log(
+                    "commentModeration.approved=true, and therefore move comment from pending approval",
+                    "comment cid is",
+                    modTableRow.commentCid
+                );
+
+                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
+                await this._addCommentRowToIPFS(
+                    commentToBeEdited,
+                    Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
+                );
+            } else {
+                log(
+                    "commentModeration.approved=false, and therefore this comment will be removed entirely from DB",
+                    "comment cid is",
+                    modTableRow.commentCid
+                );
+                this._dbHandler.purgeComment(modTableRow.commentCid);
+            }
+        }
+
         if (modTableRow.commentModeration.purged) {
             log(
                 "commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs",
@@ -919,10 +943,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return getThumbnailPropsOfLink(link, this, this.settings.fetchThumbnailUrlsProxyUrl);
     }
 
-    private async _calculatePostProps(
-        comment: CommentPubsubMessagePublication,
-        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
-    ): Promise<Pick<CommentIpfsType, "previousCid" | "depth">> {
+    private async _calculateLatestPostProps(): Promise<Pick<CommentIpfsType, "previousCid" | "depth">> {
         this._dbHandler.createTransaction();
         const previousCid = this._dbHandler.queryLatestPostCid()?.cid;
         this._dbHandler.commitTransaction();
@@ -930,8 +951,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _calculateReplyProps(
-        comment: CommentPubsubMessagePublication,
-        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
+        comment: CommentPubsubMessagePublication
     ): Promise<Pick<CommentIpfsType, "previousCid" | "depth" | "postCid">> {
         if (!comment.parentCid) throw Error("Reply has to have parentCid");
 
@@ -951,27 +971,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async storeComment(
         commentPubsub: CommentPubsubMessagePublication,
-        request: DecryptedChallengeRequestMessageType
+        pendingApproval?: boolean
     ): Promise<{ comment: CommentIpfsType; cid: CommentUpdateType["cid"] }> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
 
         const commentIpfs = <CommentIpfsType>{
             ...commentPubsub,
             ...(await this._calculateLinkProps(commentPubsub.link)),
-            ...(this.isPublicationPost(commentPubsub) && (await this._calculatePostProps(commentPubsub, request.challengeRequestId))),
-            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
+            ...(this.isPublicationPost(commentPubsub) && (await this._calculateLatestPostProps())),
+            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub)))
         };
 
         const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
-        const file = await retryKuboIpfsAddAndProvide({
-            ipfsClient: ipfsClient._client,
-            log,
-            content: deterministicStringify(commentIpfs),
-            addOptions: { pin: true },
-            provideOptions: { recursive: true }
-        });
 
-        const commentCid = file.path;
+        const file = pendingApproval
+            ? undefined
+            : await retryKuboIpfsAddAndProvide({
+                  ipfsClient: ipfsClient._client,
+                  log,
+                  content: deterministicStringify(commentIpfs),
+                  addOptions: { pin: true },
+                  provideOptions: { recursive: true }
+              });
+
+        const commentCid = file?.path || (await calculateIpfsCidV0(deterministicStringify(commentIpfs)));
         const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
 
@@ -999,11 +1022,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return { comment: commentIpfs, cid: commentCid };
     }
 
-    private async storePublication(request: DecryptedChallengeRequestMessageType) {
+    private async storePublication(request: DecryptedChallengeRequestMessageType, pendingApproval?: boolean) {
         if (request.vote) return this.storeVote(request.vote, request.challengeRequestId);
         else if (request.commentEdit) return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
         else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
-        else if (request.comment) return this.storeComment(request.comment, request);
+        else if (request.comment) return this.storeComment(request.comment, pendingApproval);
         else if (request.subplebbitEdit) return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
         else throw Error("Don't know how to store this publication" + request);
     }
@@ -1135,9 +1158,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _storePublicationAndEncryptForChallengeVerification(
-        request: DecryptedChallengeRequestMessageType
+        request: DecryptedChallengeRequestMessageType,
+        pendingApproval?: boolean
     ): Promise<(DecryptedChallengeVerification & Required<Pick<DecryptedChallengeVerificationMessageType, "encrypted">>) | undefined> {
-        const commentAfterAddingToIpfs = await this.storePublication(request);
+        const commentAfterAddingToIpfs = await this.storePublication(request, pendingApproval);
         if (!commentAfterAddingToIpfs) return undefined;
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentAfterAddingToIpfs.comment.signature.publicKey);
 
@@ -1148,7 +1172,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             cleanUpBeforePublishing({
                 author: { subplebbit: authorSubplebbit },
                 cid: commentAfterAddingToIpfs.cid,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                pendingApproval
             })
         );
         const commentUpdate = <DecryptedChallengeVerification["commentUpdate"]>{
@@ -1169,13 +1194,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _publishChallengeVerification(
         challengeResult: Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" | "reason">,
-        request: DecryptedChallengeRequestMessageType
+        request: DecryptedChallengeRequestMessageType,
+        pendingApproval?: boolean
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallengeVerification");
         if (!challengeResult.challengeSuccess) return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
-            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request);
+            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
@@ -1515,7 +1541,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
         // NOTE: we try to get challenge verification immediately after receiving challenge request
         // because some challenges are automatic and skip the challenge message
-        let challengeVerification: Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" | "reason">;
+        let challengeVerification: Awaited<ReturnType<typeof getChallengeVerification>> & { reason?: string };
         try {
             challengeVerification = await getChallengeVerification(decryptedRequestWithSubplebbitAuthor, this, getChallengeAnswers);
         } catch (e) {
@@ -1531,7 +1557,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             };
         }
 
-        await this._publishChallengeVerification(challengeVerification, decryptedRequestMsg);
+        await this._publishChallengeVerification(challengeVerification, decryptedRequestMsg, challengeVerification.pendingApproval);
     }
 
     private _cleanUpChallengeAnswerPromise(challengeRequestIdString: string) {
@@ -1890,6 +1916,37 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return allCommentUpdateRows;
     }
 
+    private async _addCommentRowToIPFS(unpinnedCommentRow: CommentsTableRow, log: Logger) {
+        const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
+
+        const commentIpfs = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
+        const commentPubsub = remeda.pick(
+            unpinnedCommentRow,
+            (unpinnedCommentRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
+        ) as CommentPubsubMessagePublication;
+        const finalCommentIpfsJson = <CommentIpfsType>{
+            ...commentPubsub,
+            ...commentIpfs,
+            ...unpinnedCommentRow.extraProps
+        };
+        if (unpinnedCommentRow.depth === 0) delete finalCommentIpfsJson.postCid;
+        const commentIpfsContent = deterministicStringify(finalCommentIpfsJson);
+        const contentHash: string = await calculateIpfsHash(commentIpfsContent);
+        if (contentHash !== unpinnedCommentRow.cid) {
+            throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+        }
+
+        const addRes = await retryKuboIpfsAddAndProvide({
+            ipfsClient: ipfsClient._client,
+            log,
+            content: commentIpfsContent,
+            addOptions: { pin: true },
+            provideOptions: { recursive: true }
+        });
+        if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+        log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+    }
+
     private async _repinCommentsIPFSIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:start:_repinCommentsIPFSIfNeeded");
         const latestCommentCid = this._dbHandler.queryLatestCommentCid(); // latest comment ordered by id
@@ -1910,39 +1967,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // latestCommentCid should be the last in unpinnedCommentsFromDb array, in case we throw an error on a comment before it, it does not get pinned
         const unpinnedCommentsFromDb = this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
-        const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
-
         // In the _repinCommentIpfs method:
         const limit = pLimit(50);
         const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) =>
             limit(async () => {
-                const commentIpfs = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
-                const commentPubsub = remeda.pick(
+                if (unpinnedCommentRow.pendingApproval) return; // we don't pin comments waiting to get approved
+                await this._addCommentRowToIPFS(
                     unpinnedCommentRow,
-                    (unpinnedCommentRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
-                ) as CommentPubsubMessagePublication;
-                const finalCommentIpfsJson = <CommentIpfsType>{
-                    ...commentPubsub,
-                    ...commentIpfs,
-                    ...unpinnedCommentRow.extraProps
-                };
-                if (unpinnedCommentRow.depth === 0) delete finalCommentIpfsJson.postCid;
-                const commentIpfsContent = deterministicStringify(finalCommentIpfsJson);
-                const contentHash: string = await calculateIpfsHash(commentIpfsContent);
-                if (contentHash !== unpinnedCommentRow.cid) {
-                    throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-                }
-
-                // TODO move this to addAll method
-                const addRes = await retryKuboIpfsAddAndProvide({
-                    ipfsClient: ipfsClient._client,
-                    log,
-                    content: commentIpfsContent,
-                    addOptions: { pin: true },
-                    provideOptions: { recursive: true }
-                });
-                if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-                log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+                    Logger("plebbit-js:local-subplebbit:start:_repinCommentsIPFSIfNeeded:_addCommentRowToIPFS")
+                );
             })
         );
 

@@ -43,7 +43,11 @@ import type { PublicationEventArgs, PublicationEvents } from "../types.js";
 
 export class Comment
     extends Publication
-    implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">>
+    implements
+        Partial<CommentUpdateForChallengeVerification>,
+        CommentPubsubMessagePublication,
+        Partial<CommentIpfsWithCidPostCidDefined>,
+        Partial<Omit<CommentUpdateType, "replies">>
 {
     // Only Comment props
     shortCid?: CommentWithinPageJson["shortCid"];
@@ -86,6 +90,7 @@ export class Comment
     reason?: CommentUpdateType["reason"];
     lastChildCid?: CommentUpdateType["lastChildCid"];
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
+    pendingApproval?: CommentUpdateForChallengeVerification["pendingApproval"];
 
     override signature!: CommentPubsubMessagePublication["signature"];
     // updating states
@@ -388,6 +393,7 @@ export class Comment
         this.raw.commentUpdateFromChallengeVerification = commentUpdate;
         if (commentUpdate.author) Object.assign(this.author, commentUpdate.author);
         this.protocolVersion = commentUpdate.protocolVersion;
+        this.pendingApproval = commentUpdate.pendingApproval;
     }
 
     private _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification: DecryptedChallengeVerification) {
