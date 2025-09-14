@@ -210,7 +210,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
     remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape)
 );
 
-export const CommentUpdateReservedFields = remeda.difference(
-    CommentPubsubMessageReservedFields,
-    remeda.keys.strict(CommentUpdateSchema.shape)
-);
+export const CommentUpdateReservedFields = remeda.difference(CommentPubsubMessageReservedFields, [
+    ...remeda.keys.strict(CommentUpdateSchema.shape),
+    "pendingApproval"
+]);

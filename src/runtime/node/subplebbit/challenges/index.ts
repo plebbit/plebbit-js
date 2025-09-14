@@ -324,7 +324,7 @@ const getChallengeVerification = async (
             (challengeIndexString) => subplebbit.challenges[Number(challengeIndexString)].pendingApproval
         )
     ) {
-        return { ...challengeVerification, pendingApproval: true };
+        return { ...challengeVerification, pendingApproval: true, challengeSuccess: true, challengeErrors: undefined };
     }
     return challengeVerification;
 };
