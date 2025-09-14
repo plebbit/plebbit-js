@@ -1326,6 +1326,46 @@ export class DbHandler {
         log.trace(`Removed pendingApproval for cid=${comment.cid}, changes=${res.changes}`);
     }
 
+    // Remove oldest comments pending approval when exceeding the configured limit
+    removeOldestPendingCommentIfWeHitMaxPendingCount(maxPendingApprovalCount: number): void {
+        const log = Logger(
+            "plebbit-js:local-subplebbit:db-handler:removeOldestPendingCommentIfWeHitMaxPendingCount"
+        );
+
+        // Assume maxPendingApprovalCount is a valid integer > 0
+        try {
+            const { cnt } = this._db
+                .prepare(`SELECT COUNT(1) as cnt FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1`)
+                .get() as { cnt: number };
+
+            if (cnt <= maxPendingApprovalCount) return;
+
+            const toRemove = cnt - maxPendingApprovalCount;
+            const oldest = this._db
+                .prepare(
+                    `SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC LIMIT ?`
+                )
+                .all(toRemove) as { cid: string }[];
+
+            if (oldest.length === 0) return;
+
+            log(
+                `Evicting ${oldest.length} oldest pending comments (count=${cnt}, limit=${maxPendingApprovalCount})`
+            );
+
+            this.createTransaction();
+            try {
+                for (const { cid } of oldest) this.purgeComment(cid);
+                this.commitTransaction();
+            } catch (e) {
+                this.rollbackTransaction();
+                throw e;
+            }
+        } catch (e) {
+            log.error("Failed to enforce maxPendingApprovalCount", e);
+        }
+    }
+
     private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
         const result = this._db
             .prepare(

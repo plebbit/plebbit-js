@@ -1026,8 +1026,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
         }
 
-        // if we hit max pendingApproval, need to evict oldest comment to be approved
         this._dbHandler.insertComments([commentRow]);
+        if (typeof this.settings?.maxPendingApprovalCount === "number")
+            this._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(this.settings.maxPendingApprovalCount);
         log("Inserted comment", commentRow.cid, "into db", "with props", commentRow);
 
         return { comment: commentIpfs, cid: commentCid };
