@@ -160,8 +160,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             | SubplebbitJson["modQueue"]
             | Pick<NonNullable<SubplebbitIpfsType["modQueue"]>, "pageCids">
     ) {
-        const log = Logger("plebbit-js:remote-subplebbit:_updateLocalModQueueInstance");
-        const modQueuePagesCreationTimestamp = this.updatedAt;
         this.modQueue._subplebbit = this;
         if (!newModQueue)
             // The sub has changed its address, need to reset the posts

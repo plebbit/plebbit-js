@@ -25,6 +25,8 @@ export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 export type PostSortName = z.infer<typeof PostSortNameSchema>;
 export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
 
+export type ModQueueSortName = "pendingApproval";
+
 export interface RepliesPagesIpfsDefinedManuallyType {
     pages: Record<ReplySortName, PageIpfsManuallyDefined>;
     pageCids?: Record<ReplySortName, string>;

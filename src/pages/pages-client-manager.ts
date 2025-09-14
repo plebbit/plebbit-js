@@ -1,5 +1,5 @@
 import { BaseClientsManager, OptionsToLoadFromGateway } from "../clients/base-client-manager.js";
-import type { PageIpfs } from "./types.js";
+import type { ModQueueSortName, PageIpfs } from "./types.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
 import { BasePages, ModQueuePages, PostsPages, RepliesPages } from "./pages.js";
@@ -320,13 +320,13 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
 
 export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
     override clients!: {
-        ipfsGateways: Record<keyof typeof POSTS_SORT_TYPES, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
-        kuboRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
-        plebbitRpcClients: Record<keyof typeof POSTS_SORT_TYPES, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
-        libp2pJsClients: Record<keyof typeof POSTS_SORT_TYPES, { [libp2pJsClientKey: string]: PagesIpfsGatewayClient }>;
+        ipfsGateways: Record<ModQueueSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
+        kuboRpcClients: Record<ModQueueSortName, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
+        plebbitRpcClients: Record<ModQueueSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
+        libp2pJsClients: Record<ModQueueSortName, { [libp2pJsClientKey: string]: PagesIpfsGatewayClient }>;
     };
 
-    protected override getSortTypes() {
-        return remeda.keys.strict(POSTS_SORT_TYPES);
+    protected override getSortTypes(): ModQueueSortName[] {
+        return ["pendingApproval"];
     }
 }

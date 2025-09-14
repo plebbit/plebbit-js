@@ -7,6 +7,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
 import Database, { type Database as BetterSqlite3Database } from "better-sqlite3";
+import { sha256 } from "js-sha256";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
@@ -132,9 +133,9 @@ export class DbHandler {
         return this._dbConfig;
     }
 
-    async keyvGet<Value>(key: string): Promise<Value | undefined> {
+    keyvGet<Value>(key: string): Value | undefined {
         try {
-            const res = await this._keyv.get<Value>(key);
+            const res = this._keyv.get<Value>(key);
             return res;
         } catch (e: any) {
             e.details = { ...e.details, key };
@@ -142,25 +143,25 @@ export class DbHandler {
         }
     }
 
-    async keyvSet(key: string, value: any, ttl?: number) {
+    keyvSet(key: string, value: any, ttl?: number) {
         return this._keyv.set(key, value, ttl);
     }
 
-    async keyvDelete(key: string) {
+    keyvDelete(key: string) {
         return this._keyv.delete(key);
     }
 
-    async keyvHas(key: string) {
+    keyvHas(key: string) {
         return this._keyv.has(key);
     }
 
-    async destoryConnection() {
+    destoryConnection() {
         const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
         if (this._db && this._db.open) {
             this._db.exec("PRAGMA checkpoint"); // write all wal to disk
             this._db.close();
         }
-        if (this._keyv) await this._keyv.disconnect();
+        if (this._keyv) this._keyv.disconnect();
 
         //@ts-expect-error
         this._db = this._keyv = undefined;
@@ -1223,6 +1224,16 @@ export class DbHandler {
         });
     }
 
+    queryCombinedHashOfPendingComments(): string {
+        const rows = this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC`).all() as {
+            cid: string;
+        }[];
+
+        const concatenated = rows.map((r) => r.cid).join("");
+        const hash = sha256(concatenated);
+        return hash;
+    }
+
     queryComment(cid: string): CommentsTableRow | undefined {
         const row = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as CommentsTableRow | undefined;
         if (!row) return undefined;
@@ -1328,30 +1339,24 @@ export class DbHandler {
 
     // Remove oldest comments pending approval when exceeding the configured limit
     removeOldestPendingCommentIfWeHitMaxPendingCount(maxPendingApprovalCount: number): void {
-        const log = Logger(
-            "plebbit-js:local-subplebbit:db-handler:removeOldestPendingCommentIfWeHitMaxPendingCount"
-        );
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:removeOldestPendingCommentIfWeHitMaxPendingCount");
 
         // Assume maxPendingApprovalCount is a valid integer > 0
         try {
-            const { cnt } = this._db
-                .prepare(`SELECT COUNT(1) as cnt FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1`)
-                .get() as { cnt: number };
+            const { cnt } = this._db.prepare(`SELECT COUNT(1) as cnt FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1`).get() as {
+                cnt: number;
+            };
 
             if (cnt <= maxPendingApprovalCount) return;
 
             const toRemove = cnt - maxPendingApprovalCount;
             const oldest = this._db
-                .prepare(
-                    `SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC LIMIT ?`
-                )
+                .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid ASC LIMIT ?`)
                 .all(toRemove) as { cid: string }[];
 
             if (oldest.length === 0) return;
 
-            log(
-                `Evicting ${oldest.length} oldest pending comments (count=${cnt}, limit=${maxPendingApprovalCount})`
-            );
+            log(`Evicting ${oldest.length} oldest pending comments (count=${cnt}, limit=${maxPendingApprovalCount})`);
 
             this.createTransaction();
             try {
