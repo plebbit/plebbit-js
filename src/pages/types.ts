@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { PageIpfsSchema, PostSortNameSchema, PostsPagesIpfsSchema, RepliesPagesIpfsSchema, ReplySortNameSchema } from "./schema";
-import type { CommentIpfsType, CommentUpdateType, CommentWithinPageJson } from "../publications/comment/types";
+import type {
+    CommentIpfsType,
+    CommentUpdateForChallengeVerification,
+    CommentUpdateType,
+    CommentWithinPageJson
+} from "../publications/comment/types";
 import { JsonOfClass } from "../types";
 import { PostsPages, RepliesPages } from "./pages";
 
@@ -47,3 +52,13 @@ export type PostsPagesTypeJson = JsonOfClass<PostsPages>;
 export type RepliesPagesTypeJson = JsonOfClass<RepliesPages>;
 
 export type PagesTypeJson = PostsPagesTypeJson | RepliesPagesTypeJson;
+
+export type ModQueueCommentInPage = {
+    comment: CommentIpfsType;
+    commentUpdate: CommentUpdateForChallengeVerification & { pendingApproval: true };
+};
+
+export type ModQueuePageContent = {
+    comments: ModQueueCommentInPage[];
+    nextCid?: string;
+};

@@ -1103,6 +1103,17 @@ export class DbHandler {
         return this._db.prepare(query).all(rootComment.parentCid) as Pick<CommentsTableRow, "cid">[];
     }
 
+    queryCommentsPendingApproval(): CommentsTableRow[] {
+        const results = this._db
+            .prepare(`SELECT * FROM ${TABLES.COMMENTS} WHERE pendingApproval = 1 ORDER BY rowid DESC`)
+            .all() as CommentsTableRow[];
+        return results.map((r) => {
+            const parsed = this._parseJsonFields(r, ["author", "signature", "flair", "extraProps"]);
+            const result = this._intToBoolean(parsed, ["spoiler", "nsfw", "pendingApproval"]) as CommentsTableRow;
+            return removeNullUndefinedValues(result);
+        });
+    }
+
     queryCommentsToBeUpdated(): CommentsTableRow[] {
         const query = `
             WITH RECURSIVE 

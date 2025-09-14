@@ -2,6 +2,8 @@ import { hideClassPrivateProps, retryKuboIpfsAddAndProvide, timestamp } from "..
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import type {
+    ModQueueCommentInPage,
+    ModQueuePageContent,
     PageIpfs,
     PagesTypeIpfs,
     PostSortName,
@@ -13,10 +15,13 @@ import type {
 import * as remeda from "remeda";
 import type { CommentsTableRow, CommentUpdateType } from "../../../publications/comment/types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-
+import env from "../../../version.js";
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, REPLY_REPLIES_SORT_TYPES } from "../../../pages/util.js";
 import { PlebbitError } from "../../../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
+import { SubplebbitIpfsType } from "../../../subplebbit/types.js";
+import { cleanUpBeforePublishing, signCommentUpdateForChallengeVerification } from "../../../signer/signatures.js";
+import { deriveCommentIpfsFromCommentTableRow } from "../util.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -48,6 +53,39 @@ export class PageGenerator {
     constructor(subplebbit: PageGenerator["_subplebbit"]) {
         this._subplebbit = subplebbit;
         hideClassPrivateProps(this);
+    }
+
+    private async addQueuedCommentChunksToIpfs(
+        chunks: ModQueueCommentInPage[][],
+        sortName = "pendingApproval"
+    ): Promise<{ pages: ModQueuePageContent[]; cids: string[] }> {
+        const ipfsClient = this._subplebbit._clientsManager.getDefaultKuboRpcClient();
+        const listOfPage: ModQueuePageContent[] = new Array(chunks.length);
+        const cids: string[] = new Array(chunks.length);
+        let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
+        for (let i = chunks.length - 1; i >= 0; i--) {
+            const modQueuePageIpfs: ModQueuePageContent = { nextCid: cids[i + 1], comments: chunks[i] };
+            if (!modQueuePageIpfs.nextCid) delete modQueuePageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
+            const addRes = await retryKuboIpfsAddAndProvide({
+                ipfsClient: ipfsClient._client,
+                log: Logger("plebbit-js:page-generator:addQueuedCommentChunksToIpfs"),
+                content: deterministicStringify(modQueuePageIpfs),
+                addOptions: { pin: true },
+                provideOptions: { recursive: true }
+            });
+            if (addRes.size > expectedSize)
+                throw new PlebbitError("ERR_PAGE_GENERATED_IS_OVER_EXPECTED_SIZE", {
+                    addRes,
+                    pageIpfs: modQueuePageIpfs,
+                    expectedSize,
+                    sortName,
+                    pageNum: i
+                });
+            cids[i] = addRes.path;
+            listOfPage[i] = modQueuePageIpfs;
+            expectedSize = expectedSize / 2; // we're going backward now
+        }
+        return { pages: listOfPage, cids };
     }
 
     private async addCommentChunksToIpfs(
@@ -111,13 +149,13 @@ export class PageGenerator {
         return { [sortName]: { pages: listOfPage } };
     }
 
-    _chunkComments({
+    _chunkComments<T extends PageIpfs["comments"] | ModQueuePageContent["comments"]>({
         comments,
         firstPageSizeBytes
     }: {
-        comments: PageIpfs["comments"];
+        comments: T;
         firstPageSizeBytes: number;
-    }): PageIpfs["comments"][] {
+    }): T[] {
         const FIRST_PAGE_SIZE = firstPageSizeBytes; // dynamic page size for preloaded sorts, 1MB for others
         const SAFETY_MARGIN = 1024; // Use 1KiB margin
 
@@ -145,9 +183,9 @@ export class PageGenerator {
             return [comments]; // Single page, no chunking needed
         }
 
-        const chunks: PageIpfs["comments"][] = [];
+        const chunks: T[] = [];
 
-        let currentChunk: PageIpfs["comments"] = [];
+        let currentChunk = [] as unknown as T;
         let chunkIndex = 0;
         let accumulatedSize = OBJECT_WRAPPER_WITH_CID;
 
@@ -185,7 +223,7 @@ export class PageGenerator {
             if (accumulatedSize + commaSize + commentSize > maxSize - SAFETY_MARGIN) {
                 if (currentChunk.length > 0) {
                     chunks.push(currentChunk);
-                    currentChunk = [];
+                    currentChunk = [] as unknown as T;
                     chunkIndex++;
 
                     if (isLastItem) {
@@ -202,7 +240,7 @@ export class PageGenerator {
                 }
             }
 
-            currentChunk.push(comments[i]);
+            currentChunk.push(comments[i] as any);
             accumulatedSize += commaSize + commentSize;
         }
 
@@ -318,6 +356,38 @@ export class PageGenerator {
         );
 
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
+    }
+
+    async _bundleLatestCommentUpdateWithQueuedComments(queuedComment: CommentsTableRow): Promise<ModQueueCommentInPage> {
+        const subplebbitAuthor = this._subplebbit._dbHandler.querySubplebbitAuthor(queuedComment.authorSignerAddress);
+        const commentUpdateOfVerificationNoSignature = <Omit<ModQueueCommentInPage["commentUpdate"], "signature">>cleanUpBeforePublishing({
+            author: { subplebbit: subplebbitAuthor },
+            cid: queuedComment.cid,
+            protocolVersion: env.PROTOCOL_VERSION,
+            pendingApproval: true
+        });
+        const commentUpdate = <ModQueueCommentInPage["commentUpdate"]>{
+            ...commentUpdateOfVerificationNoSignature,
+            signature: await signCommentUpdateForChallengeVerification(commentUpdateOfVerificationNoSignature, this._subplebbit.signer)
+        };
+        const commentIpfs = deriveCommentIpfsFromCommentTableRow(queuedComment);
+        return { comment: commentIpfs, commentUpdate };
+    }
+
+    async generateModQueuePages(): Promise<SubplebbitIpfsType["modQueue"]> {
+        const firstPageSizeBytes = 1024 * 1024;
+        const commentsPendingApproval = this._subplebbit._dbHandler.queryCommentsPendingApproval();
+        if (commentsPendingApproval.length === 0) return undefined;
+
+        const queuedComments: ModQueueCommentInPage[] = await Promise.all(
+            commentsPendingApproval.map((comment) => this._bundleLatestCommentUpdateWithQueuedComments(comment))
+        );
+
+        const chunkedQueuedComments = this._chunkComments({ comments: queuedComments, firstPageSizeBytes });
+
+        const pages = await this.addQueuedCommentChunksToIpfs(chunkedQueuedComments, "pendingApproval");
+
+        return { pageCids: { pendingApproval: pages.cids[0] } };
     }
 
     async generatePostPages(

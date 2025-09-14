@@ -20,9 +20,16 @@ import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
-import type { CommentUpdateType } from "../../publications/comment/types.js";
+import type {
+    CommentIpfsType,
+    CommentPubsubMessagePublication,
+    CommentPubsubMessagPublicationSignature,
+    CommentsTableRow,
+    CommentUpdateType
+} from "../../publications/comment/types.js";
 import { DbHandler } from "./subplebbit/db-handler.js";
 import Database from "better-sqlite3";
+import { CommentIpfsSchema } from "../../publications/comment/schema.js";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -390,4 +397,19 @@ export function calculateExpectedSignatureSize(
     };
 
     return Buffer.byteLength(JSON.stringify(mockSignature), "utf8");
+}
+
+export function deriveCommentIpfsFromCommentTableRow(commentTableRow: CommentsTableRow): CommentIpfsType {
+    const commentIpfs = remeda.pick(commentTableRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
+    const commentPubsub = remeda.pick(
+        commentTableRow,
+        (commentTableRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
+    ) as CommentPubsubMessagePublication;
+    const finalCommentIpfsJson = <CommentIpfsType>{
+        ...commentPubsub,
+        ...commentIpfs,
+        ...commentTableRow.extraProps
+    };
+    if (commentTableRow.depth === 0) delete finalCommentIpfsJson.postCid;
+    return commentIpfs;
 }

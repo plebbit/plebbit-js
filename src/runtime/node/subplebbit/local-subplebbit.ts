@@ -78,6 +78,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     calculateExpectedSignatureSize,
+    deriveCommentIpfsFromCommentTableRow,
     getThumbnailPropsOfLink,
     importSignerIntoKuboNode,
     moveSubplebbitDbToDeletedDirectory
@@ -526,6 +527,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0 || this._blocksToRm.length > 0; // we have at least one edit to include in new ipns
     }
 
+    private async _calculateLatestModQueue(): Promise<SubplebbitIpfsType["modQueue"]> {
+        // TODO need to check if we actually need to update mod queue or not
+        const modQueuePages = await this._pageGenerator.generateModQueuePages();
+        return modQueuePages;
+    }
+
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
         const log = Logger("plebbit-js:local-subplebbit:sync:updateSubplebbitIpnsIfNeeded");
 
@@ -543,6 +550,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (commentUpdateRowsToPublishToIpfs.length > 0) await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
 
         const newPostUpdates = await this._calculateNewPostUpdates();
+        const newModQueue = await this._calculateLatestModQueue();
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
         const statsCid = (
@@ -572,6 +580,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 statsCid,
                 updatedAt,
                 postUpdates: newPostUpdates,
+                modQueue: newModQueue,
                 protocolVersion: env.PROTOCOL_VERSION
             })
         };
@@ -857,7 +866,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 "out of DB and IPFS"
             );
 
-            this._subplebbitUpdateTrigger = true;
             log(`Set _subplebbitUpdateTrigger to true after purging comment ${modTableRow.commentCid}.`);
             if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
                 const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
@@ -873,6 +881,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 }
             }
         }
+        this._subplebbitUpdateTrigger = true;
         this._dbHandler.insertCommentModerations([modTableRow]);
         log("Inserted comment moderation", "of comment", modTableRow.commentCid, "into db", "with props", modTableRow);
     }
@@ -1016,6 +1025,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
             commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
         }
+
+        // if we hit max pendingApproval, need to evict oldest comment to be approved
         this._dbHandler.insertComments([commentRow]);
         log("Inserted comment", commentRow.cid, "into db", "with props", commentRow);
 
@@ -1919,17 +1930,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _addCommentRowToIPFS(unpinnedCommentRow: CommentsTableRow, log: Logger) {
         const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
 
-        const commentIpfs = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
-        const commentPubsub = remeda.pick(
-            unpinnedCommentRow,
-            (unpinnedCommentRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
-        ) as CommentPubsubMessagePublication;
-        const finalCommentIpfsJson = <CommentIpfsType>{
-            ...commentPubsub,
-            ...commentIpfs,
-            ...unpinnedCommentRow.extraProps
-        };
-        if (unpinnedCommentRow.depth === 0) delete finalCommentIpfsJson.postCid;
+        const finalCommentIpfsJson = deriveCommentIpfsFromCommentTableRow(unpinnedCommentRow);
         const commentIpfsContent = deterministicStringify(finalCommentIpfsJson);
         const contentHash: string = await calculateIpfsHash(commentIpfsContent);
         if (contentHash !== unpinnedCommentRow.cid) {
