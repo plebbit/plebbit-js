@@ -84,14 +84,14 @@ const offlineNodeArgs = {
     apiPort: 15001,
     gatewayPort: 18080,
     daemonArgs: " --enable-namesys-pubsub",
-    swarmPort: 4001,
+    swarmPort: 24001,
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
     apiPort: 15002,
     gatewayPort: 18081,
-    swarmPort: 4002,
+    swarmPort: 24002,
     daemonArgs: "--enable-namesys-pubsub",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
@@ -100,7 +100,7 @@ const onlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-online"),
     apiPort: 15003,
     gatewayPort: 18082,
-    swarmPort: 4003,
+    swarmPort: 24003,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: []
 };
@@ -109,7 +109,7 @@ const anotherOfflineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline2"),
     apiPort: 15004,
     gatewayPort: 18083,
-    swarmPort: 4004,
+    swarmPort: 24004,
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
@@ -117,7 +117,7 @@ const anotherPubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub2"),
     apiPort: 15005,
     gatewayPort: 18084,
-    swarmPort: 4005,
+    swarmPort: 24005,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
@@ -126,7 +126,7 @@ const httpRouterNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-http-router"),
     apiPort: 15006,
     gatewayPort: 18085,
-    swarmPort: 4006,
+    swarmPort: 24006,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
