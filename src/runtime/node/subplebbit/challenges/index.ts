@@ -294,6 +294,11 @@ const getChallengeVerification = async (
 
     const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
+    // there's basically 3 scenarios,
+    // all challenges pass, no pending approval,
+    // at least one challenge without pendingApproval: true fails, no pending approval,
+    // all challenges that fail have pendingApproval: true, it goes to pending approval.
+
     let challengeVerification: Pick<ChallengeVerificationMessageType, "challengeSuccess" | "challengeErrors">;
     // was able to verify without asking author for challenges
     if ("challengeSuccess" in res) {
@@ -311,6 +316,16 @@ const getChallengeVerification = async (
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
     addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
 
+    // all challenges that failed have pendingApproval: true, therefore it will go to pending approval
+    if (
+        challengeRequestMessage.comment && // only comments have pendingApproval
+        challengeVerification.challengeErrors &&
+        Object.keys(challengeVerification.challengeErrors).every(
+            (challengeIndexString) => subplebbit.challenges[Number(challengeIndexString)].pendingApproval
+        )
+    ) {
+        return { ...challengeVerification, pendingApproval: true };
+    }
     return challengeVerification;
 };
 
