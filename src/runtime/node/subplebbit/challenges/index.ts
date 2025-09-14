@@ -366,7 +366,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
         description: subplebbitChallengeSettings.description || challengeFile.description,
         challenge,
         type,
-        caseInsensitive: challengeFile.caseInsensitive
+        caseInsensitive: challengeFile.caseInsensitive,
+        pendingApproval: subplebbitChallengeSettings.pendingApproval
     };
 };
 
