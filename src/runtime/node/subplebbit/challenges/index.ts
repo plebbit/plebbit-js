@@ -15,6 +15,7 @@ import question from "./plebbit-js-challenges/question.js";
 import voucher from "./plebbit-js-challenges/voucher.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 import publicationMatch from "./plebbit-js-challenges/publication-match.js";
+import mintpassV1 from "@plebbitlabs/mintpass/challenges/v1";
 import type {
     ChallengeVerificationMessageType,
     DecryptedChallengeAnswer,
@@ -47,7 +48,8 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
     question: question,
     voucher: voucher,
     "evm-contract-call": evmContractCall,
-    "publication-match": publicationMatch
+    "publication-match": publicationMatch,
+    "mintpass-v1": mintpassV1
 };
 
 const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: LocalSubplebbit) => {
