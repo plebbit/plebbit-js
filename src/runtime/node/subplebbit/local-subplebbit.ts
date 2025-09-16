@@ -621,6 +621,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
         } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
+        if (newModQueue) {
+            const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
+            const modQueuePageCidsToUnPin = remeda.unique(
+                Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
+            );
+
+            modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
+        }
+
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
 
