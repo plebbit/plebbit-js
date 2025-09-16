@@ -4,11 +4,9 @@ import {
     generateMockPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    itSkipIfRpc,
-    createSubWithNoChallenge,
     mockGatewayPlebbit,
-    publishRandomPost,
-    mockPlebbitNoDataPathWithOnlyKuboClient
+    generateMockVote,
+    generateMockComment
 } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
 
@@ -69,7 +67,7 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(subplebbit.challenges[0].pendingApproval).to.be.true;
         });
 
-        it("Should put failed publication in pending approval queue when challenge has pendingApproval: true", async () => {
+        it("Should put failed comment in pending approval queue when challenge has pendingApproval: true", async () => {
             // TODO: Test that when a challenge with pendingApproval fails,
             // the publication goes to pending approval instead of being rejected
             await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
@@ -95,12 +93,24 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(pendingComment.raw.comment.pendingApproval).to.not.exist;
         });
 
-        // TODO: Test that pending approval can exclude certain types
-        // TODO need to test for publications that should not support pending approval
-        // like vote, subplebbitEdit, commentModeration, commentEdit
-        // (e.g., only posts, not replies)
-
-        it("Should exclude specific publication types from pending approval");
+        it(`Should not be able to publish a vote under a pending comment`, async () => {
+            const vote = await generateMockVote(pendingComment, 1, plebbit);
+            await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+        });
+        it(`should not be able to publish a CommentEdit under a pending comment`, async () => {
+            const edit = await plebbit.createCommentEdit({
+                subplebbitAddress: pendingComment.subplebbitAddress,
+                commentCid: pendingComment.cid,
+                reason: "random reason should fail",
+                content: "text to edit on pending comment",
+                signer: pendingComment.signer
+            });
+            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+        });
+        it(`Should not be able to publish a reply under a pending comment`, async () => {
+            const reply = await generateMockComment(pendingComment, plebbit, false);
+            await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+        });
     });
 
     describe("Pending approval storage", () => {
@@ -215,6 +225,45 @@ describe(`Pending approval modqueue functionality`, async () => {
                 false,
                 messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
             );
+        });
+
+        // TODO: Test that pending approval can exclude certain types
+        // TODO need to test for publications that should not support pending approval
+        // like vote, subplebbitEdit, commentModeration, commentEdit
+
+        it("Should exclude vote type from pending approval", async () => {
+            // it should fail because vote is not applicable for pendingApproval AND it published the wrong answers
+            const vote = await generateMockVote(pendingComment, 1, plebbit);
+
+            vote.once("challenge", async () => await vote.publishChallengeAnswers(["1234 " + Math.random()])); // wrong answers
+
+            const challengeVerificationPromise = new Promise((resolve) => vote.once("challengeverification", resolve));
+
+            await publishWithExpectedResult(vote, false);
+
+            const challengeVerification = await challengeVerificationPromise;
+            expect(challengeVerification.challengeSuccess).to.equal(false);
+            expect(challengeVerification.challengeErrors["0"]).to.equal("Wrong captcha.");
+        });
+
+        it(`should exclude CommentEdit from pending approval`, async () => {
+            // it should fail because CommentEdit is not applicable for pendingApproval AND it published the wrong answers
+            const edit = await plebbit.createCommentEdit({
+                subplebbitAddress: pendingComment.subplebbitAddress,
+                commentCid: pendingComment.cid,
+                reason: "random reason should fail",
+                content: "text to edit on pending comment",
+                signer: pendingComment.signer
+            });
+            edit.once("challenge", async () => await edit.publishChallengeAnswers(["1234 " + Math.random()])); // wrong answers
+
+            const challengeVerificationPromise = new Promise((resolve) => edit.once("challengeverification", resolve));
+
+            await publishWithExpectedResult(edit, false);
+
+            const challengeVerification = await challengeVerificationPromise;
+            expect(challengeVerification.challengeSuccess).to.equal(false);
+            expect(challengeVerification.challengeErrors["0"]).to.equal("Wrong captcha.");
         });
 
         it("Should resolve conflicting moderations to removed when both approved and removed are set", async () => {
