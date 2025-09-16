@@ -6,7 +6,9 @@ import {
     resolveWhenConditionIsTrue,
     itSkipIfRpc,
     createSubWithNoChallenge,
-    publishRandomPost
+    mockGatewayPlebbit,
+    publishRandomPost,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
 
 // Skeleton tests added for pending approval and modqueue edge cases
@@ -43,7 +45,11 @@ describe(`Pending approval modqueue functionality`, async () => {
         it("Should put failed publication in pending approval queue when challenge has pendingApproval: true", async () => {
             // TODO: Test that when a challenge with pendingApproval fails,
             // the publication goes to pending approval instead of being rejected
-            pendingComment = await generateMockPost(subplebbit.address, plebbit, false);
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+            const remotePlebbit = await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true }); // this plebbit is not connected to kubo rpc client of subplebbit
+            pendingComment = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+                content: "Pending comment" + Math.random()
+            });
             pendingComment.removeAllListeners("challenge");
 
             pendingComment.once("challenge", async () => {
@@ -98,8 +104,17 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(subplebbit.postUpdates).to.be.undefined;
         });
 
-        it(`Pending comment should not be pinned in ipfs node`);
-        it(`pending comment should not appear in any page`);
+        it(`Pending comment should not be pinned in ipfs node`, async () => {
+            const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+            // Collect all pinned CIDs
+            for await (const pin of kuboRpc.pin.ls()) {
+                expect(pin.cid.toString()).to.not.equal(pendingComment.cid); // pending comment should not be pinned in kubo
+            }
+
+            const pendingCommentFromGatewayRequest = await fetch("http://localhost:18080/ipfs/" + pendingComment.cid);
+            expect(pendingCommentFromGatewayRequest.status).to.equal(504); // should fail to load
+        });
+        it(`pending comment should not appear in any pageCids or preloaded pages`);
 
         it("Should limit pending approvals to maxPendingApprovalCount (default 500)", async () => {
             // TODO: Test that pending approval queue respects size limit
