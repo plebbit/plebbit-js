@@ -252,6 +252,7 @@ export class Comment
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
         this._updateRepliesPostsInstance(props.replies, subplebbit);
+        if (props.updatedAt && this.pendingApproval) this.pendingApproval = false; // revert pendingApproval if we just received a CommentUpdate
     }
 
     _updateRepliesPostsInstance(
