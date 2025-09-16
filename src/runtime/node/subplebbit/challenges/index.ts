@@ -46,7 +46,6 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
     blacklist: blacklist,
     whitelist: whitelist,
     question: question,
-    voucher: voucher,
     "evm-contract-call": evmContractCall,
     "publication-match": publicationMatch,
     "mintpass-v1": mintpassV1
