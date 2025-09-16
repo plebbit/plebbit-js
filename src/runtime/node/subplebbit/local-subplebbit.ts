@@ -181,7 +181,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _defaultSubplebbitChallenges: SubplebbitChallengeSetting[] = [
         {
             name: "captcha-canvas-v3",
-            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
+            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true, subplebbitEdit: true } }]
         }
     ];
 
