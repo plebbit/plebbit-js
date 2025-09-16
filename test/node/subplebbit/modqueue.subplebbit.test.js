@@ -10,6 +10,7 @@ import {
     publishRandomPost,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../dist/node/test/test-util.js";
+import { messages } from "../../../dist/node/errors.js";
 
 const publishCommentToModQueue = async (subplebbit) => {
     const remotePlebbit = await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true }); // this plebbit is not connected to kubo rpc client of subplebbit
@@ -32,7 +33,9 @@ const publishCommentToModQueue = async (subplebbit) => {
 // Skeleton tests added for pending approval and modqueue edge cases
 // mod queue pages should not have comments with depth 0 and pageIpfs.comments[x].comment.postCid defined
 // need to test when we no longer have pending comments, modQueue pageCids should be undefined
-
+// approved in comment moderation field should only be used for pending comments
+// commentEdit should be rejected on a pending comment
+// we should reject any commentedit/votes/replies under a pending comment
 describe(`Pending approval modqueue functionality`, async () => {
     let plebbit, subplebbit, pendingComment, modSigner;
 
@@ -174,9 +177,45 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]); // should have postUpdates now that we approved hte comment
         });
 
-        it(
-            `Sub should reject CommentModeration if a mod publishes approval or disapproveal for a comment that already got approved or rejected`
-        );
+        it(`Sub should reject CommentModeration if a mod publishes approval for a comment that already got approved`, async () => {
+            const commentModeration = await plebbit.createCommentModeration({
+                subplebbitAddress: subplebbit.address,
+                signer: modSigner,
+                commentModeration: { approved: true },
+                commentCid: pendingComment.cid
+            });
+
+            await publishWithExpectedResult(
+                commentModeration,
+                false,
+                messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
+            );
+        });
+
+        it(`Sub should reject CommentModeration if a mod published disapproval for a comment that already got disapproved`, async () => {
+            const { pendingComment, challengeVerification } = await publishCommentToModQueue(subplebbit);
+            const commentModerationDisapproval = await plebbit.createCommentModeration({
+                subplebbitAddress: subplebbit.address,
+                signer: modSigner,
+                commentModeration: { approved: false },
+                commentCid: pendingComment.cid
+            });
+
+            await publishWithExpectedResult(commentModerationDisapproval, true);
+
+            const commentModerationDisapprovalSecond = await plebbit.createCommentModeration({
+                subplebbitAddress: subplebbit.address,
+                signer: modSigner,
+                commentModeration: { approved: false },
+                commentCid: pendingComment.cid
+            });
+
+            await publishWithExpectedResult(
+                commentModerationDisapprovalSecond,
+                false,
+                messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
+            );
+        });
 
         it("Should resolve conflicting moderations to removed when both approved and removed are set", async () => {
             // TODO: If one mod sets approved: true and another sets removed: true,
