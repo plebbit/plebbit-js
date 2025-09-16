@@ -3,7 +3,7 @@ import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import type {
     ModQueueCommentInPage,
-    ModQueuePageContent,
+    ModQueuePageIpfs,
     PageIpfs,
     PagesTypeIpfs,
     PostSortName,
@@ -58,13 +58,13 @@ export class PageGenerator {
     private async addQueuedCommentChunksToIpfs(
         chunks: ModQueueCommentInPage[][],
         sortName = "pendingApproval"
-    ): Promise<{ pages: ModQueuePageContent[]; cids: string[] }> {
+    ): Promise<{ pages: ModQueuePageIpfs[]; cids: string[] }> {
         const ipfsClient = this._subplebbit._clientsManager.getDefaultKuboRpcClient();
-        const listOfPage: ModQueuePageContent[] = new Array(chunks.length);
+        const listOfPage: ModQueuePageIpfs[] = new Array(chunks.length);
         const cids: string[] = new Array(chunks.length);
         let expectedSize = 1024 * 1024 * Math.pow(2, chunks.length - 1); // expected size of last page
         for (let i = chunks.length - 1; i >= 0; i--) {
-            const modQueuePageIpfs: ModQueuePageContent = { nextCid: cids[i + 1], comments: chunks[i] };
+            const modQueuePageIpfs: ModQueuePageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
             if (!modQueuePageIpfs.nextCid) delete modQueuePageIpfs.nextCid; // we don't to include undefined anywhere in the protocol
             const addRes = await retryKuboIpfsAddAndProvide({
                 ipfsClient: ipfsClient._client,
@@ -149,7 +149,7 @@ export class PageGenerator {
         return { [sortName]: { pages: listOfPage } };
     }
 
-    _chunkComments<T extends PageIpfs["comments"] | ModQueuePageContent["comments"]>({
+    _chunkComments<T extends PageIpfs["comments"] | ModQueuePageIpfs["comments"]>({
         comments,
         firstPageSizeBytes
     }: {

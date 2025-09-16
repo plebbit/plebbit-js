@@ -1,4 +1,4 @@
-import { PageIpfsSchema } from "../pages/schema.js";
+import { ModQueuePageIpfsSchema, PageIpfsSchema } from "../pages/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import {
@@ -108,6 +108,13 @@ export function parsePageIpfsSchemaWithPlebbitErrorIfItFails(pageIpfsJson: z.inf
     const parseRes = PageIpfsSchema.safeParse(pageIpfsJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_PAGE_IPFS_SCHEMA", { zodError: parseRes.error, pageIpfsJson });
     else return pageIpfsJson;
+}
+
+export function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(modQueuePageIpfsJson: z.infer<typeof ModQueuePageIpfsSchema>) {
+    const parseRes = ModQueuePageIpfsSchema.safeParse(modQueuePageIpfsJson);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_MODQUEUE_PAGE_IPFS_SCHEMA", { zodError: parseRes.error, modQueuePageIpfsJson });
+    else return modQueuePageIpfsJson;
 }
 
 export function parseDecryptedChallengeWithPlebbitErrorIfItFails(

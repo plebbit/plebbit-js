@@ -1,10 +1,14 @@
 import { BaseClientsManager, OptionsToLoadFromGateway } from "../clients/base-client-manager.js";
-import type { ModQueueSortName, PageIpfs } from "./types.js";
+import type { ModQueuePageIpfs, ModQueueSortName, PageIpfs } from "./types.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
 import { BasePages, ModQueuePages, PostsPages, RepliesPages } from "./pages.js";
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "./util.js";
-import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import {
+    parseJsonWithPlebbitErrorIfFails,
+    parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails,
+    parsePageIpfsSchemaWithPlebbitErrorIfItFails
+} from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 import { sha256 } from "js-sha256";
@@ -206,6 +210,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
+    protected parsePageJson(json: unknown): PageIpfs | ModQueuePageIpfs {
+        // default validator; subclasses can override
+        return parsePageIpfsSchemaWithPlebbitErrorIfItFails(json as any);
+    }
+
     private async _fetchPageWithKuboOrHeliaP2P(
         pageCid: string,
         log: Logger,
@@ -216,11 +225,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._updateKuboRpcClientOrHeliaState("fetching-ipfs", heliaOrKubo, sortTypes);
         const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
         try {
-            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(
+            return this.parsePageJson(
                 parseJsonWithPlebbitErrorIfFails(
                     await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })
                 )
-            );
+            ) as PageIpfs;
         } catch (e) {
             //@ts-expect-error
             e.details = { ...e.details, pageCid, sortTypes, pageMaxSize };
@@ -243,7 +252,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             timeoutMs: this._plebbit._timeouts["page-ipfs"],
             log
         });
-        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
+        const pageIpfs = this.parsePageJson(parseJsonWithPlebbitErrorIfFails(res.resText)) as PageIpfs;
 
         return pageIpfs;
     }
@@ -328,5 +337,10 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
 
     protected override getSortTypes(): ModQueueSortName[] {
         return ["pendingApproval"];
+    }
+
+    protected override parsePageJson(json: unknown): ModQueuePageIpfs {
+        // Validate using the ModQueue page schema, then coerce to PageIpfs for consumers
+        return parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(json as any) as ModQueuePageIpfs;
     }
 }

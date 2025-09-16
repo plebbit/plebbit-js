@@ -11,7 +11,7 @@ import {
     SignerWithAddressPublicKeySchema,
     SubplebbitAddressSchema
 } from "../schema/schema.js";
-import { ModQueuePageIpfsSchema, PostsPagesIpfsSchema } from "../pages/schema.js";
+import { ModQueuePagesIpfsSchema, PostsPagesIpfsSchema } from "../pages/schema.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import * as remeda from "remeda";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
@@ -203,7 +203,7 @@ export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeS
 export const SubplebbitIpfsSchema = z
     .object({
         posts: PostsPagesIpfsSchema.optional(),
-        modQueue: ModQueuePageIpfsSchema.optional(),
+        modQueue: ModQueuePagesIpfsSchema.optional(),
         challenges: SubplebbitChallengeSchema.array(),
         signature: JsonSignatureSchema,
         encryption: SubplebbitEncryptionSchema,

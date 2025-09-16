@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { CidStringSchema } from "../schema/schema.js";
-import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
+import { CommentIpfsSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import type { PageIpfsManuallyDefined } from "./types.js";
 
 // Pages schemas here
@@ -31,6 +31,15 @@ export const RepliesPagesIpfsSchema = z.object({
     pageCids: z.record(ReplySortNameSchema, CidStringSchema).optional() // pageCids is optional if all replies can fit in one preloaded page
 });
 
-export const ModQueuePageIpfsSchema = z.object({
+export const ModQueuePagesIpfsSchema = z.object({
     pageCids: z.record(z.string().min(1), CidStringSchema)
+});
+
+export const ModQueuePageIpfsSchema = z.object({
+    comments: z.lazy(() =>
+        z
+            .object({ comment: CommentIpfsSchema.passthrough(), commentUpdate: CommentUpdateForChallengeVerificationSchema.passthrough() })
+            .array()
+    ),
+    nextCid: CidStringSchema.optional()
 });

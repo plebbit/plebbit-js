@@ -60,7 +60,7 @@ export type ModQueueCommentInPage = {
     commentUpdate: CommentUpdateForChallengeVerification & { pendingApproval: true };
 };
 
-export type ModQueuePageContent = {
+export type ModQueuePageIpfs = {
     comments: ModQueueCommentInPage[];
     nextCid?: string;
 };

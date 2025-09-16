@@ -89,6 +89,7 @@ export enum messages {
     ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA = "The loaded Subplebbit record has an invalid schema",
     ERR_INVALID_COMMENT_UPDATE_SCHEMA = "The schema of Comment Update is invalid",
     ERR_INVALID_PAGE_IPFS_SCHEMA = "The schema of Page ipfs file is invalid",
+    ERR_INVALID_MODQUEUE_PAGE_IPFS_SCHEMA = "The schema of mod queue page ipfs file is invalid",
     ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA = "The schema of decrypted challenge.encrypted is invalid",
     ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA = "The schema of challengeverification.encryption is invalid",
     ERR_INVALID_RPC_ENCODED_CHALLENGE_REQUEST_PUBSUB_MSG_SCHEMA = "The rpc server transmitted an encoded challenge request pubsub message with invalid schema",
