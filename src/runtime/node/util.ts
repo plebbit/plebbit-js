@@ -411,5 +411,5 @@ export function deriveCommentIpfsFromCommentTableRow(commentTableRow: CommentsTa
         ...commentTableRow.extraProps
     };
     if (commentTableRow.depth === 0) delete finalCommentIpfsJson.postCid;
-    return commentIpfs;
+    return finalCommentIpfsJson;
 }
