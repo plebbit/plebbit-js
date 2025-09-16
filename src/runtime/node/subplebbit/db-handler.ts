@@ -1474,13 +1474,13 @@ export class DbHandler {
     }
 
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined {
-        return this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE depth = 0 ORDER BY rowid DESC LIMIT 1`).get() as
-            | Pick<CommentsTableRow, "cid">
-            | undefined;
+        return this._db
+            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE depth = 0 AND pendingApproval IS NOT 1 ORDER BY rowid DESC LIMIT 1`)
+            .get() as Pick<CommentsTableRow, "cid"> | undefined;
     }
 
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined {
-        return this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} ORDER BY rowid DESC LIMIT 1`).get() as
+        return this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval IS NOT 1 ORDER BY rowid DESC LIMIT 1`).get() as
             | Pick<CommentsTableRow, "cid">
             | undefined;
     }
@@ -1514,8 +1514,8 @@ export class DbHandler {
         const modAuthorEdits = modAuthorEditsRaw.map(
             (r) => JSON.parse(r.commentAuthorJson) as CommentModerationTableRow["commentModeration"]["author"]
         );
-        const banAuthor = modAuthorEdits.find((ca) => typeof ca?.banExpiresAt === "number");
-        const authorFlairByMod = modAuthorEdits.find((ca) => ca?.flair);
+        const banAuthor = modAuthorEdits.find((modEdit) => typeof modEdit?.banExpiresAt === "number");
+        const authorFlairByMod = modAuthorEdits.find((modEdit) => modEdit?.flair);
         const aggregateAuthor: Pick<SubplebbitAuthor, "banExpiresAt" | "flair"> = {};
         if (banAuthor?.banExpiresAt) aggregateAuthor.banExpiresAt = banAuthor.banExpiresAt;
         if (authorFlairByMod?.flair) aggregateAuthor.flair = authorFlairByMod.flair;
