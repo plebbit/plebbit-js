@@ -58,6 +58,7 @@ export const testCommentFieldsInPageJson = (comment) => {
     expect(comment.challengeRequestId).to.be.undefined;
     expect(comment.signer).to.be.undefined;
     expect(comment._signer).to.be.undefined;
+    expect(comment.pendingApproval).to.not.exist;
 };
 
 const activeScore = async (comment, plebbit) => {
