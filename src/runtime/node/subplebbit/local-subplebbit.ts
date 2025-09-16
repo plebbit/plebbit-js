@@ -836,29 +836,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             modTableRow.extraProps = remeda.pick(commentModRaw, extraPropsInMod);
         }
 
-        if ("approved" in modTableRow.commentModeration) {
-            if (modTableRow.commentModeration.approved) {
-                log(
-                    "commentModeration.approved=true, and therefore move comment from pending approval",
-                    "comment cid is",
-                    modTableRow.commentCid
-                );
-
-                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
-                await this._addCommentRowToIPFS(
-                    commentToBeEdited,
-                    Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
-                );
-            } else {
-                log(
-                    "commentModeration.approved=false, and therefore this comment will be removed entirely from DB",
-                    "comment cid is",
-                    modTableRow.commentCid
-                );
-                this._dbHandler.purgeComment(modTableRow.commentCid);
-            }
-        }
-
         if (modTableRow.commentModeration.purged) {
             log(
                 "commentModeration.purged=true, and therefore will delete the post/comment and all its reply tree from the db as well as unpin the cids from ipfs",
@@ -896,6 +873,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 } catch (e) {
                     log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
                 }
+            }
+        } else if ("approved" in modTableRow.commentModeration) {
+            if (modTableRow.commentModeration.approved) {
+                log(
+                    "commentModeration.approved=true, and therefore move comment from pending approval",
+                    "comment cid is",
+                    modTableRow.commentCid
+                );
+
+                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
+                await this._addCommentRowToIPFS(
+                    commentToBeEdited,
+                    Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
+                );
+            } else {
+                log(
+                    "commentModeration.approved=false, and therefore this comment will be removed entirely from DB",
+                    "comment cid is",
+                    modTableRow.commentCid
+                );
+                this._dbHandler.purgeComment(modTableRow.commentCid);
             }
         }
         this._subplebbitUpdateTrigger = true;
@@ -1340,6 +1338,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (postFlags.locked && !request.commentModeration) return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
 
             if (parent.timestamp > publication.timestamp) return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
+
+            // if user publishes vote/reply/commentEdit under pending comment, it should fail
+            if (parent.pendingApproval && !("commentModeration" in request)) return messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT;
         }
 
         // Reject publications if their size is over 40kb
@@ -1363,8 +1364,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     return messages.ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY;
             }
 
-            const commentInDb = this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
-            if (commentInDb) return messages.ERR_DUPLICATE_COMMENT;
+            const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
+            if (isCommentDuplicate) return messages.ERR_DUPLICATE_COMMENT;
         } else if (request.vote) {
             const votePublication = request.vote;
             if (remeda.intersection(VotePubsubReservedFields, remeda.keys.strict(votePublication)).length > 0)
@@ -1405,6 +1406,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 commentModerationPublication.signature.signature
             );
             if (commentModInDb) return messages.ERR_DUPLICATE_COMMENT_MODERATION;
+            if ("approved" in commentModerationPublication.commentModeration && !commentToBeEdited.pendingApproval)
+                return messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING;
         } else if (request.subplebbitEdit) {
             const subplebbitEdit = request.subplebbitEdit;
             if (remeda.intersection(SubplebbitEditPublicationPubsubReservedFields, remeda.keys.strict(subplebbitEdit)).length > 0)
