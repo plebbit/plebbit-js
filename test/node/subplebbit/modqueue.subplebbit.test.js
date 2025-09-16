@@ -153,10 +153,23 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(pendingComment.pendingApproval).to.be.false;
         });
 
-        it(`Approved comment now appears in pages`, async () => {});
-        it(`Approved comment now appears in lastPostCid and lastCommentCid`);
-        it(`Approved comment does not appear in modQueue.pageCids`);
-        it(`Approved comment shows up in subplebbit.postUpdates`);
+        it(`Approved comment now appears in pages`, async () => {
+            expect(subplebbit.posts.pages.hot.comments[0].cid).to.equal(pendingComment.cid); // should be included in pages now
+        });
+        it(`Approved comment now appears in lastPostCid and lastCommentCid`, async () => {
+            expect(subplebbit.lastPostCid).to.equal(pendingComment.cid);
+            expect(subplebbit.lastCommentCid).to.equal(pendingComment.cid);
+        });
+        it(`Approved comment does not appear in modQueue.pageCids`, async () => {
+            expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
+        });
+        it(`Approved comment shows up in subplebbit.postUpdates`, async () => {
+            expect(Object.keys(subplebbit.postUpdates)).to.deep.equal([86400]); // should have postUpdates now that we approved hte comment
+        });
+
+        it(
+            `Sub should reject CommentModeration if a mod publishes approval or disapproveal for a comment that already got approved or rejected`
+        );
 
         it("Should resolve conflicting moderations to removed when both approved and removed are set", async () => {
             // TODO: If one mod sets approved: true and another sets removed: true,
