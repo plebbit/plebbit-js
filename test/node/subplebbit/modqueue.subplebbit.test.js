@@ -10,9 +10,11 @@ import {
 } from "../../../dist/node/test/test-util.js";
 
 // Skeleton tests added for pending approval and modqueue edge cases
+// mod queue pages should not have comments with depth 0 and pageIpfs.comments[x].comment.postCid defined
+// need to test when we no longer have pending comments, modQueue pageCids should be undefined
 
 describe(`Pending approval modqueue functionality`, async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, pendingComment;
 
     before(async () => {
         plebbit = await mockPlebbit();
@@ -41,20 +43,30 @@ describe(`Pending approval modqueue functionality`, async () => {
         it("Should put failed publication in pending approval queue when challenge has pendingApproval: true", async () => {
             // TODO: Test that when a challenge with pendingApproval fails,
             // the publication goes to pending approval instead of being rejected
-            const randomPost = await generateMockPost(subplebbit.address, plebbit, false);
-            randomPost.removeAllListeners("challenge");
+            pendingComment = await generateMockPost(subplebbit.address, plebbit, false);
+            pendingComment.removeAllListeners("challenge");
 
-            randomPost.once("challenge", async () => {
-                await randomPost.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+            pendingComment.once("challenge", async () => {
+                await pendingComment.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
             });
 
-            const challengeVerificationPromise = new Promise((resolve) => randomPost.once("challengeverification", resolve));
+            const challengeVerificationPromise = new Promise((resolve) => pendingComment.once("challengeverification", resolve));
 
-            await publishWithExpectedResult(randomPost, true); // a pending approval is technically challengeSucess = true
+            await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
 
+            expect(pendingComment.publishingState).to.equal("succeeded");
+            expect(pendingComment.cid).to.be.a("string");
             const verification = await challengeVerificationPromise;
-            expect(randomPost.pendingApproval).to.be.true;
+            // TODO need to test only minimal props are there in verification.commentUpdate
+            expect(pendingComment.pendingApproval).to.be.true;
             expect(verification.commentUpdate.pendingApproval).to.be.true;
+            expect(Object.keys(verification.commentUpdate).sort()).to.deep.equal([
+                "author",
+                "cid",
+                "pendingApproval",
+                "protocolVersion",
+                "signature"
+            ]);
         });
 
         it("Should exclude specific publication types from pending approval", async () => {
@@ -71,11 +83,23 @@ describe(`Pending approval modqueue functionality`, async () => {
             await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids?.pendingApproval);
             const page = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids?.pendingApproval);
             expect(page.comments.length).to.equal(1);
+            const pendingCommentInPage = page.comments[0];
+            expect(pendingCommentInPage.cid).to.equal(pendingComment.cid);
+            expect(pendingCommentInPage.updatedAt).to.be.undefined;
+            expect(pendingCommentInPage.pendingApproval).to.be.true;
+        });
+
+        it(`pending comment should not appear in subplebbit.lastPostCid or subplebbit.lastCommentCid`, async () => {
+            expect(subplebbit.lastPostCid).to.not.equal(pendingComment.cid);
+            expect(subplebbit.lastCommentCid).to.not.equal(pendingComment.cid);
+        });
+
+        it(`pending comment should not appear in subplebbit.postUpdates`, async () => {
+            expect(subplebbit.postUpdates).to.be.undefined;
         });
 
         it(`Pending comment should not be pinned in ipfs node`);
         it(`pending comment should not appear in any page`);
-        it(`pending comment should not appear in subplebbit.postUpdates`);
 
         it("Should limit pending approvals to maxPendingApprovalCount (default 500)", async () => {
             // TODO: Test that pending approval queue respects size limit
