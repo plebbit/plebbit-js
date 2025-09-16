@@ -22,6 +22,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { SubplebbitIpfsType } from "../../../subplebbit/types.js";
 import { cleanUpBeforePublishing, signCommentUpdateForChallengeVerification } from "../../../signer/signatures.js";
 import { deriveCommentIpfsFromCommentTableRow } from "../util.js";
+import { sha256 } from "js-sha256";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -374,7 +375,7 @@ export class PageGenerator {
         return { comment: commentIpfs, commentUpdate };
     }
 
-    async generateModQueuePages(): Promise<SubplebbitIpfsType["modQueue"]> {
+    async generateModQueuePages(): Promise<(SubplebbitIpfsType["modQueue"] & { combinedHashOfCids: string }) | undefined> {
         const firstPageSizeBytes = 1024 * 1024;
         const commentsPendingApproval = this._subplebbit._dbHandler.queryCommentsPendingApproval();
         if (commentsPendingApproval.length === 0) return undefined;
@@ -383,11 +384,13 @@ export class PageGenerator {
             commentsPendingApproval.map((comment) => this._bundleLatestCommentUpdateWithQueuedComments(comment))
         );
 
+        const combinedHashOfCids = sha256(queuedComments.map((comment) => comment.commentUpdate.cid).join(""));
+
         const chunkedQueuedComments = this._chunkComments({ comments: queuedComments, firstPageSizeBytes });
 
         const pages = await this.addQueuedCommentChunksToIpfs(chunkedQueuedComments, "pendingApproval");
 
-        return { pageCids: { pendingApproval: pages.cids[0] } };
+        return { pageCids: { pendingApproval: pages.cids[0] }, combinedHashOfCids };
     }
 
     async generatePostPages(

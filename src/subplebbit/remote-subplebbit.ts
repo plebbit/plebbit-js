@@ -251,7 +251,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     protected _toJSONIpfsBaseNoPosts() {
-        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts"]));
+        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts", "modQueue"]));
         return remeda.pick(this, subplebbitIpfsKeys);
     }
 

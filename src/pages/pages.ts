@@ -13,6 +13,7 @@ import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-
 import { Comment } from "../publications/comment/comment.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { Plebbit } from "../plebbit/plebbit.js";
+import { sha256 } from "js-sha256";
 
 type BaseProps = {
     subplebbit: Pick<RemoteSubplebbit, "address" | "signature">;
@@ -252,9 +253,11 @@ export class ModQueuePages extends BasePages {
     override pages: undefined = undefined;
     override pageCids!: ModQueuePageCids;
     override _parentComment = undefined;
+    _combinedHashOfPendingCommentsCids: string;
 
     constructor(props: ModQueueProps) {
         super(props);
+        this._combinedHashOfPendingCommentsCids = sha256("");
     }
 
     protected override _initClientsManager(plebbit: Plebbit): void {

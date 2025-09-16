@@ -500,8 +500,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._updateStartedValue();
 
-        await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
-        await this._updateIpnsPubsubPropsIfNeeded({
+        this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        this._updateIpnsPubsubPropsIfNeeded({
             ...this.toJSONInternalBeforeFirstUpdate(), //@ts-expect-error
             signature: { publicKey: this.signer.publicKey }
         });
@@ -529,11 +529,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private _requireSubplebbitUpdateIfModQueueChanged() {
         const combinedHashOfAllQueuedComments = this._dbHandler.queryCombinedHashOfPendingComments();
-        const storedCombinedHash = <string | undefined>(
-            this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.COMBINED_HASH_OF_PENDING_COMMENTS])
-        );
-        if (storedCombinedHash === combinedHashOfAllQueuedComments) return;
-        else this._subplebbitUpdateTrigger = true;
+
+        if (this.modQueue._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
@@ -584,7 +581,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 statsCid,
                 updatedAt,
                 postUpdates: newPostUpdates,
-                modQueue: newModQueue,
                 protocolVersion: env.PROTOCOL_VERSION
             })
         };
@@ -622,12 +618,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         if (newModQueue) {
+            newIpns.modQueue = { pageCids: newModQueue.pageCids };
             const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
             const modQueuePageCidsToUnPin = remeda.unique(
                 Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
             );
 
             modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
+        } else {
+            await this._updateDbInternalState({ modQueue: undefined });
+            this.modQueue.resetPages();
         }
 
         const signature = await signSubplebbit(newIpns, this.signer);
@@ -684,9 +684,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
 
-        const combinedHashOfAllQueuedComments = this._dbHandler.queryCombinedHashOfPendingComments();
+        this.modQueue._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
 
-        this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.COMBINED_HASH_OF_PENDING_COMMENTS], combinedHashOfAllQueuedComments);
+        log.trace("Updated combined hash of pending comments to", this.modQueue._combinedHashOfPendingCommentsCids);
 
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
