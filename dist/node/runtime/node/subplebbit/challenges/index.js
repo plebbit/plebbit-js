@@ -9,6 +9,7 @@ import question from "./plebbit-js-challenges/question.js";
 import voucher from "./plebbit-js-challenges/voucher.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 import publicationMatch from "./plebbit-js-challenges/publication-match.js";
+import mintpass from "@mintpass/challenge";
 import * as remeda from "remeda";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
@@ -22,7 +23,8 @@ const plebbitJsChallenges = {
     question: question,
     voucher: voucher,
     "evm-contract-call": evmContractCall,
-    "publication-match": publicationMatch
+    "publication-match": publicationMatch,
+    "mintpass": mintpass
 };
 const validateChallengeFileFactory = (challengeFileFactory, challengeIndex, subplebbit) => {
     const subplebbitChallengeSettings = subplebbit?.settings?.challenges?.[challengeIndex];
