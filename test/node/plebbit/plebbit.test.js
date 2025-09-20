@@ -82,7 +82,7 @@ describe(`Plebbit.challenges`, async () => {
             "voucher",
             "evm-contract-call",
             "publication-match",
-            "mintpass-v1"
+            "mintpass"
         ]);
     });
 });
