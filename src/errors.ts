@@ -148,6 +148,7 @@ export enum messages {
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
     ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT = "CommentUpdate.cid is different than calculated or provided comment.cid",
+    ERR_PAGE_COMMENT_POST_HAS_POST_CID_DEFINED_WITH_DEPTH_0 = "pageComment.comment.postCid is defined even though depth = 0, comments in page need to adhere to strict CommentIpfs and CommentUpdate props",
     ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge pubsub message is not the subplebbit",
     ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge verification pubsub message is not the subplebbit",
     ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE = "Challenge request id is not derived from signature.publicKey",

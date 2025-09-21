@@ -862,6 +862,8 @@ export async function verifyPageComment({
     if (pageComment.comment.subplebbitAddress !== subplebbit.address)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
 
+    if (pageComment.comment.depth === 0 && pageComment.comment.postCid)
+        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_HAS_POST_CID_DEFINED_WITH_DEPTH_0 };
     if (parentComment) {
         if ("cid" in parentComment && parentComment.cid !== pageComment.comment.parentCid)
             return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
