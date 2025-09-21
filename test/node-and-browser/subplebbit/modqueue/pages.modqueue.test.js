@@ -12,6 +12,7 @@ import validModQueuePage from "../../../fixtures/valid_modqueue_page.json" with 
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { Buffer } from "buffer";
 import { messages } from "../../../../dist/node/errors.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const subplebbitAddressOfFixture = validModQueuePage.comments[0].comment.subplebbitAddress;
 
@@ -133,6 +134,34 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
                 expect(e.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT);
+            }
+
+            await plebbit.destroy();
+        });
+
+        it(`Fails validation when pending posts have postCid defined`, async () => {
+            const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
+            const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
+
+            const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
+
+            const indexOfPost = invalidPage.comments.findIndex((comment) => comment.comment.depth === 0);
+            expect(indexOfPost).to.be.greaterThanOrEqual(0);
+            invalidPage.comments[indexOfPost].comment.postCid = "QmYgRRQaybe12KWGnxjvaCetsxWutVRb9Piqcw8irgx9Xf"; // random cid unrelated to this comment. It's a post so it shouldn't have a postCid
+
+            // Update the commentUpdate.cid to match the modified comment
+            invalidPage.comments[indexOfPost].commentUpdate.cid = await calculateIpfsHash(
+                deterministicStringify(invalidPage.comments[indexOfPost].comment)
+            );
+            const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
+            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+
+            try {
+                await sub.modQueue.getPage(invalidPageCid);
+                expect.fail("Should have thrown");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
+                expect(e.details.signatureValidity.reason).to.equal(messages.ERR_PAGE_COMMENT_POST_HAS_POST_CID_DEFINED_WITH_DEPTH_0);
             }
 
             await plebbit.destroy();
