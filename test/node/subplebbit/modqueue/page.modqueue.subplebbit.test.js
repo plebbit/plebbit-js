@@ -113,15 +113,35 @@ describe("Modqueue depths", () => {
 
             await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
 
-            const pageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+            const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
 
-            expect(pageLoaded.comments.every((comment) => comment.depth === depth)).to.be.true;
+            expect(modQueuepageLoaded.comments.every((comment) => comment.depth === depth)).to.be.true;
         });
     }
 
     it("Should support modqueue pages with comments of different depths", async () => {
         // TODO: Create a mix of top-level posts and nested replies in pending approval
         // and verify modqueue page rendering/order handles varying depths correctly
+        const pendingComments = [];
+
+        for (const depth of depthsToTest) {
+            pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth }));
+        }
+        // different depths should show up in mod queue
+
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
+
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
+
+        const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+
+        for (let i = 0; i < pendingComments.length; i++) {
+            // this will test both order and that all depths do exist in the page
+            // order of mod queue is newest first, so it's the reverse of pendingComments
+            expect(pendingComments[i].comment.depth).to.equal(
+                modQueuepageLoaded.comments[modQueuepageLoaded.comments.length - i - 1].depth
+            );
+        }
     });
 });
 
