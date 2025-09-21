@@ -142,12 +142,6 @@ describe("Modqueue depths", () => {
                 modQueuepageLoaded.comments[modQueuepageLoaded.comments.length - i - 1].depth
             );
         }
-    });
-});
-
-describe("Modqueue page validation", () => {
-    it("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
-        // TODO: Ensure cross-sub comments cannot appear under another sub's modqueue
-        // and that the operation fails or rejects with an appropriate error
+        debugger;
     });
 });
