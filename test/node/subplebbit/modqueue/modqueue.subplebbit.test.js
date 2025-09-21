@@ -6,27 +6,10 @@ import {
     resolveWhenConditionIsTrue,
     mockGatewayPlebbit,
     generateMockVote,
-    generateMockComment
+    generateMockComment,
+    publishPostToModQueue
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-
-const publishCommentToModQueue = async (subplebbit) => {
-    const remotePlebbit = await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true }); // this plebbit is not connected to kubo rpc client of subplebbit
-    const pendingComment = await generateMockPost(subplebbit.address, remotePlebbit, false, {
-        content: "Pending comment" + Math.random()
-    });
-    pendingComment.removeAllListeners("challenge");
-
-    pendingComment.once("challenge", async () => {
-        await pendingComment.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
-    });
-
-    const challengeVerificationPromise = new Promise((resolve) => pendingComment.once("challengeverification", resolve));
-
-    await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
-
-    return { pendingComment, challengeVerification: await challengeVerificationPromise };
-};
 
 // Skeleton tests added for pending approval and modqueue edge cases
 // mod queue pages should not have comments with depth 0 and pageIpfs.comments[x].comment.postCid defined
@@ -72,14 +55,13 @@ describe(`Pending approval modqueue functionality`, async () => {
             // the publication goes to pending approval instead of being rejected
             await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
 
-            const pending = await publishCommentToModQueue(subplebbit);
-            pendingComment = pending.pendingComment;
+            const { comment, challengeVerification } = await publishPostToModQueue({ subplebbit });
+            pendingComment = comment;
 
             expect(pendingComment.publishingState).to.equal("succeeded");
             expect(pendingComment.cid).to.be.a("string");
-            const verification = pending.challengeVerification;
-            expect(verification.commentUpdate.pendingApproval).to.be.true;
-            expect(Object.keys(verification.commentUpdate).sort()).to.deep.equal([
+            expect(challengeVerification.commentUpdate.pendingApproval).to.be.true;
+            expect(Object.keys(challengeVerification.commentUpdate).sort()).to.deep.equal([
                 "author",
                 "cid",
                 "pendingApproval",
@@ -203,12 +185,12 @@ describe(`Pending approval modqueue functionality`, async () => {
         });
 
         it(`Sub should reject CommentModeration if a mod published disapproval for a comment that already got disapproved`, async () => {
-            const { pendingComment, challengeVerification } = await publishCommentToModQueue(subplebbit);
+            const { comment, challengeVerification } = await publishPostToModQueue({ subplebbit });
             const commentModerationDisapproval = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,
                 signer: modSigner,
                 commentModeration: { approved: false },
-                commentCid: pendingComment.cid
+                commentCid: comment.cid
             });
 
             await publishWithExpectedResult(commentModerationDisapproval, true);
@@ -217,7 +199,7 @@ describe(`Pending approval modqueue functionality`, async () => {
                 subplebbitAddress: subplebbit.address,
                 signer: modSigner,
                 commentModeration: { approved: false },
-                commentCid: pendingComment.cid
+                commentCid: comment.cid
             });
 
             await publishWithExpectedResult(
@@ -282,8 +264,8 @@ describe(`Pending approval modqueue functionality`, async () => {
         let commentToBeRejected;
 
         before(async () => {
-            const pending = await publishCommentToModQueue(subplebbit);
-            commentToBeRejected = pending.pendingComment;
+            const pending = await publishPostToModQueue({ subplebbit });
+            commentToBeRejected = pending.comment;
 
             await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
         });
@@ -304,21 +286,6 @@ describe(`Pending approval modqueue functionality`, async () => {
         it(`Rejecting a pending comment will remove it from database of subplebbit`, async () => {
             const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
             expect(queryRes).to.be.undefined;
-        });
-    });
-
-    
-    describe("Modqueue page validation", () => {
-        it("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
-            // TODO: Ensure cross-sub comments cannot appear under another sub's modqueue
-            // and that the operation fails or rejects with an appropriate error
-        });
-    });
-
-    describe("Modqueue depths", () => {
-        it("Should support modqueue pages with comments of different depths", async () => {
-            // TODO: Create a mix of top-level posts and nested replies in pending approval
-            // and verify modqueue page rendering/order handles varying depths correctly
         });
     });
 

@@ -3,26 +3,9 @@ import {
     mockPlebbit,
     generateMockPost,
     publishWithExpectedResult,
+    publishPostToModQueue,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-
-async function publishPendingApprovalComment(subplebbit, plebbit, seed) {
-    const pendingComment = await generateMockPost(subplebbit.address, plebbit, false, {
-        content: `Pending comment ${seed}`
-    });
-
-    pendingComment.removeAllListeners("challenge");
-    pendingComment.once("challenge", async () => {
-        await pendingComment.publishChallengeAnswers([`${seed}-wrong`]);
-    });
-
-    const verificationPromise = new Promise((resolve) => pendingComment.once("challengeverification", resolve));
-
-    await publishWithExpectedResult(pendingComment, true);
-    await verificationPromise;
-
-    return pendingComment;
-}
 
 describe(`Modqueue limits`, () => {
     let plebbit;
@@ -33,6 +16,7 @@ describe(`Modqueue limits`, () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
     });
 
     after(async () => {
@@ -70,8 +54,8 @@ describe(`Modqueue limits`, () => {
         const totalToPublish = limit + 2;
 
         for (let index = 0; index < totalToPublish; index++) {
-            const pendingComment = await publishPendingApprovalComment(subplebbit, plebbit, index);
-            pendingComments.push(pendingComment);
+            const { comment, challengeVerification } = await publishPostToModQueue({ subplebbit });
+            pendingComments.push(comment);
         }
         // none of the comments got rejected, instead 2 of them got removed from pending queue
     });

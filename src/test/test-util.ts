@@ -53,6 +53,7 @@ import type {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
+    DecryptedChallengeVerificationMessageType,
     PubsubMessage
 } from "../pubsub-messages/types.js";
 import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
@@ -1649,6 +1650,33 @@ export async function publishCommentWithDepth({ depth, subplebbit }: { depth: nu
         }
         throw Error("Failed to publish comment with depth");
     }
+}
+
+export async function publishPostToModQueue({
+    subplebbit
+}: {
+    subplebbit: RemoteSubplebbit;
+}): Promise<{ comment: Comment; challengeVerification: DecryptedChallengeVerificationMessageType }> {
+    const remotePlebbit = await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true }); // this plebbit is not connected to kubo rpc client of subplebbit
+    const pendingComment = await generateMockPost(subplebbit.address, remotePlebbit, false, {
+        content: "Pending post" + " " + Math.random()
+    });
+
+    pendingComment.removeAllListeners("challenge");
+
+    pendingComment.once("challenge", async () => {
+        await pendingComment.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+    });
+
+    const challengeVerificationPromise = new Promise((resolve) =>
+        pendingComment.once("challengeverification", resolve)
+    ) as Promise<DecryptedChallengeVerificationMessageType>;
+
+    await publishWithExpectedResult(pendingComment, true); // a pending approval is technically challengeSucess = true
+
+    if (!pendingComment.pendingApproval) throw Error("The comment did not go to pending approval");
+
+    return { comment: pendingComment, challengeVerification: await challengeVerificationPromise };
 }
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
