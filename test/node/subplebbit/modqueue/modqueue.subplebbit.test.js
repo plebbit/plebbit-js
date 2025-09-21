@@ -11,12 +11,6 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
-// Skeleton tests added for pending approval and modqueue edge cases
-// mod queue pages should not have comments with depth 0 and pageIpfs.comments[x].comment.postCid defined
-// need to test when we no longer have pending comments, modQueue pageCids should be undefined
-// approved in comment moderation field should only be used for pending comments
-// commentEdit should be rejected on a pending comment
-// we should reject any commentedit/votes/replies under a pending comment
 describe(`Pending approval modqueue functionality`, async () => {
     let plebbit, subplebbit, pendingComment, modSigner;
 
@@ -30,6 +24,8 @@ describe(`Pending approval modqueue functionality`, async () => {
                 [modSigner.address]: { role: "moderator" }
             }
         });
+
+        expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
     });
 
     after(async () => {
