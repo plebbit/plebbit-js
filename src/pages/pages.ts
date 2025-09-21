@@ -1,6 +1,6 @@
 import { parsePageIpfs } from "./util.js";
 import type { PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
-import { verifyPage } from "../signer/signatures.js";
+import { verifyModQueuePage, verifyPage } from "../signer/signatures.js";
 import {
     BasePagesClientsManager,
     SubplebbitPostsPagesClientsManager,
@@ -286,7 +286,7 @@ export class ModQueuePages extends BasePages {
             validatePages: this._clientsManager._plebbit.validatePages,
             validateUpdateSignature: false // no need because we verified that page cid matches its content
         };
-        const signatureValidity = await verifyPage(verificationOpts);
+        const signatureValidity = await verifyModQueuePage(verificationOpts);
         if (!signatureValidity.valid)
             throw new PlebbitError("ERR_MOD_QUEUE_PAGE_IS_INVALID", {
                 signatureValidity,

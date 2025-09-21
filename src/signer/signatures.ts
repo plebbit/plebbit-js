@@ -847,7 +847,7 @@ export async function verifyPageComment({
 }: {
     pageComment: PageIpfs["comments"][0];
     subplebbit: SubplebbitForVerifyingPages;
-    parentComment: ParentCommentForVerifyingPages;
+    parentComment: ParentCommentForVerifyingPages | undefined;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     overrideAuthorAddressIfInvalid: boolean;
@@ -858,21 +858,23 @@ export async function verifyPageComment({
     // when we're verifying a page from a subplebbit.posts, that means there's no parent comment cid or any of its props
     // another sceneario is with a flat page, where we don't have the parent comment cid or prop, but we do have its postCid
     // another sceneario is when we're veriifying a nested page and we have the parent comment cid and all its props
+    // another sceneario is when we're verifying a mod queue page that has comments with different depths with different parentCids and not necessarily a shared postCid
     if (pageComment.comment.subplebbitAddress !== subplebbit.address)
         return { valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB };
 
-    if ("cid" in parentComment && parentComment.cid !== pageComment.comment.parentCid)
-        return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
+    if (parentComment) {
+        if ("cid" in parentComment && parentComment.cid !== pageComment.comment.parentCid)
+            return { valid: false, reason: messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT };
 
-    if (pageComment.comment.depth > 0 && "cid" in parentComment && !parentComment?.cid)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
+        if (pageComment.comment.depth > 0 && "cid" in parentComment && !parentComment?.cid)
+            return { valid: false, reason: messages.ERR_PAGE_COMMENT_IS_A_REPLY_BUT_HAS_NO_PARENT_COMMENT_INSTANCE };
 
-    if ("depth" in parentComment && typeof parentComment.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
+        if ("depth" in parentComment && typeof parentComment.depth === "number" && parentComment.depth + 1 !== pageComment.comment.depth)
+            return { valid: false, reason: messages.ERR_PAGE_COMMENT_DEPTH_VALUE_IS_NOT_RELATIVE_TO_ITS_PARENT };
 
-    if (pageComment.comment.postCid !== parentComment.postCid)
-        return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
-
+        if (pageComment.comment.postCid !== parentComment.postCid)
+            return { valid: false, reason: messages.ERR_PAGE_COMMENT_POST_CID_IS_NOT_SAME_AS_POST_CID_OF_COMMENT_INSTANCE };
+    }
     const calculatedCommentCid = await calculateIpfsHash(deterministicStringify(pageComment.comment));
 
     const commentSignatureValidity = await verifyCommentIpfs({
@@ -883,7 +885,8 @@ export async function verifyPageComment({
         calculatedCommentCid
     });
     if (!commentSignatureValidity.valid) return commentSignatureValidity;
-    const postCid = parentComment.postCid || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
+    const postCid =
+        (parentComment && parentComment.postCid) || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
     if (!postCid) return { valid: false, reason: messages.ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID };
     const commentUpdateSignatureValidity = await verifyCommentUpdate({
         update: pageComment.commentUpdate,
@@ -951,6 +954,58 @@ export async function verifyPage({
             clientsManager,
             overrideAuthorAddressIfInvalid,
             parentComment,
+            validatePages,
+            validateUpdateSignature
+        });
+        if (!verifyRes.valid) return verifyRes;
+    }
+
+    if (cacheKey) clientsManager._plebbit._memCaches.pageVerificationCache.set(cacheKey, true);
+
+    return { valid: true };
+}
+
+export async function verifyModQueuePage({
+    pageCid,
+    page,
+    resolveAuthorAddresses,
+    clientsManager,
+    subplebbit,
+    overrideAuthorAddressIfInvalid,
+    validatePages,
+
+    validateUpdateSignature
+}: {
+    pageCid: string | undefined;
+    page: PageIpfs;
+    resolveAuthorAddresses: boolean;
+    clientsManager: BaseClientsManager;
+    subplebbit: SubplebbitForVerifyingPages;
+    overrideAuthorAddressIfInvalid: boolean;
+    validatePages: boolean;
+    validateUpdateSignature: boolean;
+}): Promise<ValidationResult> {
+    const cacheKey =
+        pageCid &&
+        sha256(
+            pageCid +
+                resolveAuthorAddresses +
+                overrideAuthorAddressIfInvalid +
+                subplebbit.address +
+                subplebbit.signature?.publicKey +
+                validatePages +
+                validateUpdateSignature
+        );
+    if (cacheKey) if (clientsManager._plebbit._memCaches.pageVerificationCache.get(cacheKey)) return { valid: true };
+
+    for (const pageComment of page.comments) {
+        const verifyRes = await verifyPageComment({
+            pageComment,
+            subplebbit,
+            resolveAuthorAddresses,
+            clientsManager,
+            overrideAuthorAddressIfInvalid,
+            parentComment: undefined,
             validatePages,
             validateUpdateSignature
         });
