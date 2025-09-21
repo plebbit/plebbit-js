@@ -66,17 +66,16 @@ const getNftImageUrl = async (nft) => {
   return nftUrl
 }
 
-const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
-  let messageToSign = {}
-  // the property names must be in this order for the signature to match
-  // insert props one at a time otherwise babel/webpack will reorder
-  messageToSign.domainSeparator = 'plebbit-author-avatar'
-  messageToSign.authorAddress = authorAddress
-  messageToSign.timestamp = nft.timestamp
-  messageToSign.tokenAddress = nft.address
-  messageToSign.tokenId = String(nft.id) // must be a type string, not number
+const getNftMessageToSign = (authorAddress, timestamp, tokenAddress, tokenId) => {
   // use plain JSON so the user can read what he's signing
-  messageToSign = JSON.stringify(messageToSign)
+  // property names must always be in this order for signature to match so don't use JSON.stringify
+  return `{"domainSeparator":"plebbit-author-avatar","authorAddress":"${authorAddress}","timestamp":${timestamp},"tokenAddress":"${tokenAddress}","tokenId":"${tokenId}"}`
+}
+
+const createNftSignature = async (nft, authorAddress, ethersJsSigner) => {
+  // use plain JSON so the user can read what he's signing
+  // property names must always be in this order for signature to match so don't use JSON.stringify
+  const messageToSign = `{"domainSeparator":"plebbit-author-avatar","authorAddress":"${authorAddress}","timestamp":${nft.timestamp},"tokenAddress":"${nft.address}","tokenId":"${nft.id}"}`
 
   // the ethers.js signer is usually gotten from metamask https://docs.ethers.io/v5/api/signer/
   const signature = await ethersJsSigner.signMessage(messageToSign)
@@ -88,15 +87,10 @@ const verifyNftSignature = async (nft, authorAddress) => {
   const nftContract = new ethers.Contract(nft.address, nftAbi, chainProvider)
   // get the owner of the nft at nft.id
   const currentNftOwnerAddress = await nftContract.ownerOf(nft.id)
-  let messageThatShouldBeSigned = {}
-  // the property names must be in this order for the signature to match
-  // insert props one at a time otherwise babel/webpack will reorder
-  messageThatShouldBeSigned.domainSeparator = 'plebbit-author-avatar'
-  messageThatShouldBeSigned.authorAddress = authorAddress
-  messageThatShouldBeSigned.timestamp = nft.timestamp
-  messageThatShouldBeSigned.tokenAddress =  nft.address
-  messageThatShouldBeSigned.tokenId = String(nft.id) // must be a type string, not number
-  messageThatShouldBeSigned = JSON.stringify(messageThatShouldBeSigned)
+
+  // use plain JSON so the user can read what he's signing
+  // property names must always be in this order for signature to match so don't use JSON.stringify
+  const messageThatShouldBeSigned = `{"domainSeparator":"plebbit-author-avatar","authorAddress":"${authorAddress}","timestamp":${nft.timestamp},"tokenAddress":"${nft.address}","tokenId":"${nft.id}"}`
 
   const signatureAddress = ethers.utils.verifyMessage(messageThatShouldBeSigned, nft.signature)
   if (currentNftOwnerAddress !== signatureAddress) {
