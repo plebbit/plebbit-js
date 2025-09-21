@@ -307,17 +307,7 @@ describe(`Pending approval modqueue functionality`, async () => {
         });
     });
 
-    describe(`Modqueue limits`, async () => {
-        it("Should limit pending approvals to maxPendingApprovalCount (default 500)", async () => {
-            // TODO: Test that pending approval queue respects size limit
-            // Should use subplebbit.settings.maxPendingApprovalCount
-        });
-
-        it("Should remove oldest pending comments when hitting maxPendingApprovalCount limit", async () => {
-            // TODO: Test that when maxPendingApprovalCount is reached,
-            // the oldest pending comments are removed to make room for new ones
-        });
-    });
+    
     describe("Modqueue page validation", () => {
         it("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
             // TODO: Ensure cross-sub comments cannot appear under another sub's modqueue
