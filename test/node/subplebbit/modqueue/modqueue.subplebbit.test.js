@@ -7,8 +7,8 @@ import {
     mockGatewayPlebbit,
     generateMockVote,
     generateMockComment
-} from "../../../dist/node/test/test-util.js";
-import { messages } from "../../../dist/node/errors.js";
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
 
 const publishCommentToModQueue = async (subplebbit) => {
     const remotePlebbit = await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true }); // this plebbit is not connected to kubo rpc client of subplebbit
@@ -319,7 +319,7 @@ describe(`Pending approval modqueue functionality`, async () => {
         });
     });
     describe("Modqueue page validation", () => {
-        it("Should fail if a modqueue comment belongs to a different sub", async () => {
+        it("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
             // TODO: Ensure cross-sub comments cannot appear under another sub's modqueue
             // and that the operation fails or rejects with an appropriate error
         });
@@ -329,16 +329,6 @@ describe(`Pending approval modqueue functionality`, async () => {
         it("Should support modqueue pages with comments of different depths", async () => {
             // TODO: Create a mix of top-level posts and nested replies in pending approval
             // and verify modqueue page rendering/order handles varying depths correctly
-        });
-    });
-
-    describe("Publication type support", () => {
-        it("Should support pending approval for comments and posts", async () => {
-            // TODO: Test that both comments and posts can be pending approval
-        });
-
-        it("Should not support pending approval for votes", async () => {
-            // TODO: Test that votes are not subject to pending approval
         });
     });
 
