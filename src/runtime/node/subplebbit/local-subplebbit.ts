@@ -487,7 +487,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
         if (!this.settings?.challenges) {
-            this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges };
+            this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges, maxPendingApprovalCount: 500 };
             this._usingDefaultChallenge = true;
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
