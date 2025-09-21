@@ -1,17 +1,14 @@
 import { expect } from "chai";
 import {
     mockPlebbit,
-    generateMockPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    mockGatewayPlebbit,
-    generateMockVote,
     generateMockComment,
     publishPostToModQueue,
     publishRandomPost,
     publishRandomReply
 } from "../../../../dist/node/test/test-util.js";
-import { messages } from "../../../../dist/node/errors.js";
+import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
 
 const depthsToTest = [0, 1, 2, 3, 4, 5];
 
@@ -141,7 +138,11 @@ describe("Modqueue depths", () => {
             expect(pendingComments[i].comment.depth).to.equal(
                 modQueuepageLoaded.comments[modQueuepageLoaded.comments.length - i - 1].depth
             );
+
+            testCommentFieldsInModQueuePageJson(
+                modQueuepageLoaded.comments[modQueuepageLoaded.comments.length - i - 1],
+                subplebbit.address
+            );
         }
-        debugger;
     });
 });
