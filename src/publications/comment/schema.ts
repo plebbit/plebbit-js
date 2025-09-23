@@ -204,6 +204,15 @@ export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     pendingApproval: z.boolean().optional()
 }).strict();
 
+export const CommentUpdateTableRowSchema = CommentUpdateSchema.extend({
+    insertedAt: PlebbitTimestampSchema,
+    postUpdatesBucket: z.int().nonnegative().optional(), // the post updates bucket of post CommentUpdate, not applicable to replies
+    publishedToPostUpdatesMFS: z.boolean(), // whether the comment latest update has been published
+    postCommentUpdateCid: CidStringSchema.optional() // the cid of the post comment update, cid v0. Not applicable to replies
+});
+
+export interface CommentUpdatesRow extends CommentUpdateType {}
+
 // Comment pubsub message here
 
 export const CommentPubsubMessageReservedFields = remeda.difference(
@@ -233,5 +242,8 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
 
 export const CommentUpdateReservedFields = remeda.difference(CommentPubsubMessageReservedFields, [
     ...remeda.keys.strict(CommentUpdateSchema.shape),
+    ...remeda.keys.strict(CommentUpdateTableRowSchema.shape),
     "pendingApproval"
 ]);
+
+// CommentUpdates Table row here
