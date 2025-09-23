@@ -419,7 +419,7 @@ export class DbHandler {
 
         if (needToMigrate) {
             if (dbExistsAlready && currentDbVersion > 0) {
-                await this.destoryConnection();
+                this.destoryConnection();
                 backupDbPath = path.join(
                     path.dirname(dbPath),
                     ".backup_before_migration",
@@ -437,9 +437,6 @@ export class DbHandler {
             const tablesToDrop = ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications", "signers"];
             for (const tableName of tablesToDrop) this._db.exec(`DROP TABLE IF EXISTS ${tableName}`);
             this._db.exec(`DROP TABLE IF EXISTS ${TABLES.COMMENT_UPDATES}`);
-            if (currentDbVersion <= 16 && this._tableExists(TABLES.COMMENT_EDITS)) {
-                await this._moveCommentEditsToModAuthorTables();
-            }
         }
 
         const createTableFunctions = [
@@ -612,97 +609,6 @@ export class DbHandler {
             if (!validRes.valid) {
                 log.error(`Comment ${commentRecord.cid} in DB has invalid signature due to ${validRes.reason}. Will be purged.`);
                 this.purgeComment(commentRecord.cid);
-            }
-        }
-    }
-
-    private async _moveCommentEditsToModAuthorTables() {
-        // Prior to db version 17, all comment edits, author and mod's were in the same table
-        // code below will split them to their separate tables
-        this._createCommentModerationsTable(TABLES.COMMENT_MODERATIONS);
-        const allCommentEditsRaw = this._db.prepare(`SELECT rowid, * FROM ${TABLES.COMMENT_EDITS} ORDER BY rowid ASC`).all() as any[];
-
-        const allCommentEdits = allCommentEditsRaw.map((r) => this._parseCommentEditsRow(r));
-
-        const commentModerationSchemaKeys = remeda.keys.strict(ModeratorOptionsSchema.shape);
-        const modEditRowIds: number[] = [];
-        const moderationsToInsert: any[] = [];
-
-        for (const commentEdit of allCommentEdits) {
-            const commentToBeEdited = this.queryComment(commentEdit.commentCid);
-            if (!commentToBeEdited) {
-                throw Error(`Comment ${commentEdit.commentCid} not found while migrating comment edits.`);
-            }
-            const rowidCandidate = commentEdit.rowid ?? commentEdit.id;
-            const rowid = typeof rowidCandidate === "number" ? rowidCandidate : Number(rowidCandidate);
-            if (!Number.isFinite(rowid)) throw Error("rowid should be part of the query results");
-            const editHasBeenSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
-            if (editHasBeenSignedByOriginalAuthor) continue; // we're only interested in mod edits
-
-            const modSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
-            const commentModeration: CommentModerationTableRow["commentModeration"] = removeNullUndefinedValues({
-                ...(remeda.pick(commentEdit as Record<string, unknown>, commentModerationSchemaKeys) as Partial<
-                    CommentModerationTableRow["commentModeration"]
-                >),
-                ...(commentEdit.commentAuthor && { author: JSON.parse(commentEdit.commentAuthor) })
-            });
-
-            moderationsToInsert.push(
-                this._processRecordsForDbBeforeInsert([
-                    {
-                        commentCid: commentEdit.commentCid,
-                        author: commentEdit.author, //This is the moderator's author object
-                        signature: commentEdit.signature, // Moderator's signature
-                        modSignerAddress,
-                        protocolVersion: commentEdit.protocolVersion,
-                        subplebbitAddress: commentEdit.subplebbitAddress,
-                        timestamp: commentEdit.timestamp,
-                        commentModeration: commentModeration, // The specific moderation actions
-                        insertedAt: commentEdit.insertedAt,
-                        extraProps: commentEdit.extraProps
-                    } as CommentModerationsTableRowInsert
-                ])[0]
-            );
-            modEditRowIds.push(rowid);
-        }
-
-        if (moderationsToInsert.length > 0) {
-            const stmt = this._db.prepare(`
-                INSERT INTO ${TABLES.COMMENT_MODERATIONS} 
-                (commentCid, author, signature, modSignerAddress, protocolVersion, subplebbitAddress, timestamp, commentModeration, insertedAt, extraProps) 
-                VALUES (@commentCid, @author, @signature, @modSignerAddress, @protocolVersion, @subplebbitAddress, @timestamp, @commentModeration, @insertedAt, @extraProps)
-            `);
-            const insertMany = this._db.transaction((items) => {
-                for (const item of items) stmt.run(item);
-            });
-            insertMany(moderationsToInsert);
-        }
-
-        if (modEditRowIds.length > 0) {
-            const placeholders = modEditRowIds.map(() => "?").join(",");
-
-            // Update the query to use explicit rowids
-            const deleteRes = this._db
-                .prepare(
-                    `DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})
-                         OR (removed IS NOT NULL OR pinned IS NOT NULL OR locked IS NOT NULL OR commentAuthor IS NOT NULL)`
-                )
-                .run(...modEditRowIds);
-
-            // Check if deletion was successful
-            if (deleteRes.changes < modEditRowIds.length) {
-                // Get list of rowids that actually exist for better error reporting
-                const existingRowids = this._db
-                    .prepare(`SELECT rowid FROM ${TABLES.COMMENT_EDITS} WHERE rowid IN (${placeholders})`)
-                    .all(...modEditRowIds)
-                    .map((row: any) => row.rowid);
-
-                const error =
-                    `Failed to delete ${modEditRowIds.length} comment edits. Only deleted ${deleteRes.changes}. ` +
-                    `Missing rowids likely don't exist in the database. ` +
-                    `Attempted: [${modEditRowIds.join(", ")}], Found existing: [${existingRowids.join(", ")}]`;
-
-                throw Error(error);
             }
         }
     }

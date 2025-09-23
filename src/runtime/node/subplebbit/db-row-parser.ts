@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { createSchemaRowParser } from "../../../schema/schema-util.js";
 import {
     CommentIpfsSchema,
@@ -23,21 +22,16 @@ export type CommentUpdatePrefixedColumns = {
 
 export type PrefixedCommentRow = CommentIpfsPrefixedColumns & CommentUpdatePrefixedColumns;
 
-const CommentIpfsRowWithExtraPropsSchema = CommentIpfsSchema.extend({
-    extraProps: CommentsTableRowSchema.shape.extraProps
-});
-
-const CommentEditsRowWithLegacySchema = CommentEditsTableRowSchema.extend({
-    commentAuthor: z.string().optional(),
-    pendingApproval: z.boolean().optional(),
-    id: z.union([z.number().int(), z.string()]).optional()
-});
-
-const parsePrefixedCommentIpfsSchema = createSchemaRowParser(CommentIpfsRowWithExtraPropsSchema, { prefix: "commentIpfs_" });
+const parsePrefixedCommentIpfsSchema = createSchemaRowParser(
+    CommentIpfsSchema.extend({
+        extraProps: CommentsTableRowSchema.shape.extraProps
+    }),
+    { prefix: "commentIpfs_" }
+);
 const parsePrefixedCommentUpdateSchema = createSchemaRowParser(CommentUpdateSchema, { prefix: "commentUpdate_" });
-const parseCommentsTableRowSchema = createSchemaRowParser(CommentsTableRowSchema);
+const parseCommentsTableRowSchema = createSchemaRowParser(CommentsTableRowSchema.partial({ rowid: true }));
 const parseCommentUpdatesTableRowSchema = createSchemaRowParser(CommentUpdateTableRowSchema);
-const parseCommentEditsTableRowSchema = createSchemaRowParser(CommentEditsRowWithLegacySchema);
+const parseCommentEditsTableRowSchema = createSchemaRowParser(CommentEditsTableRowSchema);
 const parseVotesTableRowSchema = createSchemaRowParser(VoteTablesRowSchema);
 
 export function parsePrefixedComment(row: PrefixedCommentRow): {
@@ -67,24 +61,9 @@ export function parseCommentUpdateRow(row: unknown): CommentUpdatesRow {
     return data as CommentUpdatesRow;
 }
 
-export function parseCommentEditsRow(row: unknown): CommentEditsTableRow & {
-    commentAuthor?: string;
-    pendingApproval?: boolean;
-    id?: number | string;
-} {
+export function parseCommentEditsRow(row: unknown): CommentEditsTableRow {
     const { data } = parseCommentEditsTableRowSchema(row as Record<string, unknown>);
-    const parsed = data as CommentEditsTableRow & {
-        commentAuthor?: string;
-        pendingApproval?: boolean;
-        id?: number | string;
-    };
-
-    if (typeof parsed.id === "string") {
-        const numericId = Number(parsed.id);
-        if (!Number.isNaN(numericId)) parsed.id = numericId;
-    }
-
-    return parsed;
+    return data as CommentEditsTableRow;
 }
 
 export function parseVoteRow(row: unknown): VotesTableRow {
