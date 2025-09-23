@@ -523,7 +523,7 @@ function normalizeValue(
     parseJsonStrings: boolean,
     prefix?: string
 ): any {
-    if (value === null || value === undefined) return value;
+    if (value === null || value === undefined) return undefined;
     let current: any = value;
 
     if (coerceBooleans && booleanKeys.has(key)) current = coerceBoolean(current);
