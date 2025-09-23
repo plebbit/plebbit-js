@@ -128,6 +128,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
     locked: z.boolean().optional(), // mod locked a post
     removed: z.boolean().optional(), // mod deleted a comment
     reason: z.string().optional(), // reason the mod took a mood action,
+    approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use modQueue.pageCids.pendingApproval to fetch pending comments
     updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
     author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
     lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
@@ -141,6 +142,25 @@ export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
 }).strict();
 
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
+
+export const CommentUpdateForDisapprovedPendingComment = CommentUpdateSchema.pick({
+    author: true,
+    cid: true,
+    signature: true,
+    protocolVersion: true,
+    reason: true,
+    removed: true,
+    nsfw: true,
+    locked: true,
+    spoiler: true,
+    flair: true,
+    updatedAt: true,
+    approved: true
+}).strict();
+
+export const CommentUpdateForDisapprovedPendingCommentSignedPropertyNames = remeda.keys.strict(
+    remeda.omit(CommentUpdateForDisapprovedPendingComment.shape, ["signature"])
+);
 
 export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.pick({
     author: true,
@@ -194,6 +214,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
         ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
         ...CommentUpdateForChallengeVerificationSignedPropertyNames,
         ...CommentUpdateSignedPropertyNames,
+        ...CommentUpdateForDisapprovedPendingCommentSignedPropertyNames,
         "original",
         "shortCid",
         "shortSubplebbitAddress",

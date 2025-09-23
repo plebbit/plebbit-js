@@ -7,6 +7,7 @@ import {
     CommentsTableRowSchema,
     CommentUpdateForChallengeVerificationSchema,
     CommentUpdateForChallengeVerificationSignedPropertyNames,
+    CommentUpdateForDisapprovedPendingComment,
     CommentUpdateNoRepliesSchema,
     CommentUpdateSignedPropertyNames,
     CreateCommentOptionsSchema,
@@ -33,6 +34,8 @@ export interface CommentOptionsToSign extends Omit<CommentPubsubMessagePublicati
 export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
     replies?: RepliesPagesIpfsDefinedManuallyType;
 };
+
+export type CommentUpdateForDisapprovedPendingComment = z.infer<typeof CommentUpdateForDisapprovedPendingComment>;
 
 export type CommentUpdateForChallengeVerification = z.infer<typeof CommentUpdateForChallengeVerificationSchema>;
 

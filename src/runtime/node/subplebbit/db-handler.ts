@@ -30,6 +30,7 @@ import type {
     CommentIpfsType,
     CommentsTableRow,
     CommentsTableRowInsert,
+    CommentUpdateForDisapprovedPendingComment,
     CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
     CommentUpdateType,
@@ -290,6 +291,7 @@ export class DbHandler {
                 pinned INTEGER NULLABLE, -- BOOLEAN (0/1)
                 locked INTEGER NULLABLE, -- BOOLEAN (0/1)
                 removed INTEGER NULLABLE, -- BOOLEAN (0/1)
+                approved INTEGER NULLABLE, -- BOOLEAN (0/1)
                 reason TEXT NULLABLE,
                 updatedAt INTEGER NOT NULL CHECK(updatedAt > 0), 
                 protocolVersion TEXT NOT NULL,
@@ -1120,12 +1122,10 @@ export class DbHandler {
             WITH RECURSIVE 
             direct_updates AS (
                 SELECT c.* FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                  AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
+                WHERE (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
                 UNION
                 SELECT c.* FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
-                  AND (
+                WHERE (
                     EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1)
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1)
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1)
@@ -1135,18 +1135,16 @@ export class DbHandler {
             authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM direct_updates),
             parent_chain AS (
                 SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+                WHERE p.cid IS NOT NULL
                 UNION
                 SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
-                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
+                WHERE p.cid IS NOT NULL
             ),
             all_updates AS (
                 SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
-                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
-            WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             ORDER BY c.rowid
         `;
         const results = this._db.prepare(query).all() as CommentsTableRow[];
@@ -1449,6 +1447,21 @@ export class DbHandler {
         return { lastChildCid: lastChildCid?.cid, lastReplyTimestamp };
     }
 
+    _queryIsCommentApproved(
+        comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">
+    ): { approved: boolean } | undefined {
+        const result = this._db
+            .prepare(
+                `
+            SELECT json_extract(commentModeration, '$.approved') AS approved FROM ${TABLES.COMMENT_MODERATIONS}
+            WHERE commentCid = ? AND json_extract(commentModeration, '$.approved') IS NOT NULL ORDER BY rowid DESC LIMIT 1
+        `
+            )
+            .get(comment.cid) as { approved: 0 | 1 | boolean | null } | undefined;
+        if (!result || result.approved === null) return undefined;
+        return { approved: Boolean(result.approved) };
+    }
+
     queryCalculatedCommentUpdate(
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">
     ): Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion"> {
@@ -1459,17 +1472,19 @@ export class DbHandler {
         const commentFlags = this.queryCommentFlagsSetByMod(comment.cid);
         const commentModFlair = this._queryModCommentFlair(comment);
         const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
+        const isThisCommentApproved = this._queryIsCommentApproved(comment);
 
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             cid: comment.cid,
-            edit: authorEdit,
             ...commentUpdateCounts,
             flair: commentModFlair?.flair || authorEdit?.flair,
             ...commentFlags,
             reason: moderatorReason?.reason,
             author: { subplebbit: authorSubplebbit },
-            ...lastChildAndLastReplyTimestamp
+            ...lastChildAndLastReplyTimestamp,
+            ...(authorEdit ? { edit: authorEdit } : undefined),
+            ...(isThisCommentApproved ? { approved: isThisCommentApproved.approved } : undefined)
         };
     }
 
@@ -1834,13 +1849,17 @@ export class DbHandler {
     ): (PageIpfs["comments"][0] & { activeScore: number })[] {
         const activeScoresCte = `
             WITH RECURSIVE descendants AS (
-                SELECT p.cid AS post_cid, p.cid AS current_cid, p.timestamp FROM ${TABLES.COMMENTS} p WHERE p.depth = 0
+                SELECT p.cid AS post_cid, p.cid AS current_cid, p.timestamp
+                FROM ${TABLES.COMMENTS} p
+                INNER JOIN ${TABLES.COMMENT_UPDATES} cu_root ON p.cid = cu_root.cid
+                WHERE p.depth = 0 AND (cu_root.approved IS NULL OR cu_root.approved = 1 OR cu_root.approved IS TRUE)
                 UNION ALL
                 SELECT d.post_cid, c.cid AS current_cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                 LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
                 JOIN descendants d ON c.parentCid = d.current_cid
                 WHERE c.subplebbitAddress = :subAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                  AND (cu.approved IS NULL OR cu.approved = 1 OR cu.approved IS TRUE)
             ) SELECT post_cid, MAX(timestamp) as active_score FROM descendants GROUP BY post_cid
         `;
         const commentUpdateCols = remeda.keys.strict(
@@ -1869,6 +1888,7 @@ export class DbHandler {
             postsQueryStr += ` AND (json_extract(cu.edit, '$.deleted') IS NULL OR json_extract(cu.edit, '$.deleted') != 1)`;
         // Always exclude posts pending approval from posts pages
         postsQueryStr += ` AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)`;
+        postsQueryStr += ` AND (cu.approved IS NULL OR cu.approved = 1 OR cu.approved IS TRUE)`;
 
         const postsRaw = this._db.prepare(postsQueryStr).all(params) as (PrefixedCommentRow & { active_score: number })[];
         return postsRaw.map((postRaw) => {
