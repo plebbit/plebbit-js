@@ -108,9 +108,9 @@ describe("Modqueue depths", () => {
 
             await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval);
 
-            const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+            const modQueuepageLoaded = await subplebbit.moderation.getPage(subplebbit.moderation.pageCids.pendingApproval);
 
             expect(modQueuepageLoaded.comments.every((comment) => comment.depth === depth)).to.be.true;
         });
@@ -128,9 +128,9 @@ describe("Modqueue depths", () => {
 
         await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
 
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval);
 
-        const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
+        const modQueuepageLoaded = await subplebbit.moderation.getPage(subplebbit.moderation.pageCids.pendingApproval);
 
         for (let i = 0; i < pendingComments.length; i++) {
             // this will test both order and that all depths do exist in the page

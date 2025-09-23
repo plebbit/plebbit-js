@@ -128,7 +128,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
     locked: z.boolean().optional(), // mod locked a post
     removed: z.boolean().optional(), // mod deleted a comment
     reason: z.string().optional(), // reason the mod took a mood action,
-    approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use modQueue.pageCids.pendingApproval to fetch pending comments
+    approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use moderation.pageCids.pendingApproval to fetch pending comments
     updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
     author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
     lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment

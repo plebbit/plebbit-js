@@ -539,10 +539,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0 || this._blocksToRm.length > 0; // we have at least one edit to include in new ipns
     }
 
-    private _requireSubplebbitUpdateIfModQueueChanged() {
+    private _requireSubplebbitUpdateIfModerationChanged() {
         const combinedHashOfAllQueuedComments = this._dbHandler.queryCombinedHashOfPendingComments();
 
-        if (this.modQueue._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
+        if (this.moderation._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
@@ -562,7 +562,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (commentUpdateRowsToPublishToIpfs.length > 0) await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
 
         const newPostUpdates = await this._calculateNewPostUpdates();
-        const newModQueue = await this._pageGenerator.generateModQueuePages();
+        const newModQueue = await this._pageGenerator.generateModerationPages();
 
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
@@ -630,16 +630,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         if (newModQueue) {
-            newIpns.modQueue = { pageCids: newModQueue.pageCids };
+            newIpns.moderation = { pageCids: newModQueue.pageCids };
             const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
             const modQueuePageCidsToUnPin = remeda.unique(
-                Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
+                Object.values(this.moderation.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
             );
 
             modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         } else {
-            await this._updateDbInternalState({ modQueue: undefined });
-            this.modQueue.resetPages();
+            await this._updateDbInternalState({ moderation: undefined });
+            this.moderation.resetPages();
         }
 
         const signature = await signSubplebbit(newIpns, this.signer);
@@ -696,9 +696,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
 
-        this.modQueue._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
+        this.moderation._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
 
-        log.trace("Updated combined hash of pending comments to", this.modQueue._combinedHashOfPendingCommentsCids);
+        log.trace("Updated combined hash of pending comments to", this.moderation._combinedHashOfPendingCommentsCids);
 
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
@@ -2236,7 +2236,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
-            this._requireSubplebbitUpdateIfModQueueChanged();
+            this._requireSubplebbitUpdateIfModerationChanged();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
         } catch (e) {

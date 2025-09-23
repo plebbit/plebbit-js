@@ -44,7 +44,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     lastPostCid?: SubplebbitIpfsType["lastPostCid"];
     lastCommentCid?: SubplebbitIpfsType["lastCommentCid"];
     posts: PostsPages;
-    modQueue: ModQueuePages;
+    moderation: ModQueuePages;
     pubsubTopic?: SubplebbitIpfsType["pubsubTopic"];
     features?: SubplebbitIpfsType["features"];
     suggested?: SubplebbitIpfsType["suggested"];
@@ -111,7 +111,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             plebbit: this._plebbit,
             subplebbit: this
         });
-        this.modQueue = new ModQueuePages({ pageCids: {}, plebbit: this._plebbit, subplebbit: this, pages: undefined });
+        this.moderation = new ModQueuePages({ pageCids: {}, plebbit: this._plebbit, subplebbit: this, pages: undefined });
         hideClassPrivateProps(this);
     }
 
@@ -154,20 +154,20 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
     }
 
-    _updateLocalModQueueInstance(
-        newModQueue:
-            | SubplebbitIpfsType["modQueue"]
-            | SubplebbitJson["modQueue"]
-            | Pick<NonNullable<SubplebbitIpfsType["modQueue"]>, "pageCids">
+    _updateLocalModerationInstance(
+        newModeration:
+            | SubplebbitIpfsType["moderation"]
+            | SubplebbitJson["moderation"]
+            | Pick<NonNullable<SubplebbitIpfsType["moderation"]>, "pageCids">
     ) {
-        this.modQueue._subplebbit = this;
-        if (!newModQueue)
+        this.moderation._subplebbit = this;
+        if (!newModeration)
             // The sub has changed its address, need to reset the posts
-            this.modQueue.resetPages();
-        else if (newModQueue.pageCids) {
+            this.moderation.resetPages();
+        else if (newModeration.pageCids) {
             // only pageCids is provided
-            this.modQueue.updateProps({
-                pageCids: newModQueue.pageCids,
+            this.moderation.updateProps({
+                pageCids: newModeration.pageCids,
                 subplebbit: this,
                 pages: {}
             });
@@ -229,7 +229,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this.setAddress(newProps.address);
         this._updateLocalPostsInstance(newProps.posts);
-        this._updateLocalModQueueInstance(newProps.modQueue);
+        this._updateLocalModerationInstance(newProps.moderation);
 
         // Exclusive Instance props
         if (newProps.updateCid) this.updateCid = newProps.updateCid;
@@ -247,11 +247,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
         this.posts._subplebbit = this;
-        this.modQueue._subplebbit = this;
+        this.moderation._subplebbit = this;
     }
 
     protected _toJSONIpfsBaseNoPosts() {
-        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts", "modQueue"]));
+        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts", "moderation"]));
         return remeda.pick(this, subplebbitIpfsKeys);
     }
 
@@ -505,7 +505,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._setUpdatingStateWithEventEmissionIfNewState("stopped");
         this._setState("stopped");
         this.posts._stop();
-        this.modQueue._stop();
+        this.moderation._stop();
     }
 
     // functions to be overridden in local subplebbit classes

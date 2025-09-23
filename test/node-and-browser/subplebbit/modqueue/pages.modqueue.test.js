@@ -29,9 +29,9 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
 
             const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+            sub.moderation.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.moderation.getPage(invalidPageCid);
                 expect.fail("Should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
@@ -44,7 +44,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("modQueue.getPage - " + config.name, () => {
-        it(`subplebbit.modQueue.getPage will throw if retrieved page has a comment with an signature `, async () => {
+        it(`subplebbit.moderation.getPage will throw if retrieved page has a comment with an signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
@@ -54,10 +54,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             fixtureToInvalidate.comments[0].comment.content += "invalidate signature";
 
             const invalidPageCid = await addStringToIpfs(JSON.stringify(fixtureToInvalidate));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+            sub.moderation.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.moderation.getPage(invalidPageCid);
                 expect.fail("should fail");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -77,10 +77,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             invalidPage.comments[0].comment.subplebbitAddress = "different-address";
 
             const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+            sub.moderation.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.moderation.getPage(invalidPageCid);
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -99,10 +99,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             invalidPage.comments[0].commentUpdate.cid = invalidPage.comments[1].commentUpdate.cid;
 
             const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+            sub.moderation.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.moderation.getPage(invalidPageCid);
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -126,10 +126,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             );
 
             const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+            sub.moderation.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.moderation.getPage(invalidPageCid);
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -154,10 +154,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 deterministicStringify(invalidPage.comments[indexOfPost].comment)
             );
             const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
-            sub.modQueue.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
+            sub.moderation.pageCids.pendingApproval = invalidPageCid; // need to hardcode it here so we can calculate max size
 
             try {
-                await sub.modQueue.getPage(invalidPageCid);
+                await sub.moderation.getPage(invalidPageCid);
                 expect.fail("Should have thrown");
             } catch (e) {
                 expect(e.code).to.equal("ERR_MOD_QUEUE_PAGE_IS_INVALID");
@@ -185,10 +185,10 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             expect(pageSizeInMB).to.be.greaterThan(1, "Page should be larger than 1MB for this test");
             const pageCid = await addStringToIpfs(JSON.stringify(page));
 
-            subplebbit.modQueue.pageCids.pendingApproval = pageCid;
+            subplebbit.moderation.pageCids.pendingApproval = pageCid;
 
             try {
-                await subplebbit.modQueue.getPage(pageCid);
+                await subplebbit.moderation.getPage(pageCid);
                 expect.fail("Should have thrown");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {
@@ -212,11 +212,11 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
 
             // Override the pageCid to use our non-existent CID
-            sub.modQueue.pageCids.pendingApproval = nonExistentCid;
+            sub.moderation.pageCids.pendingApproval = nonExistentCid;
 
             try {
                 // This should time out
-                await sub.modQueue.getPage(nonExistentCid);
+                await sub.moderation.getPage(nonExistentCid);
                 expect.fail("Should have timed out");
             } catch (e) {
                 if (isPlebbitFetchingUsingGateways(plebbit)) {

@@ -25,7 +25,7 @@ describe(`Pending approval modqueue functionality`, async () => {
             }
         });
 
-        expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
+        expect(Object.keys(subplebbit.moderation.pageCids)).to.deep.equal([]); // should be empty
     });
 
     after(async () => {
@@ -94,8 +94,8 @@ describe(`Pending approval modqueue functionality`, async () => {
     describe("Pending approval storage", () => {
         it("Should store pending approval comments in subplebbit.moderation.pageCids.pendingApproval", async () => {
             // TODO: Test that pending comments are stored in correct location
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids?.pendingApproval);
-            const page = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids?.pendingApproval);
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids?.pendingApproval);
+            const page = await subplebbit.moderation.getPage(subplebbit.moderation.pageCids?.pendingApproval);
             expect(page.comments.length).to.equal(1);
             const pendingCommentInPage = page.comments[0];
             expect(pendingCommentInPage.cid).to.equal(pendingComment.cid);
@@ -104,7 +104,7 @@ describe(`Pending approval modqueue functionality`, async () => {
         });
 
         it(`pending post should not have postCid defined at its pages`, async () => {
-            const pageRaw = JSON.parse(await plebbit.fetchCid(subplebbit.modQueue.pageCids?.pendingApproval));
+            const pageRaw = JSON.parse(await plebbit.fetchCid(subplebbit.moderation.pageCids?.pendingApproval));
             expect(pageRaw.comments[0].comment.postCid).to.be.undefined;
         });
 
@@ -159,7 +159,7 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(subplebbit.lastCommentCid).to.equal(pendingComment.cid);
         });
         it(`Approved comment does not appear in modQueue.pageCids`, async () => {
-            expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
+            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
         });
         it(`Approved comment shows up in subplebbit.postUpdates`, async () => {
             expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]); // should have postUpdates now that we approved hte comment
@@ -263,7 +263,7 @@ describe(`Pending approval modqueue functionality`, async () => {
             const pending = await publishPostToModQueue({ subplebbit });
             commentToBeRejected = pending.comment;
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
         });
         it(`Can reject with approved: false`, async () => {
             const commentModeration = await plebbit.createCommentModeration({
@@ -276,8 +276,8 @@ describe(`Pending approval modqueue functionality`, async () => {
             await publishWithExpectedResult(commentModeration, true);
         });
         it(`Rejecting a pending comment will purge it from modQueue`, async () => {
-            await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-            expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
+            await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
         });
         it(`Rejecting a pending comment will remove it from database of subplebbit`, async () => {
             const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);

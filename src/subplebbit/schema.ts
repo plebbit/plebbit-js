@@ -203,7 +203,7 @@ export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeS
 export const SubplebbitIpfsSchema = z
     .object({
         posts: PostsPagesIpfsSchema.optional(),
-        modQueue: ModQueuePagesIpfsSchema.optional(),
+        moderation: ModQueuePagesIpfsSchema.optional(),
         challenges: SubplebbitChallengeSchema.array(),
         signature: JsonSignatureSchema,
         encryption: SubplebbitEncryptionSchema,
