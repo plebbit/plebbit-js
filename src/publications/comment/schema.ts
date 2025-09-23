@@ -68,11 +68,11 @@ export const CommentPubsubMessagePublicationSchema = CreateCommentOptionsSchema.
     .strict();
 
 export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessagePublicationSchema.merge(
-    z.object({ author: AuthorPubsubSchema.passthrough() })
+    z.object({ author: AuthorPubsubSchema.loose() })
 ).strict();
 
 // This is used by the subplebbit when parsing request.comment
-export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.passthrough().refine(
+export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.loose().refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
@@ -85,7 +85,7 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePubl
 export const CommentChallengeRequestToEncryptSchema = CreateCommentOptionsSchema.shape.challengeRequest
     .unwrap()
     .extend({
-        comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
+        comment: CommentPubsubMessageWithFlexibleAuthorSchema.loose()
     })
     .strict();
 
@@ -112,7 +112,7 @@ export const AuthorWithCommentUpdateSchema = CommentPubsubMessagePublicationSche
     .extend({
         subplebbit: SubplebbitAuthorSchema.optional()
     })
-    .passthrough();
+    .loose();
 
 export const CommentUpdateNoRepliesSchema = z.object({
     cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
@@ -200,7 +200,7 @@ export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     rowid: z.number().nonnegative().int(), // this field is from sqlite
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    extraProps: z.object({}).passthrough().optional(),
+    extraProps: z.looseObject({}).optional(),
     pendingApproval: z.boolean().optional()
 }).strict();
 

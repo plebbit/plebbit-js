@@ -7,7 +7,7 @@ import type { PageIpfsManuallyDefined } from "./types.js";
 
 export const PageIpfsSchema = <z.ZodType<PageIpfsManuallyDefined>>z.object({
     comments: z.lazy(() =>
-        z.object({ comment: CommentIpfsSchema.passthrough(), commentUpdate: CommentUpdateSchema.passthrough() }).array()
+        z.object({ comment: CommentIpfsSchema.loose(), commentUpdate: CommentUpdateSchema.loose() }).array()
     ),
     nextCid: CidStringSchema.optional()
 });
@@ -38,7 +38,7 @@ export const ModQueuePagesIpfsSchema = z.object({
 export const ModQueuePageIpfsSchema = z.object({
     comments: z.lazy(() =>
         z
-            .object({ comment: CommentIpfsSchema.passthrough(), commentUpdate: CommentUpdateForChallengeVerificationSchema.passthrough() })
+            .object({ comment: CommentIpfsSchema.loose(), commentUpdate: CommentUpdateForChallengeVerificationSchema.loose() })
             .array()
     ),
     nextCid: CidStringSchema.optional()

@@ -54,7 +54,7 @@ export const decryptStringAesGcm = async (ciphertext: Uint8Array, key: Uint8Arra
 
     const cipher = forge.cipher.createDecipher("AES-GCM", keyAsForgeBuffer);
     cipher.start({ iv: ivAsForgeBuffer, tag: tagAsForgeBuffer });
-    cipher.update(forge.util.createBuffer(ciphertext));
+    cipher.update(uint8ArrayToNodeForgeBuffer(ciphertext));
     cipher.finish();
     const decrypted = cipher.output.toString();
     return decrypted;

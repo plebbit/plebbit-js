@@ -1,8 +1,13 @@
-import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
+import type {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "addresses",
         label: "Addresses",
@@ -26,7 +31,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     }
 ];
 
-const type: Challenge["type"] = "text/plain";
+const type: ChallengeInput["type"] = "text/plain";
 
 const description = "Whitelist author addresses.";
 
@@ -108,7 +113,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number,
-): Promise<ChallengeResult> => {
+): Promise<ChallengeResultInput> => {
     // add a custom error message to display to the author
     const error = subplebbitChallengeSettings?.options?.error;
     const addresses = subplebbitChallengeSettings?.options?.addresses?.split(",").map(u => u.trim()).filter(Boolean)
@@ -127,7 +132,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description };
 }
 

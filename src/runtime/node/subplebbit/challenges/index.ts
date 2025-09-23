@@ -24,6 +24,7 @@ import type {
     Challenge,
     ChallengeFile,
     ChallengeFileFactory,
+    ChallengeFileFactoryInput,
     ChallengeResult,
     SubplebbitChallenge,
     SubplebbitChallengeSetting
@@ -38,7 +39,7 @@ type PendingChallenge = Challenge & { index: number };
 
 export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<DecryptedChallengeAnswer["challengeAnswers"]>;
 
-const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
+const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput> = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
     fail: fail,
@@ -223,7 +224,8 @@ const getChallengeVerificationFromChallengeAnswers = async (
 > => {
     const verifyChallengePromises: Promise<ChallengeResult>[] = [];
     for (const i in pendingChallenges) {
-        verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i])); // TODO double check if zod verifies output of a promise
+        const test = pendingChallenges[i].verify(challengeAnswers[i]);
+        verifyChallengePromises.push(); // TODO double check if zod verifies output of a promise
     }
     const challengeResultsWithPendingIndexes = await Promise.all(verifyChallengePromises);
 

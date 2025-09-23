@@ -19,16 +19,16 @@ export const CreatePlebbitWsServerOptionsSchema = z
         authKey: z.string().optional()
     })
     .merge(WsServerClassOptions)
-    .passthrough();
+    .loose();
 
 // rpc WS
 
 export const SetNewSettingsPlebbitWsServerSchema = z.object({
-    plebbitOptions: PlebbitUserOptionBaseSchema.passthrough()
+    plebbitOptions: PlebbitUserOptionBaseSchema.loose()
 });
 
 export const PlebbitWsServerSettingsSerializedSchema = z.object({
-    plebbitOptions: PlebbitParsedOptionsSchema.passthrough(),
+    plebbitOptions: PlebbitParsedOptionsSchema.loose(),
     challenges: z.record(
         z.string(),
         ChallengeFileSchema.omit({ getChallenge: true }) // to avoid throwing because of recursive dependency

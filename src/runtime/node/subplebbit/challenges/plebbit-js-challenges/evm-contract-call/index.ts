@@ -5,14 +5,19 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
 } from "../../../../../../pubsub-messages/types.js";
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
+import type {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import type { Plebbit } from "../../../../../../plebbit/plebbit.js";
 import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "chainTicker",
         label: "chainTicker",
@@ -324,7 +329,7 @@ const getChallenge = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
-): Promise<ChallengeResult> => {
+): Promise<ChallengeResultInput> => {
     let { chainTicker, address, abi, condition, error } = subplebbitChallengeSettings?.options || {};
 
     if (!chainTicker) {
@@ -379,10 +384,10 @@ const getChallenge = async (
     return { success: false, error: errorString };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     let { chainTicker } = subplebbitChallengeSettings?.options || {};
 
-    const type = <Challenge["type"]>("chain/" + (chainTicker || "eth"));
+    const type = <ChallengeInput["type"]>("chain/" + (chainTicker || "eth"));
     return { getChallenge, optionInputs, type, description };
 }
 

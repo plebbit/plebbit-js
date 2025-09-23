@@ -266,7 +266,8 @@ export async function importSignerIntoKuboNode(
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
-    data.append("file", new Blob([ipfsKey]));
+    const normalizedKey = Uint8Array.from(ipfsKey);
+    data.append("file", new Blob([normalizedKey.buffer]));
     const kuboRpcUrl = kuboRpcClientOptions.url;
     if (!kuboRpcUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(kuboRpcClientOptions)}`);
     const url = `${kuboRpcUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;

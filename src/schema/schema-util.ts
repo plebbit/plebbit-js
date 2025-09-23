@@ -80,7 +80,7 @@ export function parseJsonWithPlebbitErrorIfFails(x: string): any {
 export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
     subIpfs: z.infer<typeof SubplebbitIpfsSchema>
 ): SubplebbitIpfsType {
-    const parseRes = SubplebbitIpfsSchema.passthrough().safeParse(subIpfs);
+    const parseRes = SubplebbitIpfsSchema.loose().safeParse(subIpfs);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", {
             zodError: parseRes.error,
@@ -91,7 +91,7 @@ export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
 }
 
 export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: z.infer<typeof CommentIpfsSchema>): CommentIpfsType {
-    const parseRes = CommentIpfsSchema.passthrough().safeParse(commentIpfsJson);
+    const parseRes = CommentIpfsSchema.loose().safeParse(commentIpfsJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_IPFS_SCHEMA", { zodError: parseRes.error, commentIpfsJson });
     else return <CommentIpfsType>commentIpfsJson;
 }
@@ -99,7 +99,7 @@ export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson:
 export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
     commentUpdateJson: z.infer<typeof CommentUpdateSchema>
 ): CommentUpdateType {
-    const parseRes = CommentUpdateSchema.passthrough().safeParse(commentUpdateJson);
+    const parseRes = CommentUpdateSchema.loose().safeParse(commentUpdateJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE_SCHEMA", { zodError: parseRes.error, commentUpdateJson });
     else return commentUpdateJson;
 }
@@ -120,7 +120,7 @@ export function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(modQueuePag
 export function parseDecryptedChallengeWithPlebbitErrorIfItFails(
     decryptedChallengeJson: z.infer<typeof DecryptedChallengeSchema>
 ): DecryptedChallenge {
-    const parseRes = DecryptedChallengeSchema.passthrough().safeParse(decryptedChallengeJson);
+    const parseRes = DecryptedChallengeSchema.loose().safeParse(decryptedChallengeJson);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA", { zodError: parseRes.error, decryptedChallengeJson });
     else return decryptedChallengeJson;
@@ -129,7 +129,7 @@ export function parseDecryptedChallengeWithPlebbitErrorIfItFails(
 export function parseDecryptedChallengeVerification(
     decryptedChallengeVerificationJson: z.infer<typeof DecryptedChallengeVerificationSchema>
 ): DecryptedChallengeVerification {
-    const parseRes = DecryptedChallengeVerificationSchema.passthrough().safeParse(decryptedChallengeVerificationJson);
+    const parseRes = DecryptedChallengeVerificationSchema.loose().safeParse(decryptedChallengeVerificationJson);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
             zodError: parseRes.error,
@@ -257,7 +257,7 @@ export function parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(
 export function parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(
     toEncrypt: z.infer<typeof CommentChallengeRequestToEncryptSchema>
 ): CommentChallengeRequestToEncryptType {
-    const parseRes = CommentChallengeRequestToEncryptSchema.passthrough().safeParse(toEncrypt);
+    const parseRes = CommentChallengeRequestToEncryptSchema.loose().safeParse(toEncrypt);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_COMMENT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA", {
             zodError: parseRes.error,
@@ -330,7 +330,7 @@ export function parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFai
 export function parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(
     args: z.infer<typeof CommentModerationPubsubMessagePublicationSchema>
 ) {
-    const parseRes = CommentModerationPubsubMessagePublicationSchema.passthrough().safeParse(args);
+    const parseRes = CommentModerationPubsubMessagePublicationSchema.loose().safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_COMMENT_MODERATION_ARGS_SCHEMA", {
             zodError: parseRes.error,
@@ -364,7 +364,7 @@ export function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(args: z.in
 }
 
 export function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof VotePubsubMessagePublicationSchema>) {
-    const parseRes = VotePubsubMessagePublicationSchema.passthrough().safeParse(args);
+    const parseRes = VotePubsubMessagePublicationSchema.loose().safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA", {
             zodError: parseRes.error,

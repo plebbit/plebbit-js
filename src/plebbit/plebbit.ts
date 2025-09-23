@@ -554,7 +554,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         // last resort to set subplebbit ipfs props
         if (!subplebbit.raw.subplebbitIpfs) {
             if (options.signature) {
-                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(
+                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.loose().safeParse(
                     remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
                 );
                 if (resParseSubplebbitIpfs.success) {

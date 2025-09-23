@@ -1476,7 +1476,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw e;
         }
 
-        const parseRes = DecryptedChallengeRequestSchema.passthrough().safeParse(decryptedJson);
+        const parseRes = DecryptedChallengeRequestSchema.loose().safeParse(decryptedJson);
         if (!parseRes.success) {
             await this._publishFailedChallengeVerification(
                 { reason: messages.ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING },
@@ -1690,10 +1690,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
 
         const pubsubSchemas = [
-            ChallengeRequestMessageSchema.passthrough(),
-            ChallengeMessageSchema.passthrough(),
-            ChallengeAnswerMessageSchema.passthrough(),
-            ChallengeVerificationMessageSchema.passthrough()
+            ChallengeRequestMessageSchema.loose(),
+            ChallengeMessageSchema.loose(),
+            ChallengeAnswerMessageSchema.loose(),
+            ChallengeVerificationMessageSchema.loose()
         ];
 
         let parsedPubsubMsg:

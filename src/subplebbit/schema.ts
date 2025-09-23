@@ -19,91 +19,78 @@ import { messages } from "../errors.js";
 import { nonNegativeIntStringSchema } from "../schema.js";
 
 // Other props of Subplebbit Ipfs here
-export const SubplebbitEncryptionSchema = z
-    .object({
-        type: z.string().min(1), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-        publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
-    })
-    .passthrough();
+export const SubplebbitEncryptionSchema = z.looseObject({
+    type: z.string().min(1), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
+    publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
+});
 
 export const SubplebbitRoleNames = z.enum(["owner", "admin", "moderator"]);
-export const SubplebbitRoleSchema = z
-    .object({
-        role: SubplebbitRoleNames.or(z.string().min(1))
-    })
-    .passthrough();
+export const SubplebbitRoleSchema = z.looseObject({
+    role: SubplebbitRoleNames.or(z.string().min(1))
+});
 
 export const PubsubTopicSchema = z.string().min(1);
 
-export const SubplebbitSuggestedSchema = z
-    .object({
-        // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
-        primaryColor: z.string().optional(),
-        secondaryColor: z.string().optional(),
-        avatarUrl: z.string().min(1).optional(),
-        bannerUrl: z.string().min(1).optional(),
-        backgroundUrl: z.string().min(1).optional(),
-        language: z.string().optional()
-        // TODO: menu links, wiki pages, sidebar widgets
-    })
-    .passthrough();
+export const SubplebbitSuggestedSchema = z.looseObject({
+    // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
+    primaryColor: z.string().optional(),
+    secondaryColor: z.string().optional(),
+    avatarUrl: z.string().min(1).optional(),
+    bannerUrl: z.string().min(1).optional(),
+    backgroundUrl: z.string().min(1).optional(),
+    language: z.string().optional()
+    // TODO: menu links, wiki pages, sidebar widgets
+});
 
-export const SubplebbitFeaturesSchema = z
-    .object({
-        // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-        noVideos: z.boolean().optional(), // Not implemented
-        noSpoilers: z.boolean().optional(), // Not implemented. Author can't comment.spoiler = true their own comments
-        noImages: z.boolean().optional(), // Not implemented
-        noVideoReplies: z.boolean().optional(), // Not implemented
-        noSpoilerReplies: z.boolean().optional(), // Not implemented
-        noImageReplies: z.boolean().optional(), // Not implemented
-        noPolls: z.boolean().optional(), // Not impllemented
-        noCrossposts: z.boolean().optional(), // Not implemented
-        noAuthors: z.boolean().optional(), // Not implemented. No authors at all, like 4chan
-        anonymousAuthors: z.boolean().optional(), // Not implemented. Authors are given anonymous ids inside threads, like 4chan
-        noNestedReplies: z.boolean().optional(), // Not implemented. No nested replies, like old school forums and 4chan
-        safeForWork: z.boolean().optional(), // Not implemented
-        authorFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
-        requireAuthorFlairs: z.boolean().optional(), // Not implemented. Force authors to choose an author flair before posting
-        postFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own post flairs (otherwise only mods can)
-        requirePostFlairs: z.boolean().optional(), // Not implemented. Force authors to choose a post flair before posting
-        noMarkdownImages: z.boolean().optional(), // Not implemented. Don't embed images in text posts markdown
-        noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
-        markdownImageReplies: z.boolean().optional(), // Not implemented
-        markdownVideoReplies: z.boolean().optional(), // Not implemented
-        noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0
-        noReplyUpvotes: z.boolean().optional(), // not allowed to publish a vote=1 to comment with depth > 0
-        noPostDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth = 0
-        noReplyDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth > 0
-        noUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1
-        noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
-        requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
-        requirePostLinkIsMedia: z.boolean().optional() // post.link must be of media (audio, video, image)
-    })
-    .passthrough();
+export const SubplebbitFeaturesSchema = z.looseObject({
+    // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
+    noVideos: z.boolean().optional(), // Not implemented
+    noSpoilers: z.boolean().optional(), // Not implemented. Author can't comment.spoiler = true their own comments
+    noImages: z.boolean().optional(), // Not implemented
+    noVideoReplies: z.boolean().optional(), // Not implemented
+    noSpoilerReplies: z.boolean().optional(), // Not implemented
+    noImageReplies: z.boolean().optional(), // Not implemented
+    noPolls: z.boolean().optional(), // Not impllemented
+    noCrossposts: z.boolean().optional(), // Not implemented
+    noAuthors: z.boolean().optional(), // Not implemented. No authors at all, like 4chan
+    anonymousAuthors: z.boolean().optional(), // Not implemented. Authors are given anonymous ids inside threads, like 4chan
+    noNestedReplies: z.boolean().optional(), // Not implemented. No nested replies, like old school forums and 4chan
+    safeForWork: z.boolean().optional(), // Not implemented
+    authorFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
+    requireAuthorFlairs: z.boolean().optional(), // Not implemented. Force authors to choose an author flair before posting
+    postFlairs: z.boolean().optional(), // Not implemented. Authors can choose their own post flairs (otherwise only mods can)
+    requirePostFlairs: z.boolean().optional(), // Not implemented. Force authors to choose a post flair before posting
+    noMarkdownImages: z.boolean().optional(), // Not implemented. Don't embed images in text posts markdown
+    noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
+    markdownImageReplies: z.boolean().optional(), // Not implemented
+    markdownVideoReplies: z.boolean().optional(), // Not implemented
+    noPostUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1 to comment with depth = 0
+    noReplyUpvotes: z.boolean().optional(), // not allowed to publish a vote=1 to comment with depth > 0
+    noPostDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth = 0
+    noReplyDownvotes: z.boolean().optional(), // not allowed to publish a vote=-1 to comment with depth > 0
+    noUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1
+    noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
+    requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
+    requirePostLinkIsMedia: z.boolean().optional() // post.link must be of media (audio, video, image)
+});
 
 // Local subplebbit challenge here (Challenges API)
 
-export const ChallengeOptionInputSchema = z
-    .object({
-        option: z.string(), // option property name, e.g. characterCount
-        label: z.string(), // option title, e.g. Character Count
-        default: z.string().optional(), // option default value, e.g. "10"
-        description: z.string().optional(), // e.g. Amount of characters of the captcha
-        placeholder: z.string().optional(), // the value to display if the input field is empty, e.g. "10"
-        required: z.boolean().optional() // If this is true, the challenge option is required, the challenge will throw without it
-    })
-    .passthrough(); // should be flexible
+export const ChallengeOptionInputSchema = z.looseObject({
+    option: z.string(), // option property name, e.g. characterCount
+    label: z.string(), // option title, e.g. Character Count
+    default: z.string().optional(), // option default value, e.g. "10"
+    description: z.string().optional(), // e.g. Amount of characters of the captcha
+    placeholder: z.string().optional(), // the value to display if the input field is empty, e.g. "10"
+    required: z.boolean().optional() // If this is true, the challenge option is required, the challenge will throw without it
+}); // should be flexible
 
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 
 export const ChallengeFromGetChallengeSchema = z
     .object({
         challenge: z.string(), // e.g. '2 + 2'
-        verify: z
-            .function()
-            .args(z.lazy(() => ChallengeAnswerStringSchema))
-            .returns(z.promise(ChallengeResultSchema)), // args is answer
+        verify: z.function({ input: [z.lazy(() => ChallengeAnswerStringSchema)], output: z.promise(ChallengeResultSchema) }),
         type: z.string().min(1),
         caseInsensitive: z.boolean().optional()
     })
@@ -124,7 +111,7 @@ export const ChallengeExcludeSubplebbitSchema = z
 const excludePublicationFieldSchema = z.boolean().optional(); // can be true or undefined
 
 export const ChallengeExcludePublicationTypeSchema = z
-    .object({
+    .looseObject({
         post: excludePublicationFieldSchema,
         reply: excludePublicationFieldSchema,
         vote: excludePublicationFieldSchema,
@@ -132,26 +119,23 @@ export const ChallengeExcludePublicationTypeSchema = z
         commentModeration: excludePublicationFieldSchema,
         subplebbitEdit: excludePublicationFieldSchema
     })
-    .passthrough()
     .refine(
         (args) => !remeda.isEmpty(JSON.parse(JSON.stringify(args))), // is it empty object {} or {field: undefined}? throw if so
         messages.ERR_CAN_NOT_SET_EXCLUDE_PUBLICATION_TO_EMPTY_OBJECT
     );
 
-export const ChallengeExcludeSchema = z
-    .object({
-        subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
-        postScore: z.number().int().optional(),
-        replyScore: z.number().int().optional(),
-        firstCommentTimestamp: PlebbitTimestampSchema.optional(),
-        challenges: z.number().nonnegative().int().array().optional(),
-        role: SubplebbitRoleSchema.shape.role.array().optional(),
-        address: AuthorAddressSchema.array().optional(),
-        rateLimit: z.number().nonnegative().int().optional(),
-        rateLimitChallengeSuccess: z.boolean().optional(),
-        publicationType: ChallengeExcludePublicationTypeSchema.optional()
-    })
-    .passthrough();
+export const ChallengeExcludeSchema = z.looseObject({
+    subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
+    postScore: z.number().int().optional(),
+    replyScore: z.number().int().optional(),
+    firstCommentTimestamp: PlebbitTimestampSchema.optional(),
+    challenges: z.number().nonnegative().int().array().optional(),
+    role: SubplebbitRoleSchema.shape.role.array().optional(),
+    address: AuthorAddressSchema.array().optional(),
+    rateLimit: z.number().nonnegative().int().optional(),
+    rateLimitChallengeSuccess: z.boolean().optional(),
+    publicationType: ChallengeExcludePublicationTypeSchema.optional()
+});
 
 export const SubplebbitChallengeSettingSchema = z
     .object({
@@ -174,29 +158,28 @@ export const ChallengeFileSchema = z
         challenge: ChallengeFromGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
         caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
         description: z.string().optional(), // describe what the challenge does to display in the UI
-        getChallenge: z
-            .function()
-            .args(
+        getChallenge: z.function({
+            input: [
                 SubplebbitChallengeSettingSchema, // challenge settings
                 z.custom<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>(), // challenge request to process, no need to validate because extra props may be there
                 z.number().int().nonnegative(), // challenge index
                 z.custom<LocalSubplebbit>() // the local subplebbit instance
-            )
-            .returns(z.promise(ResultOfGetChallengeSchema))
+            ],
+            output: z.promise(ResultOfGetChallengeSchema)
+        })
     })
     .strict();
 
 export const SubplebbitChallengeSchema = z
-    .object({
+    .looseObject({
         exclude: ChallengeExcludeSchema.array().nonempty().optional(),
         description: ChallengeFileSchema.shape.description,
         challenge: ChallengeFileSchema.shape.challenge,
         type: ChallengeFileSchema.shape.type,
         caseInsensitive: ChallengeFileSchema.shape.caseInsensitive,
         pendingApproval: z.boolean().optional()
-    })
-    .passthrough();
-export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeSettingSchema).returns(ChallengeFileSchema);
+    });
+export const ChallengeFileFactorySchema = z.function({ input: [SubplebbitChallengeSettingSchema], output: ChallengeFileSchema });
 
 // Subplebbit actual schemas here
 
@@ -230,7 +213,7 @@ export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(Subp
 
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
 export const RpcRemoteSubplebbitUpdateEventResultSchema = z.object({
-    subplebbit: SubplebbitIpfsSchema.passthrough(),
+    subplebbit: SubplebbitIpfsSchema.loose(),
     updateCid: CidStringSchema,
     updatingState: z.custom<LocalSubplebbit["updatingState"]>().optional()
 });
@@ -302,7 +285,7 @@ export const CreateNewLocalSubplebbitParsedOptionsSchema = CreateNewLocalSubpleb
 // | RpcRemoteSubplebbit
 // | LocalSubplebbit = {}
 
-export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(SubplebbitIpfsSchema.passthrough());
+export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(SubplebbitIpfsSchema.loose());
 
 export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(
     CreateNewLocalSubplebbitUserOptionsSchema

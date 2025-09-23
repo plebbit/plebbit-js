@@ -44,19 +44,19 @@ export const CommentEditPubsubMessagePublicationSchema = CreateCommentEditOption
     .strict();
 
 export const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema = CommentEditPubsubMessagePublicationSchema.extend({
-    author: CommentEditPubsubMessagePublicationSchema.shape.author.passthrough()
-}).passthrough();
+    author: CommentEditPubsubMessagePublicationSchema.shape.author.loose()
+}).loose();
 
 export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing
-    extraProps: z.object({}).passthrough().optional(), // will hold unknown props,
+    extraProps: z.looseObject({}).optional(), // will hold unknown props,
     rowid: z.number().nonnegative().int()
 }).strict();
 
 export const CommentEditChallengeRequestToEncryptSchema = CreateCommentEditOptionsSchema.shape.challengeRequest.unwrap().extend({
-    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough()
+    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.loose()
 });
 
 export const CommentEditReservedFields = remeda.difference(
