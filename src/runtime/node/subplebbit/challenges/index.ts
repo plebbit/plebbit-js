@@ -224,8 +224,7 @@ const getChallengeVerificationFromChallengeAnswers = async (
 > => {
     const verifyChallengePromises: Promise<ChallengeResult>[] = [];
     for (const i in pendingChallenges) {
-        const test = pendingChallenges[i].verify(challengeAnswers[i]);
-        verifyChallengePromises.push(); // TODO double check if zod verifies output of a promise
+        verifyChallengePromises.push(Promise.resolve(pendingChallenges[i].verify(challengeAnswers[i])));
     }
     const challengeResultsWithPendingIndexes = await Promise.all(verifyChallengePromises);
 
@@ -319,12 +318,15 @@ const getChallengeVerification = async (
     addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
 
     // all challenges that failed have pendingApproval: true, therefore it will go to pending approval
+    const allFailuresRequirePendingApproval =
+        challengeVerification.challengeErrors &&
+        Object.keys(challengeVerification.challengeErrors).every((challengeIndexString) =>
+            Boolean(subplebbit.challenges?.[Number(challengeIndexString)]?.pendingApproval)
+        );
+
     if (
         challengeRequestMessage.comment && // only comments have pendingApproval
-        challengeVerification.challengeErrors &&
-        Object.keys(challengeVerification.challengeErrors).every(
-            (challengeIndexString) => subplebbit.challenges[Number(challengeIndexString)].pendingApproval
-        )
+        allFailuresRequirePendingApproval
     ) {
         return { ...challengeVerification, pendingApproval: true, challengeSuccess: true, challengeErrors: undefined };
     }
