@@ -164,7 +164,6 @@ type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
     newCommentUpdateToWriteToDb: CommentUpdatesTableRowInsert;
     localMfsPath: string | undefined;
-    newPostCommentUpdateString: string | undefined;
     pendingApproval: CommentsTableRow["pendingApproval"];
 };
 const _startedSubplebbits: Record<string, LocalSubplebbit> = {}; // A global record on process level to track started subplebbits
@@ -1798,8 +1797,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
 
-        const newPostCommentUpdateString = comment.depth === 0 ? deterministicStringify(newCommentUpdate) : undefined;
-
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
 
         const newPostUpdateBucket =
@@ -1829,7 +1826,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             newCommentUpdate,
             newCommentUpdateToWriteToDb: newCommentUpdateDbRecord,
             localMfsPath: newLocalMfsPath,
-            newPostCommentUpdateString,
             pendingApproval: comment.pendingApproval
         };
     }
