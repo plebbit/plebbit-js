@@ -16,7 +16,7 @@ import * as remeda from "remeda";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema } from "../../pages/schema.js";
-import type { CommentPubsubMessagePublication, CommentUpdateType } from "./types.js";
+import type { CommentJson, CommentPubsubMessagePublication, CommentUpdateType } from "./types.js";
 
 // Comment schemas here
 
@@ -213,32 +213,61 @@ export const CommentUpdateTableRowSchema = CommentUpdateSchema.extend({
 
 export interface CommentUpdatesRow extends CommentUpdateType {}
 
-// Comment pubsub message here
+// Comment pubsub reserved fields
 
-export const CommentPubsubMessageReservedFields = remeda.difference(
-    remeda.unique([
-        ...remeda.keys.strict(CommentIpfsSchema.shape),
-        ...remeda.keys.strict(CommentsTableRowSchema.shape),
-        ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
-        ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
-        ...CommentUpdateForChallengeVerificationSignedPropertyNames,
-        ...CommentUpdateSignedPropertyNames,
-        ...CommentUpdateForDisapprovedPendingCommentSignedPropertyNames,
-        "original",
-        "shortCid",
-        "shortSubplebbitAddress",
-        "deleted",
-        "signer",
-        "raw",
-        "comment",
-        "commentUpdate",
-        "state",
-        "clients",
-        "publishingState",
-        "updatingState"
-    ]),
-    remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape)
+const additionalCommentReservedFields = [
+    "original",
+    "shortCid",
+    "shortSubplebbitAddress",
+    "deleted",
+    "raw",
+    "comment",
+    "commentUpdate",
+    "state",
+    "clients",
+    "publishingState",
+    "updatingState"
+] as const;
+
+type AdditionalCommentReservedField = (typeof additionalCommentReservedFields)[number];
+
+type CommentReservedFieldCandidate =
+    | keyof typeof CommentIpfsSchema.shape
+    | keyof typeof CommentsTableRowSchema.shape
+    | keyof typeof CommentUpdateTableRowSchema.shape
+    | keyof typeof CommentChallengeRequestToEncryptSchema.shape
+    | keyof typeof CreateCommentOptionsSchema.shape
+    | (typeof CommentUpdateForChallengeVerificationSignedPropertyNames)[number]
+    | (typeof CommentUpdateSignedPropertyNames)[number]
+    | (typeof CommentUpdateForDisapprovedPendingCommentSignedPropertyNames)[number]
+    | AdditionalCommentReservedField;
+
+const commentReservedFieldCandidates = remeda.unique<CommentReservedFieldCandidate>([
+    ...remeda.keys.strict(CommentIpfsSchema.shape),
+    ...remeda.keys.strict(CommentsTableRowSchema.shape),
+    ...remeda.keys.strict(CommentUpdateTableRowSchema.shape),
+    ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
+    ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
+    ...CommentUpdateForChallengeVerificationSignedPropertyNames,
+    ...CommentUpdateSignedPropertyNames,
+    ...CommentUpdateForDisapprovedPendingCommentSignedPropertyNames,
+    ...additionalCommentReservedFields
+]);
+
+export const CommentPubsubMessageReservedFields = remeda.difference<CommentReservedFieldCandidate>(
+    commentReservedFieldCandidates,
+    remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape) as CommentReservedFieldCandidate[]
 );
+
+type AssertTrue<T extends true> = T;
+
+type CommentJsonFields = Extract<keyof CommentJson, string>;
+type CommentPublicationFields = Extract<keyof CommentPubsubMessagePublication, string>;
+type CommentReservedFields = (typeof CommentPubsubMessageReservedFields)[number];
+
+type MissingCommentReservedField = Exclude<CommentJsonFields, CommentPublicationFields | CommentReservedFields>;
+
+type _EnsureAllCommentFieldsAreReserved = AssertTrue<MissingCommentReservedField extends never ? true : false>;
 
 export const CommentUpdateReservedFields = remeda.difference(CommentPubsubMessageReservedFields, [
     ...remeda.keys.strict(CommentUpdateSchema.shape),
