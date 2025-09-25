@@ -8,7 +8,7 @@ import {
     CommentUpdateForChallengeVerificationSchema,
     CommentUpdateForChallengeVerificationSignedPropertyNames,
     CommentUpdateForDisapprovedPendingComment,
-    CommentUpdateNoRepliesSchema,
+    CommentUpdateSchema,
     CommentUpdateSignedPropertyNames,
     CommentUpdateTableRowSchema,
     CreateCommentOptionsSchema,
@@ -18,7 +18,7 @@ import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
-import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
+import type { RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationRpcErrorToTransmit, PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
 
@@ -32,9 +32,7 @@ export interface CommentOptionsToSign extends Omit<CommentPubsubMessagePublicati
     signer: SignerType;
 }
 
-export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
-    replies?: RepliesPagesIpfsDefinedManuallyType;
-};
+export type CommentUpdateType = z.infer<typeof CommentUpdateSchema>;
 
 export type CommentUpdateForDisapprovedPendingComment = z.infer<typeof CommentUpdateForDisapprovedPendingComment>;
 

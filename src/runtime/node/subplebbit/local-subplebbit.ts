@@ -34,7 +34,6 @@ import {
     getErrorCodeFromMessage,
     removeMfsFilesSafely,
     removeBlocksFromKuboNode,
-    ipfsCpWithRmIfFails,
     retryKuboIpfsAddAndProvide,
     getIpnsRecordInLocalKuboNode,
     calculateIpfsCidV0
@@ -160,16 +159,13 @@ import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/co
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
-import pTimeout from "p-timeout";
-import { FilesCpOptions } from "kubo-rpc-client";
-import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
     newCommentUpdateToWriteToDb: CommentUpdatesTableRowInsert;
-    postCommentUpdateCid: string | undefined;
     localMfsPath: string | undefined;
     newPostCommentUpdateString: string | undefined;
+    pendingApproval: CommentsTableRow["pendingApproval"];
 };
 const _startedSubplebbits: Record<string, LocalSubplebbit> = {}; // A global record on process level to track started subplebbits
 
@@ -1803,7 +1799,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
 
         const newPostCommentUpdateString = comment.depth === 0 ? deterministicStringify(newCommentUpdate) : undefined;
-        const postCommentUpdateCid = newPostCommentUpdateString && (await calculateIpfsHash(newPostCommentUpdateString));
 
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
 
@@ -1824,16 +1819,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
             this._mfsPathsToRemove.add(oldPostUpdates);
         }
-        if (
-            storedCommentUpdate?.postCommentUpdateCid &&
-            postCommentUpdateCid &&
-            storedCommentUpdate.postCommentUpdateCid !== postCommentUpdateCid
-        )
-            this._cidsToUnPin.add(storedCommentUpdate.postCommentUpdateCid);
-
         const newCommentUpdateDbRecord = <CommentUpdatesTableRowInsert>{
             ...newCommentUpdate,
-            postCommentUpdateCid,
             postUpdatesBucket: newPostUpdateBucket,
             publishedToPostUpdatesMFS: false,
             insertedAt: timestamp()
@@ -1841,9 +1828,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return {
             newCommentUpdate,
             newCommentUpdateToWriteToDb: newCommentUpdateDbRecord,
-            postCommentUpdateCid,
             localMfsPath: newLocalMfsPath,
-            newPostCommentUpdateString
+            newPostCommentUpdateString,
+            pendingApproval: comment.pendingApproval
         };
     }
 
@@ -2099,76 +2086,53 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._dbHandler.forceUpdateOnAllComments(); // plebbit-js will recalculate and publish all comment updates
     }
 
-    private *_createCommentUpdateIterable(commentUpdateRows: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
-        for (const row of commentUpdateRows) {
-            if (!row.newPostCommentUpdateString) throw Error("Should be defined");
-            yield { content: row.newPostCommentUpdateString };
-        }
-    }
-
     private async _syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
         const log = Logger("plebbit-js:local-subplebbit:sync:_syncPostUpdatesFilesystemWithIpfs");
 
-        const postUpdatesDirectory = "/" + this.address;
-
-        const commentUpdatesOfPosts = <
-            (CommentUpdateToWriteToDbAndPublishToIpfs & {
-                postCommentUpdateRecordString: string;
-                postCommentUpdateCid: string;
-                localMfsPath: string;
-            })[]
-        >commentUpdateRowsToPublishToIpfs.filter((row) => typeof row.newPostCommentUpdateString === "string");
-
-        if (commentUpdatesOfPosts.length === 0) throw Error("No comment updates of posts to publish to postUpdates directory");
-
-        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
-        const newCommentUpdatesAddAll = await genToArray(
-            kuboRpc._client.addAll(this._createCommentUpdateIterable(commentUpdatesOfPosts), {
-                wrapWithDirectory: false // we want to publish them to ipfs as is
-            })
+        const postUpdatesDirectory = `/${this.address}`;
+        const commentUpdatesWithLocalPath = commentUpdateRowsToPublishToIpfs.filter(
+            (row): row is CommentUpdateToWriteToDbAndPublishToIpfs & { localMfsPath: string } => typeof row.localMfsPath === "string"
         );
 
+        if (commentUpdatesWithLocalPath.length === 0) throw Error("No comment updates of posts to publish to postUpdates directory");
+
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         const removedMfsPaths: string[] = await this._rmUnneededMfsPaths();
+        let postUpdatesDirectoryCid: Awaited<ReturnType<typeof kuboRpc._client.files.flush>> | undefined;
 
-        // Create a concurrency limiter with a limit of 50
-        const limit = pLimit(50);
-        const copyPromises = [];
+        const BATCH_SIZE = 50;
+        for (let index = 0; index < commentUpdatesWithLocalPath.length; index += BATCH_SIZE) {
+            const batch = commentUpdatesWithLocalPath.slice(index, index + BATCH_SIZE);
 
-        for (const commentUpdateFile of newCommentUpdatesAddAll) {
-            const commentUpdateFilePath = commentUpdatesOfPosts.find(
-                (row) => row.postCommentUpdateCid === commentUpdateFile.cid.toV0().toString()
-            )?.localMfsPath;
+            await Promise.all(
+                batch.map(async (row) => {
+                    const { localMfsPath, newCommentUpdate } = row;
+                    const content = deterministicStringify(newCommentUpdate);
 
-            if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
+                    await kuboRpc._client.files.write(localMfsPath, content, {
+                        create: true,
+                        truncate: true,
+                        parents: true,
+                        flush: false
+                    });
 
-            removedMfsPaths.push(commentUpdateFilePath);
-
-            const copyPromise = limit(() =>
-                ipfsCpWithRmIfFails({
-                    kuboRpcClient: kuboRpc,
-                    log,
-                    src: "/ipfs/" + commentUpdateFile.cid.toString(),
-                    dest: commentUpdateFilePath,
-                    options: { parents: true, flush: false, force: true } as FilesCpOptions
+                    removedMfsPaths.push(localMfsPath);
                 })
             );
 
-            copyPromises.push(copyPromise);
+            postUpdatesDirectoryCid = await kuboRpc._client.files.flush(postUpdatesDirectory);
         }
 
-        // Wait for all copy operations to complete
-        await Promise.all(copyPromises);
-
-        const postUpdatesDirectoryCid = await kuboRpc._client.files.flush(postUpdatesDirectory);
         removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
+        const postUpdatesDirectoryCidString = postUpdatesDirectoryCid?.toString();
         log(
             "Subplebbit",
             this.address,
             "Synced",
-            commentUpdatesOfPosts.length,
+            commentUpdatesWithLocalPath.length,
             "post CommentUpdates",
             "with MFS postUpdates directory",
-            postUpdatesDirectoryCid
+            postUpdatesDirectoryCidString
         );
         this._dbHandler.markCommentsAsPublishedToPostUpdates(commentUpdateRowsToPublishToIpfs.map((row) => row.newCommentUpdate.cid));
     }

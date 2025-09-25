@@ -39,7 +39,7 @@ import type {
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
-import type { PageIpfs, RepliesPagesIpfsDefinedManuallyType } from "../../../pages/types.js";
+import type { PageIpfs, RepliesPagesTypeIpfs } from "../../../pages/types.js";
 import type { CommentModerationsTableRowInsert, CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 import { getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import KeyvBetterSqlite3 from "./keyv-better-sqlite3.js";
@@ -324,7 +324,6 @@ export class DbHandler {
                 lastChildCid TEXT NULLABLE,
                 lastReplyTimestamp INTEGER NULLABLE, 
                 postUpdatesBucket INTEGER NULLABLE,
-                postCommentUpdateCid TEXT NULLABLE,
                 publishedToPostUpdatesMFS INTEGER NOT NULL, -- BOOLEAN (0/1)
                 insertedAt INTEGER NOT NULL 
             )
@@ -686,15 +685,15 @@ export class DbHandler {
 
         const stmt = this._db.prepare(`
             INSERT INTO ${TABLES.COMMENT_UPDATES} 
-            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, postCommentUpdateCid, publishedToPostUpdatesMFS, insertedAt) 
-            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @postCommentUpdateCid, @publishedToPostUpdatesMFS, @insertedAt)
+            (cid, edit, upvoteCount, downvoteCount, replyCount, childCount, flair, spoiler, nsfw, pinned, locked, removed, reason, updatedAt, protocolVersion, signature, author, replies, lastChildCid, lastReplyTimestamp, postUpdatesBucket, publishedToPostUpdatesMFS, insertedAt) 
+            VALUES (@cid, @edit, @upvoteCount, @downvoteCount, @replyCount, @childCount, @flair, @spoiler, @nsfw, @pinned, @locked, @removed, @reason, @updatedAt, @protocolVersion, @signature, @author, @replies, @lastChildCid, @lastReplyTimestamp, @postUpdatesBucket, @publishedToPostUpdatesMFS, @insertedAt)
             ON CONFLICT(cid) DO UPDATE SET
                 edit = excluded.edit, upvoteCount = excluded.upvoteCount, downvoteCount = excluded.downvoteCount, replyCount = excluded.replyCount, childCount = excluded.childCount,
                 flair = excluded.flair, spoiler = excluded.spoiler, nsfw = excluded.nsfw, pinned = excluded.pinned, locked = excluded.locked,
                 removed = excluded.removed, reason = excluded.reason, updatedAt = excluded.updatedAt, protocolVersion = excluded.protocolVersion,
                 signature = excluded.signature, author = excluded.author, replies = excluded.replies, lastChildCid = excluded.lastChildCid,
                 lastReplyTimestamp = excluded.lastReplyTimestamp, postUpdatesBucket = excluded.postUpdatesBucket,
-                postCommentUpdateCid = excluded.postCommentUpdateCid, publishedToPostUpdatesMFS = excluded.publishedToPostUpdatesMFS,
+                publishedToPostUpdatesMFS = excluded.publishedToPostUpdatesMFS,
                 insertedAt = excluded.insertedAt
         `);
 
@@ -1451,7 +1450,6 @@ export class DbHandler {
 
             const commentUpdate = this.queryStoredCommentUpdate({ cid });
             if (commentUpdate) {
-                if (commentUpdate.postCommentUpdateCid) purgedCids.push(commentUpdate.postCommentUpdateCid);
                 if (commentUpdate.replies?.pageCids) {
                     Object.values(commentUpdate.replies.pageCids).forEach((pageCid) => {
                         if (typeof pageCid === "string") purgedCids.push(pageCid);
@@ -1646,11 +1644,6 @@ export class DbHandler {
     queryAllCidsUnderThisSubplebbit(): Set<string> {
         const allCids = new Set<string>();
         (this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS}`).all() as { cid: string }[]).forEach((c) => allCids.add(c.cid));
-        (
-            this._db.prepare(`SELECT postCommentUpdateCid FROM ${TABLES.COMMENT_UPDATES} WHERE postCommentUpdateCid IS NOT NULL`).all() as {
-                postCommentUpdateCid: string;
-            }[]
-        ).forEach((row) => allCids.add(row.postCommentUpdateCid));
         const pageCidsResult = this._db
             .prepare(
                 `SELECT json_extract(replies, '$.pageCids') AS pageCids 
@@ -1660,7 +1653,7 @@ export class DbHandler {
             .all() as { pageCids: string }[];
 
         pageCidsResult.forEach((row) => {
-            const pageCidsParsed = JSON.parse(row.pageCids) as NonNullable<RepliesPagesIpfsDefinedManuallyType["pageCids"]>;
+            const pageCidsParsed = JSON.parse(row.pageCids) as NonNullable<RepliesPagesTypeIpfs["pageCids"]>;
 
             Object.values(pageCidsParsed).forEach((cid) => allCids.add(cid));
         });

@@ -114,32 +114,33 @@ export const AuthorWithCommentUpdateSchema = CommentPubsubMessagePublicationSche
     })
     .loose();
 
-export const CommentUpdateNoRepliesSchema = z.object({
-    cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
-    upvoteCount: z.number().nonnegative().int(),
-    downvoteCount: z.number().nonnegative().int(),
-    replyCount: z.number().nonnegative().int(), // the total of reply trees underneath this comment, which includes direct and indirect children
-    childCount: z.number().nonnegative().int().optional(), // the total of direct children of the comment, does not include indirect children
-    edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
-    flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
-    spoiler: z.boolean().optional(),
-    nsfw: z.boolean().optional(),
-    pinned: z.boolean().optional(),
-    locked: z.boolean().optional(), // mod locked a post
-    removed: z.boolean().optional(), // mod deleted a comment
-    reason: z.string().optional(), // reason the mod took a mood action,
-    approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use moderation.pageCids.pendingApproval to fetch pending comments
-    updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
-    author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
-    lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
-    lastReplyTimestamp: PlebbitTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
-    signature: JsonSignatureSchema, // signature of the CommentUpdate by the sub owner to protect against malicious gateway
-    protocolVersion: ProtocolVersionSchema
-});
-
-export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
-    replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'best', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-}).strict();
+export const CommentUpdateSchema = z
+    .object({
+        cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
+        upvoteCount: z.number().nonnegative().int(),
+        downvoteCount: z.number().nonnegative().int(),
+        replyCount: z.number().nonnegative().int(), // the total of reply trees underneath this comment, which includes direct and indirect children
+        childCount: z.number().nonnegative().int().optional(), // the total of direct children of the comment, does not include indirect children
+        edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
+        flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
+        spoiler: z.boolean().optional(),
+        nsfw: z.boolean().optional(),
+        pinned: z.boolean().optional(),
+        locked: z.boolean().optional(), // mod locked a post
+        removed: z.boolean().optional(), // mod deleted a comment
+        reason: z.string().optional(), // reason the mod took a mood action,
+        approved: z.boolean().optional(), // if comment was pending approval and it got approved or disapproved. Does not apply to comments pending approvals, you need to use moderation.pageCids.pendingApproval to fetch pending comments
+        updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
+        author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
+        lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
+        lastReplyTimestamp: PlebbitTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
+        signature: JsonSignatureSchema, // signature of the CommentUpdate by the sub owner to protect against malicious gateway
+        protocolVersion: ProtocolVersionSchema,
+        get replies() {
+            return RepliesPagesIpfsSchema.optional();
+        }
+    })
+    .strict();
 
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
 
@@ -207,11 +208,8 @@ export const CommentsTableRowSchema = CommentIpfsSchema.extend({
 export const CommentUpdateTableRowSchema = CommentUpdateSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     postUpdatesBucket: z.int().nonnegative().optional(), // the post updates bucket of post CommentUpdate, not applicable to replies
-    publishedToPostUpdatesMFS: z.boolean(), // whether the comment latest update has been published
-    postCommentUpdateCid: CidStringSchema.optional() // the cid of the post comment update, cid v0. Not applicable to replies
+    publishedToPostUpdatesMFS: z.boolean() // whether the comment latest update has been published
 });
-
-export interface CommentUpdatesRow extends CommentUpdateType {}
 
 // Comment pubsub reserved fields
 

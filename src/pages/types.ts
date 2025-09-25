@@ -11,11 +11,6 @@ import { PostsPages, RepliesPages } from "./pages";
 
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 
-export interface PageIpfsManuallyDefined {
-    comments: { comment: CommentIpfsType; commentUpdate: CommentUpdateType }[];
-    nextCid?: string; // "QmXsYKgNH7XoZXdLko5uDvtWSRNE2AXuQ4u8KxVpCacrZx" for example
-}
-
 export type RepliesPagesTypeIpfs = z.infer<typeof RepliesPagesIpfsSchema>;
 
 export type PostsPagesTypeIpfs = z.infer<typeof PostsPagesIpfsSchema>;
@@ -26,11 +21,6 @@ export type PostSortName = z.infer<typeof PostSortNameSchema>;
 export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
 
 export type ModQueueSortName = "pendingApproval";
-
-export interface RepliesPagesIpfsDefinedManuallyType {
-    pages: Record<ReplySortName, PageIpfsManuallyDefined>;
-    pageCids?: Record<ReplySortName, string>;
-}
 
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 
