@@ -11,6 +11,11 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
+// TODO test skeletons
+// comments with approved: false should not be in pageCids.pendingApproval, and should only be in PostUpdates till they're expired
+// comment.pendingApproval should not appear in postUpdates
+// comment.approved = true is treated like a regular comment
+
 describe(`Pending approval modqueue functionality`, async () => {
     let plebbit, subplebbit, pendingComment, modSigner;
 
@@ -256,34 +261,7 @@ describe(`Pending approval modqueue functionality`, async () => {
         });
     });
 
-    describe(`Comment moderation rejection of pending comment`, async () => {
-        let commentToBeRejected;
-
-        before(async () => {
-            const pending = await publishPostToModQueue({ subplebbit });
-            commentToBeRejected = pending.comment;
-
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-        });
-        it(`Can reject with approved: false`, async () => {
-            const commentModeration = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: false },
-                commentCid: commentToBeRejected.cid
-            });
-
-            await publishWithExpectedResult(commentModeration, true);
-        });
-        it(`Rejecting a pending comment will purge it from modQueue`, async () => {
-            await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
-        });
-        it(`Rejecting a pending comment will remove it from database of subplebbit`, async () => {
-            const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
-            expect(queryRes).to.be.undefined;
-        });
-    });
+    
 
     describe("Integration tests", () => {
         it("Should handle full pending approval workflow", async () => {
