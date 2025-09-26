@@ -1303,9 +1303,11 @@ export class DbHandler {
         const commentModFlair = this._queryModCommentFlair(comment);
         const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
         const isThisCommentApproved = this._queryIsCommentApproved(comment);
+        const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // will be overridden if there's commentFlags.removed
 
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
+            ...(removedFromApproved ? removedFromApproved : undefined),
             cid: comment.cid,
             ...commentUpdateCounts,
             flair: commentModFlair?.flair || authorEdit?.flair,
