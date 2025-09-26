@@ -91,6 +91,7 @@ export class Comment
     lastChildCid?: CommentUpdateType["lastChildCid"];
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
     pendingApproval?: CommentUpdateForChallengeVerification["pendingApproval"];
+    approved?: CommentUpdateType["approved"];
 
     override signature!: CommentPubsubMessagePublication["signature"];
     // updating states
@@ -253,6 +254,7 @@ export class Comment
 
         this._updateRepliesPostsInstance(props.replies, subplebbit);
         if (props.updatedAt && this.pendingApproval) this.pendingApproval = false; // revert pendingApproval if we just received a CommentUpdate
+        this.approved = props.approved;
     }
 
     _updateRepliesPostsInstance(
