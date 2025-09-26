@@ -884,12 +884,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } else if ("approved" in modTableRow.commentModeration) {
             if (modTableRow.commentModeration.approved) {
                 log(
-                    "commentModeration.approved=true, and therefore move comment from pending approval",
+                    "commentModeration.approved=true, and therefore move comment from pending approval and add it to IPFS",
                     "comment cid is",
                     modTableRow.commentCid
                 );
 
-                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
                 await this._addCommentRowToIPFS(
                     commentToBeEdited,
                     Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
@@ -900,8 +899,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     "comment cid is",
                     modTableRow.commentCid
                 );
-                this._dbHandler.purgeComment(modTableRow.commentCid);
             }
+            this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
         }
         this._subplebbitUpdateTrigger = true;
         this._dbHandler.insertCommentModerations([modTableRow]);
