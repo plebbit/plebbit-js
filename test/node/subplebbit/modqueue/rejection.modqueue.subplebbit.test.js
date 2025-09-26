@@ -103,6 +103,8 @@ describe(`Comment moderation rejection of pending comment`, async () => {
         expect(newComment.upvoteCount).to.equal(0);
         expect(newComment.replyCount).to.equal(0);
         expect(newComment.childCount).to.equal(0);
+        // `Publishing approved:false adds removed:true automatically to comment update
+        expect(newComment.removed).to.be.true;
 
         expect(newComment.raw.commentUpdate.approved).to.be.false;
         expect(newComment.raw.commentUpdate.reason).to.equal(reasonForRejection);
@@ -111,12 +113,10 @@ describe(`Comment moderation rejection of pending comment`, async () => {
         expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
         expect(newComment.raw.commentUpdate.childCount).to.equal(0);
 
+        expect(newComment.raw.commentUpdate.removed).to.be.true;
+
         await newComment.stop();
     });
-
-    it(`Publishing approved:false adds removed:true automatically to comment update`, async () => {
-        
-    })
 
     it(`A rejected comment will expire and get removed from postUpdates and DB`);
 });
