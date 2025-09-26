@@ -54,7 +54,6 @@ describe("createSchemaRowParser", () => {
             protocolVersion: "1",
             replies: JSON.stringify({ pages: {} }),
             postUpdatesBucket: 42,
-            postCommentUpdateCid: "QmYwAPJzv5CZsnAzt8auVTLsLUs16u9mPqT1WQE6B4wX9T",
             publishedToPostUpdatesMFS: 0,
             insertedAt: 1700000200,
             legacyField: "legacy"
