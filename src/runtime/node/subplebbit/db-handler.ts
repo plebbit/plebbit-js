@@ -967,10 +967,12 @@ export class DbHandler {
             WITH RECURSIVE 
             direct_updates AS (
                 SELECT c.* FROM ${TABLES.COMMENTS} c LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                AND (cu.cid IS NULL OR (cu.publishedToPostUpdatesMFS = 0 OR cu.publishedToPostUpdatesMFS IS FALSE))
                 UNION
                 SELECT c.* FROM ${TABLES.COMMENTS} c JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                WHERE (
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
+                AND (
                     EXISTS (SELECT 1 FROM ${TABLES.VOTES} v WHERE v.commentCid = c.cid AND v.insertedAt >= cu.updatedAt - 1)
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_EDITS} ce WHERE ce.commentCid = c.cid AND ce.insertedAt >= cu.updatedAt - 1)
                     OR EXISTS (SELECT 1 FROM ${TABLES.COMMENT_MODERATIONS} cm WHERE cm.commentCid = c.cid AND cm.insertedAt >= cu.updatedAt - 1)
@@ -980,16 +982,18 @@ export class DbHandler {
             authors_to_update AS (SELECT DISTINCT authorSignerAddress FROM direct_updates),
             parent_chain AS (
                 SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN direct_updates du ON p.cid = du.parentCid
-                WHERE p.cid IS NOT NULL
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
                 UNION
                 SELECT DISTINCT p.* FROM ${TABLES.COMMENTS} p JOIN parent_chain pc ON p.cid = pc.parentCid
-                WHERE p.cid IS NOT NULL
+                WHERE p.cid IS NOT NULL AND (p.pendingApproval IS NULL OR p.pendingApproval != 1)
             ),
             all_updates AS (
                 SELECT cid FROM direct_updates UNION SELECT cid FROM parent_chain
                 UNION SELECT c.cid FROM ${TABLES.COMMENTS} c JOIN authors_to_update a ON c.authorSignerAddress = a.authorSignerAddress
+                WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             )
             SELECT c.* FROM ${TABLES.COMMENTS} c JOIN all_updates au ON c.cid = au.cid
+            WHERE (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             ORDER BY c.rowid
         `;
         const results = this._db.prepare(query).all() as CommentsTableRow[];
