@@ -7,10 +7,12 @@ import {
     processAllCommentsRecursively,
     mockGatewayPlebbit,
     generateMockVote,
+    forceSubplebbitToGenerateAllPostsPages,
     generateMockComment,
     publishCommentToModQueue,
     publishRandomPost,
-    publishToModQueueWithDepth
+    publishToModQueueWithDepth,
+    loadAllPages
 } from "../../../../dist/node/test/test-util.js";
 
 // TODO test skeletons
@@ -94,6 +96,22 @@ for (const pendingCommentDepth of depthsToTest) {
                 }
             });
             expect(foundInPosts).to.be.false;
+
+            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+            expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
+
+            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+
+                processAllCommentsRecursively(pageComments, (comment) => {
+                    if (comment.cid === commentToBeRejected.cid) {
+                        foundInPosts = true;
+                        return;
+                    }
+                });
+                expect(foundInPosts).to.be.false;
+            }
         });
 
         if (pendingCommentDepth === 0)
@@ -139,6 +157,9 @@ for (const pendingCommentDepth of depthsToTest) {
             });
 
         it(`A rejected post will expire and get removed from postUpdates and DB`);
+
+        // if (pendingCommentDepth > 0) it("Pending comment does not appear in any pages");
+        // if (pendingCommentDepth > 0)
     });
 }
 

@@ -1727,7 +1727,7 @@ export async function publishToModQueueWithDepth({
     }
 }
 
-export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {
+export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit, commentProps?: CreateCommentOptions) {
     // max comment size is 40kb = 40000
     const rawSubplebbitRecord = subplebbit.toJSONIpfs();
     if (!rawSubplebbitRecord) throw Error("Subplebbit should be updating before forcing to generate all pages");
@@ -1739,16 +1739,15 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     const numOfCommentsToPublish = Math.round((1024 * 1024 - curRecordSize) / maxCommentSize) + 1;
 
     const content = "x".repeat(1024 * 30); //30kb
-    let lastPublishedPost: Comment;
+    let lastPublishedPost: Comment = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content, ...commentProps });
     await Promise.all(
         new Array(numOfCommentsToPublish).fill(null).map(async () => {
-            const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content });
+            const post = await publishRandomPost(subplebbit.address, subplebbit._plebbit, { content, ...commentProps });
             lastPublishedPost = post;
         })
     );
 
-    //@ts-expect-error
-    await waitTillPostInSubplebbitPages(lastPublishedPost, subplebbit._plebbit);
+    await waitTillPostInSubplebbitPages(lastPublishedPost as CommentIpfsWithCidDefined, subplebbit._plebbit);
     const newSubplebbit = await subplebbit._plebbit.getSubplebbit(subplebbit.address);
     if (Object.keys(newSubplebbit.posts.pageCids).length === 0) throw Error("Failed to force the subplebbit to load all pages");
 }
