@@ -27,6 +27,7 @@ import { sha256 } from "js-sha256";
 export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
+    excludeCommentWithApprovedFalse: boolean;
     excludeCommentsWithDifferentSubAddress: boolean;
     commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[];
     parentCid: string | null;
@@ -335,7 +336,8 @@ export class PageGenerator {
             parentCid: null,
             preloadedPage: preloadedPageSortName,
             baseTimestamp: timestamp(),
-            firstPageSizeBytes: preloadedPageSizeBytes
+            firstPageSizeBytes: preloadedPageSizeBytes,
+            excludeCommentWithApprovedFalse: true
         };
         // Sorting posts on a subplebbit level
         const rawPosts = this._subplebbit._dbHandler.queryPostsWithActiveScore(pageOptions);
@@ -402,6 +404,7 @@ export class PageGenerator {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
+            excludeCommentWithApprovedFalse: true,
             parentCid: comment.cid,
             preloadedPage: preloadedReplyPageSortName,
             baseTimestamp: timestamp()
@@ -450,7 +453,8 @@ export class PageGenerator {
             excludeRemovedComments: false,
             parentCid: comment.cid,
             preloadedPage: preloadedReplyPageSortName,
-            baseTimestamp: timestamp()
+            baseTimestamp: timestamp(),
+            excludeCommentWithApprovedFalse: true
         };
 
         const hierarchalReplies = this._subplebbit._dbHandler.queryPageComments(pageOptions);

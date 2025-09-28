@@ -793,6 +793,10 @@ export class DbHandler {
                 `(json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') IS NULL OR json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') != 1)`
             );
         }
+        if (options.excludeCommentWithApprovedFalse)
+            whereClauses.push(
+                `(${TABLES.COMMENT_UPDATES}.approved IS NULL OR ${TABLES.COMMENT_UPDATES}.approved = 1 OR ${TABLES.COMMENT_UPDATES}.approved IS TRUE)`
+            );
         // Always exclude comments pending approval from pages
         whereClauses.push(`(${TABLES.COMMENTS}.pendingApproval IS NULL OR ${TABLES.COMMENTS}.pendingApproval != 1)`);
         return { whereClauses, params };
@@ -876,6 +880,11 @@ export class DbHandler {
         }
         if (options.excludeDeletedComments) {
             const clause = `(d.deleted_flag IS NULL OR d.deleted_flag != 1)`;
+            baseFilterClauses.push(clause);
+            recursiveFilterClauses.push(clause);
+        }
+        if (options.excludeCommentWithApprovedFalse) {
+            const clause = `(c_updates.approved IS NULL OR c_updates.approved = 1 OR c_updates.approved IS TRUE)`;
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
