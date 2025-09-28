@@ -5,6 +5,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     processAllCommentsRecursively,
+    forceSubplebbitToGenerateAllRepliesPages,
     mockGatewayPlebbit,
     generateMockVote,
     forceSubplebbitToGenerateAllPostsPages,
@@ -87,9 +88,8 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         it(`A rejected comment will not show up in subplebbit.posts`, async () => {
-            if (!subplebbit.posts.pages.hot) return;
             let foundInPosts = false;
-            processAllCommentsRecursively(subplebbit.posts.pages.hot.comments, (comment) => {
+            processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
                 if (comment.cid === commentToBeRejected.cid) {
                     foundInPosts = true;
                     return;
@@ -103,6 +103,7 @@ for (const pendingCommentDepth of depthsToTest) {
 
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
                 const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+                expect(pageComments.length).to.be.greaterThan(0);
 
                 processAllCommentsRecursively(pageComments, (comment) => {
                     if (comment.cid === commentToBeRejected.cid) {
@@ -113,6 +114,40 @@ for (const pendingCommentDepth of depthsToTest) {
                 expect(foundInPosts).to.be.false;
             }
         });
+
+        if (pendingCommentDepth > 0)
+            it("A rejected reply will not show up in parentComment.replies", async () => {
+                const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
+                await parentComment.update();
+                await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+                let foundInReplies = false;
+                processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
+                    if (comment.cid === commentToBeRejected.cid) {
+                        foundInReplies = true;
+                        return;
+                    }
+                });
+                expect(foundInReplies).to.be.false;
+
+                await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
+
+                for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+                    const pageComments = await loadAllPages(pageCid, parentComment.replies);
+
+                    expect(pageComments.length).to.be.greaterThan(0);
+                    processAllCommentsRecursively(pageComments, (comment) => {
+                        if (comment.cid === commentToBeRejected.cid) {
+                            foundInReplies = true;
+                            return;
+                        }
+                    });
+                    expect(foundInReplies).to.be.false;
+                }
+                await parentComment.stop();
+            });
+        if (pendingCommentDepth > 0) it(`A rejected reply will not show up in flat pages of post`);
 
         if (pendingCommentDepth === 0)
             it(`Rejecting a pending post will still keep it in subplebbit.postUpdates`, async () => {

@@ -1567,7 +1567,7 @@ export function mockCommentToNotUsePagesForUpdates(comment: Comment) {
     updatingComment._clientsManager._findCommentInPagesOfUpdatingCommentsOrSubplebbit = () => undefined;
 }
 
-export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment) {
+export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment, commentProps?: CreateCommentOptions) {
     // max comment size is 40kb = 40000
     const rawCommentUpdateRecord = comment.raw.commentUpdate;
     if (!rawCommentUpdateRecord) throw Error("Comment should be updating before forcing to generate all pages");
@@ -1581,11 +1581,14 @@ export async function forceSubplebbitToGenerateAllRepliesPages(comment: Comment)
     const content = "x".repeat(1024 * 30); //30kb
     await Promise.all(
         new Array(numOfCommentsToPublish - 1).fill(null).map(async () => {
-            return publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content });
+            return publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content, ...commentProps });
         })
     );
 
-    const lastPublishedReply = await publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, { content });
+    const lastPublishedReply = await publishRandomReply(comment as CommentIpfsWithCidDefined, comment._plebbit, {
+        content,
+        ...commentProps
+    });
     const log = Logger("plebbit-js:test-util:forceSubplebbitToGenerateAllRepliesPages");
     log(
         "Published",
