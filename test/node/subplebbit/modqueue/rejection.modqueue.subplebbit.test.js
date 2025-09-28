@@ -13,7 +13,6 @@ import {
 
 // TODO test skeletons
 // comments with approved: false should not be in pageCids.pendingApproval, and should only be in PostUpdates till they're expired
-// comment.pendingApproval should not appear in postUpdates
 // comment.approved = true is treated like a regular comment, should be pinned to IPFS node as well
 
 const depthsToTest = [0, 1, 2, 3, 4];

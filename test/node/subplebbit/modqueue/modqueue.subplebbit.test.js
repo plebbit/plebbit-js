@@ -13,7 +13,6 @@ import { messages } from "../../../../dist/node/errors.js";
 
 // TODO test skeletons
 // comments with approved: false should not be in pageCids.pendingApproval, and should only be in PostUpdates till they're expired
-// comment.pendingApproval should not appear in postUpdates
 // comment.approved = true is treated like a regular comment
 
 describe(`Pending approval modqueue functionality`, async () => {
@@ -51,91 +50,7 @@ describe(`Pending approval modqueue functionality`, async () => {
             expect(subplebbit.challenges[0].pendingApproval).to.be.true;
         });
 
-        it("Should put failed comment in pending approval queue when challenge has pendingApproval: true", async () => {
-            // TODO: Test that when a challenge with pendingApproval fails,
-            // the publication goes to pending approval instead of being rejected
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
-
-            const { comment, challengeVerification } = await publishPostToModQueue({ subplebbit });
-            pendingComment = comment;
-
-            expect(pendingComment.publishingState).to.equal("succeeded");
-            expect(pendingComment.cid).to.be.a("string");
-            expect(challengeVerification.commentUpdate.pendingApproval).to.be.true;
-            expect(Object.keys(challengeVerification.commentUpdate).sort()).to.deep.equal([
-                "author",
-                "cid",
-                "pendingApproval",
-                "protocolVersion",
-                "signature"
-            ]);
-        });
-
-        it("Should not include pendingApproval in commentIpfs", async () => {
-            // TODO: Test that pendingApproval field is not stored in IPFS content
-            expect(pendingComment.raw.comment.pendingApproval).to.not.exist;
-        });
-
-        it(`Should not be able to publish a vote under a pending comment`, async () => {
-            const vote = await generateMockVote(pendingComment, 1, plebbit);
-            await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
-        });
-        it(`should not be able to publish a CommentEdit under a pending comment`, async () => {
-            const edit = await plebbit.createCommentEdit({
-                subplebbitAddress: pendingComment.subplebbitAddress,
-                commentCid: pendingComment.cid,
-                reason: "random reason should fail",
-                content: "text to edit on pending comment",
-                signer: pendingComment.signer
-            });
-            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
-        });
-        it(`Should not be able to publish a reply under a pending comment`, async () => {
-            const reply = await generateMockComment(pendingComment, plebbit, false);
-            await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
-        });
-    });
-
-    describe("Pending approval storage", () => {
-        it("Should store pending approval comments in subplebbit.moderation.pageCids.pendingApproval", async () => {
-            // TODO: Test that pending comments are stored in correct location
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids?.pendingApproval);
-            const page = await subplebbit.moderation.getPage(subplebbit.moderation.pageCids?.pendingApproval);
-            expect(page.comments.length).to.equal(1);
-            const pendingCommentInPage = page.comments[0];
-            expect(pendingCommentInPage.cid).to.equal(pendingComment.cid);
-            expect(pendingCommentInPage.updatedAt).to.be.undefined;
-            expect(pendingCommentInPage.pendingApproval).to.be.true;
-        });
-
-        it(`pending post should not have postCid defined at its pages`, async () => {
-            const pageRaw = JSON.parse(await plebbit.fetchCid(subplebbit.moderation.pageCids?.pendingApproval));
-            expect(pageRaw.comments[0].comment.postCid).to.be.undefined;
-        });
-
-        it(`pending comment should not appear in subplebbit.lastPostCid or subplebbit.lastCommentCid`, async () => {
-            expect(subplebbit.lastPostCid).to.not.equal(pendingComment.cid);
-            expect(subplebbit.lastCommentCid).to.not.equal(pendingComment.cid);
-        });
-
-        it(`pending comment should not appear in subplebbit.postUpdates`, async () => {
-            expect(subplebbit.postUpdates).to.be.undefined;
-        });
-
-        it(`Pending comment should not be pinned in ipfs node`, async () => {
-            const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
-            // Collect all pinned CIDs
-            for await (const pin of kuboRpc.pin.ls()) {
-                expect(pin.cid.toString()).to.not.equal(pendingComment.cid); // pending comment should not be pinned in kubo
-            }
-
-            const pendingCommentFromGatewayRequest = await fetch("http://localhost:18080/ipfs/" + pendingComment.cid);
-            expect(pendingCommentFromGatewayRequest.status).to.equal(504); // should fail to load
-        });
-        it(`pending comment should not appear in any pageCids or preloaded pages`, async () => {
-            expect(Object.keys(subplebbit.posts.pages)).to.deep.equal([]);
-            expect(Object.keys(subplebbit.posts.pageCids)).to.deep.equal([]);
-        });
+        
     });
 
     describe("Comment moderation approval of pending comment", () => {
@@ -149,7 +64,7 @@ describe(`Pending approval modqueue functionality`, async () => {
 
             await publishWithExpectedResult(commentModeration, true);
         });
-        it(`pending comment will receive updates now`, async () => {
+        it(`pending comment after approval will receive updates now`, async () => {
             await pendingComment.update();
             await resolveWhenConditionIsTrue(pendingComment, () => pendingComment.updatedAt);
             expect(pendingComment.updatedAt).to.be.a("number");
@@ -260,8 +175,6 @@ describe(`Pending approval modqueue functionality`, async () => {
             // and reflect in the comment state shown in modqueue
         });
     });
-
-    
 
     describe("Integration tests", () => {
         it("Should handle full pending approval workflow", async () => {

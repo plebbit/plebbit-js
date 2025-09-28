@@ -16,9 +16,8 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const subplebbitAddressOfFixture = validModQueuePage.comments[0].comment.subplebbitAddress;
 
-getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-kubo-rpc", "remote-libp2pjs"] }).map((config) => {
-    describe(`modQueue.getPage - ${config.name}`, async () => {});
-});
+// need to test if comments with approved=false appear in any flattened pages, comment.replies, post.replies, subplebbit.posts
+// same thing for pending comments
 
 getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-gateway"] }).map((config) => {
     describe(`modQueue.getPage - ${config.name}`, async () => {
