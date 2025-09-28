@@ -147,7 +147,31 @@ for (const pendingCommentDepth of depthsToTest) {
                 }
                 await parentComment.stop();
             });
-        if (pendingCommentDepth > 0) it(`A rejected reply will not show up in flat pages of post`);
+        if (pendingCommentDepth > 0)
+            it(`A rejected reply will not show up in flat pages of post`, async () => {
+                const postComment = await plebbit.getComment(commentToBeRejected.postCid);
+                await postComment.update();
+                await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
+                await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+
+                let foundInFlatPages = false;
+                for (const flatPageCid of flatPageCids) {
+                    const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
+
+                    expect(flatPageComments.length).to.be.greaterThan(0);
+                    processAllCommentsRecursively(flatPageComments, (comment) => {
+                        if (comment.cid === commentToBeRejected.cid) {
+                            foundInFlatPages = true;
+                            return;
+                        }
+                    });
+                    expect(foundInFlatPages).to.be.false;
+                }
+
+                await postComment.stop();
+            });
 
         if (pendingCommentDepth === 0)
             it(`Rejecting a pending post will still keep it in subplebbit.postUpdates`, async () => {
