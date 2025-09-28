@@ -44,7 +44,6 @@ import {
 } from "../pages/util.js";
 import { importSignerIntoKuboNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey, getPeerIdFromPrivateKey } from "../signer/util.js";
-import { createSigner } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 import { Buffer } from "buffer";
@@ -630,7 +629,7 @@ export async function mockGatewayPlebbit(opts?: MockPlebbitOptions) {
 export async function publishRandomReply(
     parentComment: CommentIpfsWithCidDefined,
     plebbit: Plebbit,
-    commentProps: Partial<CreateCommentOptions>
+    commentProps?: Partial<CreateCommentOptions>
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, false, {
         content: `Content ${uuidv4()}`,
@@ -1652,15 +1651,21 @@ export async function publishCommentWithDepth({ depth, subplebbit }: { depth: nu
     }
 }
 
-export async function publishPostToModQueue({
-    subplebbit
+export async function publishCommentToModQueue({
+    subplebbit,
+    plebbit,
+    parentComment
 }: {
     subplebbit: RemoteSubplebbit;
+    plebbit?: Plebbit;
+    parentComment?: Comment;
 }): Promise<{ comment: Comment; challengeVerification: DecryptedChallengeVerificationMessageType }> {
-    const remotePlebbit = await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true }); // this plebbit is not connected to kubo rpc client of subplebbit
-    const pendingComment = await generateMockPost(subplebbit.address, remotePlebbit, false, {
-        content: "Pending post" + " " + Math.random()
-    });
+    const remotePlebbit = plebbit || (await mockGatewayPlebbit({ forceMockPubsub: true, remotePlebbit: true })); // this plebbit is not connected to kubo rpc client of subplebbit
+    const pendingComment = parentComment
+        ? await generateMockComment(parentComment as CommentIpfsWithCidDefined, remotePlebbit, false)
+        : await generateMockPost(subplebbit.address, remotePlebbit, false, {
+              content: "Pending post" + " " + Math.random()
+          });
 
     pendingComment.removeAllListeners("challenge");
 
@@ -1677,6 +1682,49 @@ export async function publishPostToModQueue({
     if (!pendingComment.pendingApproval) throw Error("The comment did not go to pending approval");
 
     return { comment: pendingComment, challengeVerification: await challengeVerificationPromise };
+}
+
+export async function publishToModQueueWithDepth({
+    subplebbit,
+    depth,
+    modCommentProps
+}: {
+    subplebbit: RemoteSubplebbit;
+    depth: number;
+    modCommentProps?: Partial<CreateCommentOptions>;
+}) {
+    if (depth === 0) return publishCommentToModQueue({ subplebbit });
+    else {
+        // we assume mod can publish comments without mod queue
+        const commentsPublishedByMod = [await publishRandomPost(subplebbit.address, subplebbit._plebbit, modCommentProps)];
+        for (let i = 1; i < depth; i++) {
+            commentsPublishedByMod.push(
+                await publishRandomReply(commentsPublishedByMod[i - 1] as CommentIpfsWithCidDefined, subplebbit._plebbit, modCommentProps)
+            );
+        }
+        // we have created a tree of comments and now we can publish the pending comment underneath it
+        const pendingReply = await generateMockComment(
+            commentsPublishedByMod[commentsPublishedByMod.length - 1] as CommentIpfsWithCidDefined,
+            subplebbit._plebbit,
+            false,
+            {
+                content: "Pending reply" + " " + Math.random()
+            }
+        );
+
+        pendingReply.removeAllListeners("challenge");
+
+        pendingReply.once("challenge", async () => {
+            await pendingReply.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
+        });
+
+        const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));
+
+        await publishWithExpectedResult(pendingReply, true); // a pending approval is technically challengeSucess = true
+
+        if (!pendingReply.pendingApproval) throw Error("The reply did not go to pending approval");
+        return { comment: pendingReply, challengeVerification: await challengeVerificationPromise };
+    }
 }
 
 export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteSubplebbit) {

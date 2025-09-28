@@ -3,9 +3,7 @@ import {
     mockPlebbit,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    generateMockComment,
-    publishPostToModQueue,
-    publishRandomPost,
+    publishToModQueueWithDepth,
     publishRandomReply
 } from "../../../../dist/node/test/test-util.js";
 import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
@@ -15,41 +13,6 @@ const depthsToTest = [0, 1, 2, 3, 4, 5];
 describe("Modqueue depths", () => {
     let plebbit, subplebbit, modSigner;
     const pendingComments = [];
-
-    const publishToModQueueWithDepth = async ({ subplebbit, depth }) => {
-        if (depth === 0) return publishPostToModQueue({ subplebbit });
-        else {
-            // we assume mod can publish comments without mod queue
-            const commentsPublishedByMod = [await publishRandomPost(subplebbit.address, subplebbit._plebbit, { signer: modSigner })];
-            for (let i = 1; i < depth; i++) {
-                commentsPublishedByMod.push(
-                    await publishRandomReply(commentsPublishedByMod[i - 1], subplebbit._plebbit, { signer: modSigner })
-                );
-            }
-            // we have created a tree of comments and now we can publish the pending comment underneath it
-            const pendingReply = await generateMockComment(
-                commentsPublishedByMod[commentsPublishedByMod.length - 1],
-                subplebbit._plebbit,
-                false,
-                {
-                    content: "Pending reply" + " " + Math.random()
-                }
-            );
-
-            pendingReply.removeAllListeners("challenge");
-
-            pendingReply.once("challenge", async () => {
-                await pendingReply.publishChallengeAnswers([Math.random() + "12"]); // wrong answer
-            });
-
-            const challengeVerificationPromise = new Promise((resolve) => pendingReply.once("challengeverification", resolve));
-
-            await publishWithExpectedResult(pendingReply, true); // a pending approval is technically challengeSucess = true
-
-            if (!pendingReply.pendingApproval) throw Error("The reply did not go to pending approval");
-            return { comment: pendingReply, challengeVerification: await challengeVerificationPromise };
-        }
-    };
 
     before(async () => {
         plebbit = await mockPlebbit();
@@ -63,20 +26,7 @@ describe("Modqueue depths", () => {
                 challenges: [
                     {
                         ...subplebbit.settings.challenges[0],
-                        pendingApproval: true,
-                        exclude: [
-                            {
-                                role: ["moderator", "admin", "owner"],
-                                publicationType: {
-                                    commentModeration: true,
-                                    subplebbitEdit: true,
-                                    post: true,
-                                    reply: true,
-                                    commentEdit: true,
-                                    vote: true
-                                }
-                            }
-                        ]
+                        pendingApproval: true
                     }
                 ]
             }
@@ -103,7 +53,7 @@ describe("Modqueue depths", () => {
             const numOfComments = 2;
             const pendingComments = [];
             for (let i = 0; i < numOfComments; i++) {
-                pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth }));
+                pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner } }));
             }
 
             await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
@@ -122,7 +72,7 @@ describe("Modqueue depths", () => {
         const pendingComments = [];
 
         for (const depth of depthsToTest) {
-            pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth }));
+            pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner } }));
         }
         // different depths should show up in mod queue
 
