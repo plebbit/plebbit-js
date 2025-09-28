@@ -167,6 +167,9 @@ for (const pendingCommentDepth of depthsToTest) {
                 await postComment.stop();
             });
 
+        it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
+            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
+        });
         if (pendingCommentDepth === 0)
             it(`Rejecting a pending post will still keep it in subplebbit.postUpdates`, async () => {
                 expect(subplebbit.postUpdates).to.exist;
