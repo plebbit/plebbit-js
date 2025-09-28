@@ -1,17 +1,12 @@
 import { expect } from "chai";
 import {
     mockPlebbit,
-    generateMockPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     processAllCommentsRecursively,
     forceSubplebbitToGenerateAllRepliesPages,
     mockGatewayPlebbit,
-    generateMockVote,
     forceSubplebbitToGenerateAllPostsPages,
-    generateMockComment,
-    publishCommentToModQueue,
-    publishRandomPost,
     publishToModQueueWithDepth,
     loadAllPages
 } from "../../../../dist/node/test/test-util.js";
@@ -20,7 +15,6 @@ import {
 // comments with approved: false should not be in pageCids.pendingApproval, and should only be in PostUpdates till they're expired
 // comment.pendingApproval should not appear in postUpdates
 // comment.approved = true is treated like a regular comment, should be pinned to IPFS node as well
-// need to test if comments with approved=false appear in any flattened pages, comment.replies, post.replies, subplebbit.posts
 
 const depthsToTest = [0, 1, 2, 3, 4];
 
@@ -216,52 +210,5 @@ for (const pendingCommentDepth of depthsToTest) {
             });
 
         it(`A rejected post will expire and get removed from postUpdates and DB`);
-
-        // if (pendingCommentDepth > 0) it("Pending comment does not appear in any pages");
-        // if (pendingCommentDepth > 0)
     });
 }
-
-describe(`Rejection of post`, async () => {});
-
-describe(`Rejection of replies`, async () => {
-    let plebbit;
-    let remotePlebbit;
-    let replyToBeRejected;
-    let modSigner;
-    let publishedPostByMod;
-    const reasonForRejection = "Rejecting reply Because of reason" + Math.random();
-    let subplebbit;
-
-    before(async () => {
-        plebbit = await mockPlebbit();
-        remotePlebbit = await mockGatewayPlebbit();
-        subplebbit = await plebbit.createSubplebbit();
-        await subplebbit.start();
-        modSigner = await plebbit.createSigner();
-        await subplebbit.edit({
-            roles: {
-                [modSigner.address]: { role: "moderator" }
-            }
-        });
-
-        await subplebbit.edit({ settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] } });
-
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
-        publishedPostByMod = await publishRandomPost(subplebbit.address, plebbit, { signer: modSigner, content: "Post by mod" });
-
-        const pendingReply = await publishCommentToModQueue({ parentComment: publishedPostByMod, subplebbit, plebbit: remotePlebbit });
-
-        replyToBeRejected = pendingReply.comment;
-
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-    });
-
-    after(async () => {
-        await subplebbit.delete();
-        await plebbit.destroy();
-        await remotePlebbit.destroy();
-    });
-
-    it(`A rejected reply will not show up in its parent's pages`);
-});
