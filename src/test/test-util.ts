@@ -1690,25 +1690,28 @@ export async function publishCommentToModQueue({
 export async function publishToModQueueWithDepth({
     subplebbit,
     depth,
+    plebbit,
     modCommentProps
 }: {
     subplebbit: RemoteSubplebbit;
+    plebbit: Plebbit;
     depth: number;
     modCommentProps?: Partial<CreateCommentOptions>;
 }) {
-    if (depth === 0) return publishCommentToModQueue({ subplebbit });
+    if (depth === 0) return publishCommentToModQueue({ subplebbit, plebbit });
     else {
         // we assume mod can publish comments without mod queue
-        const commentsPublishedByMod = [await publishRandomPost(subplebbit.address, subplebbit._plebbit, modCommentProps)];
+        const remotePlebbit = plebbit || subplebbit._plebbit;
+        const commentsPublishedByMod = [await publishRandomPost(subplebbit.address, remotePlebbit, modCommentProps)];
         for (let i = 1; i < depth; i++) {
             commentsPublishedByMod.push(
-                await publishRandomReply(commentsPublishedByMod[i - 1] as CommentIpfsWithCidDefined, subplebbit._plebbit, modCommentProps)
+                await publishRandomReply(commentsPublishedByMod[i - 1] as CommentIpfsWithCidDefined, remotePlebbit, modCommentProps)
             );
         }
         // we have created a tree of comments and now we can publish the pending comment underneath it
         const pendingReply = await generateMockComment(
             commentsPublishedByMod[commentsPublishedByMod.length - 1] as CommentIpfsWithCidDefined,
-            subplebbit._plebbit,
+            remotePlebbit,
             false,
             {
                 content: "Pending reply" + " " + Math.random()
