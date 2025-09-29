@@ -29,16 +29,17 @@ export class AddressesRewriterProxyServer {
     _plebbit: Pick<Plebbit, "_storage" | "dataPath">;
 
     // SQLite logging
-    private _db: AddressRewriterDatabase;
-    private _logWriteInterval!: ReturnType<typeof setInterval>;
+    private _db: AddressRewriterDatabase | null;
+    private _logWriteInterval?: ReturnType<typeof setInterval>;
     private _requestLogBuffer: RequestLogEntry[] = [];
     private _isWritingLogs = false;
+    private _loggingEnabled: boolean;
 
     // Failed keys retry logic
     private _failedKeys: Set<string> = new Set();
-    private _retryInterval!: ReturnType<typeof setInterval>;
+    private _retryInterval?: ReturnType<typeof setInterval>;
 
-    private _updateAddressesInterval!: ReturnType<typeof setInterval>;
+    private _updateAddressesInterval?: ReturnType<typeof setInterval>;
 
     // HTTP agents for connection reuse
     private _httpAgent: http.Agent;
@@ -54,9 +55,17 @@ export class AddressesRewriterProxyServer {
         this._storageKeyName = `httprouter_proxy_${proxyTargetUrl}`;
         this._plebbit = plebbit;
 
-        // Initialize database
-        const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
-        this._db = new AddressRewriterDatabase(this._plebbit.dataPath!, kuboConfig, this.proxyTarget);
+        // Environment-based logging toggle
+        const envValue = process.env.ENABLE_LOGGING_OF_ADDRESS_REWRITER_PROXY;
+        this._loggingEnabled = envValue === "1" || envValue?.toLowerCase() === "true";
+
+        // Initialize database only when logging is enabled
+        if (this._loggingEnabled) {
+            const kuboConfig = this.kuboClients?.[0]?.getEndpointConfig();
+            this._db = new AddressRewriterDatabase(this._plebbit.dataPath!, kuboConfig, this.proxyTarget);
+        } else {
+            this._db = null;
+        }
 
         // Create HTTP agents with connection pooling and keep-alive
         this._httpAgent = new http.Agent({
@@ -77,9 +86,16 @@ export class AddressesRewriterProxyServer {
     }
 
     async listen(callback?: () => void) {
-        await this._db.initialize();
+        if (this._loggingEnabled && this._db) {
+            await this._db.initialize();
+            debug("Request logging enabled for addresses rewriter proxy");
+        } else {
+            debug("Request logging disabled for addresses rewriter proxy");
+        }
         await this._startUpdateAddressesLoop();
-        this._startRequestLogging();
+        if (this._loggingEnabled) {
+            this._startRequestLogging();
+        }
         await this._startFailedKeysRetry();
         this.server.on("error", (err) =>
             debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err)
@@ -90,22 +106,28 @@ export class AddressesRewriterProxyServer {
             this.hostname + ":" + this.port,
             "started listening to forward requests to",
             this.proxyTarget.host,
-            "- request logging enabled"
+            `- request logging ${this._loggingEnabled ? "enabled" : "disabled"}`
         );
         await this._plebbit._storage.setItem(this._storageKeyName, `http://${this.hostname}:${this.port}`);
     }
 
     async destroy() {
         this.server.close();
-        clearInterval(this._updateAddressesInterval);
-        clearInterval(this._logWriteInterval);
-        clearInterval(this._retryInterval);
+        if (this._updateAddressesInterval) {
+            clearInterval(this._updateAddressesInterval);
+        }
+        if (this._logWriteInterval) {
+            clearInterval(this._logWriteInterval);
+        }
+        if (this._retryInterval) {
+            clearInterval(this._retryInterval);
+        }
 
         // Write any remaining logs before destroying
         await this._writeRequestLogs();
 
         // Close database connection
-        this._db.close();
+        this._db?.close();
 
         // Destroy HTTP agents to clean up connections
         this._httpAgent.destroy();
@@ -140,7 +162,9 @@ export class AddressesRewriterProxyServer {
                         url: req.url || "/",
                         retryCount: 0
                     };
-                    this._requestLogBuffer.push(requestLogEntry);
+                    if (this._loggingEnabled) {
+                        this._requestLogBuffer.push(requestLogEntry);
+                    }
                 }
             }
 
@@ -400,6 +424,10 @@ export class AddressesRewriterProxyServer {
     }
 
     private async _writeRequestLogs(): Promise<void> {
+        if (!this._loggingEnabled || !this._db) {
+            return;
+        }
+
         if (this._requestLogBuffer.length === 0 || this._isWritingLogs) {
             return;
         }
@@ -421,6 +449,9 @@ export class AddressesRewriterProxyServer {
     }
 
     private _startRequestLogging() {
+        if (!this._loggingEnabled || !this._db) {
+            return;
+        }
         const writeInterval = 5 * 1000; // 5 seconds
         this._logWriteInterval = setInterval(async () => {
             await this._writeRequestLogs();
@@ -441,6 +472,9 @@ export class AddressesRewriterProxyServer {
     }
 
     private _loadFailedKeysFromDatabase() {
+        if (!this._loggingEnabled || !this._db) {
+            return;
+        }
         try {
             const keys = this._db.loadFailedKeys();
             keys.forEach((key) => this._failedKeys.add(key));
@@ -452,6 +486,9 @@ export class AddressesRewriterProxyServer {
     }
 
     private _saveFailedKeysToDatabase() {
+        if (!this._loggingEnabled || !this._db) {
+            return;
+        }
         try {
             const keys = Array.from(this._failedKeys);
             this._db.saveFailedKeys(keys);
@@ -534,6 +571,9 @@ export class AddressesRewriterProxyServer {
     }
 
     private _logReprovideAttempt(key: string, success: boolean, error?: string, blockNotLocal?: boolean): void {
+        if (!this._loggingEnabled || !this._db) {
+            return;
+        }
         try {
             this._db.insertReprovideLog(key, success, error, blockNotLocal);
             debug.trace(`Logged reprovide attempt for key ${key}: success=${success}, blockNotLocal=${blockNotLocal}`);
