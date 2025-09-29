@@ -809,6 +809,7 @@ export class DbHandler {
                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
                 WHERE c.parentCid = ?
                   AND COALESCE(cu.approved, 1) != 0
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
                 UNION ALL
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
@@ -816,6 +817,7 @@ export class DbHandler {
                 JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
                 WHERE c.subplebbitAddress = ? AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
                   AND COALESCE(cu.approved, 1) != 0
+                  AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
             )
             SELECT MAX(timestamp) AS max_timestamp FROM descendants
         `;
@@ -1288,6 +1290,7 @@ export class DbHandler {
                  LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
                  WHERE c.parentCid = ?
                    AND COALESCE(cu.approved, 1) != 0
+                   AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)
                  ORDER BY c.rowid DESC
                  LIMIT 1`
             )
