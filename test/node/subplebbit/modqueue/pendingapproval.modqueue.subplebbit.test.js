@@ -9,6 +9,7 @@ import {
     resolveWhenConditionIsTrue,
     loadAllPages,
     forceSubplebbitToGenerateAllRepliesPages,
+    getCommentWithCommentUpdateProps,
     mockGatewayPlebbit,
     forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
@@ -31,6 +32,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             plebbit = await mockPlebbit();
             remotePlebbit = await mockGatewayPlebbit();
             subplebbit = await plebbit.createSubplebbit();
+            subplebbit.setMaxListeners(100);
             await subplebbit.start();
             modSigner = await plebbit.createSigner();
             await subplebbit.edit({
@@ -130,6 +132,37 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             }
         });
 
+        if (commentInPendingApprovalDepth > 0) {
+            it(`pending approval reply does not show up in parentComment.replyCount`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).replyCount).to.equal(
+                    0
+                );
+            });
+
+            it(`pending approval reply does not show up in parentComment.childCount`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).childCount).to.equal(
+                    0
+                );
+            });
+
+            it(`pending approval reply does not show up in parentComment.lastChildCid`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).lastChildCid).to.be
+                    .undefined;
+            });
+            it(`pending approval reply does not show up in parentComment.lastReplyTimestamp`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: commentInPendingApproval.parentCid, plebbit })).lastReplyTimestamp).to
+                    .be.undefined;
+            });
+        }
+        if (commentInPendingApprovalDepth === 0)
+            it(`pending approval post does not show up in subplebbit.lastPostCid`, async () => {
+                expect(subplebbit.lastPostCid).to.not.equal(commentInPendingApproval.cid);
+            });
+
+        it(`pending approval comment does not show up in subplebbit.lastCommentCid`, async () => {
+            expect(subplebbit.lastCommentCid).to.not.equal(commentInPendingApproval.cid);
+        });
+
         it(`A pending approval comment will not show up in subplebbit.posts`, async () => {
             let foundInPosts = false;
             processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
@@ -219,14 +252,5 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         it("Should not include pendingApproval in commentIpfs", async () => {
             expect(commentInPendingApproval.raw.comment.pendingApproval).to.not.exist;
         });
-
-        it(`pending approval reply does not show up in parentComment.replyCount`);
-        it(`pending approval reply does not show up in parentComment.childCount`);
-        it(`pending approval reply does not show up in parentComment.lastChildCid`);
-        it(`pending approval reply does not show up in parentComment.lastReplyTimestamp`);
-
-        it(`pending approval post does not show up in subplebbit.lastPostCid`);
-
-        it(`pending approval comment does not show up in subplebbit.lastCommentCid`);
     });
 }
