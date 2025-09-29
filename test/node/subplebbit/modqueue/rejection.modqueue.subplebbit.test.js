@@ -19,6 +19,13 @@ import { messages } from "../../../../dist/node/errors.js";
 
 const depthsToTest = [0, 1, 2, 3];
 
+const getLatestUpdateOfParentComment = async (commentToBeRejected) => {
+    const parentComment = await commentToBeRejected._plebbit.getComment(commentToBeRejected.parentCid);
+    await parentComment.update();
+    await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+    return parentComment;
+};
+
 for (const pendingCommentDepth of depthsToTest) {
     describe(`Comment moderation rejection of pending comment with depth ` + pendingCommentDepth, async () => {
         let plebbit;
@@ -62,7 +69,7 @@ for (const pendingCommentDepth of depthsToTest) {
             await remotePlebbit.destroy();
         });
 
-        it(`Can reject post with approved: false`, async () => {
+        it(`Can reject comment with approved: false`, async () => {
             const commentModeration = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,
                 signer: modSigner,
@@ -81,6 +88,32 @@ for (const pendingCommentDepth of depthsToTest) {
         it(`Rejecting a pending comment will not remove it from database of subplebbit`, async () => {
             const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
             expect(queryRes).to.be.exist;
+        });
+
+        if (pendingCommentDepth > 0) {
+            it(`Rejected reply does not show up in parentComment.replyCount`, async () => {
+                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).replyCount).to.equal(0);
+            });
+
+            it(`Rejected reply does not show up in parentComment.childCount`, async () => {
+                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).childCount).to.equal(0);
+            });
+
+            it(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
+                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).lastChildCid).to.be.undefined;
+            });
+            it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
+                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).lastReplyTimestamp).to.be.undefined;
+            });
+        }
+
+        if (pendingCommentDepth === 0)
+            it(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
+                expect(subplebbit.lastPostCid).to.not.equal(commentToBeRejected.cid);
+            });
+
+        it(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
+            expect(subplebbit.lastCommentCid).to.not.equal(commentToBeRejected.cid);
         });
 
         it(`A rejected comment will not show up in subplebbit.posts`, async () => {
@@ -269,14 +302,5 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
         });
-
-        it(`Rejected reply does not show up in parentComment.replyCount`);
-        it(`Rejected reply does not show up in parentComment.childCount`);
-        it(`Rejected reply does not show up in parentComment.lastChildCid`);
-        it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`);
-
-        it(`Rejected post does not show up in subplebbit.lastPostCid`);
-
-        it(`Rejected comment does not show up in subplebbit.lastCommentCid`);
     });
 }

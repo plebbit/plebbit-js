@@ -806,13 +806,16 @@ export class DbHandler {
         const query = `
             WITH RECURSIVE descendants AS (
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
                 WHERE c.parentCid = ?
+                  AND COALESCE(cu.approved, 1) != 0
                 UNION ALL
                 SELECT c.cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
                 LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
                 JOIN descendants desc_nodes ON c.parentCid = desc_nodes.cid
                 WHERE c.subplebbitAddress = ? AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
+                  AND COALESCE(cu.approved, 1) != 0
             )
             SELECT MAX(timestamp) AS max_timestamp FROM descendants
         `;
@@ -1280,7 +1283,14 @@ export class DbHandler {
 
     private _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid">) {
         const lastChildCid = this._db
-            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE parentCid = ? ORDER BY rowid DESC LIMIT 1`)
+            .prepare(
+                `SELECT c.cid FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.parentCid = ?
+                   AND COALESCE(cu.approved, 1) != 0
+                 ORDER BY c.rowid DESC
+                 LIMIT 1`
+            )
             .get(comment.cid) as { cid: string } | undefined;
         const lastReplyTimestamp = this.queryMaximumTimestampUnderComment(comment);
         return { lastChildCid: lastChildCid?.cid, lastReplyTimestamp };
@@ -1312,7 +1322,7 @@ export class DbHandler {
         const commentModFlair = this._queryModCommentFlair(comment);
         const lastChildAndLastReplyTimestamp = this._queryLastChildCidAndLastReplyTimestamp(comment);
         const isThisCommentApproved = this._queryIsCommentApproved(comment);
-        const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // will be overridden if there's commentFlags.removed
+        const removedFromApproved = isThisCommentApproved?.approved === false ? { removed: true } : undefined; // automatically add removed:true if approved=false. Will be overridden if there's commentFlags.removed
 
         if (!authorSubplebbit) throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
@@ -1331,14 +1341,29 @@ export class DbHandler {
 
     queryLatestPostCid(): Pick<CommentsTableRow, "cid"> | undefined {
         return this._db
-            .prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE depth = 0 AND pendingApproval IS NOT 1 ORDER BY rowid DESC LIMIT 1`)
+            .prepare(
+                `SELECT c.cid FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.depth = 0
+                   AND c.pendingApproval IS NOT 1
+                   AND COALESCE(cu.approved, 1) != 0
+                 ORDER BY c.rowid DESC
+                 LIMIT 1`
+            )
             .get() as Pick<CommentsTableRow, "cid"> | undefined;
     }
 
     queryLatestCommentCid(): Pick<CommentsTableRow, "cid"> | undefined {
-        return this._db.prepare(`SELECT cid FROM ${TABLES.COMMENTS} WHERE pendingApproval IS NOT 1 ORDER BY rowid DESC LIMIT 1`).get() as
-            | Pick<CommentsTableRow, "cid">
-            | undefined;
+        return this._db
+            .prepare(
+                `SELECT c.cid FROM ${TABLES.COMMENTS} c
+                 LEFT JOIN ${TABLES.COMMENT_UPDATES} cu ON cu.cid = c.cid
+                 WHERE c.pendingApproval IS NOT 1
+                   AND COALESCE(cu.approved, 1) != 0
+                 ORDER BY c.rowid DESC
+                 LIMIT 1`
+            )
+            .get() as Pick<CommentsTableRow, "cid"> | undefined;
     }
 
     queryAllCommentsOrderedByIdAsc(): CommentsTableRow[] {
