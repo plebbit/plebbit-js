@@ -126,6 +126,7 @@ for (const pendingCommentDepth of depthsToTest) {
             expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                foundInPosts = false;
                 const pageComments = await loadAllPages(pageCid, subplebbit.posts);
                 expect(pageComments.length).to.be.greaterThan(0);
 
@@ -140,9 +141,63 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         if (pendingCommentDepth > 0) {
-            it(`Approved reply now shows up in parentComment.replies`);
-            it(`Approved reply now shows up in its post's flat pages`);
-            it(`Approved reply does now show up in parentComment.las`);
+            it(`Approved reply now shows up in parentComment.replies`, async () => {
+                const parentComment = await plebbit.getComment(approvedComment.parentCid);
+                await parentComment.update();
+                await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+                let foundInReplies = false;
+                processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
+                    if (comment.cid === approvedComment.cid) {
+                        foundInReplies = true;
+                        return;
+                    }
+                });
+                expect(foundInReplies).to.be.true;
+
+                await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
+
+                for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+                    foundInReplies = false;
+                    const pageComments = await loadAllPages(pageCid, parentComment.replies);
+
+                    expect(pageComments.length).to.be.greaterThan(0);
+                    processAllCommentsRecursively(pageComments, (comment) => {
+                        if (comment.cid === approvedComment.cid) {
+                            foundInReplies = true;
+                            return;
+                        }
+                    });
+                    expect(foundInReplies).to.be.true;
+                }
+                await parentComment.stop();
+            });
+            it(`Approved reply now shows up in its post's flat pages`, async () => {
+                const postComment = await plebbit.getComment(approvedComment.postCid);
+                await postComment.update();
+                await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
+                await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+
+                for (const flatPageCid of flatPageCids) {
+                    let foundInFlatPages = false;
+
+                    const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
+
+                    expect(flatPageComments.length).to.be.greaterThan(0);
+                    processAllCommentsRecursively(flatPageComments, (comment) => {
+                        if (comment.cid === approvedComment.cid) {
+                            foundInFlatPages = true;
+                            return;
+                        }
+                    });
+                    expect(foundInFlatPages).to.be.true;
+                }
+
+                await postComment.stop();
+            });
         }
 
         it(`Approved comment does not appear in modQueue.pageCids`, async () => {
