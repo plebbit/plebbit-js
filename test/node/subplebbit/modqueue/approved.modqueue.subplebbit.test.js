@@ -221,6 +221,14 @@ for (const pendingCommentDepth of depthsToTest) {
             const res = await kuboRpc.block.stat(approvedComment.cid);
 
             expect(res.size).to.be.greaterThan(0);
+
+            const pinnedCids = [];
+
+            for await (const { cid } of kuboRpc.pin.ls({ paths: approvedComment.cid })) {
+                pinnedCids.push(cid.toString());
+            }
+
+            expect(pinnedCids).to.include(approvedComment.cid);
         });
     });
 }
