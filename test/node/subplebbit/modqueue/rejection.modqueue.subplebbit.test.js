@@ -299,6 +299,28 @@ for (const pendingCommentDepth of depthsToTest) {
             await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
         });
 
-        it(`A rejected comment is not pinned to IPFS node`);
+        it(`A rejected comment is not pinned to IPFS node`, async () => {
+            const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+
+            // Collect all pinned CIDs
+            for await (const pin of kuboRpc.pin.ls()) {
+                expect(pin.cid.toString()).to.not.equal(commentToBeRejected.cid); // pending comment should not be pinned in kubo
+            }
+        });
+
+        it(`Sub should reject CommentModeration if a mod published disapproval for a comment that already got disapproved`, async () => {
+            const commentModerationDisapproval = await plebbit.createCommentModeration({
+                subplebbitAddress: subplebbit.address,
+                signer: modSigner,
+                commentModeration: { approved: false },
+                commentCid: commentToBeRejected.cid
+            });
+
+            await publishWithExpectedResult(
+                commentModerationDisapproval,
+                false,
+                messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
+            );
+        });
     });
 }
