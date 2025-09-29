@@ -230,5 +230,20 @@ for (const pendingCommentDepth of depthsToTest) {
 
             expect(pinnedCids).to.include(approvedComment.cid);
         });
+
+        it(`Sub should reject CommentModeration if a mod publishes approval for a comment that already got approved`, async () => {
+            const commentModeration = await plebbit.createCommentModeration({
+                subplebbitAddress: subplebbit.address,
+                signer: modSigner,
+                commentModeration: { approved: true },
+                commentCid: approvedComment.cid
+            });
+
+            await publishWithExpectedResult(
+                commentModeration,
+                false,
+                messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
+            );
+        });
     });
 }

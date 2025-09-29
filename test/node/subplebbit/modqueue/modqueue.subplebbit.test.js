@@ -1,14 +1,5 @@
 import { expect } from "chai";
-import {
-    mockPlebbit,
-    generateMockPost,
-    publishWithExpectedResult,
-    resolveWhenConditionIsTrue,
-    mockGatewayPlebbit,
-    generateMockVote,
-    generateMockComment,
-    publishPostToModQueue
-} from "../../../../dist/node/test/test-util.js";
+import { mockPlebbit, publishWithExpectedResult, generateMockVote } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
 // TODO test skeletons
@@ -51,46 +42,6 @@ describe(`Pending approval modqueue functionality`, async () => {
     });
 
     describe("Comment moderation approval of pending comment", () => {
-        it(`Sub should reject CommentModeration if a mod publishes approval for a comment that already got approved`, async () => {
-            const commentModeration = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: true },
-                commentCid: pendingComment.cid
-            });
-
-            await publishWithExpectedResult(
-                commentModeration,
-                false,
-                messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
-            );
-        });
-
-        it(`Sub should reject CommentModeration if a mod published disapproval for a comment that already got disapproved`, async () => {
-            const { comment, challengeVerification } = await publishPostToModQueue({ subplebbit });
-            const commentModerationDisapproval = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: false },
-                commentCid: comment.cid
-            });
-
-            await publishWithExpectedResult(commentModerationDisapproval, true);
-
-            const commentModerationDisapprovalSecond = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: false },
-                commentCid: comment.cid
-            });
-
-            await publishWithExpectedResult(
-                commentModerationDisapprovalSecond,
-                false,
-                messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB
-            );
-        });
-
         // TODO: Test that pending approval can exclude certain types
         // TODO need to test for publications that should not support pending approval
         // like vote, subplebbitEdit, commentModeration, commentEdit

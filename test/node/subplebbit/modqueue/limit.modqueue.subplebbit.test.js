@@ -3,8 +3,8 @@ import {
     mockPlebbit,
     generateMockPost,
     publishWithExpectedResult,
-    publishPostToModQueue,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    publishToModQueueWithDepth
 } from "../../../../dist/node/test/test-util.js";
 
 describe(`Modqueue limits`, () => {
@@ -54,7 +54,7 @@ describe(`Modqueue limits`, () => {
         const totalToPublish = limit + 2;
 
         for (let index = 0; index < totalToPublish; index++) {
-            const { comment, challengeVerification } = await publishPostToModQueue({ subplebbit });
+            const { comment, challengeVerification } = await publishToModQueueWithDepth({ subplebbit, depth: 0 });
             pendingComments.push(comment);
         }
         // none of the comments got rejected, instead 2 of them got removed from pending queue
@@ -79,7 +79,7 @@ describe(`Modqueue limits`, () => {
         }
     });
 
-    it("Should drop booted pending comment from modqueue pages", async function () {
+    it("Should drop oldest pending comment from modqueue pages", async function () {
         const limit = subplebbit.settings.maxPendingApprovalCount;
 
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids?.pendingApproval);
