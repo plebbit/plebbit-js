@@ -1347,6 +1347,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             // if user publishes vote/reply/commentEdit under pending comment, it should fail
             if (parent.pendingApproval && !("commentModeration" in request)) return messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT;
+
+            const isCommentDisapproved = this._dbHandler._queryIsCommentApproved(parent);
+            if (isCommentDisapproved && !isCommentDisapproved.approved && !("commentModeration" in request))
+                return messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT;
         }
 
         // Reject publications if their size is over 40kb
