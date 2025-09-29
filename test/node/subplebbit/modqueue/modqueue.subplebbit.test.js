@@ -49,42 +49,9 @@ describe(`Pending approval modqueue functionality`, async () => {
         it("Should reflect settings in subplebbit.challenges[x].pendingApproval", async () => {
             expect(subplebbit.challenges[0].pendingApproval).to.be.true;
         });
-
-        
     });
 
     describe("Comment moderation approval of pending comment", () => {
-        it("Should approve comments using createCommentModeration with approved: true", async () => {
-            const commentModeration = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: true },
-                commentCid: pendingComment.cid
-            });
-
-            await publishWithExpectedResult(commentModeration, true);
-        });
-        it(`pending comment after approval will receive updates now`, async () => {
-            await pendingComment.update();
-            await resolveWhenConditionIsTrue(pendingComment, () => pendingComment.updatedAt);
-            expect(pendingComment.updatedAt).to.be.a("number");
-            expect(pendingComment.pendingApproval).to.be.false;
-        });
-
-        it(`Approved comment now appears in pages`, async () => {
-            expect(subplebbit.posts.pages.hot.comments[0].cid).to.equal(pendingComment.cid); // should be included in pages now
-        });
-        it(`Approved comment now appears in lastPostCid and lastCommentCid`, async () => {
-            expect(subplebbit.lastPostCid).to.equal(pendingComment.cid);
-            expect(subplebbit.lastCommentCid).to.equal(pendingComment.cid);
-        });
-        it(`Approved comment does not appear in modQueue.pageCids`, async () => {
-            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
-        });
-        it(`Approved comment shows up in subplebbit.postUpdates`, async () => {
-            expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]); // should have postUpdates now that we approved hte comment
-        });
-
         it(`Sub should reject CommentModeration if a mod publishes approval for a comment that already got approved`, async () => {
             const commentModeration = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,

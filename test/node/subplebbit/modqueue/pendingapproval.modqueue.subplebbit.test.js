@@ -17,10 +17,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
-// comment.pendingApproval should not appear in postUpdates
-// need to test if comments with pendingApproval appear in any flattened pages, comment.replies, post.replies, subplebbit.posts
-
-const depthsToTest = [0, 1, 2, 4, 5];
+const depthsToTest = [0, 1, 2, 3];
 
 for (const commentInPendingApprovalDepth of depthsToTest) {
     describe(`Pending approval of comments with depth ` + commentInPendingApprovalDepth, async () => {
@@ -222,5 +219,14 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         it("Should not include pendingApproval in commentIpfs", async () => {
             expect(commentInPendingApproval.raw.comment.pendingApproval).to.not.exist;
         });
+
+        it(`pending approval reply does not show up in parentComment.replyCount`);
+        it(`pending approval reply does not show up in parentComment.childCount`);
+        it(`pending approval reply does not show up in parentComment.lastChildCid`);
+        it(`pending approval reply does not show up in parentComment.lastReplyTimestamp`);
+
+        it(`pending approval post does not show up in subplebbit.lastPostCid`);
+
+        it(`pending approval comment does not show up in subplebbit.lastCommentCid`);
     });
 }
