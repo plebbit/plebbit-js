@@ -3,6 +3,7 @@ import {
     mockPlebbit,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
+    generateMockComment,
     processAllCommentsRecursively,
     forceSubplebbitToGenerateAllRepliesPages,
     mockGatewayPlebbit,
@@ -31,6 +32,7 @@ for (const pendingCommentDepth of depthsToTest) {
             plebbit = await mockPlebbit();
             remotePlebbit = await mockGatewayPlebbit();
             subplebbit = await plebbit.createSubplebbit();
+            subplebbit.setMaxListeners(100);
             await subplebbit.start();
             modSigner = await plebbit.createSigner();
             await subplebbit.edit({
@@ -249,22 +251,23 @@ for (const pendingCommentDepth of depthsToTest) {
 
         it(`Can't vote on rejected comment`, async () => {
             const vote = await generateMockVote(commentToBeRejected, 1, plebbit, modSigner); // need to publish under mod otherwise we're gonna get captcha challenge
-            await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+            await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
+        });
+
+        it(`Can't publish a reply under a rejected comment`, async () => {
+            const reply = await generateMockComment(commentToBeRejected, plebbit, false);
+            await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
         });
 
         it(`Can't publish an edit under a rejected comment`, async () => {
             const edit = await plebbit.createCommentEdit({
-                subplebbitAddress: commentInPendingApproval.subplebbitAddress,
-                commentCid: commentInPendingApproval.cid,
+                subplebbitAddress: commentToBeRejected.subplebbitAddress,
+                commentCid: commentToBeRejected.cid,
                 reason: "random reason should fail",
                 content: "text to edit on pending comment",
-                signer: commentInPendingApproval.signer
+                signer: commentToBeRejected.signer
             });
-            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
-        });
-        it(`Can't publish a reply under a rejected comment`, async () => {
-            const reply = await generateMockComment(commentInPendingApproval, plebbit, false);
-            await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
+            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
         });
 
         it(`Rejected reply does not show up in parentComment.replyCount`);
