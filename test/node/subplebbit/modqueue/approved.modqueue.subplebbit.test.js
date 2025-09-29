@@ -4,6 +4,7 @@ import {
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     processAllCommentsRecursively,
+    getCommentWithCommentUpdateProps,
     forceSubplebbitToGenerateAllRepliesPages,
     mockGatewayPlebbit,
     forceSubplebbitToGenerateAllPostsPages,
@@ -21,6 +22,7 @@ for (const pendingCommentDepth of depthsToTest) {
             plebbit = await mockPlebbit();
             remotePlebbit = await mockGatewayPlebbit();
             subplebbit = await plebbit.createSubplebbit();
+            subplebbit.setMaxListeners(100);
             await subplebbit.start();
             modSigner = await plebbit.createSigner();
             await subplebbit.edit({
@@ -55,24 +57,86 @@ for (const pendingCommentDepth of depthsToTest) {
             const commentModeration = await plebbit.createCommentModeration({
                 subplebbitAddress: subplebbit.address,
                 signer: modSigner,
-                commentModeration: { approved: true },
-                commentCid: pendingComment.cid
+                commentModeration: { approved: true, reason: "test approval" },
+                commentCid: approvedComment.cid
             });
 
             await publishWithExpectedResult(commentModeration, true);
         });
-        it(`Approved comment is pinned to IPFS node`);
 
         it(`pending comment after approval will receive updates now`, async () => {
             await resolveWhenConditionIsTrue(approvedComment, () => approvedComment.updatedAt);
-            expect(pendingComment.updatedAt).to.be.a("number");
-            expect(pendingComment.pendingApproval).to.be.false;
+            expect(approvedComment.updatedAt).to.be.a("number");
+            expect(approvedComment.pendingApproval).to.be.false;
+            expect(approvedComment.approved).to.be.true;
+            expect(approvedComment.reason).to.equal("test approval");
+            // regular comment update props are there
+            expect(approvedComment.upvoteCount).to.equal(0);
+            expect(approvedComment.downvoteCount).to.equal(0);
+
+            expect(approvedComment.raw.commentUpdate.updatedAt).to.be.a("number");
+            expect(approvedComment.raw.commentUpdate.pendingApproval).to.be.undefined;
+            expect(approvedComment.raw.commentUpdate.approved).to.be.true;
+            expect(approvedComment.raw.commentUpdate.reason).to.equal("test approval");
+            // regular comment update props are there
+            expect(approvedComment.raw.commentUpdate.upvoteCount).to.equal(0);
+            expect(approvedComment.raw.commentUpdate.downvoteCount).to.equal(0);
         });
 
-        it(`Approved comment now appears in subplebbit.posts`, async () => {
-            expect(subplebbit.posts.pages.hot.comments[0].cid).to.equal(pendingComment.cid); // should be included in pages now
+        if (pendingCommentDepth === 0)
+            it(`Approved post is now reflected in subplebbit.lastPostCid`, async () => {
+                expect(subplebbit.lastPostCid).to.equal(approvedComment.cid);
+            });
 
-            // TODO should include checks for pageCids
+        it(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
+            expect(subplebbit.lastCommentCid).to.equal(approvedComment.cid);
+        });
+
+        if (pendingCommentDepth > 0) {
+            it(`Approved reply show up in parentComment.replyCount`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).replyCount).to.equal(1);
+            });
+            it(`Approved reply show up in parentComment.childCount`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).childCount).to.equal(1);
+            });
+            it(`Approved reply show up in parentComment.lastChildCid`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).lastChildCid).to.equal(
+                    approvedComment.cid
+                );
+            });
+            it(`Approved reply show up in parentComment.lastReplyTimestamp`, async () => {
+                expect((await getCommentWithCommentUpdateProps({ cid: approvedComment.parentCid, plebbit })).lastReplyTimestamp).to.equal(
+                    approvedComment.timestamp
+                );
+            });
+        }
+
+        it(`Approved comment now appears in subplebbit.posts`, async () => {
+            let foundInPosts = false;
+            processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
+                if (comment.cid === approvedComment.cid) {
+                    foundInPosts = true;
+                    return;
+                }
+            });
+            expect(foundInPosts).to.be.true;
+
+            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+            expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
+
+            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+                expect(pageComments.length).to.be.greaterThan(0);
+
+                processAllCommentsRecursively(pageComments, (comment) => {
+                    if (comment.cid === approvedComment.cid) {
+                        foundInPosts = true;
+                        return;
+                    }
+                });
+                expect(foundInPosts).to.be.true;
+            }
         });
 
         if (pendingCommentDepth > 0) {
@@ -81,20 +145,27 @@ for (const pendingCommentDepth of depthsToTest) {
             it(`Approved reply does now show up in parentComment.las`);
         }
 
-        if (pendingCommentDepth === 0)
-            it(`Approved post is now reflected in lastPostCid`, async () => {
-                expect(subplebbit.lastPostCid).to.equal(pendingComment.cid);
-            });
-
-        it(`Approved comment now appears in subplebbit.lastCommentCid`, async () => {
-            expect(subplebbit.lastCommentCid).to.equal(pendingComment.cid);
-        });
-
         it(`Approved comment does not appear in modQueue.pageCids`, async () => {
             expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
         });
-        it(`Approved comment shows up in subplebbit.postUpdates`, async () => {
-            expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]); // should have postUpdates now that we approved hte comment
+
+        if (pendingCommentDepth === 0)
+            it(`Approved post shows up in subplebbit.postUpdates`, async () => {
+                expect(subplebbit.postUpdates).to.exist;
+                const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${approvedComment.cid}/update`;
+                const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+
+                const res = await kuboRpc.files.stat(localMfsPath); // this call needs to pass because file should exist
+
+                expect(res.size).to.be.greaterThan(0);
+            });
+
+        it(`Approved comment is pinned to IPFS node`, async () => {
+            const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+
+            const res = await kuboRpc.block.stat(approvedComment.cid);
+
+            expect(res.size).to.be.greaterThan(0);
         });
     });
 }

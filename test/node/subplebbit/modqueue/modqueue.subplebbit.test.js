@@ -12,7 +12,6 @@ import {
 import { messages } from "../../../../dist/node/errors.js";
 
 // TODO test skeletons
-// comments with approved: false should not be in pageCids.pendingApproval, and should only be in PostUpdates till they're expired
 // comment.approved = true is treated like a regular comment
 
 describe(`Pending approval modqueue functionality`, async () => {
@@ -140,30 +139,6 @@ describe(`Pending approval modqueue functionality`, async () => {
         it("Should set removed: true when approved is explicitly set to false", async () => {
             // TODO: Setting approved: false should automatically imply removed: true
             // and reflect in the comment state shown in modqueue
-        });
-    });
-
-    describe("Integration tests", () => {
-        it("Should handle full pending approval workflow", async () => {
-            // TODO: End-to-end test:
-            // 1. Set up subplebbit with pendingApproval challenge
-            // 2. Submit publication that fails challenge
-            // 3. Verify it goes to pending queue
-            // 4. Approve using comment moderation
-            // 5. Verify publication is published
-        });
-
-        it("Should handle rejection of pending approval", async () => {
-            // TODO: Test rejection workflow where moderator rejects pending comment
-        });
-
-        it("Should reject pending comment when author publishes an edit", async () => {
-            // TODO: Test that when an author publishes an edit for a pending comment,
-            // the pending comment should be rejected
-        });
-
-        it("Should maintain pending approval state across subplebbit restarts", async () => {
-            // TODO: Test persistence of pending approval queue
         });
     });
 });
