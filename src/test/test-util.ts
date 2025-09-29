@@ -1654,6 +1654,13 @@ export async function publishCommentWithDepth({ depth, subplebbit }: { depth: nu
     }
 }
 
+export async function getCommentWithCommentUpdateProps({ cid, plebbit }: { cid: string; plebbit: Plebbit }) {
+    const comment = await plebbit.createComment({ cid });
+    await comment.update();
+    await resolveWhenConditionIsTrue(comment, async () => Boolean(comment.updatedAt));
+    return comment;
+}
+
 export async function publishCommentToModQueue({
     subplebbit,
     plebbit,

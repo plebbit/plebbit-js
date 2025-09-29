@@ -7,6 +7,7 @@ import {
     processAllCommentsRecursively,
     forceSubplebbitToGenerateAllRepliesPages,
     mockGatewayPlebbit,
+    getCommentWithCommentUpdateProps,
     forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
     generateMockVote,
@@ -18,13 +19,6 @@ import { messages } from "../../../../dist/node/errors.js";
 // comment.approved = true is treated like a regular comment, should be pinned to IPFS node as well
 
 const depthsToTest = [0, 1, 2, 3];
-
-const getLatestUpdateOfParentComment = async (commentToBeRejected) => {
-    const parentComment = await commentToBeRejected._plebbit.getComment(commentToBeRejected.parentCid);
-    await parentComment.update();
-    await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
-    return parentComment;
-};
 
 for (const pendingCommentDepth of depthsToTest) {
     describe(`Comment moderation rejection of pending comment with depth ` + pendingCommentDepth, async () => {
@@ -92,18 +86,20 @@ for (const pendingCommentDepth of depthsToTest) {
 
         if (pendingCommentDepth > 0) {
             it(`Rejected reply does not show up in parentComment.replyCount`, async () => {
-                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).replyCount).to.equal(0);
+                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).replyCount).to.equal(0);
             });
 
             it(`Rejected reply does not show up in parentComment.childCount`, async () => {
-                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).childCount).to.equal(0);
+                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).childCount).to.equal(0);
             });
 
             it(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
-                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).lastChildCid).to.be.undefined;
+                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastChildCid).to.be
+                    .undefined;
             });
             it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
-                expect((await getLatestUpdateOfParentComment(commentToBeRejected)).lastReplyTimestamp).to.be.undefined;
+                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastReplyTimestamp).to.be
+                    .undefined;
             });
         }
 
@@ -302,5 +298,7 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
         });
+
+        it(`A rejected comment is not pinned to IPFS node`);
     });
 }
