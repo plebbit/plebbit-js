@@ -713,7 +713,9 @@ export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient,
     const gatewayUrl = `http://${parts[1]}:${parts[3]}`;
     const ipnsFetchUrl = `${gatewayUrl}/ipns/${ipnsName}?format=ipns-record`;
     const ipnsRecordRaw = await (await fetch(ipnsFetchUrl)).bytes();
-    const ipnsRecord = unmarshalIPNSRecord(ipnsRecordRaw);
-    return ipnsRecord;
-    throw new PlebbitError("ERR_IPNS_RECORD_NOT_FOUND", { ipnsName });
+    try {
+        return unmarshalIPNSRecord(ipnsRecordRaw);
+    } catch (e) {
+        throw new PlebbitError("ERR_FAILED_TO_PARSE_LOCAL_RAW_IPNS_RECORD", { ipnsName, ipnsFetchUrl, parseError: e });
+    }
 }
