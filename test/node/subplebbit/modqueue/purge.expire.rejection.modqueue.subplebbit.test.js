@@ -82,6 +82,32 @@ async function createDisapprovedComment(ctx, { depth = 1, moderationProps = DEFA
 
     return pendingComment;
 }
+
+async function createApprovedComment(ctx, { depth = 1 } = {}) {
+    const pending = await publishToModQueueWithDepth({
+        subplebbit: ctx.subplebbit,
+        plebbit: ctx.remotePlebbit,
+        depth,
+        modCommentProps: { signer: ctx.modSigner }
+    });
+    const pendingComment = pending.comment;
+    await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.moderation?.pageCids?.pendingApproval));
+
+    const commentModeration = await ctx.plebbit.createCommentModeration({
+        subplebbitAddress: ctx.subplebbit.address,
+        signer: ctx.modSigner,
+        commentModeration: { approved: true },
+        commentCid: pendingComment.cid
+    });
+    await publishWithExpectedResult(commentModeration, true);
+
+    await resolveWhenConditionIsTrue(ctx.subplebbit, () => {
+        const storedUpdate = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: pendingComment.cid });
+        return Boolean(storedUpdate && storedUpdate.approved === true);
+    });
+
+    return pendingComment;
+}
 async function setPendingApproval(ctx, commentCid, pending = true) {
     ctx.subplebbit._dbHandler._db.prepare(`UPDATE comments SET pendingApproval = ? WHERE cid = ?`).run(pending ? 1 : 0, commentCid);
     await resolveWhenConditionIsTrue(ctx.subplebbit, () => {
@@ -326,6 +352,74 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
             expect(commentBeforeModeration?.depth).to.equal(0);
             const after = ctx.subplebbit._dbHandler.queryComment(commentCid);
             expect(after).to.be.undefined;
+        });
+    });
+
+    describe("when a pending reply is approved", () => {
+        const retentionSeconds = ONE_MINUTE;
+        let ctx;
+        let commentCid;
+        let commentBeforePurge;
+        let commentAfterPurge;
+
+        before(async () => {
+            ctx = await createTestContext({ retentionSeconds });
+            const approved = await createApprovedComment(ctx);
+            commentCid = approved.cid;
+            commentBeforePurge = ctx.subplebbit._dbHandler.queryComment(commentCid);
+            backdateCommentUpdate(ctx, commentCid, retentionSeconds + 120);
+            ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
+            commentAfterPurge = ctx.subplebbit._dbHandler.queryComment(commentCid);
+        });
+
+        after(async () => {
+            if (ctx) await ctx.cleanup();
+        });
+
+        it(" stores the reply after approval", () => {
+            expect(commentBeforePurge).to.exist;
+            expect(commentBeforePurge?.depth).to.be.greaterThan(0);
+        });
+
+        it(" keeps the reply in database after purge", () => {
+            expect(commentAfterPurge).to.exist;
+            const update = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: commentCid });
+            expect(update).to.exist;
+            expect(update?.approved).to.equal(true);
+        });
+    });
+
+    describe("when a pending post is approved", () => {
+        const retentionSeconds = ONE_MINUTE;
+        let ctx;
+        let commentCid;
+        let commentBeforePurge;
+        let commentAfterPurge;
+
+        before(async () => {
+            ctx = await createTestContext({ retentionSeconds });
+            const approved = await createApprovedComment(ctx, { depth: 0 });
+            commentCid = approved.cid;
+            commentBeforePurge = ctx.subplebbit._dbHandler.queryComment(commentCid);
+            backdateCommentUpdate(ctx, commentCid, retentionSeconds + 120);
+            ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
+            commentAfterPurge = ctx.subplebbit._dbHandler.queryComment(commentCid);
+        });
+
+        after(async () => {
+            if (ctx) await ctx.cleanup();
+        });
+
+        it(" stores the post after approval", () => {
+            expect(commentBeforePurge).to.exist;
+            expect(commentBeforePurge?.depth).to.equal(0);
+        });
+
+        it(" keeps the post in database after purge", () => {
+            expect(commentAfterPurge).to.exist;
+            const update = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: commentCid });
+            expect(update).to.exist;
+            expect(update?.approved).to.equal(true);
         });
     });
 
