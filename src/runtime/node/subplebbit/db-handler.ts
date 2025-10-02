@@ -774,31 +774,45 @@ export class DbHandler {
         return this._parseVoteRow(row);
     }
 
+    private _approvedClause(alias: string): string {
+        return `(${alias}.approved IS NULL OR ${alias}.approved = 1 OR ${alias}.approved IS TRUE)`;
+    }
+
+    private _removedClause(alias: string): string {
+        return `(${alias}.removed IS NOT 1 AND ${alias}.removed IS NOT TRUE)`;
+    }
+
+    private _deletedFromUpdatesClause(alias: string): string {
+        return `(json_extract(${alias}.edit, '$.deleted') IS NULL OR json_extract(${alias}.edit, '$.deleted') != 1)`;
+    }
+
+    private _deletedFromLookupClause(alias: string): string {
+        return `(${alias}.deleted_flag IS NULL OR ${alias}.deleted_flag != 1)`;
+    }
+
+    private _pendingApprovalClause(alias: string): string {
+        return `(${alias}.pendingApproval IS NULL OR ${alias}.pendingApproval != 1)`;
+    }
+
     private _buildPageQueryParts(options: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">): {
         whereClauses: string[];
         params: any[];
     } {
-        const whereClauses: string[] = [`${TABLES.COMMENTS}.parentCid = ?`];
+        const commentsTable = TABLES.COMMENTS;
+        const commentUpdatesTable = TABLES.COMMENT_UPDATES;
+
+        const whereClauses: string[] = [`${commentsTable}.parentCid = ?`];
         const params: any[] = [options.parentCid];
 
         if (options.excludeCommentsWithDifferentSubAddress) {
-            whereClauses.push(`${TABLES.COMMENTS}.subplebbitAddress = ?`);
+            whereClauses.push(`${commentsTable}.subplebbitAddress = ?`);
             params.push(this._subplebbit.address);
         }
-        if (options.excludeRemovedComments) {
-            whereClauses.push(`(${TABLES.COMMENT_UPDATES}.removed IS NOT 1 AND ${TABLES.COMMENT_UPDATES}.removed IS NOT TRUE)`);
-        }
-        if (options.excludeDeletedComments) {
-            whereClauses.push(
-                `(json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') IS NULL OR json_extract(${TABLES.COMMENT_UPDATES}.edit, '$.deleted') != 1)`
-            );
-        }
-        if (options.excludeCommentWithApprovedFalse)
-            whereClauses.push(
-                `(${TABLES.COMMENT_UPDATES}.approved IS NULL OR ${TABLES.COMMENT_UPDATES}.approved = 1 OR ${TABLES.COMMENT_UPDATES}.approved IS TRUE)`
-            );
-        // Always exclude comments pending approval from pages
-        whereClauses.push(`(${TABLES.COMMENTS}.pendingApproval IS NULL OR ${TABLES.COMMENTS}.pendingApproval != 1)`);
+        if (options.excludeCommentPendingApproval) whereClauses.push(this._pendingApprovalClause(commentsTable));
+        if (options.excludeRemovedComments) whereClauses.push(this._removedClause(commentUpdatesTable));
+        if (options.excludeDeletedComments) whereClauses.push(this._deletedFromUpdatesClause(commentUpdatesTable));
+        if (options.excludeCommentWithApprovedFalse) whereClauses.push(this._approvedClause(commentUpdatesTable));
+
         return { whereClauses, params };
     }
 
@@ -866,39 +880,39 @@ export class DbHandler {
         let baseWhereClausesStr = "";
         let recursiveWhereClausesStr = "";
         const params: any[] = [options.parentCid];
-
-        const pageQueryParts = this._buildPageQueryParts(options); // parentCid is handled by initial CTE condition.
-
         const baseFilterClauses: string[] = [];
         const recursiveFilterClauses: string[] = [];
 
+        const commentsAlias = "comments";
+        const commentUpdatesAlias = "c_updates";
+        const deletedLookupAlias = "d";
+
         if (options.excludeCommentsWithDifferentSubAddress) {
-            baseFilterClauses.push(`comments.subplebbitAddress = ?`);
+            baseFilterClauses.push(`${commentsAlias}.subplebbitAddress = ?`);
             params.push(this._subplebbit.address);
-            recursiveFilterClauses.push(`comments.subplebbitAddress = ?`);
+            recursiveFilterClauses.push(`${commentsAlias}.subplebbitAddress = ?`);
             params.push(this._subplebbit.address);
         }
+        if (options.excludeCommentPendingApproval) {
+            const clause = this._pendingApprovalClause(commentsAlias);
+            baseFilterClauses.push(clause);
+            recursiveFilterClauses.push(clause);
+        }
         if (options.excludeRemovedComments) {
-            const clause = `(c_updates.removed IS NOT 1 AND c_updates.removed IS NOT TRUE)`;
+            const clause = this._removedClause(commentUpdatesAlias);
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
         if (options.excludeDeletedComments) {
-            const clause = `(d.deleted_flag IS NULL OR d.deleted_flag != 1)`;
+            const clause = this._deletedFromLookupClause(deletedLookupAlias);
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
         if (options.excludeCommentWithApprovedFalse) {
-            const clause = `(c_updates.approved IS NULL OR c_updates.approved = 1 OR c_updates.approved IS TRUE)`;
+            const clause = this._approvedClause(commentUpdatesAlias);
             baseFilterClauses.push(clause);
             recursiveFilterClauses.push(clause);
         }
-        // Always exclude comments pending approval from replies pages
-
-        const clause = `(comments.pendingApproval IS NULL OR comments.pendingApproval != 1)`;
-        baseFilterClauses.push(clause);
-        recursiveFilterClauses.push(clause);
-
         baseWhereClausesStr = baseFilterClauses.length > 0 ? `AND ${baseFilterClauses.join(" AND ")}` : "";
         recursiveWhereClausesStr = recursiveFilterClauses.length > 0 ? `AND ${recursiveFilterClauses.join(" AND ")}` : "";
 
@@ -1706,19 +1720,43 @@ export class DbHandler {
     queryPostsWithActiveScore(
         pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">
     ): (PageIpfs["comments"][0] & { activeScore: number })[] {
+        const activeScoreRootConditions = ["p.depth = 0"];
+        if (pageOptions.excludeCommentsWithDifferentSubAddress)
+            activeScoreRootConditions.push("p.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentPendingApproval)
+            activeScoreRootConditions.push(this._pendingApprovalClause("p"));
+        if (pageOptions.excludeRemovedComments) activeScoreRootConditions.push(this._removedClause("cu_root"));
+        if (pageOptions.excludeDeletedComments)
+            activeScoreRootConditions.push(this._deletedFromUpdatesClause("cu_root"));
+        if (pageOptions.excludeCommentWithApprovedFalse)
+            activeScoreRootConditions.push(this._approvedClause("cu_root"));
+        const activeScoreRootWhere = `WHERE ${activeScoreRootConditions.join(" AND ")}`;
+
+        const activeScoreDescendantConditions: string[] = [];
+        if (pageOptions.excludeCommentsWithDifferentSubAddress)
+            activeScoreDescendantConditions.push("c.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentPendingApproval)
+            activeScoreDescendantConditions.push(this._pendingApprovalClause("c"));
+        if (pageOptions.excludeRemovedComments) activeScoreDescendantConditions.push(this._removedClause("cu"));
+        if (pageOptions.excludeDeletedComments)
+            activeScoreDescendantConditions.push(this._deletedFromLookupClause("deleted_lookup"));
+        if (pageOptions.excludeCommentWithApprovedFalse)
+            activeScoreDescendantConditions.push(this._approvedClause("cu"));
+        const activeScoreDescendantWhere =
+            activeScoreDescendantConditions.length > 0 ? `WHERE ${activeScoreDescendantConditions.join(" AND ")}` : "";
+
         const activeScoresCte = `
             WITH RECURSIVE descendants AS (
                 SELECT p.cid AS post_cid, p.cid AS current_cid, p.timestamp
                 FROM ${TABLES.COMMENTS} p
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu_root ON p.cid = cu_root.cid
-                WHERE p.depth = 0 AND (cu_root.approved IS NULL OR cu_root.approved = 1 OR cu_root.approved IS TRUE)
+                ${activeScoreRootWhere}
                 UNION ALL
-                SELECT d.post_cid, c.cid AS current_cid, c.timestamp FROM ${TABLES.COMMENTS} c
+                SELECT desc_tree.post_cid, c.cid AS current_cid, c.timestamp FROM ${TABLES.COMMENTS} c
                 INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
-                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS d ON c.cid = d.cid
-                JOIN descendants d ON c.parentCid = d.current_cid
-                WHERE c.subplebbitAddress = :subAddress AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE) AND (d.deleted_flag IS NULL OR d.deleted_flag != 1)
-                  AND (cu.approved IS NULL OR cu.approved = 1 OR cu.approved IS TRUE)
+                LEFT JOIN (SELECT cid, json_extract(edit, '$.deleted') AS deleted_flag FROM ${TABLES.COMMENT_UPDATES}) AS deleted_lookup ON c.cid = deleted_lookup.cid
+                JOIN descendants desc_tree ON c.parentCid = desc_tree.current_cid
+                ${activeScoreDescendantWhere}
             ) SELECT post_cid, MAX(timestamp) as active_score FROM descendants GROUP BY post_cid
         `;
         const commentUpdateCols = remeda.keys.strict(
@@ -1734,20 +1772,21 @@ export class DbHandler {
             SELECT ${commentIpfsSelects.join(", ")}, ${commentUpdateSelects.join(", ")}, asc_scores.active_score
             FROM ${TABLES.COMMENTS} c INNER JOIN ${TABLES.COMMENT_UPDATES} cu ON c.cid = cu.cid
             INNER JOIN (${activeScoresCte}) AS asc_scores ON c.cid = asc_scores.post_cid
-            WHERE c.depth = 0
         `;
         const params: Record<string, any> = { subAddress: this._subplebbit.address };
 
+        const postsWhereClauses = ["c.depth = 0"];
+
         if (pageOptions.excludeCommentsWithDifferentSubAddress) {
-            postsQueryStr += ` AND c.subplebbitAddress = :pageSubAddress`;
+            postsWhereClauses.push("c.subplebbitAddress = :pageSubAddress");
             params.pageSubAddress = this._subplebbit.address;
         }
-        if (pageOptions.excludeRemovedComments) postsQueryStr += ` AND (cu.removed IS NOT 1 AND cu.removed IS NOT TRUE)`;
-        if (pageOptions.excludeDeletedComments)
-            postsQueryStr += ` AND (json_extract(cu.edit, '$.deleted') IS NULL OR json_extract(cu.edit, '$.deleted') != 1)`;
-        // Always exclude posts pending approval from posts pages
-        postsQueryStr += ` AND (c.pendingApproval IS NULL OR c.pendingApproval != 1)`;
-        postsQueryStr += ` AND (cu.approved IS NULL OR cu.approved = 1 OR cu.approved IS TRUE)`;
+        if (pageOptions.excludeRemovedComments) postsWhereClauses.push(this._removedClause("cu"));
+        if (pageOptions.excludeDeletedComments) postsWhereClauses.push(this._deletedFromUpdatesClause("cu"));
+        if (pageOptions.excludeCommentPendingApproval) postsWhereClauses.push(this._pendingApprovalClause("c"));
+        if (pageOptions.excludeCommentWithApprovedFalse) postsWhereClauses.push(this._approvedClause("cu"));
+
+        postsQueryStr += ` WHERE ${postsWhereClauses.join(" AND ")}`;
 
         const postsRaw = this._db.prepare(postsQueryStr).all(params) as (PrefixedCommentRow & { active_score: number })[];
         return postsRaw.map((postRaw) => {

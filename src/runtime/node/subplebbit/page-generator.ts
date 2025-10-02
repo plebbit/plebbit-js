@@ -27,7 +27,8 @@ import { sha256 } from "js-sha256";
 export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
-    excludeCommentWithApprovedFalse: boolean;
+    excludeCommentPendingApproval: boolean; // Exclude comments waiting in mod queue for approval or disapproval
+    excludeCommentWithApprovedFalse: boolean; // comment has only {approved: false}
     excludeCommentsWithDifferentSubAddress: boolean;
     commentUpdateFieldsToExclude?: (keyof CommentUpdateType)[];
     parentCid: string | null;
@@ -333,11 +334,12 @@ export class PageGenerator {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: true,
             excludeRemovedComments: true,
+            excludeCommentPendingApproval: true,
+            excludeCommentWithApprovedFalse: true,
             parentCid: null,
             preloadedPage: preloadedPageSortName,
             baseTimestamp: timestamp(),
-            firstPageSizeBytes: preloadedPageSizeBytes,
-            excludeCommentWithApprovedFalse: true
+            firstPageSizeBytes: preloadedPageSizeBytes
         };
         // Sorting posts on a subplebbit level
         const rawPosts = this._subplebbit._dbHandler.queryPostsWithActiveScore(pageOptions);
@@ -404,7 +406,8 @@ export class PageGenerator {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
-            excludeCommentWithApprovedFalse: true,
+            excludeCommentWithApprovedFalse: false,
+            excludeCommentPendingApproval: true,
             parentCid: comment.cid,
             preloadedPage: preloadedReplyPageSortName,
             baseTimestamp: timestamp()
@@ -451,10 +454,11 @@ export class PageGenerator {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
             excludeRemovedComments: false,
+            excludeCommentPendingApproval: true,
             parentCid: comment.cid,
             preloadedPage: preloadedReplyPageSortName,
             baseTimestamp: timestamp(),
-            excludeCommentWithApprovedFalse: true
+            excludeCommentWithApprovedFalse: false
         };
 
         const hierarchalReplies = this._subplebbit._dbHandler.queryPageComments(pageOptions);

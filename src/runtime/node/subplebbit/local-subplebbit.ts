@@ -893,14 +893,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     commentToBeEdited,
                     Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
                 );
+                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
             } else {
+                const shouldPurgeDisapprovedComment = Object.keys(modTableRow.commentModeration).length === 1; // no other props were included, if so purge the comment
                 log(
                     "commentModeration.approved=false, and therefore this comment will be removed entirely from DB",
+                    "should we purge this comment? = ",
+                    shouldPurgeDisapprovedComment,
                     "comment cid is",
                     modTableRow.commentCid
                 );
+                if (shouldPurgeDisapprovedComment) this._dbHandler.purgeComment(modTableRow.commentCid);
+                else this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
             }
-            this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
         }
         this._subplebbitUpdateTrigger = true;
         this._dbHandler.insertCommentModerations([modTableRow]);
