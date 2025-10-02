@@ -29,7 +29,6 @@ describe(`Pending approval modqueue functionality`, async () => {
 
     describe("Challenge with pendingApproval", () => {
         it("Should support pendingApproval field in challenge settings", async () => {
-            // TODO: Test that challenges can have pendingApproval: true field
             const newUpdatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
             await subplebbit.edit({ settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] } });
             expect(subplebbit.settings.challenges[0].pendingApproval).to.be.true;
