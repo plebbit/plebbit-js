@@ -234,7 +234,8 @@ export const SubplebbitSettingsSchema = z
         fetchThumbnailUrls: z.boolean().optional(),
         fetchThumbnailUrlsProxyUrl: z.string().optional(), // TODO should we validate this url?
         challenges: SubplebbitChallengeSettingSchema.array().optional(), // If empty array it will remove all challenges
-        maxPendingApprovalCount: z.number().int().nonnegative().optional()
+        maxPendingApprovalCount: z.number().int().nonnegative().optional(),
+        purgeDisapprovedCommentsOlderThan: z.number().int().nonnegative().optional()
     })
     .strict();
 

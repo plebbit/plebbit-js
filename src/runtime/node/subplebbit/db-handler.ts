@@ -1227,6 +1227,42 @@ export class DbHandler {
         }
     }
 
+    purgeDisapprovedCommentsOlderThan(retentionSeconds: number): void {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeDisapprovedCommentsOlderThan");
+        if (!Number.isFinite(retentionSeconds) || retentionSeconds <= 0) return;
+
+        const now = timestamp();
+        const cutoffTimestamp = now - retentionSeconds;
+
+        const rows = this._db
+            .prepare(
+                `
+            WITH first_disapproved AS (
+                SELECT commentCid AS cid,
+                       MIN(timestamp) AS first_disapproved_at
+                FROM ${TABLES.COMMENT_MODERATIONS}
+                WHERE json_type(commentModeration, '$.approved') = 'false'
+                GROUP BY commentCid
+            )
+            SELECT c.cid AS cid,
+                   c.parentCid AS parentCid,
+                   COALESCE(fd.first_disapproved_at, cu.updatedAt) AS firstDisapprovedAt
+            FROM ${TABLES.COMMENT_UPDATES} cu
+            INNER JOIN ${TABLES.COMMENTS} c ON c.cid = cu.cid
+            LEFT JOIN first_disapproved fd ON fd.cid = cu.cid
+            WHERE (COALESCE(cu.approved, 1) = 0 OR cu.approved = 'false')
+              AND COALESCE(fd.first_disapproved_at, cu.updatedAt) <= ?
+        `
+            )
+            .all(cutoffTimestamp) as { cid: string; parentCid?: string | null }[];
+
+        if (rows.length === 0) return;
+
+        log(`Purging ${rows.length} disapproved comments older than ${retentionSeconds} seconds (cutoff ${cutoffTimestamp}).`);
+
+        for (const row of rows) this.purgeComment(row.cid);
+    }
+
     private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
         const result = this._db
             .prepare(

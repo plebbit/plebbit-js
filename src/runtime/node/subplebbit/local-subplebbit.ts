@@ -441,7 +441,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         lock: boolean
     ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType> {
         const log = Logger("plebbit-js:local-subplebbit:_getDbInternalState");
-        if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])))
+        if (!this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
             throw new PlebbitError("ERR_SUB_HAS_NO_INTERNAL_STATE", { address: this.address, dataPath: this._plebbit.dataPath });
         let lockedIt = false;
         try {
@@ -493,15 +493,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.pubsubTopic) this.pubsubTopic = remeda.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
+        if (!this.settings?.maxPendingApprovalCount) this.settings = { ...this.settings, maxPendingApprovalCount: 500 };
         if (!this.settings?.challenges) {
-            this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges, maxPendingApprovalCount: 500 };
+            this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges };
             this._usingDefaultChallenge = true;
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
+        }
+        if (typeof this.settings?.purgeDisapprovedCommentsOlderThan !== "number") {
+            this.settings = { ...this.settings, purgeDisapprovedCommentsOlderThan: 1.21e6 }; // two weeks
         }
 
         this.challenges = await Promise.all(this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings));
 
-        if (await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
+        if (this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
 
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternalBeforeFirstUpdate());
 
@@ -2194,6 +2198,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
+    private _purgeDisapprovedCommentsOlderThan() {
+        if (typeof this.settings.purgeDisapprovedCommentsOlderThan !== "number") return;
+
+        this._dbHandler.purgeDisapprovedCommentsOlderThan(this.settings.purgeDisapprovedCommentsOlderThan);
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
 
@@ -2203,6 +2213,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
+            this._purgeDisapprovedCommentsOlderThan();
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             this._requireSubplebbitUpdateIfModerationChanged();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
