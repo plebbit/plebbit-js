@@ -2201,7 +2201,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _purgeDisapprovedCommentsOlderThan() {
         if (typeof this.settings.purgeDisapprovedCommentsOlderThan !== "number") return;
 
-        this._dbHandler.purgeDisapprovedCommentsOlderThan(this.settings.purgeDisapprovedCommentsOlderThan);
+        const log = Logger("plebbit-js:local-subplebbit:_purgeDisapprovedCommentsOlderThan");
+        const purgedComments = this._dbHandler.purgeDisapprovedCommentsOlderThan(this.settings.purgeDisapprovedCommentsOlderThan);
+        log(
+            "Purged disapproved comments",
+            purgedComments,
+            "because retention time has passed and it's time to purge them from DB and pages"
+        );
     }
 
     private async syncIpnsWithDb() {

@@ -1227,7 +1227,7 @@ export class DbHandler {
         }
     }
 
-    purgeDisapprovedCommentsOlderThan(retentionSeconds: number): void {
+    purgeDisapprovedCommentsOlderThan(retentionSeconds: number) {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeDisapprovedCommentsOlderThan");
         if (!Number.isFinite(retentionSeconds) || retentionSeconds <= 0) return;
 
@@ -1261,6 +1261,7 @@ export class DbHandler {
         log(`Purging ${rows.length} disapproved comments older than ${retentionSeconds} seconds (cutoff ${cutoffTimestamp}).`);
 
         for (const row of rows) this.purgeComment(row.cid);
+        return rows;
     }
 
     private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {
@@ -1757,27 +1758,19 @@ export class DbHandler {
         pageOptions: Omit<PageOptions, "pageSize" | "preloadedPage" | "baseTimestamp" | "firstPageSizeBytes">
     ): (PageIpfs["comments"][0] & { activeScore: number })[] {
         const activeScoreRootConditions = ["p.depth = 0"];
-        if (pageOptions.excludeCommentsWithDifferentSubAddress)
-            activeScoreRootConditions.push("p.subplebbitAddress = :subAddress");
-        if (pageOptions.excludeCommentPendingApproval)
-            activeScoreRootConditions.push(this._pendingApprovalClause("p"));
+        if (pageOptions.excludeCommentsWithDifferentSubAddress) activeScoreRootConditions.push("p.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentPendingApproval) activeScoreRootConditions.push(this._pendingApprovalClause("p"));
         if (pageOptions.excludeRemovedComments) activeScoreRootConditions.push(this._removedClause("cu_root"));
-        if (pageOptions.excludeDeletedComments)
-            activeScoreRootConditions.push(this._deletedFromUpdatesClause("cu_root"));
-        if (pageOptions.excludeCommentWithApprovedFalse)
-            activeScoreRootConditions.push(this._approvedClause("cu_root"));
+        if (pageOptions.excludeDeletedComments) activeScoreRootConditions.push(this._deletedFromUpdatesClause("cu_root"));
+        if (pageOptions.excludeCommentWithApprovedFalse) activeScoreRootConditions.push(this._approvedClause("cu_root"));
         const activeScoreRootWhere = `WHERE ${activeScoreRootConditions.join(" AND ")}`;
 
         const activeScoreDescendantConditions: string[] = [];
-        if (pageOptions.excludeCommentsWithDifferentSubAddress)
-            activeScoreDescendantConditions.push("c.subplebbitAddress = :subAddress");
-        if (pageOptions.excludeCommentPendingApproval)
-            activeScoreDescendantConditions.push(this._pendingApprovalClause("c"));
+        if (pageOptions.excludeCommentsWithDifferentSubAddress) activeScoreDescendantConditions.push("c.subplebbitAddress = :subAddress");
+        if (pageOptions.excludeCommentPendingApproval) activeScoreDescendantConditions.push(this._pendingApprovalClause("c"));
         if (pageOptions.excludeRemovedComments) activeScoreDescendantConditions.push(this._removedClause("cu"));
-        if (pageOptions.excludeDeletedComments)
-            activeScoreDescendantConditions.push(this._deletedFromLookupClause("deleted_lookup"));
-        if (pageOptions.excludeCommentWithApprovedFalse)
-            activeScoreDescendantConditions.push(this._approvedClause("cu"));
+        if (pageOptions.excludeDeletedComments) activeScoreDescendantConditions.push(this._deletedFromLookupClause("deleted_lookup"));
+        if (pageOptions.excludeCommentWithApprovedFalse) activeScoreDescendantConditions.push(this._approvedClause("cu"));
         const activeScoreDescendantWhere =
             activeScoreDescendantConditions.length > 0 ? `WHERE ${activeScoreDescendantConditions.join(" AND ")}` : "";
 
