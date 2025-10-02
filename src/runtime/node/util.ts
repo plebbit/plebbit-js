@@ -261,6 +261,7 @@ export async function importSignerIntoKuboNode(
     ipfsKey: Uint8Array,
     kuboRpcClientOptions: KuboRpcClient["_clientOptions"]
 ) {
+    const log = Logger("plebbit-js:local-subplebbit:importSignerIntoKuboNode");
     const data = new FormData();
     if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
@@ -281,6 +282,7 @@ export async function importSignerIntoKuboNode(
         throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
     const resJson: { Id: string; Name: string } = await res.json();
 
+    log("Imported IPNS' signer into kubo node", resJson, " Onto kubo rpc URL", kuboRpcUrl);
     return { id: resJson.Id, name: resJson.Name };
 }
 
