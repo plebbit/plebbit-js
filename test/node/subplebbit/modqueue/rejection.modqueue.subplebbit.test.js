@@ -20,307 +20,324 @@ import { messages } from "../../../../dist/node/errors.js";
 
 const depthsToTest = [0, 1, 2, 3];
 
-for (const pendingCommentDepth of depthsToTest) {
-    describe(`Comment moderation rejection of pending comment with depth ` + pendingCommentDepth, async () => {
-        let plebbit;
-        let remotePlebbit;
-        let commentToBeRejected;
-        let modSigner;
-        const reasonForRejection = "Rejection of comment with depth " + pendingCommentDepth + " Because of reason" + Math.random();
-        let subplebbit;
+const commentModProps = [{ approved: false, reason: "Test reason 1234" }, { approved: false }];
 
-        before(async () => {
-            plebbit = await mockPlebbit();
-            remotePlebbit = await mockGatewayPlebbit();
-            subplebbit = await plebbit.createSubplebbit();
-            subplebbit.setMaxListeners(100);
-            await subplebbit.start();
-            modSigner = await plebbit.createSigner();
-            await subplebbit.edit({
-                roles: {
-                    [modSigner.address]: { role: "moderator" }
-                },
-                settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
-            });
+for (const commentMod of commentModProps) {
+    for (const pendingCommentDepth of depthsToTest) {
+        describe(
+            `Comment moderation rejection of pending comment with depth ` + pendingCommentDepth + " and comment mod " + commentMod,
+            async () => {
+                let plebbit;
+                let remotePlebbit;
+                let commentToBeRejected;
+                let modSigner;
+                const reasonForRejection = "Rejection of comment with depth " + pendingCommentDepth + " Because of reason" + Math.random();
+                let subplebbit;
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+                before(async () => {
+                    plebbit = await mockPlebbit();
+                    remotePlebbit = await mockGatewayPlebbit();
+                    subplebbit = await plebbit.createSubplebbit();
+                    subplebbit.setMaxListeners(100);
+                    await subplebbit.start();
+                    modSigner = await plebbit.createSigner();
+                    await subplebbit.edit({
+                        roles: {
+                            [modSigner.address]: { role: "moderator" }
+                        },
+                        settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
+                    });
 
-            const pending = await publishToModQueueWithDepth({
-                subplebbit,
-                plebbit: remotePlebbit,
-                depth: pendingCommentDepth,
-                modCommentProps: { signer: modSigner }
-            });
-            commentToBeRejected = pending.comment;
+                    await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-            await commentToBeRejected.update();
-        });
+                    const pending = await publishToModQueueWithDepth({
+                        subplebbit,
+                        plebbit: remotePlebbit,
+                        depth: pendingCommentDepth,
+                        modCommentProps: { signer: modSigner }
+                    });
+                    commentToBeRejected = pending.comment;
 
-        after(async () => {
-            await subplebbit.delete();
-            await plebbit.destroy();
-            await remotePlebbit.destroy();
-        });
+                    await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+                    await commentToBeRejected.update();
+                });
 
-        it(`Can reject comment with approved: false`, async () => {
-            const commentModeration = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: false, reason: reasonForRejection },
-                commentCid: commentToBeRejected.cid
-            });
+                after(async () => {
+                    await subplebbit.delete();
+                    await plebbit.destroy();
+                    await remotePlebbit.destroy();
+                });
 
-            await publishWithExpectedResult(commentModeration, true);
-        });
+                it(`Can reject comment with ${JSON.stringify(commentMod)}`, async () => {
+                    const commentModeration = await plebbit.createCommentModeration({
+                        subplebbitAddress: subplebbit.address,
+                        signer: modSigner,
+                        commentModeration: commentMod,
+                        commentCid: commentToBeRejected.cid
+                    });
 
-        it(`Rejecting a pending comment will purge it from modQueue`, async () => {
-            await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
-        });
+                    await publishWithExpectedResult(commentModeration, true);
+                });
 
-        it(`Rejecting a pending comment will not remove it from database of subplebbit`, async () => {
-            const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
-            expect(queryRes).to.be.exist;
-        });
+                it(`Rejecting a pending comment will purge it from modQueue`, async () => {
+                    await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+                    expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
+                });
 
-        if (pendingCommentDepth > 0) {
-            it(`Rejected reply does not show up in parentComment.replyCount`, async () => {
-                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).replyCount).to.equal(0);
-            });
+                it(`Rejecting a pending comment will not remove it from database of subplebbit`, async () => {
+                    const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
+                    expect(queryRes).to.be.exist;
+                });
 
-            it(`Rejected reply does not show up in parentComment.childCount`, async () => {
-                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).childCount).to.equal(0);
-            });
+                if (pendingCommentDepth > 0) {
+                    it(`Rejected reply does not show up in parentComment.replyCount`, async () => {
+                        expect(
+                            (await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).replyCount
+                        ).to.equal(0);
+                    });
 
-            it(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
-                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastChildCid).to.be
-                    .undefined;
-            });
-            it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
-                expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastReplyTimestamp).to.be
-                    .undefined;
-            });
-        }
+                    it(`Rejected reply does not show up in parentComment.childCount`, async () => {
+                        expect(
+                            (await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).childCount
+                        ).to.equal(0);
+                    });
 
-        if (pendingCommentDepth === 0)
-            it(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
-                expect(subplebbit.lastPostCid).to.not.equal(commentToBeRejected.cid);
-            });
-
-        it(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
-            expect(subplebbit.lastCommentCid).to.not.equal(commentToBeRejected.cid);
-        });
-
-        it(`A rejected comment will not show up in subplebbit.posts`, async () => {
-            let foundInPosts = false;
-            processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
-                if (comment.cid === commentToBeRejected.cid) {
-                    foundInPosts = true;
-                    return;
+                    it(`Rejected reply does not show up in parentComment.lastChildCid`, async () => {
+                        expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastChildCid).to.be
+                            .undefined;
+                    });
+                    it(`Rejected reply does not show up in parentComment.lastReplyTimestamp`, async () => {
+                        expect((await getCommentWithCommentUpdateProps({ cid: commentToBeRejected.parentCid, plebbit })).lastReplyTimestamp)
+                            .to.be.undefined;
+                    });
                 }
-            });
-            expect(foundInPosts).to.be.false;
 
-            await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+                if (pendingCommentDepth === 0)
+                    it(`Rejected post does not show up in subplebbit.lastPostCid`, async () => {
+                        expect(subplebbit.lastPostCid).to.not.equal(commentToBeRejected.cid);
+                    });
 
-            expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
-
-            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                const pageComments = await loadAllPages(pageCid, subplebbit.posts);
-                expect(pageComments.length).to.be.greaterThan(0);
-
-                processAllCommentsRecursively(pageComments, (comment) => {
-                    if (comment.cid === commentToBeRejected.cid) {
-                        foundInPosts = true;
-                        return;
-                    }
+                it(`Rejected comment does not show up in subplebbit.lastCommentCid`, async () => {
+                    expect(subplebbit.lastCommentCid).to.not.equal(commentToBeRejected.cid);
                 });
-                expect(foundInPosts).to.be.false;
-            }
-        });
 
-        if (pendingCommentDepth > 0)
-            it("A rejected reply will not show up in parentComment.replies", async () => {
-                const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
-                await parentComment.update();
-                await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
-                let foundInReplies = false;
-                processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
-                    if (comment.cid === commentToBeRejected.cid) {
-                        foundInReplies = true;
-                        return;
-                    }
-                });
-                expect(foundInReplies).to.be.false;
-
-                await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
-
-                expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
-
-                for (const pageCid of Object.values(parentComment.replies.pageCids)) {
-                    const pageComments = await loadAllPages(pageCid, parentComment.replies);
-
-                    expect(pageComments.length).to.be.greaterThan(0);
-                    processAllCommentsRecursively(pageComments, (comment) => {
+                it(`A rejected comment will not show up in subplebbit.posts`, async () => {
+                    let foundInPosts = false;
+                    processAllCommentsRecursively(subplebbit.posts.pages.hot?.comments || [], (comment) => {
                         if (comment.cid === commentToBeRejected.cid) {
-                            foundInReplies = true;
+                            foundInPosts = true;
                             return;
                         }
                     });
-                    expect(foundInReplies).to.be.false;
-                }
-                await parentComment.stop();
-            });
-        if (pendingCommentDepth > 0)
-            it(`A rejected reply will not show up in flat pages of post`, async () => {
-                const postComment = await plebbit.getComment(commentToBeRejected.postCid);
-                await postComment.update();
-                await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
-                await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+                    expect(foundInPosts).to.be.false;
 
-                const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+                    await forceSubplebbitToGenerateAllPostsPages(subplebbit, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
-                let foundInFlatPages = false;
-                for (const flatPageCid of flatPageCids) {
-                    const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
+                    expect(subplebbit.posts.pageCids).to.not.deep.equal({}); // should not be empty
 
-                    expect(flatPageComments.length).to.be.greaterThan(0);
-                    processAllCommentsRecursively(flatPageComments, (comment) => {
-                        if (comment.cid === commentToBeRejected.cid) {
-                            foundInFlatPages = true;
-                            return;
-                        }
-                    });
-                    expect(foundInFlatPages).to.be.false;
-                }
+                    for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                        const pageComments = await loadAllPages(pageCid, subplebbit.posts);
+                        expect(pageComments.length).to.be.greaterThan(0);
 
-                await postComment.stop();
-            });
-
-        it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
-            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
-        });
-        if (pendingCommentDepth === 0)
-            it(`Rejecting a pending post will still keep it in subplebbit.postUpdates`, async () => {
-                expect(subplebbit.postUpdates).to.exist;
-                const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${commentToBeRejected.cid}/update`;
-                const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
-
-                const res = await kuboRpc.files.stat(localMfsPath); // this call needs to pass because file should exist
-
-                expect(res.size).to.be.greaterThan(0);
-            });
-
-        it(`A rejected comment will expire and get removed from postUpdates and DB`);
-
-        // TODO remove this later when we implement a fix for updating a reply with approved=false
-        if (pendingCommentDepth === 0) {
-            it(`Can update a rejected comment and retrieve its update`, async () => {
-                const newComment = await remotePlebbit.createComment(commentToBeRejected);
-
-                await newComment.update();
-                await resolveWhenConditionIsTrue(newComment, () => newComment.updatedAt);
-
-                expect(newComment.approved).to.be.false;
-                expect(newComment.reason).to.equal(reasonForRejection);
-                expect(newComment.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
-                expect(newComment.upvoteCount).to.equal(0);
-                expect(newComment.replyCount).to.equal(0);
-                expect(newComment.childCount).to.equal(0);
-                // `Publishing approved:false adds removed:true automatically to comment update
-                expect(newComment.removed).to.be.true;
-
-                expect(newComment.raw.commentUpdate.approved).to.be.false;
-                expect(newComment.raw.commentUpdate.reason).to.equal(reasonForRejection);
-                expect(newComment.raw.commentUpdate.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
-                expect(newComment.raw.commentUpdate.upvoteCount).to.equal(0);
-                expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
-                expect(newComment.raw.commentUpdate.childCount).to.equal(0);
-
-                expect(newComment.raw.commentUpdate.removed).to.be.true;
-
-                await newComment.stop();
-            });
-
-            it(`A different mod can publish CommentModeration on top of approved:false, and its props would be picked up`, async () => {
-                const commentModerationProps = {
-                    reason: "New reason to be picked up and used" + Math.random(),
-                    spoiler: true,
-                    nsfw: true,
-                    pinned: true,
-                    removed: false
-                };
-                const commentModeration = await plebbit.createCommentModeration({
-                    subplebbitAddress: subplebbit.address,
-                    signer: modSigner,
-                    commentModeration: commentModerationProps,
-                    commentCid: commentToBeRejected.cid
+                        processAllCommentsRecursively(pageComments, (comment) => {
+                            if (comment.cid === commentToBeRejected.cid) {
+                                foundInPosts = true;
+                                return;
+                            }
+                        });
+                        expect(foundInPosts).to.be.false;
+                    }
                 });
 
-                await publishWithExpectedResult(commentModeration, true);
+                if (pendingCommentDepth > 0)
+                    it("A rejected reply will not show up in parentComment.replies", async () => {
+                        const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
+                        await parentComment.update();
+                        await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+                        let foundInReplies = false;
+                        processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
+                            if (comment.cid === commentToBeRejected.cid) {
+                                foundInReplies = true;
+                                return;
+                            }
+                        });
+                        expect(foundInReplies).to.be.false;
 
-                await commentToBeRejected.update();
+                        await forceSubplebbitToGenerateAllRepliesPages(parentComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
 
-                await resolveWhenConditionIsTrue(commentToBeRejected, () => commentToBeRejected.reason === commentModerationProps.reason);
+                        expect(parentComment.replies.pageCids).to.not.deep.equal({}); // should not be empty
 
-                for (const moderationKey of Object.keys(commentModerationProps)) {
-                    expect(commentToBeRejected[moderationKey]).to.equal(commentModerationProps[moderationKey]);
-                    expect(commentToBeRejected.raw.commentUpdate[moderationKey]).to.equal(commentModerationProps[moderationKey]);
+                        for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+                            const pageComments = await loadAllPages(pageCid, parentComment.replies);
+
+                            expect(pageComments.length).to.be.greaterThan(0);
+                            processAllCommentsRecursively(pageComments, (comment) => {
+                                if (comment.cid === commentToBeRejected.cid) {
+                                    foundInReplies = true;
+                                    return;
+                                }
+                            });
+                            expect(foundInReplies).to.be.false;
+                        }
+                        await parentComment.stop();
+                    });
+                if (pendingCommentDepth > 0)
+                    it(`A rejected reply will not show up in flat pages of post`, async () => {
+                        const postComment = await plebbit.getComment(commentToBeRejected.postCid);
+                        await postComment.update();
+                        await resolveWhenConditionIsTrue(postComment, () => postComment.updatedAt);
+                        await forceSubplebbitToGenerateAllRepliesPages(postComment, { signer: modSigner }); // the goal of this is to force the subplebbit to have all pages and page.cids
+
+                        const flatPageCids = [postComment.replies.pageCids.newFlat, postComment.replies.pageCids.oldFlat];
+
+                        let foundInFlatPages = false;
+                        for (const flatPageCid of flatPageCids) {
+                            const flatPageComments = await loadAllPages(flatPageCid, postComment.replies);
+
+                            expect(flatPageComments.length).to.be.greaterThan(0);
+                            processAllCommentsRecursively(flatPageComments, (comment) => {
+                                if (comment.cid === commentToBeRejected.cid) {
+                                    foundInFlatPages = true;
+                                    return;
+                                }
+                            });
+                            expect(foundInFlatPages).to.be.false;
+                        }
+
+                        await postComment.stop();
+                    });
+
+                it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
+                    expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
+                });
+                if (pendingCommentDepth === 0)
+                    it(`Rejecting a pending post will still keep it in subplebbit.postUpdates`, async () => {
+                        expect(subplebbit.postUpdates).to.exist;
+                        const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${commentToBeRejected.cid}/update`;
+                        const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+
+                        const res = await kuboRpc.files.stat(localMfsPath); // this call needs to pass because file should exist
+
+                        expect(res.size).to.be.greaterThan(0);
+                    });
+
+                it(`A rejected comment will expire and get removed from postUpdates and DB`);
+
+                // TODO remove this later when we implement a fix for updating a reply with approved=false
+                if (pendingCommentDepth === 0) {
+                    it(`Can update a rejected comment and retrieve its update`, async () => {
+                        const newComment = await remotePlebbit.createComment(commentToBeRejected);
+
+                        await newComment.update();
+                        await resolveWhenConditionIsTrue(newComment, () => newComment.updatedAt);
+
+                        expect(newComment.approved).to.be.false;
+                        expect(newComment.reason).to.equal(reasonForRejection);
+                        expect(newComment.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
+                        expect(newComment.upvoteCount).to.equal(0);
+                        expect(newComment.replyCount).to.equal(0);
+                        expect(newComment.childCount).to.equal(0);
+                        // `Publishing approved:false adds removed:true automatically to comment update
+                        expect(newComment.removed).to.be.true;
+
+                        expect(newComment.raw.commentUpdate.approved).to.be.false;
+                        expect(newComment.raw.commentUpdate.reason).to.equal(reasonForRejection);
+                        expect(newComment.raw.commentUpdate.updatedAt).to.be.a("number"); // updatedAt should be published along approved: false
+                        expect(newComment.raw.commentUpdate.upvoteCount).to.equal(0);
+                        expect(newComment.raw.commentUpdate.replyCount).to.equal(0);
+                        expect(newComment.raw.commentUpdate.childCount).to.equal(0);
+
+                        expect(newComment.raw.commentUpdate.removed).to.be.true;
+
+                        await newComment.stop();
+                    });
+
+                    it(`A different mod can publish CommentModeration on top of approved:false, and its props would be picked up`, async () => {
+                        const commentModerationProps = {
+                            reason: "New reason to be picked up and used" + Math.random(),
+                            spoiler: true,
+                            nsfw: true,
+                            pinned: true,
+                            removed: false
+                        };
+                        const commentModeration = await plebbit.createCommentModeration({
+                            subplebbitAddress: subplebbit.address,
+                            signer: modSigner,
+                            commentModeration: commentModerationProps,
+                            commentCid: commentToBeRejected.cid
+                        });
+
+                        await publishWithExpectedResult(commentModeration, true);
+
+                        await commentToBeRejected.update();
+
+                        await resolveWhenConditionIsTrue(
+                            commentToBeRejected,
+                            () => commentToBeRejected.reason === commentModerationProps.reason
+                        );
+
+                        for (const moderationKey of Object.keys(commentModerationProps)) {
+                            expect(commentToBeRejected[moderationKey]).to.equal(commentModerationProps[moderationKey]);
+                            expect(commentToBeRejected.raw.commentUpdate[moderationKey]).to.equal(commentModerationProps[moderationKey]);
+                        }
+
+                        expect(commentToBeRejected["approved"]).to.be.false;
+                        expect(commentToBeRejected.raw.commentUpdate["approved"]).to.be.false;
+                    });
+
+                    it(`A rejected comment will have pendingApproval=false`, async () => {
+                        expect(commentToBeRejected.pendingApproval).to.be.false;
+                    });
                 }
 
-                expect(commentToBeRejected["approved"]).to.be.false;
-                expect(commentToBeRejected.raw.commentUpdate["approved"]).to.be.false;
-            });
+                it(`Can't vote on rejected comment`, async () => {
+                    const vote = await generateMockVote(commentToBeRejected, 1, plebbit, modSigner); // need to publish under mod otherwise we're gonna get captcha challenge
+                    await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
+                });
 
-            it(`A rejected comment will have pendingApproval=false`, async () => {
-                expect(commentToBeRejected.pendingApproval).to.be.false;
-            });
-        }
+                it(`Can't publish a reply under a rejected comment`, async () => {
+                    const reply = await generateMockComment(commentToBeRejected, plebbit, false);
+                    await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
+                });
 
-        it(`Can't vote on rejected comment`, async () => {
-            const vote = await generateMockVote(commentToBeRejected, 1, plebbit, modSigner); // need to publish under mod otherwise we're gonna get captcha challenge
-            await publishWithExpectedResult(vote, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
-        });
+                it(`Can't publish an edit under a rejected comment`, async () => {
+                    const edit = await plebbit.createCommentEdit({
+                        subplebbitAddress: commentToBeRejected.subplebbitAddress,
+                        commentCid: commentToBeRejected.cid,
+                        reason: "random reason should fail",
+                        content: "text to edit on pending comment",
+                        signer: commentToBeRejected.signer
+                    });
+                    await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
+                });
 
-        it(`Can't publish a reply under a rejected comment`, async () => {
-            const reply = await generateMockComment(commentToBeRejected, plebbit, false);
-            await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
-        });
+                it(`A rejected comment is not pinned to IPFS node`, async () => {
+                    const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
-        it(`Can't publish an edit under a rejected comment`, async () => {
-            const edit = await plebbit.createCommentEdit({
-                subplebbitAddress: commentToBeRejected.subplebbitAddress,
-                commentCid: commentToBeRejected.cid,
-                reason: "random reason should fail",
-                content: "text to edit on pending comment",
-                signer: commentToBeRejected.signer
-            });
-            await publishWithExpectedResult(edit, false, messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT);
-        });
+                    // Collect all pinned CIDs
+                    for await (const pin of kuboRpc.pin.ls()) {
+                        expect(pin.cid.toString()).to.not.equal(commentToBeRejected.cid); // pending comment should not be pinned in kubo
+                    }
+                });
 
-        it(`A rejected comment is not pinned to IPFS node`, async () => {
-            const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+                it(`Sub should reject CommentModeration if a mod published disapproval for a comment that already got disapproved`, async () => {
+                    const commentModerationDisapproval = await plebbit.createCommentModeration({
+                        subplebbitAddress: subplebbit.address,
+                        signer: modSigner,
+                        commentModeration: { approved: false },
+                        commentCid: commentToBeRejected.cid
+                    });
 
-            // Collect all pinned CIDs
-            for await (const pin of kuboRpc.pin.ls()) {
-                expect(pin.cid.toString()).to.not.equal(commentToBeRejected.cid); // pending comment should not be pinned in kubo
+                    await publishWithExpectedResult(
+                        commentModerationDisapproval,
+                        false,
+                        messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
+                    );
+                });
             }
-        });
-
-        it(`Sub should reject CommentModeration if a mod published disapproval for a comment that already got disapproved`, async () => {
-            const commentModerationDisapproval = await plebbit.createCommentModeration({
-                subplebbitAddress: subplebbit.address,
-                signer: modSigner,
-                commentModeration: { approved: false },
-                commentCid: commentToBeRejected.cid
-            });
-
-            await publishWithExpectedResult(
-                commentModerationDisapproval,
-                false,
-                messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING
-            );
-        });
-    });
+        );
+    }
 }
+
+it(`A rejected comment with only {approved:false} should be purged`);
+it(`A rejected comment with with {approved: false, ...anyOtherProps} should not be purged`);
