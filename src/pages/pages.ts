@@ -257,7 +257,13 @@ export class ModQueuePages extends BasePages {
 
     constructor(props: ModQueueProps) {
         super(props);
+        this.pages = undefined;
         this._combinedHashOfPendingCommentsCids = sha256("");
+    }
+
+    override resetPages(): void {
+        this.pageCids = {};
+        this.pages = undefined;
     }
 
     protected override _initClientsManager(plebbit: Plebbit): void {

@@ -53,7 +53,6 @@ export const CommentModerationPubsubMessagePublicationSchema = CreateCommentMode
 
 export const CommentModerationsTableRowSchema = CommentModerationPubsubMessagePublicationSchema.extend({
     insertedAt: PlebbitTimestampSchema,
-    id: z.number().nonnegative().int(),
     modSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     extraProps: z.looseObject({}).optional()
 });

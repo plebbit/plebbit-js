@@ -202,8 +202,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
     private _challengeExchangesFromLocalPublishers: Record<string, boolean> = {}; // key is stringified challengeRequestId and value is true if the challenge exchange is ongoing
 
-    private _cidsToUnPin: Set<string> = new Set<string>();
-    private _mfsPathsToRemove: Set<string> = new Set<string>();
+    _cidsToUnPin: Set<string> = new Set<string>();
+    _mfsPathsToRemove: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger: boolean = false;
 
     private _pageGenerator!: PageGenerator;
@@ -225,7 +225,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         | "challengeanswer"
     > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _pendingEditProps: Partial<ParsedSubplebbitEditOptions & { editId: string }>[] = [];
-    private _blocksToRm: string[] = [];
+    _blocksToRm: string[] = [];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -868,9 +868,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!commentToPurge) throw Error("Comment to purge not found");
             const cidsToPurgeOffIpfsNode = this._dbHandler.purgeComment(modTableRow.commentCid);
 
-            const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
-            purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
-            purgedCids.forEach((cid) => this._blocksToRm.push(cid));
+            cidsToPurgeOffIpfsNode.forEach((cid) => this._cidsToUnPin.add(cid));
+            cidsToPurgeOffIpfsNode.forEach((cid) => this._blocksToRm.push(cid));
 
             log(
                 "Purged comment",

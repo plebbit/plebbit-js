@@ -198,7 +198,6 @@ export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessa
 export const CommentsTableRowSchema = CommentIpfsSchema.extend({
     cid: CidStringSchema, // cid of CommentIpfs, cid v0
     postCid: CidStringSchema,
-    rowid: z.number().nonnegative().int(), // this field is from sqlite
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     extraProps: z.looseObject({}).optional(),
@@ -224,7 +223,8 @@ const additionalCommentReservedFields = [
     "state",
     "clients",
     "publishingState",
-    "updatingState"
+    "updatingState",
+    "rowid"
 ] as const;
 
 type AdditionalCommentReservedField = (typeof additionalCommentReservedFields)[number];

@@ -29,7 +29,7 @@ const parsePrefixedCommentIpfsSchema = createSchemaRowParser(
     { prefix: "commentIpfs_" }
 );
 const parsePrefixedCommentUpdateSchema = createSchemaRowParser(CommentUpdateSchema, { prefix: "commentUpdate_" });
-const parseCommentsTableRowSchema = createSchemaRowParser(CommentsTableRowSchema.partial({ rowid: true }));
+const parseCommentsTableRowSchema = createSchemaRowParser(CommentsTableRowSchema);
 const parseCommentUpdatesTableRowSchema = createSchemaRowParser(CommentUpdateTableRowSchema);
 const parseCommentEditsTableRowSchema = createSchemaRowParser(CommentEditsTableRowSchema);
 const parseVotesTableRowSchema = createSchemaRowParser(VoteTablesRowSchema);

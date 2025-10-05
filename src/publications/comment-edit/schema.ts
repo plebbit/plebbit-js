@@ -51,8 +51,7 @@ export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSch
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing
-    extraProps: z.looseObject({}).optional(), // will hold unknown props,
-    rowid: z.number().nonnegative().int()
+    extraProps: z.looseObject({}).optional() // will hold unknown props,
 }).strict();
 
 export const CommentEditChallengeRequestToEncryptSchema = CreateCommentEditOptionsSchema.shape.challengeRequest.unwrap().extend({

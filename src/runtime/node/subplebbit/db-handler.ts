@@ -37,7 +37,7 @@ import type {
     SubplebbitAuthor
 } from "../../../publications/comment/types.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
-import { verifyCommentIpfs } from "../../../signer/signatures.js";
+import { verifyCommentEdit, verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs, RepliesPagesTypeIpfs } from "../../../pages/types.js";
 import type { CommentModerationsTableRowInsert, CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
@@ -56,6 +56,8 @@ import {
     parseVoteRow,
     type PrefixedCommentRow
 } from "./db-row-parser.js";
+import { ZodError } from "zod";
+import { messages } from "../../../errors.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -465,12 +467,15 @@ export class DbHandler {
         }
 
         if (needToMigrate) {
-            if (currentDbVersion <= 15) await this._purgeCommentsWithInvalidSchemaOrSignature();
+            if (currentDbVersion <= 15) {
+                await this._purgeCommentsWithInvalidSchemaOrSignature();
+                await this._purgeCommentEditsWithInvalidSchemaOrSignature();
+            }
             this._db.exec("PRAGMA foreign_keys = ON");
             this._db.pragma(`user_version = ${env.DB_VERSION}`);
             await this.initDbIfNeeded(); // to init keyv
 
-            const internalState = (await this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
+            const internalState = this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
                 ? ((await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) as
                       | InternalSubplebbitRecordAfterFirstUpdateType
                       | InternalSubplebbitRecordBeforeFirstUpdateType)
@@ -546,6 +551,14 @@ export class DbHandler {
                     const commentToBeEdited = this.queryComment(srcRecord.commentCid);
                     if (!commentToBeEdited) throw Error(`Failed to compute isAuthorEdit for ${srcRecord.commentCid}`);
                     srcRecord["isAuthorEdit"] = parsedSig.publicKey === commentToBeEdited.signature.publicKey;
+
+                    const commentEditFieldsNotIncludedAnymore = ["removed"];
+                    const extraProps = removeNullUndefinedValues(remeda.pick(srcRecord, commentEditFieldsNotIncludedAnymore)) as Record<
+                        string,
+                        any
+                    >;
+
+                    if (Object.keys(extraProps).length > 0) srcRecord.extraProps = { ...srcRecord.extraProps, ...extraProps };
                 }
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"] && srcRecord["signature"]) {
                     const sig = typeof srcRecord.signature === "string" ? JSON.parse(srcRecord.signature) : srcRecord.signature;
@@ -586,20 +599,80 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
+    private async _purgeCommentEditsWithInvalidSchemaOrSignature() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentEditsWithInvalidSchemaOrSignature");
+
+        const commentEditsOrderedByASC = this._db
+            .prepare(`SELECT rowid as rowid, * FROM ${TABLES.COMMENT_EDITS} ORDER BY rowid ASC`)
+            .all() as (CommentEditsTableRow & { rowid: number })[];
+
+        for (const rawCommentEditRecord of commentEditsOrderedByASC) {
+            let commentEditRecord: CommentEditsTableRow;
+            try {
+                commentEditRecord = this._parseCommentEditsRow(rawCommentEditRecord);
+            } catch (error) {
+                if (error instanceof ZodError) {
+                    log.error(
+                        `Comment edit (${rawCommentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB failed to parse and will be purged from comment edits table.`,
+                        error
+                    );
+                    this._deleteCommentEditRow(rawCommentEditRecord.rowid);
+                    continue;
+                }
+                throw error;
+            }
+
+            try {
+                CommentEditPubsubMessagePublicationSchema.strip().parse(commentEditRecord);
+            } catch (e) {
+                log.error(
+                    `Comment edit (${commentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB has an invalid schema and will be purged from comment edits table.`,
+                    e
+                );
+                this._deleteCommentEditRow(rawCommentEditRecord.rowid);
+                continue;
+            }
+
+            const commentEditPubsub = remeda.pick(commentEditRecord, [
+                ...(commentEditRecord.signature.signedPropertyNames as CommentEditSignature["signedPropertyNames"]),
+                "signature"
+            ]) as CommentEditPubsubMessagePublication;
+            const validRes = await verifyCommentEdit(commentEditPubsub, false, this._subplebbit._clientsManager, false);
+            if (!validRes.valid && validRes.reason === messages.ERR_SIGNATURE_IS_INVALID) {
+                log.error(
+                    `Comment edit (${commentEditRecord.commentCid}) row ${rawCommentEditRecord.rowid} in DB has invalid signature due to ${validRes.reason}. Removing comment edit entry.`
+                );
+                this._deleteCommentEditRow(rawCommentEditRecord.rowid);
+            }
+        }
+    }
+
     private async _purgeCommentsWithInvalidSchemaOrSignature() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentsWithInvalidSchema");
-        const comments = this.queryAllCommentsOrderedByIdAsc();
-        for (const commentRecord of comments) {
-            // comments are already parsed here
+
+        const commentsOrderedByASC = this._db.prepare(`SELECT * FROM ${TABLES.COMMENTS} ORDER BY rowid ASC`).all() as CommentsTableRow[];
+
+        for (const rawCommentRecord of commentsOrderedByASC) {
+            let commentRecord: CommentsTableRow;
             try {
-                CommentIpfsSchema.strip().parse(commentRecord); // Validate against the already parsed object
+                commentRecord = this._parseCommentsTableRow(rawCommentRecord);
+            } catch (error) {
+                if (error instanceof ZodError) {
+                    this.purgeComment(rawCommentRecord.cid);
+                    continue;
+                }
+                throw error;
+            }
+
+            try {
+                CommentIpfsSchema.strip().parse(commentRecord);
             } catch (e) {
                 log.error(`Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged.`, e);
                 this.purgeComment(commentRecord.cid);
                 continue;
             }
             const validRes = await verifyCommentIpfs({
-                comment: { ...commentRecord, ...commentRecord.extraProps }, // commentRecord is already parsed
+                comment: { ...commentRecord, ...commentRecord.extraProps },
                 resolveAuthorAddresses: false,
                 calculatedCommentCid: commentRecord.cid,
                 clientsManager: this._subplebbit._clientsManager,
@@ -616,6 +689,11 @@ export class DbHandler {
         this._db
             .prepare(`DELETE FROM ${TABLES.VOTES} WHERE commentCid = ? AND authorSignerAddress = ?`)
             .run(commentCid, authorSignerAddress);
+    }
+
+    private _deleteCommentEditRow(rowid: number): boolean {
+        const deleteResult = this._db.prepare(`DELETE FROM ${TABLES.COMMENT_EDITS} WHERE rowid = ?`).run(rowid);
+        return deleteResult.changes > 0;
     }
 
     insertVotes(votes: VotesTableRowInsert[]): void {
@@ -1107,6 +1185,23 @@ export class DbHandler {
         return this._parseCommentsTableRow(row);
     }
 
+    private _queryCommentAuthorAndParentWithoutParsing(cid: string):
+        | {
+              authorSignerAddress?: string;
+              parentCid?: string | null;
+          }
+        | undefined {
+        const row = this._db.prepare(`SELECT authorSignerAddress, parentCid FROM ${TABLES.COMMENTS} WHERE cid = ?`).get(cid) as
+            | { authorSignerAddress?: unknown; parentCid?: unknown }
+            | undefined;
+        if (!row) return undefined;
+
+        const authorSignerAddress = typeof row.authorSignerAddress === "string" ? row.authorSignerAddress : undefined;
+        const parentCid = typeof row.parentCid === "string" ? row.parentCid : row.parentCid === null ? null : undefined;
+
+        return { authorSignerAddress, parentCid };
+    }
+
     private _queryCommentCounts(cid: string): Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount" | "childCount"> {
         const query = `
         SELECT 
@@ -1476,7 +1571,8 @@ export class DbHandler {
             WHERE c.authorSignerAddress = ? GROUP BY c.cid
         `
             )
-            .all(authorSignerAddress) as (Pick<CommentsTableRow, "depth" | "rowid" | "timestamp" | "cid"> & {
+            .all(authorSignerAddress) as (Pick<CommentsTableRow, "depth" | "timestamp" | "cid"> & {
+            rowid: number;
             upvoteCount: number;
             downvoteCount: number;
         })[];
@@ -1519,7 +1615,7 @@ export class DbHandler {
             // Collect all unique authorSignerAddresses from comments that will be purged
             if (!isNestedCall) {
                 for (const cidToDelete of allCidsToBeDeleted) {
-                    const commentToDelete = this.queryComment(cidToDelete);
+                    const commentToDelete = this._queryCommentAuthorAndParentWithoutParsing(cidToDelete);
                     if (!commentToDelete) {
                         throw new Error(`Comment with cid ${cidToDelete} not found when attempting to purge`);
                     }
@@ -1542,7 +1638,7 @@ export class DbHandler {
 
                     // Collect parent comments of purged comments (for reply count updates)
                     if (commentToDelete.parentCid) {
-                        const allAncestors = this.queryParentsCids(commentToDelete);
+                        const allAncestors = this.queryParentsCids({ parentCid: commentToDelete.parentCid });
                         allAncestors.forEach((ancestor) => commentsToForceUpdate.add(ancestor.cid));
                     }
                 }
@@ -1600,7 +1696,12 @@ export class DbHandler {
             }
 
             if (!isNestedCall) this.commitTransaction();
-            return remeda.unique(purgedCids);
+            const uniquePurgedCids = remeda.unique(purgedCids);
+            uniquePurgedCids.forEach((cid) => {
+                this._subplebbit._cidsToUnPin.add(cid);
+                this._subplebbit._blocksToRm.push(cid);
+            });
+            return uniquePurgedCids;
         } catch (error) {
             log.error(`Error during comment purge for ${cid}: ${error}`);
             if (!isNestedCall) this.rollbackTransaction();
