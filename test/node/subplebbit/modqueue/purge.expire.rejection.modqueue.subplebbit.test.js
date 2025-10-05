@@ -203,6 +203,13 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
             expect(updateAfter).to.be.undefined;
         });
 
+        it("removes the purged comment from kubo pins", async () => {
+            const kuboRpc = Object.values(ctx.plebbit.clients.kuboRpcClients)[0]._client;
+            for await (const pin of kuboRpc.pin.ls()) {
+                expect(pin.cid.toString()).to.not.equal(disapprovedComment.cid);
+            }
+        });
+
         it("forces parent comment to republish", () => {
             if (!parentCid) return;
             expect(parentUpdateBefore).to.exist;
@@ -275,6 +282,13 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
             expect(updateAfter).to.be.undefined;
         });
 
+        it("ensures immediately purged comment is not pinned in kubo", async () => {
+            const kuboRpc = Object.values(ctx.plebbit.clients.kuboRpcClients)[0]._client;
+            for await (const pin of kuboRpc.pin.ls()) {
+                expect(pin.cid.toString()).to.not.equal(commentCid);
+            }
+        });
+
         it("forces parent comment to refresh", () => {
             if (!parentCid) return;
             expect(parentUpdateAfterImmediatePurge).to.exist;
@@ -287,6 +301,8 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
         let ctx;
         let disapprovedPost;
         let postBeforePurge;
+        let postUpdatesBucket;
+        let postUpdatesPath;
 
         before(async () => {
             ctx = await createTestContext({ retentionSeconds });
@@ -295,8 +311,18 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
                 moderationProps: { approved: false, reason: "post rejection" }
             });
             postBeforePurge = ctx.subplebbit._dbHandler.queryComment(disapprovedPost.cid);
+            const storedUpdateBefore = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: disapprovedPost.cid });
+            expect(storedUpdateBefore?.postUpdatesBucket).to.be.a("number");
+            postUpdatesBucket = storedUpdateBefore.postUpdatesBucket;
+            postUpdatesPath = `/${ctx.subplebbit.address}/postUpdates/${postUpdatesBucket}/${disapprovedPost.cid}/update`;
+            console.log("[debug] pre-purge postUpdates path", postUpdatesPath);
+
+            const kuboClientBefore = ctx.subplebbit._clientsManager.getDefaultKuboRpcClient()._client;
+            const statBefore = await kuboClientBefore.files.stat(postUpdatesPath);
+            expect(statBefore.size).to.be.greaterThan(0);
+
             backdateAllDisapprovals(ctx, disapprovedPost.cid, retentionSeconds + 10);
-            ctx.subplebbit._dbHandler.purgeDisapprovedCommentsOlderThan(retentionSeconds);
+            await ctx.subplebbit._purgeDisapprovedCommentsOlderThan();
         });
 
         after(async () => {
@@ -306,13 +332,22 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
         it(" stores the post prior to purge", () => {
             expect(postBeforePurge).to.exist;
             expect(postBeforePurge?.depth).to.equal(0);
+            expect(postUpdatesBucket).to.be.a("number");
         });
 
-        it(" purges the post once retention is exceeded", () => {
+        it(" purges the post once retention is exceeded", async () => {
+            await new Promise((resolve) => setTimeout(resolve, 2000)); // wait till new post updates is flushed
             const after = ctx.subplebbit._dbHandler.queryComment(disapprovedPost.cid);
             expect(after).to.be.undefined;
             const updateAfter = ctx.subplebbit._dbHandler.queryStoredCommentUpdate({ cid: disapprovedPost.cid });
             expect(updateAfter).to.be.undefined;
+            const kuboClientAfter = ctx.subplebbit._clientsManager.getDefaultKuboRpcClient()._client;
+            try {
+                const res = await kuboClientAfter.files.stat(postUpdatesPath);
+                expect.fail("should fail");
+            } catch (error) {
+                expect(error.message).to.equal("file does not exist");
+            }
         });
     });
 
