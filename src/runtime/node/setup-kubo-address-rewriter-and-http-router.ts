@@ -100,17 +100,32 @@ async function _setHttpRouterOptionsOnKuboNode(kuboClient: Plebbit["clients"]["k
 }
 
 async function _getStartedProxyUrl(plebbit: Plebbit, httpRouterUrl: string) {
+    if (plebbit.destroyed) return undefined;
     const mappingKeyName = `httprouter_proxy_${httpRouterUrl}`;
-    const urlOfProxyOfHttpRouter = <string | undefined>await plebbit._storage.getItem(mappingKeyName);
-    if (urlOfProxyOfHttpRouter) {
-        const proxyHttpUrl = new URL(urlOfProxyOfHttpRouter);
-        if (await tcpPortUsed.check(Number(proxyHttpUrl.port), "127.0.0.1")) return urlOfProxyOfHttpRouter;
-        else await plebbit._storage.removeItem(mappingKeyName);
+    try {
+        const urlOfProxyOfHttpRouter = <string | undefined>await plebbit._storage.getItem(mappingKeyName);
+        if (plebbit.destroyed) return undefined;
+        if (urlOfProxyOfHttpRouter) {
+            const proxyHttpUrl = new URL(urlOfProxyOfHttpRouter);
+            if (await tcpPortUsed.check(Number(proxyHttpUrl.port), "127.0.0.1")) return urlOfProxyOfHttpRouter;
+            if (plebbit.destroyed) return undefined;
+            await plebbit._storage.removeItem(mappingKeyName);
+        }
+        return undefined;
+    } catch (error) {
+        if (plebbit.destroyed && error instanceof Error && error.message.includes("database connection is not open")) {
+            return undefined;
+        }
+        throw error;
     }
-    return undefined;
 }
 
 export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit): Promise<{ destroy: () => Promise<void> }> {
+    if (plebbit.destroyed) {
+        return {
+            destroy: async () => {}
+        };
+    }
     if (!Array.isArray(plebbit.kuboRpcClientsOptions) || plebbit.kuboRpcClientsOptions.length <= 0)
         throw Error("need ipfs http client to be defined");
     if (!Array.isArray(plebbit.httpRoutersOptions) || plebbit.httpRoutersOptions.length <= 0)
@@ -123,6 +138,7 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit)
     const proxyServers: AddressesRewriterProxyServer[] = [];
     let addressesRewriterStartPort = 19575; // use port 19575 as first port, looks like IPRTR (IPFS ROUTER)
     for (const httpRouter of plebbit.httpRoutersOptions) {
+        if (plebbit.destroyed) break;
         const startedProxyUrl = await _getStartedProxyUrl(plebbit, httpRouter);
         if (startedProxyUrl) {
             httpRouterProxyUrls.push(startedProxyUrl);
@@ -144,6 +160,10 @@ export async function setupKuboAddressesRewriterAndHttpRouters(plebbit: Plebbit)
             plebbit
         });
         await addressesRewriterProxyServer.listen();
+        if (plebbit.destroyed) {
+            await addressesRewriterProxyServer.destroy();
+            break;
+        }
         proxyServers.push(addressesRewriterProxyServer);
 
         // save the proxy urls to use them later
