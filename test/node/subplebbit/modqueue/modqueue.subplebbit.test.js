@@ -1,25 +1,40 @@
 import { expect } from "chai";
-import { mockPlebbit, publishWithExpectedResult, generateMockVote } from "../../../../dist/node/test/test-util.js";
+import {
+    mockPlebbit,
+    publishWithExpectedResult,
+    generateMockVote,
+    publishRandomPost,
+    publishToModQueueWithDepth,
+    resolveWhenConditionIsTrue,
+    createSubWithNoChallenge
+} from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
 // TODO test skeletons
 // comment.approved = true is treated like a regular comment
 
 describe(`Pending approval modqueue functionality`, async () => {
-    let plebbit, subplebbit, pendingComment, modSigner;
+    let plebbit, subplebbit, modSigner;
+    let regularPublishedComment;
 
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await plebbit.createSubplebbit();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
+
+        regularPublishedComment = await publishRandomPost(subplebbit.address, plebbit);
+
         modSigner = await plebbit.createSigner();
         await subplebbit.edit({
             roles: {
                 [modSigner.address]: { role: "moderator" }
-            }
+            },
+            settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" }, pendingApproval: true }] }
         });
 
         expect(Object.keys(subplebbit.moderation.pageCids)).to.deep.equal([]); // should be empty
+
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
     });
 
     after(async () => {
@@ -47,7 +62,7 @@ describe(`Pending approval modqueue functionality`, async () => {
 
         it("Should exclude vote type from pending approval", async () => {
             // it should fail because vote is not applicable for pendingApproval AND it published the wrong answers
-            const vote = await generateMockVote(pendingComment, 1, plebbit);
+            const vote = await generateMockVote(regularPublishedComment, 1, plebbit);
 
             vote.once("challenge", async () => await vote.publishChallengeAnswers(["1234 " + Math.random()])); // wrong answers
 
@@ -57,17 +72,17 @@ describe(`Pending approval modqueue functionality`, async () => {
 
             const challengeVerification = await challengeVerificationPromise;
             expect(challengeVerification.challengeSuccess).to.equal(false);
-            expect(challengeVerification.challengeErrors["0"]).to.equal("Wrong captcha.");
+            expect(challengeVerification.challengeErrors["0"]).to.equal("Wrong answer.");
         });
 
         it(`should exclude CommentEdit from pending approval`, async () => {
             // it should fail because CommentEdit is not applicable for pendingApproval AND it published the wrong answers
             const edit = await plebbit.createCommentEdit({
-                subplebbitAddress: pendingComment.subplebbitAddress,
-                commentCid: pendingComment.cid,
+                subplebbitAddress: regularPublishedComment.subplebbitAddress,
+                commentCid: regularPublishedComment.cid,
                 reason: "random reason should fail",
                 content: "text to edit on pending comment",
-                signer: pendingComment.signer
+                signer: regularPublishedComment.signer
             });
             edit.once("challenge", async () => await edit.publishChallengeAnswers(["1234 " + Math.random()])); // wrong answers
 
@@ -77,18 +92,7 @@ describe(`Pending approval modqueue functionality`, async () => {
 
             const challengeVerification = await challengeVerificationPromise;
             expect(challengeVerification.challengeSuccess).to.equal(false);
-            expect(challengeVerification.challengeErrors["0"]).to.equal("Wrong captcha.");
-        });
-
-        it("Should resolve conflicting moderations to removed when both approved and removed are set", async () => {
-            // TODO: If one mod sets approved: true and another sets removed: true,
-            // the final state should be removed. The flags {approved: true, removed: true}
-            // should behave as a regular removed comment.
-        });
-
-        it("Should set removed: true when approved is explicitly set to false", async () => {
-            // TODO: Setting approved: false should automatically imply removed: true
-            // and reflect in the comment state shown in modqueue
+            expect(challengeVerification.challengeErrors["0"]).to.equal("Wrong answer.");
         });
     });
 });

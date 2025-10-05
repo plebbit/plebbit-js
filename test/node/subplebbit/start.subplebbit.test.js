@@ -104,8 +104,8 @@ describe(`subplebbit.start`, async () => {
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const ipfsClient = sub._clientsManager.getDefaultKuboRpcClient()._client;
 
-        const originalFunc = ipfsClient.files.cp;
-        ipfsClient.files.cp = () => {
+        const originalFunc = ipfsClient.files.write;
+        ipfsClient.files.write = () => {
             throw Error("Mocking a failure in copying MFS file in tests");
         };
         publishRandomPost(sub.address, plebbit);
@@ -113,7 +113,7 @@ describe(`subplebbit.start`, async () => {
         await resolveWhenConditionIsTrue(sub, () => sub.startedState === "failed", "startedstatechange");
         expect(sub.startedState).to.equal("failed");
 
-        ipfsClient.files.cp = originalFunc;
+        ipfsClient.files.write = originalFunc;
 
         await resolveWhenConditionIsTrue(sub, () => sub.startedState !== "failed", "startedstatechange");
         const post = await publishRandomPost(sub.address, plebbit);

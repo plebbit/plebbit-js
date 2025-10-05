@@ -11,6 +11,7 @@ import {
     publishToModQueueWithDepth,
     loadAllPages
 } from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
 
 const depthsToTest = [0, 1, 2, 3, 4];
 

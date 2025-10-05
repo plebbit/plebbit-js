@@ -55,6 +55,7 @@ describe(`Modqueue limits`, () => {
 
         for (let index = 0; index < totalToPublish; index++) {
             const { comment, challengeVerification } = await publishToModQueueWithDepth({ subplebbit, depth: 0 });
+            expect(comment.pendingApproval).to.be.true;
             pendingComments.push(comment);
         }
         // none of the comments got rejected, instead 2 of them got removed from pending queue
@@ -83,6 +84,8 @@ describe(`Modqueue limits`, () => {
         const limit = subplebbit.settings.maxPendingApprovalCount;
 
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids?.pendingApproval);
+
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
         const currentPageCid = subplebbit.moderation.pageCids.pendingApproval;
         const page = await subplebbit.moderation.getPage(currentPageCid);
