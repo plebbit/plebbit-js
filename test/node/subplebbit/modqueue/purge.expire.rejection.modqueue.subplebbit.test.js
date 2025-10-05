@@ -65,7 +65,7 @@ async function createDisapprovedComment(ctx, { depth = 1, moderationProps = DEFA
         modCommentProps: { signer: ctx.modSigner }
     });
     const pendingComment = pending.comment;
-    await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.moderation?.pageCids?.pendingApproval));
+    await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval));
 
     const commentModeration = await ctx.plebbit.createCommentModeration({
         subplebbitAddress: ctx.subplebbit.address,
@@ -91,7 +91,7 @@ async function createApprovedComment(ctx, { depth = 1 } = {}) {
         modCommentProps: { signer: ctx.modSigner }
     });
     const pendingComment = pending.comment;
-    await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.moderation?.pageCids?.pendingApproval));
+    await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval));
 
     const commentModeration = await ctx.plebbit.createCommentModeration({
         subplebbitAddress: ctx.subplebbit.address,
@@ -249,7 +249,7 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
             });
             commentCid = pending.comment.cid;
             parentCid = pending.comment.parentCid;
-            await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.moderation?.pageCids?.pendingApproval));
+            await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval));
             commentBeforeModeration = ctx.subplebbit._dbHandler.queryComment(commentCid);
 
             const moderation = await ctx.plebbit.createCommentModeration({
@@ -365,7 +365,7 @@ describe("purgeDisapprovedCommentsOlderThan expirations", function () {
                 modCommentProps: { signer: ctx.modSigner }
             });
             commentCid = pending.comment.cid;
-            await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.moderation?.pageCids?.pendingApproval));
+            await resolveWhenConditionIsTrue(ctx.subplebbit, () => Boolean(ctx.subplebbit.modQueue?.pageCids?.pendingApproval));
             commentBeforeModeration = ctx.subplebbit._dbHandler.queryComment(commentCid);
 
             const moderation = await ctx.plebbit.createCommentModeration({

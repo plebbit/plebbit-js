@@ -32,7 +32,7 @@ describe(`Pending approval modqueue functionality`, async () => {
             settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" }, pendingApproval: true }] }
         });
 
-        expect(Object.keys(subplebbit.moderation.pageCids)).to.deep.equal([]); // should be empty
+        expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
 
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
     });

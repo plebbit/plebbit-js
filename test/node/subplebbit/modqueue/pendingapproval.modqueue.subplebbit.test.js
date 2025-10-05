@@ -77,10 +77,10 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             ]);
         });
 
-        it("Should store pending approval comments in subplebbit.moderation.pageCids.pendingApproval", async () => {
+        it("Should store pending approval comments in subplebbit.modQueue.pageCids.pendingApproval", async () => {
             // TODO: Test that pending comments are stored in correct location
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids?.pendingApproval);
-            const page = await subplebbit.moderation.getPage(subplebbit.moderation.pageCids.pendingApproval);
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids?.pendingApproval);
+            const page = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
             expect(page.comments.length).to.equal(1);
             const commentInPendingApprovalInPage = page.comments[0];
             expect(commentInPendingApprovalInPage.cid).to.equal(commentInPendingApproval.cid);
@@ -90,7 +90,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
 
         if (commentInPendingApprovalDepth === 0)
             it(`pending post should not have postCid defined at its pages`, async () => {
-                const pageRaw = JSON.parse(await plebbit.fetchCid(subplebbit.moderation.pageCids?.pendingApproval));
+                const pageRaw = JSON.parse(await plebbit.fetchCid(subplebbit.modQueue.pageCids?.pendingApproval));
                 expect(pageRaw.comments[0].comment.postCid).to.be.undefined;
             });
 

@@ -70,7 +70,7 @@ for (const commentMod of commentModProps) {
                     });
                     commentToBeRejected = pending.comment;
 
-                    await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+                    await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
                     await commentToBeRejected.update();
                 });
 
@@ -92,8 +92,8 @@ for (const commentMod of commentModProps) {
                 });
 
                 it(`Rejecting a pending comment will purge it from modQueue`, async () => {
-                    await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
-                    expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
+                    await resolveWhenConditionIsTrue(subplebbit, () => !subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+                    expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
                 });
 
                 if (!shouldCommentBePurged)
@@ -236,7 +236,7 @@ for (const commentMod of commentModProps) {
                     });
 
                 it(`comments with approved: false should not be in pageCids.pendingApproval`, async () => {
-                    expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
+                    expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
                 });
                 if (pendingCommentDepth === 0)
                     it(`Rejecting a pending post with ${JSON.stringify(commentMod)} will ${shouldCommentBePurged ? "not" : ""} keep it in subplebbit.postUpdates`, async () => {

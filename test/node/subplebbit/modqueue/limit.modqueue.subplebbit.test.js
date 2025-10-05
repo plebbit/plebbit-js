@@ -83,12 +83,12 @@ describe(`Modqueue limits`, () => {
     it("Should drop oldest pending comment from modqueue pages", async function () {
         const limit = subplebbit.settings.maxPendingApprovalCount;
 
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids?.pendingApproval);
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids?.pendingApproval);
 
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        const currentPageCid = subplebbit.moderation.pageCids.pendingApproval;
-        const page = await subplebbit.moderation.getPage(currentPageCid);
+        const currentPageCid = subplebbit.modQueue.pageCids.pendingApproval;
+        const page = await subplebbit.modQueue.getPage(currentPageCid);
         const pageCommentCids = page.comments.map((comment) => comment.cid);
 
         const expectedPendingCids = pendingComments

@@ -379,7 +379,7 @@ export class PageGenerator {
         return { comment: commentIpfs, commentUpdate };
     }
 
-    async generateModerationPages(): Promise<(SubplebbitIpfsType["moderation"] & { combinedHashOfCids: string }) | undefined> {
+    async generateModQueuePages(): Promise<(SubplebbitIpfsType["modQueue"] & { combinedHashOfCids: string }) | undefined> {
         const firstPageSizeBytes = 1024 * 1024;
         const commentsPendingApproval = this._subplebbit._dbHandler.queryCommentsPendingApproval();
         if (commentsPendingApproval.length === 0) return undefined;

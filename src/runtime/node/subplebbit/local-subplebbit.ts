@@ -538,10 +538,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0 || this._blocksToRm.length > 0; // we have at least one edit to include in new ipns
     }
 
-    private _requireSubplebbitUpdateIfModerationChanged() {
+    private _requireSubplebbitUpdateIfModQueueChanged() {
         const combinedHashOfAllQueuedComments = this._dbHandler.queryCombinedHashOfPendingComments();
 
-        if (this.moderation._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
+        if (this.modQueue._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
@@ -561,7 +561,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (commentUpdateRowsToPublishToIpfs.length > 0) await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
 
         const newPostUpdates = await this._calculateNewPostUpdates();
-        const newModQueue = await this._pageGenerator.generateModerationPages();
+        const newModQueue = await this._pageGenerator.generateModQueuePages();
 
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
@@ -629,16 +629,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         if (newModQueue) {
-            newIpns.moderation = { pageCids: newModQueue.pageCids };
+            newIpns.modQueue = { pageCids: newModQueue.pageCids };
             const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
             const modQueuePageCidsToUnPin = remeda.unique(
-                Object.values(this.moderation.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
+                Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
             );
 
             modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
         } else {
-            await this._updateDbInternalState({ moderation: undefined });
-            this.moderation.resetPages();
+            await this._updateDbInternalState({ modQueue: undefined });
+            this.modQueue.resetPages();
         }
 
         const signature = await signSubplebbit(newIpns, this.signer);
@@ -704,9 +704,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
         }
 
-        this.moderation._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
+        this.modQueue._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
 
-        log.trace("Updated combined hash of pending comments to", this.moderation._combinedHashOfPendingCommentsCids);
+        log.trace("Updated combined hash of pending comments to", this.modQueue._combinedHashOfPendingCommentsCids);
 
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
@@ -2248,7 +2248,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
             await this._purgeDisapprovedCommentsOlderThan();
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
-            this._requireSubplebbitUpdateIfModerationChanged();
+            this._requireSubplebbitUpdateIfModQueueChanged();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
         } catch (e) {

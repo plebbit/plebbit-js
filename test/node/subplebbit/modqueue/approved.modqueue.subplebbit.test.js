@@ -35,7 +35,7 @@ for (const pendingCommentDepth of depthsToTest) {
 
             await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
 
-            expect(Object.keys(subplebbit.moderation.pageCids)).to.deep.equal([]); // should be empty
+            expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
 
             const pending = await publishToModQueueWithDepth({
                 subplebbit,
@@ -45,7 +45,7 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             approvedComment = pending.comment;
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.moderation.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
             await approvedComment.update();
         });
 
@@ -202,7 +202,7 @@ for (const pendingCommentDepth of depthsToTest) {
         }
 
         it(`Approved comment does not appear in modQueue.pageCids`, async () => {
-            expect(subplebbit.moderation.pageCids.pendingApproval).to.be.undefined;
+            expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
         });
 
         if (pendingCommentDepth === 0)
