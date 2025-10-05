@@ -176,8 +176,6 @@ for (const commentMod of commentModProps) {
                     }
                 });
 
-                if (!shouldCommentBePurged) it(`A rejected comment will persist until it expires and it gets purged`);
-
                 if (pendingCommentDepth > 0)
                     it(`A rejected reply will ${shouldCommentBePurged ? "not" : ""} show up in parentComment.replies`, async () => {
                         const parentComment = await plebbit.getComment(commentToBeRejected.parentCid);
@@ -308,7 +306,7 @@ for (const commentMod of commentModProps) {
                         await newComment.stop();
                     });
 
-                it.skip(`A rejected comment will have pendingApproval=false`, async () => {
+                it(`A rejected comment will have pendingApproval=false`, async () => {
                     expect(commentToBeRejected.pendingApproval).to.be.false;
                 });
 
@@ -374,6 +372,3 @@ for (const commentMod of commentModProps) {
         );
     }
 }
-
-it(`A rejected comment with only {approved:false} should be purged`);
-it(`A rejected comment with with {approved: false, ...anyOtherProps} should not be purged`);
