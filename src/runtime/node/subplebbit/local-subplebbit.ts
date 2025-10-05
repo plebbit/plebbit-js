@@ -691,9 +691,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         this._subplebbitUpdateTrigger = false;
 
-        const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
+        try {
+            // this call will fail if we have http routers + kubo 0.38 and earlier
+            // Will probably be fixed past that
+            const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
 
-        await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
+            await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
+        } catch (e) {
+            log.trace(
+                "Failed to update IPNS record in sqlite record, not a critical error and will most likely be fixed by kubo past 0.38",
+                e
+            );
+        }
 
         this.moderation._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
 
