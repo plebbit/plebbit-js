@@ -306,9 +306,11 @@ for (const commentMod of commentModProps) {
                         await newComment.stop();
                     });
 
-                it(`A rejected comment will have pendingApproval=false`, async () => {
-                    expect(commentToBeRejected.pendingApproval).to.be.false;
-                });
+                if (Object.keys(commentMod).length !== 1)
+                    // if only {approved:false} then we're not getting an update
+                    it(`A rejected comment will have pendingApproval=false after receiving an update with ${JSON.stringify(commentMod)}`, async () => {
+                        expect(commentToBeRejected.pendingApproval).to.be.false;
+                    });
 
                 it(`Can't vote on rejected comment`, async () => {
                     const expectedMessage = commentMod.removed
@@ -367,6 +369,21 @@ for (const commentMod of commentModProps) {
                     });
 
                     await publishWithExpectedResult(commentModerationDisapproval, false, expectedMessage);
+                });
+
+                it(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {
+                    await subplebbit.stop();
+
+                    const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+                    await subplebbit.start();
+                    await updatePromise;
+
+                    const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+
+                    // Collect all pinned CIDs
+                    for await (const pin of kuboRpc.pin.ls()) {
+                        expect(pin.cid.toString()).to.not.equal(commentToBeRejected.cid); // pending comment should not be pinned in kubo
+                    }
                 });
             }
         );
