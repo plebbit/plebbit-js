@@ -15,9 +15,6 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
-// TODO test skeletons
-// comment.approved = true is treated like a regular comment, should be pinned to IPFS node as well
-
 const depthsToTest = [0, 1, 2, 3];
 
 const commentModProps = [
@@ -257,8 +254,6 @@ for (const commentMod of commentModProps) {
                             else expect.fail("should not fail");
                         }
                     });
-
-                it(`A rejected comment will expire and get removed from postUpdates and DB`);
 
                 if (shouldCommentBePurged)
                     it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
