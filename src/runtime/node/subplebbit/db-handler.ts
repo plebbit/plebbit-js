@@ -1227,7 +1227,9 @@ export class DbHandler {
         }
     }
 
-    purgeDisapprovedCommentsOlderThan(retentionSeconds: number) {
+    purgeDisapprovedCommentsOlderThan(
+        retentionSeconds: number
+    ): { cid: string; parentCid?: string | null; postUpdatesBucket?: number; purgedCids: string[] }[] | undefined {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:purgeDisapprovedCommentsOlderThan");
         if (!Number.isFinite(retentionSeconds) || retentionSeconds <= 0) return;
 
@@ -1246,7 +1248,8 @@ export class DbHandler {
             )
             SELECT c.cid AS cid,
                    c.parentCid AS parentCid,
-                   COALESCE(fd.first_disapproved_at, cu.updatedAt) AS firstDisapprovedAt
+                   COALESCE(fd.first_disapproved_at, cu.updatedAt) AS firstDisapprovedAt,
+                   cu.postUpdatesBucket AS postUpdatesBucket
             FROM ${TABLES.COMMENT_UPDATES} cu
             INNER JOIN ${TABLES.COMMENTS} c ON c.cid = cu.cid
             LEFT JOIN first_disapproved fd ON fd.cid = cu.cid
@@ -1254,14 +1257,23 @@ export class DbHandler {
               AND COALESCE(fd.first_disapproved_at, cu.updatedAt) <= ?
         `
             )
-            .all(cutoffTimestamp) as { cid: string; parentCid?: string | null }[];
+            .all(cutoffTimestamp) as { cid: string; parentCid?: string | null; postUpdatesBucket: number | null }[];
 
         if (rows.length === 0) return;
 
         log(`Purging ${rows.length} disapproved comments older than ${retentionSeconds} seconds (cutoff ${cutoffTimestamp}).`);
 
-        for (const row of rows) this.purgeComment(row.cid);
-        return rows;
+        const purgedDetails: { cid: string; parentCid?: string | null; postUpdatesBucket?: number; purgedCids: string[] }[] = [];
+        for (const row of rows) {
+            const purgedCids = this.purgeComment(row.cid);
+            purgedDetails.push({
+                cid: row.cid,
+                parentCid: row.parentCid,
+                postUpdatesBucket: row.postUpdatesBucket || undefined,
+                purgedCids
+            });
+        }
+        return purgedDetails;
     }
 
     private _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">): Pick<CommentUpdateType, "reason"> | undefined {

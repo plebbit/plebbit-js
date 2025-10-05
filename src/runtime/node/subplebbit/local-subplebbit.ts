@@ -879,8 +879,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 ).replace("/update", "");
                 this._mfsPathsToRemove.add(localCommentUpdatePath);
                 try {
-                    await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), [localCommentUpdatePath]);
-                    this._mfsPathsToRemove.delete(localCommentUpdatePath);
+                    await this._rmUnneededMfsPaths();
                 } catch (e) {
                     log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
                 }
@@ -2056,7 +2055,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             try {
-                await removeMfsFilesSafely(kuboRpc, toDeleteMfsPaths);
+                await removeMfsFilesSafely({
+                    kuboRpcClient: kuboRpc,
+                    paths: toDeleteMfsPaths,
+                    log
+                });
+                toDeleteMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
                 return toDeleteMfsPaths;
             } catch (e) {
                 const error = <Error>e;
@@ -2162,7 +2166,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._dbHandler.forceUpdateOnAllCommentsWithCid(postsWithOutdatedPostUpdateBucket.map((post) => post.cid));
 
         try {
-            await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), outdatedPostDirectories);
+            await removeMfsFilesSafely({
+                kuboRpcClient: this._clientsManager.getDefaultKuboRpcClient(),
+                paths: outdatedPostDirectories,
+                log
+            });
             outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.delete(path));
         } catch (e) {
             log.error("Failed to remove outdated post update buckets from MFS", e);
@@ -2198,16 +2206,35 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private _purgeDisapprovedCommentsOlderThan() {
+    private async _purgeDisapprovedCommentsOlderThan() {
         if (typeof this.settings.purgeDisapprovedCommentsOlderThan !== "number") return;
 
         const log = Logger("plebbit-js:local-subplebbit:_purgeDisapprovedCommentsOlderThan");
         const purgedComments = this._dbHandler.purgeDisapprovedCommentsOlderThan(this.settings.purgeDisapprovedCommentsOlderThan);
+
+        if (!purgedComments || purgedComments.length === 0) return;
+
         log(
             "Purged disapproved comments",
             purgedComments,
             "because retention time has passed and it's time to purge them from DB and pages"
         );
+
+        for (const purgedComment of purgedComments) {
+            const purgedCids = purgedComment.purgedCids ?? [];
+            purgedCids
+                .filter((cid) => !cid.startsWith("/"))
+                .forEach((cid) => {
+                    this._cidsToUnPin.add(cid);
+                    this._blocksToRm.push(cid);
+                });
+
+            if (typeof purgedComment.postUpdatesBucket !== "number") continue;
+
+            const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(purgedComment, purgedComment.postUpdatesBucket);
+            this._mfsPathsToRemove.add(localCommentUpdatePath);
+        }
+        if (this._mfsPathsToRemove.size > 0) await this._rmUnneededMfsPaths();
     }
 
     private async syncIpnsWithDb() {
@@ -2219,7 +2246,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
-            this._purgeDisapprovedCommentsOlderThan();
+            await this._purgeDisapprovedCommentsOlderThan();
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
             this._requireSubplebbitUpdateIfModerationChanged();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
