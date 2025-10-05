@@ -78,7 +78,11 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         };
         const sub = await plebbit.createSubplebbit(newEditProps);
         expect(sub.roles).to.deep.equal(newEditProps.roles);
-        expect(sub.settings).to.deep.equal(newEditProps.settings);
+        expect(sub.settings).to.deep.equal({
+            ...newEditProps.settings,
+            maxPendingApprovalCount: 500,
+            purgeDisapprovedCommentsOlderThan: 1210000
+        });
         await sub.delete();
     });
 

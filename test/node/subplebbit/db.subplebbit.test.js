@@ -121,7 +121,8 @@ describeSkipIfRpc(`DB importing`, async () => {
         await regularPlebbit.destroy();
     });
 
-    it(`A subplebbit IPNS' sequence number is up to date even after migrating to new ipfs repo`, async () => {
+    // skip until kubo fixes the bug
+    it.skip(`A subplebbit IPNS' sequence number is up to date even after migrating to new ipfs repo`, async () => {
         const regularPlebbit = await mockPlebbit();
         const randomSub = await generateRandomSub();
         await randomSub.start();
