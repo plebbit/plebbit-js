@@ -79,7 +79,6 @@ describe(`Plebbit.challenges`, async () => {
             "blacklist",
             "whitelist",
             "question",
-            "voucher",
             "evm-contract-call",
             "publication-match",
             "mintpass"
