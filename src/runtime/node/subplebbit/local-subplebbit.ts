@@ -383,7 +383,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             } catch (e) {
                 throw e;
             } finally {
-                await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+                this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
             }
         }
 
@@ -402,13 +402,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
         if (!this.signer.ipfsKey) throw Error("subplebbit.signer.ipfsKey is not defined");
 
-        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient()._client;
-        const kuboNodeKeys = await kuboRpc.key.list();
-        if (!kuboNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
-            await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-                url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
-                headers: this._plebbit.kuboRpcClientsOptions![0].headers
-            });
+        await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+            url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
+            headers: this._plebbit.kuboRpcClientsOptions![0].headers
+        });
     }
 
     async _updateDbInternalState(
@@ -2898,7 +2895,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } catch (e) {
             log.error("Failed to update db internal state before deleting", e);
         } finally {
-            await this._dbHandler.destoryConnection();
+            this._dbHandler.destoryConnection();
         }
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);

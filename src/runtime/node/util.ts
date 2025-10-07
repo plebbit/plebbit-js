@@ -3,7 +3,6 @@ import { default as nodeNativeFunctions } from "./native-functions.js";
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
-import { throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -278,8 +277,10 @@ export async function importSignerIntoKuboNode(
         headers: kuboRpcClientOptions.headers
     });
 
+    if (res.status === 500) return; // key already imported
+
     if (res.status !== 200)
-        throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
+        throw new PlebbitError("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
     const resJson: { Id: string; Name: string } = await res.json();
 
     log("Imported IPNS' signer into kubo node", resJson, " Onto kubo rpc URL", kuboRpcUrl);

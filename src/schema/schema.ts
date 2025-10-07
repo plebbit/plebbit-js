@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isIpfsCid } from "../util.js";
+import { CID } from "kubo-rpc-client";
 import { messages } from "../errors.js";
 import * as remeda from "remeda";
 
@@ -30,6 +30,14 @@ const WalletSchema = z.object({
     timestamp: PlebbitTimestampSchema,
     signature: z.object({ signature: z.string().min(1), type: z.string().min(1) })
 });
+
+const isIpfsCid = (value: string) => {
+    try {
+        return Boolean(CID.parse(value));
+    } catch {
+        return false;
+    }
+};
 
 export const CidStringSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
 
