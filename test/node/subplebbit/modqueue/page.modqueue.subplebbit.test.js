@@ -76,7 +76,7 @@ describe("Modqueue depths", () => {
         }
         // different depths should show up in mod queue
 
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait till subplebbit updates modqueue
 
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
 
