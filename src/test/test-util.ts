@@ -700,16 +700,6 @@ export async function publishWithExpectedResult(publication: Publication, expect
         message: error
     });
 
-    publication.once(
-        "challenge",
-        (challenge) =>
-            publication.listenerCount("challenge") === 0 &&
-            console.error(
-                "Received challenges in publishWithExpectedResult with no handler. Are you sure you're publishing to a sub with no challenges?",
-                challenge
-            )
-    );
-
     await publication.publish();
     try {
         await validateResponsePromise;
