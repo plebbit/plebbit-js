@@ -1346,6 +1346,7 @@ export async function createMockedSubplebbitIpns(subplebbitOpts: CreateNewLocalS
 export function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit) {
     const jsonfied = JSON.parse(JSON.stringify(sub));
     delete jsonfied["posts"]["clients"];
+    delete jsonfied["modQueue"]["clients"];
 
     return remeda.omit(jsonfied, ["startedState", "started", "signer", "settings", "editable", "clients", "updatingState", "state"]);
 }

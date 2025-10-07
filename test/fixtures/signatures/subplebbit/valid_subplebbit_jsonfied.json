@@ -24661,5 +24661,19 @@
     "address": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
     "shortAddress": "N5rLmRJ8fWMw",
     "ipnsName": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-    "updateCid": "QmcsnF6176EzHt4PPT3TA3ysiYwE3T6qfhfiRDJg9rTjKC"
+    "updateCid": "QmcsnF6176EzHt4PPT3TA3ysiYwE3T6qfhfiRDJg9rTjKC",
+    "modQueue": {
+        "pageCids": {},
+        "clients": {
+            "ipfsGateways": {
+                "pendingApproval": { "http://localhost:18080": { "state": "stopped" } }
+            },
+            "kuboRpcClients": {
+                "pendingApproval": {}
+            },
+            "plebbitRpcClients": {
+                "pendingApproval": {}
+            }
+        }
+    }
 }
