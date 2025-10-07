@@ -2140,7 +2140,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             postUpdatesDirectoryCid = await kuboRpc._client.files.flush(postUpdatesDirectory);
         }
 
-        removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
         const postUpdatesDirectoryCidString = postUpdatesDirectoryCid?.toString();
         log(
             "Subplebbit",
@@ -2162,26 +2161,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const postsWithOutdatedPostUpdateBucket = this._dbHandler.queryPostsWithOutdatedBuckets(this._postUpdatesBuckets);
         if (postsWithOutdatedPostUpdateBucket.length === 0) return;
 
-        const outdatedPostDirectories = postsWithOutdatedPostUpdateBucket.map((post) =>
-            this._calculateLocalMfsPathForCommentUpdate(post, post.currentBucket).replace("/update", "")
-        );
-
-        outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.add(path));
-
         this._dbHandler.forceUpdateOnAllCommentsWithCid(postsWithOutdatedPostUpdateBucket.map((post) => post.cid));
 
-        try {
-            await removeMfsFilesSafely({
-                kuboRpcClient: this._clientsManager.getDefaultKuboRpcClient(),
-                paths: outdatedPostDirectories,
-                log
-            });
-            outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.delete(path));
-        } catch (e) {
-            log.error("Failed to remove outdated post update buckets from MFS", e);
-        }
-
-        log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets`);
+        log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets and forced their updates`);
     }
 
     private async _cleanUpIpfsRepoRarely(force = false) {

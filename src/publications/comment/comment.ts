@@ -607,8 +607,8 @@ export class Comment
         newUpdatingState?: Comment["updatingState"];
         newState?: Comment["state"];
     }) {
-        // this code block is only called on a sub whose update loop is already started
-        // never called in a subplebbit that's mirroring a subplebbit with an update loop
+        // this code block is only called on a comment whose update loop is already started
+        // never called in a comment that's mirroring a comment with an update loop
         const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
         const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this._updatingState;
         if (opts.newState) this._setStateNoEmission(opts.newState);

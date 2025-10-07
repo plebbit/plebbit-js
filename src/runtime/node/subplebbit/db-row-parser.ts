@@ -26,13 +26,13 @@ const parsePrefixedCommentIpfsSchema = createSchemaRowParser(
     CommentIpfsSchema.extend({
         extraProps: CommentsTableRowSchema.shape.extraProps
     }),
-    { prefix: "commentIpfs_" }
+    { prefix: "commentIpfs_", validate: false }
 );
-const parsePrefixedCommentUpdateSchema = createSchemaRowParser(CommentUpdateSchema, { prefix: "commentUpdate_" });
-const parseCommentsTableRowSchema = createSchemaRowParser(CommentsTableRowSchema);
-const parseCommentUpdatesTableRowSchema = createSchemaRowParser(CommentUpdateTableRowSchema);
-const parseCommentEditsTableRowSchema = createSchemaRowParser(CommentEditsTableRowSchema);
-const parseVotesTableRowSchema = createSchemaRowParser(VoteTablesRowSchema);
+const parsePrefixedCommentUpdateSchema = createSchemaRowParser(CommentUpdateSchema, { prefix: "commentUpdate_", validate: false });
+const parseCommentsTableRowSchema = createSchemaRowParser(CommentsTableRowSchema, { validate: false });
+const parseCommentUpdatesTableRowSchema = createSchemaRowParser(CommentUpdateTableRowSchema, { validate: false });
+const parseCommentEditsTableRowSchema = createSchemaRowParser(CommentEditsTableRowSchema, { validate: false });
+const parseVotesTableRowSchema = createSchemaRowParser(VoteTablesRowSchema, { validate: false });
 
 export function parsePrefixedComment(row: PrefixedCommentRow): {
     comment: CommentIpfsType;

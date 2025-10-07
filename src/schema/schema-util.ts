@@ -470,6 +470,7 @@ export type SchemaRowParserOptions = {
     coerceBooleans?: boolean;
     parseJsonStrings?: boolean;
     loose?: boolean;
+    validate?: boolean;
 };
 
 type ObjectSchema = ZodObject<any, any>;
@@ -484,7 +485,7 @@ export function createSchemaRowParser<Schema extends ObjectSchema>(
     schema: Schema,
     options: SchemaRowParserOptions = {}
 ): (row: unknown) => SchemaRowParserResult<Schema> {
-    const { prefix, coerceBooleans = true, parseJsonStrings = true, loose = true } = options;
+    const { prefix, coerceBooleans = true, parseJsonStrings = true, loose = true, validate = true } = options;
     const prefixLength = prefix?.length ?? 0;
     const parsedSchema = loose && typeof (schema as any).loose === "function" ? (schema as any).loose() : schema;
     const shape = schema.shape as SchemaShape;
@@ -509,8 +510,12 @@ export function createSchemaRowParser<Schema extends ObjectSchema>(
             else extras[key] = value;
         }
 
-        const data = parsedSchema.parse(schemaInput) as z.output<Schema>;
-        return { data, extras };
+        if (validate) {
+            const data = parsedSchema.parse(schemaInput) as z.output<Schema>;
+            return { data, extras };
+        }
+
+        return { data: schemaInput as z.output<Schema>, extras };
     };
 }
 
