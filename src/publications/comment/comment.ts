@@ -253,7 +253,8 @@ export class Comment
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
         this._updateRepliesPostsInstance(props.replies, subplebbit);
-        this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
+        if (typeof this.pendingApproval === "boolean" || "pendingApproval" in props)
+            this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
         this.approved = props.approved;
     }
 
