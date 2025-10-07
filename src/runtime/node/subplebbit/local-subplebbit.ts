@@ -205,6 +205,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     _cidsToUnPin: Set<string> = new Set<string>();
     _mfsPathsToRemove: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger: boolean = false;
+    private _combinedHashOfPendingCommentsCids: string = sha256("");
 
     private _pageGenerator!: PageGenerator;
     _dbHandler!: DbHandler;
@@ -538,7 +539,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _requireSubplebbitUpdateIfModQueueChanged() {
         const combinedHashOfAllQueuedComments = this._dbHandler.queryCombinedHashOfPendingComments();
 
-        if (this.modQueue._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
+        if (this._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
@@ -701,9 +702,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
         }
 
-        this.modQueue._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
+        this._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
 
-        log.trace("Updated combined hash of pending comments to", this.modQueue._combinedHashOfPendingCommentsCids);
+        log.trace("Updated combined hash of pending comments to", this._combinedHashOfPendingCommentsCids);
 
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
