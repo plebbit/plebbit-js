@@ -93,7 +93,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
 
     initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType) {
         const keysOfSubplebbitIpfs = <(keyof SubplebbitIpfsType)[]>[...newProps.signature.signedPropertyNames, "signature"];
-        const subplebbitIpfsParseRes = SubplebbitIpfsSchema.passthrough().safeParse(remeda.pick(newProps, keysOfSubplebbitIpfs));
+        const subplebbitIpfsParseRes = SubplebbitIpfsSchema.loose().safeParse(remeda.pick(newProps, keysOfSubplebbitIpfs));
         if (subplebbitIpfsParseRes.success) {
             super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfsParseRes.data);
         } else super.initRemoteSubplebbitPropsNoMerge(newProps);

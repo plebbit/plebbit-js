@@ -39,7 +39,7 @@ export default class Storage implements StorageInterface {
     }
 
     async init() {}
-    getItem(key: string) {
+    async getItem(key: string) {
         return this._keyv.get(key);
     }
 

@@ -7,8 +7,10 @@ import {
     CommentsTableRowSchema,
     CommentUpdateForChallengeVerificationSchema,
     CommentUpdateForChallengeVerificationSignedPropertyNames,
-    CommentUpdateNoRepliesSchema,
+    CommentUpdateForDisapprovedPendingComment,
+    CommentUpdateSchema,
     CommentUpdateSignedPropertyNames,
+    CommentUpdateTableRowSchema,
     CreateCommentOptionsSchema,
     OriginalCommentFieldsBeforeCommentUpdateSchema
 } from "./schema.js";
@@ -16,7 +18,7 @@ import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
-import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
+import type { RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationRpcErrorToTransmit, PublicationState } from "../types.js";
 import type { JsonSignature, SignerType } from "../../signer/types.js";
 
@@ -30,9 +32,9 @@ export interface CommentOptionsToSign extends Omit<CommentPubsubMessagePublicati
     signer: SignerType;
 }
 
-export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
-    replies?: RepliesPagesIpfsDefinedManuallyType;
-};
+export type CommentUpdateType = z.infer<typeof CommentUpdateSchema>;
+
+export type CommentUpdateForDisapprovedPendingComment = z.infer<typeof CommentUpdateForDisapprovedPendingComment>;
 
 export type CommentUpdateForChallengeVerification = z.infer<typeof CommentUpdateForChallengeVerificationSchema>;
 
@@ -129,11 +131,6 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "rowid"> 
 
 // CommentUpdates table
 
-export interface CommentUpdatesRow extends CommentUpdateType {
-    insertedAt: number;
-    postUpdatesBucket: number | undefined; // the post updates bucket of post CommentUpdate, not applicable to replies
-    publishedToPostUpdatesMFS: boolean; // whether the comment latest update has been published
-    postCommentUpdateCid: string | undefined; // the cid of the post comment update, cid v0. Not applicable to replies
-}
+export type CommentUpdatesRow = z.infer<typeof CommentUpdateTableRowSchema>;
 
 export type CommentUpdatesTableRowInsert = CommentUpdatesRow;

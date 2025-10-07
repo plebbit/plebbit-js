@@ -15,6 +15,7 @@ import {
     resolveWhenConditionIsTrue,
     waitTillPostInSubplebbitInstancePages
 } from "../../../dist/node/test/test-util.js";
+import * as cborg from "cborg";
 
 import plebbitVersion from "../../../dist/node/version.js";
 
@@ -118,6 +119,56 @@ describeSkipIfRpc(`DB importing`, async () => {
         await subplebbit.delete();
         await tempPlebbit.destroy();
         await regularPlebbit.destroy();
+    });
+
+    // skip until kubo fixes the bug
+    it.skip(`A subplebbit IPNS' sequence number is up to date even after migrating to new ipfs repo`, async () => {
+        const regularPlebbit = await mockPlebbit();
+        const randomSub = await generateRandomSub();
+        await randomSub.start();
+        await resolveWhenConditionIsTrue(randomSub, () => randomSub.updatedAt);
+
+        const ipnsRecord = await randomSub._dbHandler.keyvGet("LAST_IPNS_RECORD");
+
+        expect(ipnsRecord).to.exist;
+
+        const ipnsRecordDecoded = cborg.decode(new Uint8Array(Object.values(ipnsRecord)), { allowBigInt: true });
+        expect(ipnsRecordDecoded.sequence).to.equal(1);
+
+        await randomSub.stop();
+        const tempPlebbit = await mockPlebbit(getTemporaryPlebbitOptions()); // different kubo, should use sequence in keyv
+        const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", randomSub.address);
+        await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", randomSub.address));
+        await waitUntilPlebbitSubplebbitsIncludeSubAddress(tempPlebbit, randomSub.address);
+        // Should be included in tempPlebbit.subplebbits now
+        const subplebbit = await tempPlebbit.createSubplebbit({ address: randomSub.address });
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt > randomSub.updatedAt);
+
+        const ipnsRecordOfSubInDifferentKubo = await subplebbit._dbHandler.keyvGet("LAST_IPNS_RECORD");
+
+        expect(ipnsRecordOfSubInDifferentKubo).to.exist;
+
+        const ipnsRecordOfSubInDifferentKuboDecoded = cborg.decode(new Uint8Array(Object.values(ipnsRecordOfSubInDifferentKubo)), {
+            allowBigInt: true
+        });
+        expect(ipnsRecordOfSubInDifferentKuboDecoded.sequence).to.equal(3);
+
+        await subplebbit.stop();
+
+        await regularPlebbit.destroy();
+        await tempPlebbit.destroy();
+
+        // const mockPost = await generateMockPost(subplebbit.address, tempPlebbit);
+        // mockPost.once("challenge", async (challengeMsg) => {
+        //     await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
+        // });
+
+        // await publishWithExpectedResult(mockPost, true);
+
+        // await subplebbit.delete();
+        // await tempPlebbit.destroy();
+        // await regularPlebbit.destroy();
     });
 });
 

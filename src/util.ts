@@ -9,7 +9,14 @@ import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { KuboRpcClient } from "./types.js";
-import type { AddOptions, AddResult, BlockRmOptions, create as CreateKuboRpcClient, FilesCpOptions } from "kubo-rpc-client";
+import type {
+    AddOptions,
+    AddResult,
+    BlockRmOptions,
+    create as CreateKuboRpcClient,
+    FilesCpOptions,
+    RoutingProvideOptions
+} from "kubo-rpc-client";
 import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -31,6 +38,7 @@ import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
 import retry from "retry";
 import PeerId from "peer-id";
+import { unmarshalIPNSRecord } from "ipns";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -414,6 +422,49 @@ export const pubsubTopicToDhtKeyCid = (pubsubTopic: string): CID => {
     return cid;
 };
 
+export async function retryKuboIpfsAddAndProvide({
+    ipfsClient: kuboRpcClient,
+    log,
+    content,
+    inputNumOfRetries,
+    addOptions,
+    provideOptions
+}: {
+    ipfsClient: Pick<Plebbit["clients"]["kuboRpcClients"][string]["_client"], "add" | "routing">;
+    log: Logger;
+    content: string;
+    inputNumOfRetries?: number;
+    addOptions?: AddOptions;
+    provideOptions?: RoutingProvideOptions;
+}): Promise<AddResult> {
+    const numOfRetries = inputNumOfRetries ?? 3;
+
+    return new Promise((resolve, reject) => {
+        const operation = retry.operation({
+            retries: numOfRetries,
+            factor: 2,
+            minTimeout: 2000
+        });
+
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const addRes = await kuboRpcClient.add(content, addOptions);
+                const provideEvents = kuboRpcClient.routing.provide(addRes.cid, provideOptions);
+                for await (const event of provideEvents) {
+                    log.trace(`Provide event for ${addRes.cid}:`, event);
+                }
+                resolve(addRes);
+            } catch (error) {
+                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to add and provide content to IPFS:`, error);
+
+                if (operation.retry(error as Error)) return;
+
+                reject(operation.mainError() || error);
+            }
+        });
+    });
+}
+
 export async function retryKuboIpfsAdd({
     ipfsClient: kuboRpcClient,
     log,
@@ -433,7 +484,7 @@ export async function retryKuboIpfsAdd({
         const operation = retry.operation({
             retries: numOfRetries,
             factor: 2,
-            minTimeout: 1000
+            minTimeout: 2000
         });
 
         operation.attempt(async (currentAttempt) => {
@@ -492,161 +543,47 @@ export async function removeBlocksFromKuboNode({
     });
 }
 
-interface MfsRemoveTask {
-    kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
-    paths: string[];
-    resolve: (value: void) => void;
-    reject: (reason: any) => void;
-}
-
-class MfsRemoveQueue {
-    private queue: MfsRemoveTask[] = [];
-    private processing = false;
-    private pathsRemovedSinceLastFlush = 0;
-    private readonly FLUSH_THRESHOLD = 3;
-
-    async add(kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string], paths: string[]): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.queue.push({
-                kuboRpcClient,
-                paths,
-                resolve,
-                reject
-            });
-            this.processQueue();
-        });
-    }
-
-    private async processQueue() {
-        if (this.processing || this.queue.length === 0) return;
-
-        this.processing = true;
-        const log = Logger("plebbit-js:util:MfsRemoveQueue");
-
-        while (this.queue.length > 0) {
-            const task = this.queue.shift()!;
-
-            try {
-                log(`Processing MFS rm operation for paths:`, task.paths);
-
-                // If task has more paths than threshold, chunk the removal operations
-                if (task.paths.length > this.FLUSH_THRESHOLD) {
-                    // Process paths in chunks of FLUSH_THRESHOLD size
-                    for (let i = 0; i < task.paths.length; i += this.FLUSH_THRESHOLD) {
-                        const chunk = task.paths.slice(i, i + this.FLUSH_THRESHOLD);
-
-                        await pTimeout(task.kuboRpcClient._client.files.rm(chunk, { flush: false, recursive: true }), {
-                            milliseconds: 120000,
-                            message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
-                                toDeleteMfsPaths: chunk,
-                                kuboRpcUrl: task.kuboRpcClient.url
-                            })
-                        });
-
-                        this.pathsRemovedSinceLastFlush += chunk.length;
-
-                        // Flush after each chunk
-                        await task.kuboRpcClient._client.files.flush("/");
-                        log(
-                            `Flushed after removing ${chunk.length} paths in chunk (total since last reset: ${this.pathsRemovedSinceLastFlush})`
-                        );
-                        this.pathsRemovedSinceLastFlush = 0;
-                    }
-                } else {
-                    // Check if we should flush based on cumulative path count
-                    const shouldFlush = this.pathsRemovedSinceLastFlush + task.paths.length >= this.FLUSH_THRESHOLD;
-
-                    await pTimeout(task.kuboRpcClient._client.files.rm(task.paths, { flush: false, recursive: true }), {
-                        milliseconds: 120000,
-                        message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
-                            toDeleteMfsPaths: task.paths,
-                            kuboRpcUrl: task.kuboRpcClient.url
-                        })
-                    });
-
-                    // Update path counter
-                    this.pathsRemovedSinceLastFlush += task.paths.length;
-
-                    // Flush if threshold reached
-                    if (shouldFlush) {
-                        await task.kuboRpcClient._client.files.flush("/");
-                        log(`Flushed after removing ${this.pathsRemovedSinceLastFlush} paths (threshold: ${this.FLUSH_THRESHOLD})`);
-                        this.pathsRemovedSinceLastFlush = 0;
-                    }
-                }
-
-                // Always flush after completing a task to ensure changes are persisted
-                await task.kuboRpcClient._client.files.flush("/");
-                log(`Final flush completed for task with ${task.paths.length} paths`);
-
-                task.resolve();
-                log(`Successfully completed MFS rm operation for paths:`, task.paths);
-            } catch (error) {
-                // if ((error as Error).message === messages["ERR_TIMED_OUT_RM_MFS_FILE"]) {
-                //     // shutdown the kubo node
-                //     log("Timed out removing MFS files. Shutting down the kubo node at", task.kuboRpcClient.url);
-                //     // await task.kuboRpcClient._client.stop();
-                //     // log("Kubo node shut down. Waiting 10 seconds to restart");
-
-                //     await new Promise((resolve) => setTimeout(resolve, 10000)); // wait 10 seconds to restart kubo node
-                // }
-                task.reject(error);
-            }
-        }
-
-        this.processing = false;
-    }
-}
-
-const mfsRemoveQueue = new MfsRemoveQueue();
-
-export async function removeMfsFilesSafely(kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string], paths: string[]) {
-    return mfsRemoveQueue.add(kuboRpcClient, paths);
-}
-
-export async function ipfsCpWithRmIfFails({
+export async function removeMfsFilesSafely({
     kuboRpcClient,
+    paths,
     log,
-    src,
-    dest,
-    inputNumOfRetries,
-    options
+    inputNumOfRetries
 }: {
     kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
-    log: Logger;
-    src: string;
-    dest: string;
+    paths: string[];
+    log?: Logger;
     inputNumOfRetries?: number;
-    options?: FilesCpOptions;
 }) {
+    const logger = log ?? Logger("plebbit-js:util:removeMfsFilesSafely");
     const numOfRetries = inputNumOfRetries ?? 3;
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const operation = retry.operation({
             retries: numOfRetries,
             factor: 2,
             minTimeout: 1000
         });
 
-        const filesCpWithRmIfFails = async (src: string, dest: string) => {
-            try {
-                await kuboRpcClient._client.files.cp(src, dest, options);
-            } catch (error) {
-                if (error instanceof Error && error.message.includes("directory already has entry by that name")) {
-                    log(`Directory already has entry by that name. Removing file and retrying cp operation for path ${dest}`);
-                    await removeMfsFilesSafely(kuboRpcClient, [dest]);
-                    await filesCpWithRmIfFails(src, dest);
-                } else throw error;
-            }
-        };
-
         operation.attempt(async (currentAttempt) => {
             try {
-                await filesCpWithRmIfFails(src, dest);
+                await pTimeout(
+                    kuboRpcClient._client.files.rm(paths, {
+                        recursive: true,
+                        //@ts-expect-error
+                        force: true
+                    }),
+                    {
+                        milliseconds: 120000,
+                        message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
+                            toDeleteMfsPaths: paths,
+                            kuboRpcUrl: kuboRpcClient.url
+                        })
+                    }
+                );
 
-                resolve(1);
+                resolve();
             } catch (error) {
-                log.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to copy paths to kubo node:`, error);
+                logger.error(`Failed attempt ${currentAttempt}/${numOfRetries + 1} to remove MFS paths ${paths.join(", ")}:`, error);
 
                 if (operation.retry(error as Error)) return;
 
@@ -654,4 +591,17 @@ export async function ipfsCpWithRmIfFails({
             }
         });
     });
+}
+
+export async function getIpnsRecordInLocalKuboNode(kuboRpcClient: KuboRpcClient, ipnsName: string) {
+    const gatewayMultiaddr = await kuboRpcClient._client.config.get("Addresses.Gateway"); // need to be fetched from config Addresses.Gateway
+    const parts = gatewayMultiaddr.split("/").filter(Boolean);
+    const gatewayUrl = `http://${parts[1]}:${parts[3]}`;
+    const ipnsFetchUrl = `${gatewayUrl}/ipns/${ipnsName}?format=ipns-record`;
+    const ipnsRecordRaw = await (await fetch(ipnsFetchUrl)).bytes();
+    try {
+        return unmarshalIPNSRecord(ipnsRecordRaw);
+    } catch (e) {
+        throw new PlebbitError("ERR_FAILED_TO_PARSE_LOCAL_RAW_IPNS_RECORD", { ipnsName, ipnsFetchUrl, parseError: e });
+    }
 }

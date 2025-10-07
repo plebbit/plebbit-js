@@ -1,14 +1,11 @@
 import { z } from "zod";
 import { CidStringSchema } from "../schema/schema.js";
-import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
-import type { PageIpfsManuallyDefined } from "./types.js";
+import { CommentIpfsSchema, CommentUpdateForChallengeVerificationSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 
 // Pages schemas here
 
-export const PageIpfsSchema = <z.ZodType<PageIpfsManuallyDefined>>z.object({
-    comments: z.lazy(() =>
-        z.object({ comment: CommentIpfsSchema.passthrough(), commentUpdate: CommentUpdateSchema.passthrough() }).array()
-    ),
+export const PageIpfsSchema = z.object({
+    comments: z.lazy(() => z.object({ comment: CommentIpfsSchema.loose(), commentUpdate: CommentUpdateSchema.loose() }).array()),
     nextCid: CidStringSchema.optional()
 });
 
@@ -29,4 +26,15 @@ export const PostsPagesIpfsSchema = z.object({
 export const RepliesPagesIpfsSchema = z.object({
     pages: z.record(ReplySortNameSchema, PageIpfsSchema), // pre loaded pages
     pageCids: z.record(ReplySortNameSchema, CidStringSchema).optional() // pageCids is optional if all replies can fit in one preloaded page
+});
+
+export const ModQueuePagesIpfsSchema = z.object({
+    pageCids: z.record(z.string().min(1), CidStringSchema)
+});
+
+export const ModQueuePageIpfsSchema = z.object({
+    comments: z.lazy(() =>
+        z.object({ comment: CommentIpfsSchema.loose(), commentUpdate: CommentUpdateForChallengeVerificationSchema.loose() }).array()
+    ),
+    nextCid: CidStringSchema.optional()
 });

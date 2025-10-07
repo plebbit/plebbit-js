@@ -19,7 +19,7 @@ const subplebbitEditPublicationPickOptions = <Record<(typeof SubplebbitEditPubli
 export const SubplebbitEditPubsubMessagePublicationSchema = CreateSubplebbitEditPublicationOptionsSchema.merge(PublicationBaseBeforeSigning)
     .extend({
         signature: JsonSignatureSchema,
-        author: PublicationBaseBeforeSigning.shape.author.passthrough()
+        author: PublicationBaseBeforeSigning.shape.author.loose()
     })
     .pick(subplebbitEditPublicationPickOptions)
     .strict();
@@ -27,7 +27,7 @@ export const SubplebbitEditPubsubMessagePublicationSchema = CreateSubplebbitEdit
 export const SubplebbitEditPublicationChallengeRequestToEncryptSchema = CreateSubplebbitEditPublicationOptionsSchema.shape.challengeRequest
     .unwrap()
     .extend({
-        subplebbitEdit: SubplebbitEditPubsubMessagePublicationSchema.passthrough()
+        subplebbitEdit: SubplebbitEditPubsubMessagePublicationSchema.loose()
     });
 
 export const SubplebbitEditPublicationPubsubReservedFields = remeda.difference(

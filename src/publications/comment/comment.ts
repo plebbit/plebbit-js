@@ -43,7 +43,11 @@ import type { PublicationEventArgs, PublicationEvents } from "../types.js";
 
 export class Comment
     extends Publication
-    implements CommentPubsubMessagePublication, Partial<CommentIpfsWithCidPostCidDefined>, Partial<Omit<CommentUpdateType, "replies">>
+    implements
+        Partial<CommentUpdateForChallengeVerification>,
+        CommentPubsubMessagePublication,
+        Partial<CommentIpfsWithCidPostCidDefined>,
+        Partial<Omit<CommentUpdateType, "replies">>
 {
     // Only Comment props
     shortCid?: CommentWithinPageJson["shortCid"];
@@ -86,6 +90,8 @@ export class Comment
     reason?: CommentUpdateType["reason"];
     lastChildCid?: CommentUpdateType["lastChildCid"];
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
+    pendingApproval?: CommentUpdateForChallengeVerification["pendingApproval"];
+    approved?: CommentUpdateType["approved"];
 
     override signature!: CommentPubsubMessagePublication["signature"];
     // updating states
@@ -247,6 +253,9 @@ export class Comment
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
         this._updateRepliesPostsInstance(props.replies, subplebbit);
+        if (typeof this.pendingApproval === "boolean" || "pendingApproval" in props)
+            this.pendingApproval = Boolean("pendingApproval" in props && props.pendingApproval); // revert pendingApproval if we just received a CommentUpdate
+        this.approved = props.approved;
     }
 
     _updateRepliesPostsInstance(
@@ -273,7 +282,7 @@ export class Comment
         } else if (!newReplies.pageCids && "pages" in newReplies && newReplies.pages) {
             // only pages is provided
             this.replies.updateProps({
-                ...parseRawPages(newReplies, repliesCreationTimestamp),
+                ...parseRawPages(newReplies),
                 subplebbit: this.replies._subplebbit,
                 pageCids: {}
             });
@@ -284,7 +293,7 @@ export class Comment
             if (shouldUpdateReplies) {
                 log.trace(`Updating the props of comment instance (${this.cid}) replies`);
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
-                    parseRawPages(newReplies, repliesCreationTimestamp)
+                    parseRawPages(newReplies)
                 );
                 this.replies.updateProps({
                     ...parsedPages,
@@ -388,6 +397,7 @@ export class Comment
         this.raw.commentUpdateFromChallengeVerification = commentUpdate;
         if (commentUpdate.author) Object.assign(this.author, commentUpdate.author);
         this.protocolVersion = commentUpdate.protocolVersion;
+        this.pendingApproval = commentUpdate.pendingApproval;
     }
 
     private _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification: DecryptedChallengeVerification) {
@@ -598,8 +608,8 @@ export class Comment
         newUpdatingState?: Comment["updatingState"];
         newState?: Comment["state"];
     }) {
-        // this code block is only called on a sub whose update loop is already started
-        // never called in a subplebbit that's mirroring a subplebbit with an update loop
+        // this code block is only called on a comment whose update loop is already started
+        // never called in a comment that's mirroring a comment with an update loop
         const shouldEmitStateChange = opts.newState && opts.newState !== this.state;
         const shouldEmitUpdatingStateChange = opts.newUpdatingState && opts.newUpdatingState !== this._updatingState;
         if (opts.newState) this._setStateNoEmission(opts.newState);

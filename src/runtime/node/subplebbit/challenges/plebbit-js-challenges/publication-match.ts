@@ -1,4 +1,9 @@
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
+import type {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 import * as remeda from "remeda";
@@ -11,7 +16,7 @@ interface Match {
 
 const defaultDescription = "Match publication properties against regex patterns.";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "matches",
         label: "Matches",
@@ -42,13 +47,13 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     }
 ];
 
-const type: Challenge["type"] = "text/plain";
+const type: ChallengeInput["type"] = "text/plain";
 
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
-): Promise<ChallengeResult> => {
+): Promise<ChallengeResultInput> => {
     // Get the publication from the challenge request
     const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     if (!publication) {
@@ -157,7 +162,7 @@ const getChallenge = async (
         };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     const description = subplebbitChallengeSettings?.options?.description || defaultDescription;
     return { getChallenge, optionInputs, type, description };
 }

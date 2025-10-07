@@ -67,7 +67,7 @@
         "@mintpass/challenge": "1.1.2",
         "@types/proper-lockfile": "4.1.2",
         "assert": "2.1.0",
-        "better-sqlite3": "11.10.0",
+        "better-sqlite3": "12.4.1",
         "blockstore-core": "5.0.4",
         "blockstore-fs": "2.0.4",
         "blockstore-idb": "2.0.3",
@@ -84,7 +84,7 @@
         "jose": "4.11.0",
         "js-sha256": "0.11.0",
         "js-sha512": "0.9.0",
-        "kubo-rpc-client": "5.2.0",
+        "kubo-rpc-client": "5.4.0",
         "libp2p-crypto": "0.21.2",
         "limiter-es6-compat": "2.1.2",
         "localforage": "1.10.0",
@@ -108,10 +108,10 @@
         "typestub-ipfs-only-hash": "4.0.0",
         "uuid": "11.1.0",
         "viem": "2.29.0",
-        "zod": "3.25.64"
+        "zod": "4.1.11"
     },
     "devDependencies": {
-        "@types/better-sqlite3": "7.6.12",
+        "@types/better-sqlite3": "7.6.13",
         "@types/debounce": "1.2.1",
         "@types/lodash": "4.17.13",
         "@types/lodash.merge": "4.6.9",
@@ -128,7 +128,7 @@
         "concurrently": "7.5.0",
         "fs-extra": "11.3.0",
         "happy-dom": "18.0.1",
-        "kubo": "0.36",
+        "kubo": "0.38.0",
         "mocha": "11.1.0",
         "npm-run-all": "4.1.5",
         "playwright": "1.53.1",
@@ -139,7 +139,7 @@
         "socket.io": "4.7.4",
         "socket.io-client": "4.7.4",
         "tempy": "1.0.1",
-        "typescript": "5.8.3",
+        "typescript": "5.9.2",
         "vite": "7.0.0",
         "vitest": "3.2.4",
         "wait-on": "6.0.1"

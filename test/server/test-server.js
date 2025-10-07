@@ -5,7 +5,6 @@ import { execSync, exec } from "child_process";
 import {
     startSubplebbits,
     mockRpcServerPlebbit,
-    mockGatewayPlebbit,
     mockRpcServerForTests,
     mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../dist/node/test/test-util.js";
@@ -24,6 +23,46 @@ import querystring from "querystring";
 import fs from "fs";
 
 process.env["PLEBBIT_CONFIGS"] = process.env["PLEBBIT_CONFIGS"] || "local-kubo-rpc";
+process.env["DEBUG"] = process.env["DEBUG"] || "*";
+
+// 🔧 ENHANCED: Capture test-server.js stdout and stderr
+const testServerLogDir = path.join(process.cwd(), "test-server");
+const logTimestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+const testServerStdoutLog = path.join(testServerLogDir, "stdout.log");
+const testServerStderrLog = path.join(testServerLogDir, "stderr.log");
+
+// Create test-server directory if it doesn't exist
+fs.mkdirSync(testServerLogDir, { recursive: true });
+
+// Create log streams
+const testServerStdoutStream = fs.createWriteStream(testServerStdoutLog, { flags: "a" });
+const testServerStderrStream = fs.createWriteStream(testServerStderrLog, { flags: "a" });
+
+// Capture original stdout/stderr write functions
+const originalStdoutWrite = process.stdout.write;
+const originalStderrWrite = process.stderr.write;
+
+// Override stdout write to capture output
+process.stdout.write = function (chunk, encoding, fd) {
+    testServerStdoutStream.write(chunk);
+    return originalStdoutWrite.call(process.stdout, chunk, encoding, fd);
+};
+
+// Override stderr write to capture output
+process.stderr.write = function (chunk, encoding, fd) {
+    testServerStderrStream.write(chunk);
+    return originalStderrWrite.call(process.stderr, chunk, encoding, fd);
+};
+
+// Handle process exit to close streams
+process.on("exit", () => {
+    testServerStdoutStream.end();
+    testServerStderrStream.end();
+});
+
+console.log(`📝 Test server logs:`);
+console.log(`   📄 stdout: ${testServerStdoutLog}`);
+console.log(`   📄 stderr: ${testServerStderrLog}`);
 
 const ipfsPath = getIpfsPath();
 
@@ -45,14 +84,14 @@ const offlineNodeArgs = {
     apiPort: 15001,
     gatewayPort: 18080,
     daemonArgs: " --enable-namesys-pubsub",
-    swarmPort: 4001,
+    swarmPort: 24001,
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 const pubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub"),
     apiPort: 15002,
     gatewayPort: 18081,
-    swarmPort: 4002,
+    swarmPort: 24002,
     daemonArgs: "--enable-namesys-pubsub",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
@@ -61,7 +100,7 @@ const onlineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-online"),
     apiPort: 15003,
     gatewayPort: 18082,
-    swarmPort: 4003,
+    swarmPort: 24003,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: []
 };
@@ -70,8 +109,7 @@ const anotherOfflineNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-offline2"),
     apiPort: 15004,
     gatewayPort: 18083,
-    swarmPort: 4004,
-    daemonArgs: "--offline",
+    swarmPort: 24004,
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
 
@@ -79,7 +117,7 @@ const anotherPubsubNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-pubsub2"),
     apiPort: 15005,
     gatewayPort: 18084,
-    swarmPort: 4005,
+    swarmPort: 24005,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
@@ -88,7 +126,7 @@ const httpRouterNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-http-router"),
     apiPort: 15006,
     gatewayPort: 18085,
-    swarmPort: 4006,
+    swarmPort: 24006,
     daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all", "config --json Discovery.MDNS.Enabled false"]
 };
@@ -144,12 +182,17 @@ const startIpfsNode = async (nodeArgs) => {
         ...process.env, // Inherit ALL environment variables from parent process
         IPFS_PATH: nodeArgs.dir,
         // Set debug logging by default
+        DEBUG: process.env.DEBUG || "*",
         IPFS_LOGGING: process.env.IPFS_LOGGING || "debug",
         GOLOG_LOG_LEVEL: process.env.GOLOG_LOG_LEVEL || "debug",
         // Only override GOLOG_FILE if it contains {NODE} placeholder or if not set
-        GOLOG_FILE: process.env.GOLOG_FILE?.includes("{NODE}") 
+        GOLOG_FILE: process.env.GOLOG_FILE?.includes("{NODE}")
             ? process.env.GOLOG_FILE.replace("{NODE}", path.basename(nodeArgs.dir))
-            : process.env.GOLOG_FILE || path.join(nodeArgs.dir, `kubo_${path.basename(nodeArgs.dir)}_golog_${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.log`)
+            : process.env.GOLOG_FILE ||
+              path.join(
+                  nodeArgs.dir,
+                  `kubo_${path.basename(nodeArgs.dir)}_golog_${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.log`
+              )
     };
 
     // 🔧 ENHANCED: Create log files for each IPFS node within the node directory
@@ -625,6 +668,7 @@ const setUpMockPubsubServer = async () => {
         ".plebbit2",
         ".plebbit-rpc-server",
         ".plebbit-rpc-server-remote",
+        "test-server", // Add test-server directory cleanup
         ...ipfsNodesToRun.map((node) => path.basename(node.dir))
     ];
     for (const dir of dirsToDelete) await fs.promises.rm(path.join(process.cwd(), dir), { recursive: true, force: true });

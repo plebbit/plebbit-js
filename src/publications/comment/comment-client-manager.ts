@@ -322,7 +322,8 @@ export class CommentClientsManager extends PublicationClientsManager {
         throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
             timestampRanges,
             attemptedPathsToLoadErrors,
-            commentCid: this._comment.cid
+            commentCid: this._comment.cid,
+            commentDepth: this._comment.depth
         });
     }
 

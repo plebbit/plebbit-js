@@ -1,7 +1,12 @@
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
+import type {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "difficulty",
         label: "Difficulty",
@@ -11,9 +16,9 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     }
 ];
 
-const type: Challenge["type"] = "text/plain";
+const type: ChallengeInput["type"] = "text/plain";
 
-const description: ChallengeFile["description"] = "Ask a plain text math question, insecure, use ONLY for testing.";
+const description: ChallengeFileInput["description"] = "Ask a plain text math question, insecure, use ONLY for testing.";
 
 const getRandomNumber = (minNumber: number, maxNumber: number) => Math.floor(Math.random() * (maxNumber - minNumber + 1) + minNumber);
 
@@ -39,7 +44,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
-): Promise<Challenge> => {
+): Promise<ChallengeInput> => {
     const difficultyString = subplebbitChallengeSettings?.options?.difficulty || "1";
     const difficulty = Number(difficultyString);
 
@@ -54,7 +59,7 @@ const getChallenge = async (
         throw Error(`invalid challenge difficulty '${difficulty}'`);
     }
 
-    const verify = async (_answer: string): Promise<ChallengeResult> => {
+    const verify = async (_answer: string): Promise<ChallengeResultInput> => {
         if (String(eval(challenge)) === _answer) {
             return { success: true };
         }
@@ -66,7 +71,7 @@ const getChallenge = async (
     return { challenge, verify, type };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description };
 }
 

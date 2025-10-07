@@ -30,7 +30,19 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit?.settings?.challenges).to.deep.equal([
             {
                 name: "captcha-canvas-v3",
-                exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
+                exclude: [
+                    {
+                        role: ["moderator", "admin", "owner"],
+                        publicationType: {
+                            commentEdit: true,
+                            commentModeration: true,
+                            post: true,
+                            reply: true,
+                            subplebbitEdit: true,
+                            vote: true
+                        }
+                    }
+                ]
             }
         ]);
 
@@ -44,7 +56,17 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(_subplebbit.challenges[0].challenge).to.be.undefined;
             expect(_subplebbit.challenges[0].description).to.equal("make custom image captcha");
             expect(_subplebbit.challenges[0].exclude).to.deep.equal([
-                { role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }
+                {
+                    role: ["moderator", "admin", "owner"],
+                    publicationType: {
+                        commentEdit: true,
+                        commentModeration: true,
+                        post: true,
+                        reply: true,
+                        subplebbitEdit: true,
+                        vote: true
+                    }
+                }
             ]);
             expect(_subplebbit.challenges[0].caseInsensitive).to.be.true;
         }
@@ -85,7 +107,19 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit?.settings?.challenges).to.deep.equal([
             {
                 name: "captcha-canvas-v3",
-                exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
+                exclude: [
+                    {
+                        role: ["moderator", "admin", "owner"],
+                        publicationType: {
+                            commentEdit: true,
+                            commentModeration: true,
+                            post: true,
+                            reply: true,
+                            subplebbitEdit: true,
+                            vote: true
+                        }
+                    }
+                ]
             }
         ]);
         expect(subplebbit._usingDefaultChallenge).to.be.true;

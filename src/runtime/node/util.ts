@@ -3,7 +3,6 @@ import { default as nodeNativeFunctions } from "./native-functions.js";
 import type { KuboRpcClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
-import { throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -20,9 +19,16 @@ import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
-import type { CommentUpdateType } from "../../publications/comment/types.js";
+import type {
+    CommentIpfsType,
+    CommentPubsubMessagePublication,
+    CommentPubsubMessagPublicationSignature,
+    CommentsTableRow,
+    CommentUpdateType
+} from "../../publications/comment/types.js";
 import { DbHandler } from "./subplebbit/db-handler.js";
 import Database from "better-sqlite3";
+import { CommentIpfsSchema } from "../../publications/comment/schema.js";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -254,12 +260,14 @@ export async function importSignerIntoKuboNode(
     ipfsKey: Uint8Array,
     kuboRpcClientOptions: KuboRpcClient["_clientOptions"]
 ) {
+    const log = Logger("plebbit-js:local-subplebbit:importSignerIntoKuboNode");
     const data = new FormData();
     if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
-    data.append("file", new Blob([ipfsKey]));
+    const normalizedKey = Uint8Array.from(ipfsKey);
+    data.append("file", new Blob([normalizedKey.buffer]));
     const kuboRpcUrl = kuboRpcClientOptions.url;
     if (!kuboRpcUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(kuboRpcClientOptions)}`);
     const url = `${kuboRpcUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
@@ -269,10 +277,13 @@ export async function importSignerIntoKuboNode(
         headers: kuboRpcClientOptions.headers
     });
 
+    if (res.status === 500) return; // key already imported
+
     if (res.status !== 200)
-        throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
+        throw new PlebbitError("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
     const resJson: { Id: string; Name: string } = await res.json();
 
+    log("Imported IPNS' signer into kubo node", resJson, " Onto kubo rpc URL", kuboRpcUrl);
     return { id: resJson.Id, name: resJson.Name };
 }
 
@@ -390,4 +401,19 @@ export function calculateExpectedSignatureSize(
     };
 
     return Buffer.byteLength(JSON.stringify(mockSignature), "utf8");
+}
+
+export function deriveCommentIpfsFromCommentTableRow(commentTableRow: CommentsTableRow): CommentIpfsType {
+    const commentIpfs = remeda.pick(commentTableRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
+    const commentPubsub = remeda.pick(
+        commentTableRow,
+        (commentTableRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
+    ) as CommentPubsubMessagePublication;
+    const finalCommentIpfsJson = <CommentIpfsType>{
+        ...commentPubsub,
+        ...commentIpfs,
+        ...commentTableRow.extraProps
+    };
+    if (commentTableRow.depth === 0) delete finalCommentIpfsJson.postCid;
+    return finalCommentIpfsJson;
 }

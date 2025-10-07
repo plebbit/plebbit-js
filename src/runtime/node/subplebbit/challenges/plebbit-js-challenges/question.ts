@@ -1,7 +1,12 @@
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
+import type {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "question",
         label: "Question",
@@ -19,7 +24,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     }
 ];
 
-const type: Challenge["type"] = "text/plain";
+const type: ChallengeInput["type"] = "text/plain";
 
 const description = `Ask a question, like 'What is the password?'`;
 
@@ -27,7 +32,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
-): Promise<Challenge | ChallengeResult> => {
+): Promise<ChallengeInput | ChallengeResultInput> => {
     if (!subplebbitChallengeSettings?.options?.question) throw Error("No option question");
     let answer = subplebbitChallengeSettings?.options?.answer;
     if (!answer) {
@@ -41,7 +46,7 @@ const getChallenge = async (
     if (challengeAnswer === undefined) {
         return {
             challenge: subplebbitChallengeSettings?.options?.question,
-            verify: async (_answer: string) => {
+            verify: async (_answer: string): Promise<ChallengeResultInput> => {
                 if (_answer === answer)
                     return {
                         success: true
@@ -69,7 +74,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     // some challenges can prepublish the challenge so that it can be preanswered
     // in the challengeRequestMessage
     const question = subplebbitChallengeSettings?.options?.question;

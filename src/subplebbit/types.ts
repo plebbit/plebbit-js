@@ -102,11 +102,19 @@ export type SubplebbitChallengeSetting = z.infer<typeof SubplebbitChallengeSetti
 
 export type Challenge = z.infer<typeof ChallengeFromGetChallengeSchema>;
 
+export type ChallengeInput = z.input<typeof ChallengeFromGetChallengeSchema>;
+
 export type ChallengeResult = z.infer<typeof ChallengeResultSchema>;
+
+export type ChallengeResultInput = z.input<typeof ChallengeResultSchema>;
 
 export type ChallengeFile = z.infer<typeof ChallengeFileSchema>;
 
+export type ChallengeFileInput = z.input<typeof ChallengeFileSchema>;
+
 export type ChallengeFileFactory = z.infer<typeof ChallengeFileFactorySchema>;
+
+export type ChallengeFileFactoryInput = z.input<typeof ChallengeFileFactorySchema>;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
 

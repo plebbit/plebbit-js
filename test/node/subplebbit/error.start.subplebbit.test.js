@@ -49,8 +49,8 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
 
         const ipfsClient = sub._clientsManager.getDefaultKuboRpcClient()._client;
 
-        const originalCp = ipfsClient.files.cp.bind(ipfsClient.files);
-        ipfsClient.files.cp = () => {
+        const originalCp = ipfsClient.files.write.bind(ipfsClient.files);
+        ipfsClient.files.write = () => {
             throw Error("Failed to copy a file");
         };
         await publishRandomPost(sub.address, plebbit);
@@ -58,7 +58,7 @@ describeSkipIfRpc(`Local subplebbit emits errors properly in the publish loop`, 
         await resolveWhenConditionIsTrue(sub, () => errors.length === 3, "error");
 
         await sub.delete();
-        ipfsClient.files.cp = originalCp;
+        ipfsClient.files.write = originalCp;
         expect(errors.length).to.be.greaterThan(0);
 
         for (const error of errors) {

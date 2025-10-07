@@ -29,13 +29,14 @@ import {
     isLinkOfMedia,
     isStringDomain,
     pubsubTopicToDhtKey,
-    retryKuboIpfsAdd,
     throwWithErrorCode,
     timestamp,
     getErrorCodeFromMessage,
     removeMfsFilesSafely,
     removeBlocksFromKuboNode,
-    ipfsCpWithRmIfFails
+    retryKuboIpfsAddAndProvide,
+    getIpnsRecordInLocalKuboNode,
+    calculateIpfsCidV0
 } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -76,6 +77,7 @@ import {
 } from "../../../signer/signatures.js";
 import {
     calculateExpectedSignatureSize,
+    deriveCommentIpfsFromCommentTableRow,
     getThumbnailPropsOfLink,
     importSignerIntoKuboNode,
     moveSubplebbitDbToDeletedDirectory
@@ -157,15 +159,12 @@ import { MAX_FILE_SIZE_BYTES_FOR_COMMENT_UPDATE } from "../../../publications/co
 import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit.js";
 import pLimit from "p-limit";
 import { sha256 } from "js-sha256";
-import pTimeout from "p-timeout";
-import { FilesCpOptions } from "kubo-rpc-client";
 
 type CommentUpdateToWriteToDbAndPublishToIpfs = {
     newCommentUpdate: CommentUpdateType;
     newCommentUpdateToWriteToDb: CommentUpdatesTableRowInsert;
-    postCommentUpdateCid: string | undefined;
     localMfsPath: string | undefined;
-    newPostCommentUpdateString: string | undefined;
+    pendingApproval: CommentsTableRow["pendingApproval"];
 };
 const _startedSubplebbits: Record<string, LocalSubplebbit> = {}; // A global record on process level to track started subplebbits
 
@@ -177,7 +176,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _defaultSubplebbitChallenges: SubplebbitChallengeSetting[] = [
         {
             name: "captcha-canvas-v3",
-            exclude: [{ role: ["moderator", "admin", "owner"], publicationType: { commentModeration: true } }]
+            exclude: [
+                {
+                    role: ["moderator", "admin", "owner"],
+                    publicationType: {
+                        commentModeration: true,
+                        subplebbitEdit: true,
+                        commentEdit: true,
+                        post: true,
+                        reply: true,
+                        vote: true
+                    }
+                }
+            ]
         }
     ];
 
@@ -191,16 +202,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
     private _challengeExchangesFromLocalPublishers: Record<string, boolean> = {}; // key is stringified challengeRequestId and value is true if the challenge exchange is ongoing
 
-    private _cidsToUnPin: Set<string> = new Set<string>();
-    private _mfsPathsToRemove: Set<string> = new Set<string>();
+    _cidsToUnPin: Set<string> = new Set<string>();
+    _mfsPathsToRemove: Set<string> = new Set<string>();
     private _subplebbitUpdateTrigger: boolean = false;
+    private _combinedHashOfPendingCommentsCids: string = sha256("");
 
     private _pageGenerator!: PageGenerator;
     _dbHandler!: DbHandler;
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
     private _updateLoopPromise?: Promise<void> = undefined;
-    private _firstTimePublishingIpns: boolean = false;
     private _internalStateUpdateId: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"] = "";
     private _mirroredStartedOrUpdatingSubplebbit?: { subplebbit: LocalSubplebbit } & Pick<
         SubplebbitEvents,
@@ -215,7 +226,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         | "challengeanswer"
     > = undefined; // The plebbit._startedSubplebbits we're subscribed to
     private _pendingEditProps: Partial<ParsedSubplebbitEditOptions & { editId: string }>[] = [];
-    private _blocksToRm: string[] = [];
+    _blocksToRm: string[] = [];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -373,7 +384,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             } catch (e) {
                 throw e;
             } finally {
-                await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+                this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
             }
         }
 
@@ -392,13 +403,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.signer.ipnsKeyName) throw Error("subplebbit.signer.ipnsKeyName is not defined");
         if (!this.signer.ipfsKey) throw Error("subplebbit.signer.ipfsKey is not defined");
 
-        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient()._client;
-        const kuboNodeKeys = await kuboRpc.key.list();
-        if (!kuboNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
-            await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-                url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
-                headers: this._plebbit.kuboRpcClientsOptions![0].headers
-            });
+        await importSignerIntoKuboNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+            url: this._plebbit.kuboRpcClientsOptions![0].url!.toString(),
+            headers: this._plebbit.kuboRpcClientsOptions![0].headers
+        });
     }
 
     async _updateDbInternalState(
@@ -431,7 +439,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         lock: boolean
     ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType> {
         const log = Logger("plebbit-js:local-subplebbit:_getDbInternalState");
-        if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])))
+        if (!this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
             throw new PlebbitError("ERR_SUB_HAS_NO_INTERNAL_STATE", { address: this.address, dataPath: this._plebbit.dataPath });
         let lockedIt = false;
         try {
@@ -483,22 +491,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!this.pubsubTopic) this.pubsubTopic = remeda.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
+        if (!this.settings?.maxPendingApprovalCount) this.settings = { ...this.settings, maxPendingApprovalCount: 500 };
         if (!this.settings?.challenges) {
             this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges };
             this._usingDefaultChallenge = true;
             log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
+        if (typeof this.settings?.purgeDisapprovedCommentsOlderThan !== "number") {
+            this.settings = { ...this.settings, purgeDisapprovedCommentsOlderThan: 1.21e6 }; // two weeks
+        }
 
         this.challenges = await Promise.all(this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings));
 
-        if (await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
+        if (this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])) throw Error("Internal state exists already");
 
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], this.toJSONInternalBeforeFirstUpdate());
 
         await this._updateStartedValue();
 
-        await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
-        await this._updateIpnsPubsubPropsIfNeeded({
+        this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        this._updateIpnsPubsubPropsIfNeeded({
             ...this.toJSONInternalBeforeFirstUpdate(), //@ts-expect-error
             signature: { publicKey: this.signer.publicKey }
         });
@@ -517,36 +529,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return postUpdates;
     }
 
-    async _resolveIpnsAndLogIfPotentialProblematicSequence() {
-        const log = Logger("plebbit-js:local-subplebbit:_resolveIpnsAndLogIfPotentialProblematicSequence");
-        if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
-        if (!this.updateCid) return;
-        try {
-            const ipnsCid = await this._clientsManager.resolveIpnsToCidP2P(this.signer.ipnsKeyName, { timeoutMs: 120000 });
-            log.trace("Resolved sub", this.address, "IPNS key", this.signer.ipnsKeyName, "to", ipnsCid);
-            if (ipnsCid && this.updateCid && ipnsCid !== this.updateCid) {
-                log.error(
-                    "subplebbit",
-                    this.address,
-                    "IPNS key",
-                    this.signer.ipnsKeyName,
-                    "points to",
-                    ipnsCid,
-                    "but we expected it to point to",
-                    this.updateCid,
-                    "This could result an IPNS record with invalid sequence number"
-                );
-            }
-        } catch (e) {
-            log.trace("Failed to resolve subplebbit before publishing", this.address, "IPNS key", this.signer.ipnsKeyName, e);
-        }
-    }
-
     private _calculateLatestUpdateTrigger() {
         const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
 
         this._subplebbitUpdateTrigger =
             this._subplebbitUpdateTrigger || lastPublishTooOld || this._pendingEditProps.length > 0 || this._blocksToRm.length > 0; // we have at least one edit to include in new ipns
+    }
+
+    private _requireSubplebbitUpdateIfModQueueChanged() {
+        const combinedHashOfAllQueuedComments = this._dbHandler.queryCombinedHashOfPendingComments();
+
+        if (this._combinedHashOfPendingCommentsCids !== combinedHashOfAllQueuedComments) this._subplebbitUpdateTrigger = true;
     }
 
     private async updateSubplebbitIpnsIfNeeded(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
@@ -566,14 +559,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (commentUpdateRowsToPublishToIpfs.length > 0) await this._syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs);
 
         const newPostUpdates = await this._calculateNewPostUpdates();
+        const newModQueue = await this._pageGenerator.generateModQueuePages();
+
         const kuboRpcClient = this._clientsManager.getDefaultKuboRpcClient();
 
         const statsCid = (
-            await retryKuboIpfsAdd({
+            await retryKuboIpfsAddAndProvide({
                 ipfsClient: kuboRpcClient._client,
                 log,
                 content: deterministicStringify(stats),
-                options: { pin: true }
+                addOptions: { pin: true },
+                provideOptions: { recursive: true }
             })
         ).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.add(this.statsCid);
@@ -630,30 +626,50 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
         } else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
+        if (newModQueue) {
+            newIpns.modQueue = { pageCids: newModQueue.pageCids };
+            const newModQueuePageCids = remeda.unique(Object.values(newModQueue.pageCids));
+            const modQueuePageCidsToUnPin = remeda.unique(
+                Object.values(this.modQueue.pageCids).filter((oldModQueuePageCid) => !newModQueuePageCids.includes(oldModQueuePageCid))
+            );
+
+            modQueuePageCidsToUnPin.forEach((cidToUnpin) => this._cidsToUnPin.add(cidToUnpin));
+        } else {
+            await this._updateDbInternalState({ modQueue: undefined });
+            this.modQueue.resetPages();
+        }
+
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
 
         await this._validateSubSizeSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
-        const file = await retryKuboIpfsAdd({
+        const file = await retryKuboIpfsAddAndProvide({
             ipfsClient: kuboRpcClient._client,
             log,
             content: deterministicStringify(newSubplebbitRecord),
-            options: { pin: true }
+            addOptions: { pin: true },
+            provideOptions: { recursive: true }
         });
 
         if (!this.signer.ipnsKeyName) throw Error("IPNS key name is not defined");
-        if (this._firstTimePublishingIpns) await this._resolveIpnsAndLogIfPotentialProblematicSequence();
         const ttl = `${this._plebbit.publishInterval * 3}ms`; // default publish interval is 20s, so default ttl is 60s
+        const lastPublishedIpnsRecordData = <any | undefined>await this._dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD]);
+        const decodedIpnsRecord: any | undefined = lastPublishedIpnsRecordData
+            ? cborg.decode(new Uint8Array(Object.values(lastPublishedIpnsRecordData)))
+            : undefined;
+        const ipnsSequence: BigInt | undefined = decodedIpnsRecord ? BigInt(decodedIpnsRecord.sequence) + 1n : undefined;
         const publishRes = await kuboRpcClient._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
             resolve: true,
-            ttl
+            ttl,
+            ...(ipnsSequence ? { sequence: ipnsSequence } : undefined)
         });
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`
         );
+
         this._clientsManager.updateKuboRpcState("stopped", kuboRpcClient.url);
         await this._unpinStaleCids();
         if (this._blocksToRm.length > 0) {
@@ -673,6 +689,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         this._subplebbitUpdateTrigger = false;
 
+        try {
+            // this call will fail if we have http routers + kubo 0.38 and earlier
+            // Will probably be fixed past that
+            const ipnsRecord = await getIpnsRecordInLocalKuboNode(kuboRpcClient, this.signer.address);
+
+            await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.LAST_IPNS_RECORD], cborg.encode(ipnsRecord));
+        } catch (e) {
+            log.trace(
+                "Failed to update IPNS record in sqlite record, not a critical error and will most likely be fixed by kubo past 0.38",
+                e
+            );
+        }
+
+        this._combinedHashOfPendingCommentsCids = newModQueue?.combinedHashOfCids || sha256("");
+
+        log.trace("Updated combined hash of pending comments to", this._combinedHashOfPendingCommentsCids);
+
         await this._updateDbInternalState(this.toJSONInternalAfterFirstUpdate());
 
         this._changeStateEmitEventEmitStateChangeEvent({
@@ -682,7 +715,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private shouldResolveDomainForVerification() {
-        return this.address.includes(".") && (Math.random() < 0.005 || this._firstTimePublishingIpns); // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
+        return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
     private async _validateSubSizeSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
@@ -833,9 +866,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (!commentToPurge) throw Error("Comment to purge not found");
             const cidsToPurgeOffIpfsNode = this._dbHandler.purgeComment(modTableRow.commentCid);
 
-            const purgedCids = cidsToPurgeOffIpfsNode.filter((ipfsPath) => !ipfsPath.startsWith("/"));
-            purgedCids.forEach((cid) => this._cidsToUnPin.add(cid));
-            purgedCids.forEach((cid) => this._blocksToRm.push(cid));
+            cidsToPurgeOffIpfsNode.forEach((cid) => this._cidsToUnPin.add(cid));
+            cidsToPurgeOffIpfsNode.forEach((cid) => this._blocksToRm.push(cid));
 
             log(
                 "Purged comment",
@@ -845,7 +877,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 "out of DB and IPFS"
             );
 
-            this._subplebbitUpdateTrigger = true;
             log(`Set _subplebbitUpdateTrigger to true after purging comment ${modTableRow.commentCid}.`);
             if (typeof commentUpdateToPurge?.postUpdatesBucket === "number") {
                 const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(
@@ -854,13 +885,38 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 ).replace("/update", "");
                 this._mfsPathsToRemove.add(localCommentUpdatePath);
                 try {
-                    await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), [localCommentUpdatePath]);
-                    this._mfsPathsToRemove.delete(localCommentUpdatePath);
+                    await this._rmUnneededMfsPaths();
                 } catch (e) {
                     log.error("while purging we failed to remove mfs path", localCommentUpdatePath, "due to error", e);
                 }
             }
+        } else if ("approved" in modTableRow.commentModeration) {
+            if (modTableRow.commentModeration.approved) {
+                log(
+                    "commentModeration.approved=true, and therefore move comment from pending approval and add it to IPFS",
+                    "comment cid is",
+                    modTableRow.commentCid
+                );
+
+                await this._addCommentRowToIPFS(
+                    commentToBeEdited,
+                    Logger("plebbit-js:local-subplebbit:storeCommentModeration:_addCommentRowToIPFS")
+                );
+                this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
+            } else {
+                const shouldPurgeDisapprovedComment = Object.keys(modTableRow.commentModeration).length === 1; // no other props were included, if so purge the comment
+                log(
+                    "commentModeration.approved=false, and therefore this comment will be removed entirely from DB",
+                    "should we purge this comment? = ",
+                    shouldPurgeDisapprovedComment,
+                    "comment cid is",
+                    modTableRow.commentCid
+                );
+                if (shouldPurgeDisapprovedComment) this._dbHandler.purgeComment(modTableRow.commentCid);
+                else this._dbHandler.removeCommentFromPendingApproval({ cid: modTableRow.commentCid });
+            }
         }
+        this._subplebbitUpdateTrigger = true;
         this._dbHandler.insertCommentModerations([modTableRow]);
         log("Inserted comment moderation", "of comment", modTableRow.commentCid, "into db", "with props", modTableRow);
     }
@@ -931,10 +987,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return getThumbnailPropsOfLink(link, this, this.settings.fetchThumbnailUrlsProxyUrl);
     }
 
-    private async _calculatePostProps(
-        comment: CommentPubsubMessagePublication,
-        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
-    ): Promise<Pick<CommentIpfsType, "previousCid" | "depth">> {
+    private async _calculateLatestPostProps(): Promise<Pick<CommentIpfsType, "previousCid" | "depth">> {
         this._dbHandler.createTransaction();
         const previousCid = this._dbHandler.queryLatestPostCid()?.cid;
         this._dbHandler.commitTransaction();
@@ -942,8 +995,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _calculateReplyProps(
-        comment: CommentPubsubMessagePublication,
-        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
+        comment: CommentPubsubMessagePublication
     ): Promise<Pick<CommentIpfsType, "previousCid" | "depth" | "postCid">> {
         if (!comment.parentCid) throw Error("Reply has to have parentCid");
 
@@ -963,26 +1015,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async storeComment(
         commentPubsub: CommentPubsubMessagePublication,
-        request: DecryptedChallengeRequestMessageType
+        pendingApproval?: boolean
     ): Promise<{ comment: CommentIpfsType; cid: CommentUpdateType["cid"] }> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
 
         const commentIpfs = <CommentIpfsType>{
             ...commentPubsub,
             ...(await this._calculateLinkProps(commentPubsub.link)),
-            ...(this.isPublicationPost(commentPubsub) && (await this._calculatePostProps(commentPubsub, request.challengeRequestId))),
-            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
+            ...(this.isPublicationPost(commentPubsub) && (await this._calculateLatestPostProps())),
+            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub)))
         };
 
-        const ipfsClient = this._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
-        const file = await retryKuboIpfsAdd({
-            ipfsClient: ipfsClient,
-            log,
-            content: deterministicStringify(commentIpfs),
-            options: { pin: true }
-        });
+        const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
 
-        const commentCid = file.path;
+        const file = pendingApproval
+            ? undefined
+            : await retryKuboIpfsAddAndProvide({
+                  ipfsClient: ipfsClient._client,
+                  log,
+                  content: deterministicStringify(commentIpfs),
+                  addOptions: { pin: true },
+                  provideOptions: { recursive: true }
+              });
+
+        const commentCid = file?.path || (await calculateIpfsCidV0(deterministicStringify(commentIpfs)));
         const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
 
@@ -992,7 +1048,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             cid: commentCid,
             postCid,
             authorSignerAddress,
-            insertedAt: timestamp()
+            insertedAt: timestamp(),
+            pendingApproval
         };
 
         const unknownProps = remeda.difference(
@@ -1004,17 +1061,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
             commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
         }
+
         this._dbHandler.insertComments([commentRow]);
+        if (typeof this.settings?.maxPendingApprovalCount === "number")
+            this._dbHandler.removeOldestPendingCommentIfWeHitMaxPendingCount(this.settings.maxPendingApprovalCount);
         log("Inserted comment", commentRow.cid, "into db", "with props", commentRow);
 
         return { comment: commentIpfs, cid: commentCid };
     }
 
-    private async storePublication(request: DecryptedChallengeRequestMessageType) {
+    private async storePublication(request: DecryptedChallengeRequestMessageType, pendingApproval?: boolean) {
         if (request.vote) return this.storeVote(request.vote, request.challengeRequestId);
         else if (request.commentEdit) return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
         else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
-        else if (request.comment) return this.storeComment(request.comment, request);
+        else if (request.comment) return this.storeComment(request.comment, pendingApproval);
         else if (request.subplebbitEdit) return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
         else throw Error("Don't know how to store this publication" + request);
     }
@@ -1146,9 +1206,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _storePublicationAndEncryptForChallengeVerification(
-        request: DecryptedChallengeRequestMessageType
+        request: DecryptedChallengeRequestMessageType,
+        pendingApproval?: boolean
     ): Promise<(DecryptedChallengeVerification & Required<Pick<DecryptedChallengeVerificationMessageType, "encrypted">>) | undefined> {
-        const commentAfterAddingToIpfs = await this.storePublication(request);
+        const commentAfterAddingToIpfs = await this.storePublication(request, pendingApproval);
         if (!commentAfterAddingToIpfs) return undefined;
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentAfterAddingToIpfs.comment.signature.publicKey);
 
@@ -1159,7 +1220,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             cleanUpBeforePublishing({
                 author: { subplebbit: authorSubplebbit },
                 cid: commentAfterAddingToIpfs.cid,
-                protocolVersion: env.PROTOCOL_VERSION
+                protocolVersion: env.PROTOCOL_VERSION,
+                pendingApproval
             })
         );
         const commentUpdate = <DecryptedChallengeVerification["commentUpdate"]>{
@@ -1180,13 +1242,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _publishChallengeVerification(
         challengeResult: Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" | "reason">,
-        request: DecryptedChallengeRequestMessageType
+        request: DecryptedChallengeRequestMessageType,
+        pendingApproval?: boolean
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallengeVerification");
         if (!challengeResult.challengeSuccess) return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
-            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request);
+            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request, pendingApproval);
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
@@ -1295,6 +1358,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (postFlags.locked && !request.commentModeration) return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
 
             if (parent.timestamp > publication.timestamp) return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
+
+            // if user publishes vote/reply/commentEdit under pending comment, it should fail
+            if (parent.pendingApproval && !("commentModeration" in request)) return messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT;
+
+            const isCommentDisapproved = this._dbHandler._queryIsCommentApproved(parent);
+            if (isCommentDisapproved && !isCommentDisapproved.approved && !("commentModeration" in request))
+                return messages.ERR_USER_PUBLISHED_UNDER_DISAPPROVED_COMMENT;
         }
 
         // Reject publications if their size is over 40kb
@@ -1318,8 +1388,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     return messages.ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY;
             }
 
-            const commentInDb = this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
-            if (commentInDb) return messages.ERR_DUPLICATE_COMMENT;
+            const isCommentDuplicate = this._dbHandler.hasCommentWithSignatureEncoded(commentPublication.signature.signature);
+            if (isCommentDuplicate) return messages.ERR_DUPLICATE_COMMENT;
         } else if (request.vote) {
             const votePublication = request.vote;
             if (remeda.intersection(VotePubsubReservedFields, remeda.keys.strict(votePublication)).length > 0)
@@ -1360,6 +1430,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 commentModerationPublication.signature.signature
             );
             if (commentModInDb) return messages.ERR_DUPLICATE_COMMENT_MODERATION;
+            if ("approved" in commentModerationPublication.commentModeration && !commentToBeEdited.pendingApproval)
+                return messages.ERR_MOD_ATTEMPTING_TO_APPROVE_OR_DISAPPROVE_COMMENT_THAT_IS_NOT_PENDING;
         } else if (request.subplebbitEdit) {
             const subplebbitEdit = request.subplebbitEdit;
             if (remeda.intersection(SubplebbitEditPublicationPubsubReservedFields, remeda.keys.strict(subplebbitEdit)).length > 0)
@@ -1416,7 +1488,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw e;
         }
 
-        const parseRes = DecryptedChallengeRequestSchema.passthrough().safeParse(decryptedJson);
+        const parseRes = DecryptedChallengeRequestSchema.loose().safeParse(decryptedJson);
         if (!parseRes.success) {
             await this._publishFailedChallengeVerification(
                 { reason: messages.ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING },
@@ -1526,7 +1598,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
         // NOTE: we try to get challenge verification immediately after receiving challenge request
         // because some challenges are automatic and skip the challenge message
-        let challengeVerification: Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" | "reason">;
+        let challengeVerification: Awaited<ReturnType<typeof getChallengeVerification>> & { reason?: string };
         try {
             challengeVerification = await getChallengeVerification(decryptedRequestWithSubplebbitAuthor, this, getChallengeAnswers);
         } catch (e) {
@@ -1542,7 +1614,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             };
         }
 
-        await this._publishChallengeVerification(challengeVerification, decryptedRequestMsg);
+        await this._publishChallengeVerification(challengeVerification, decryptedRequestMsg, challengeVerification.pendingApproval);
     }
 
     private _cleanUpChallengeAnswerPromise(challengeRequestIdString: string) {
@@ -1630,10 +1702,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
 
         const pubsubSchemas = [
-            ChallengeRequestMessageSchema.passthrough(),
-            ChallengeMessageSchema.passthrough(),
-            ChallengeAnswerMessageSchema.passthrough(),
-            ChallengeVerificationMessageSchema.passthrough()
+            ChallengeRequestMessageSchema.loose(),
+            ChallengeMessageSchema.loose(),
+            ChallengeAnswerMessageSchema.loose(),
+            ChallengeVerificationMessageSchema.loose()
         ];
 
         let parsedPubsubMsg:
@@ -1742,9 +1814,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
 
-        const newPostCommentUpdateString = comment.depth === 0 ? deterministicStringify(newCommentUpdate) : undefined;
-        const postCommentUpdateCid = newPostCommentUpdateString && (await calculateIpfsHash(newPostCommentUpdateString));
-
         await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
 
         const newPostUpdateBucket =
@@ -1764,16 +1833,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             );
             this._mfsPathsToRemove.add(oldPostUpdates);
         }
-        if (
-            storedCommentUpdate?.postCommentUpdateCid &&
-            postCommentUpdateCid &&
-            storedCommentUpdate.postCommentUpdateCid !== postCommentUpdateCid
-        )
-            this._cidsToUnPin.add(storedCommentUpdate.postCommentUpdateCid);
-
         const newCommentUpdateDbRecord = <CommentUpdatesTableRowInsert>{
             ...newCommentUpdate,
-            postCommentUpdateCid,
             postUpdatesBucket: newPostUpdateBucket,
             publishedToPostUpdatesMFS: false,
             insertedAt: timestamp()
@@ -1781,9 +1842,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return {
             newCommentUpdate,
             newCommentUpdateToWriteToDb: newCommentUpdateDbRecord,
-            postCommentUpdateCid,
             localMfsPath: newLocalMfsPath,
-            newPostCommentUpdateString
+            pendingApproval: comment.pendingApproval
         };
     }
 
@@ -1901,6 +1961,27 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return allCommentUpdateRows;
     }
 
+    private async _addCommentRowToIPFS(unpinnedCommentRow: CommentsTableRow, log: Logger) {
+        const ipfsClient = this._clientsManager.getDefaultKuboRpcClient();
+
+        const finalCommentIpfsJson = deriveCommentIpfsFromCommentTableRow(unpinnedCommentRow);
+        const commentIpfsContent = deterministicStringify(finalCommentIpfsJson);
+        const contentHash: string = await calculateIpfsHash(commentIpfsContent);
+        if (contentHash !== unpinnedCommentRow.cid) {
+            throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+        }
+
+        const addRes = await retryKuboIpfsAddAndProvide({
+            ipfsClient: ipfsClient._client,
+            log,
+            content: commentIpfsContent,
+            addOptions: { pin: true },
+            provideOptions: { recursive: true }
+        });
+        if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
+        log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+    }
+
     private async _repinCommentsIPFSIfNeeded() {
         const log = Logger("plebbit-js:local-subplebbit:start:_repinCommentsIPFSIfNeeded");
         const latestCommentCid = this._dbHandler.queryLatestCommentCid(); // latest comment ordered by id
@@ -1925,33 +2006,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const limit = pLimit(50);
         const pinningPromises = unpinnedCommentsFromDb.map((unpinnedCommentRow) =>
             limit(async () => {
-                const commentIpfs = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape)) as CommentIpfsType;
-                const commentPubsub = remeda.pick(
+                if (unpinnedCommentRow.pendingApproval) return; // we don't pin comments waiting to get approved
+                await this._addCommentRowToIPFS(
                     unpinnedCommentRow,
-                    (unpinnedCommentRow.signature as CommentPubsubMessagPublicationSignature).signedPropertyNames
-                ) as CommentPubsubMessagePublication;
-                const finalCommentIpfsJson = <CommentIpfsType>{
-                    ...commentPubsub,
-                    ...commentIpfs,
-                    ...unpinnedCommentRow.extraProps
-                };
-                if (unpinnedCommentRow.depth === 0) delete finalCommentIpfsJson.postCid;
-                const commentIpfsContent = deterministicStringify(finalCommentIpfsJson);
-                const contentHash: string = await calculateIpfsHash(commentIpfsContent);
-                if (contentHash !== unpinnedCommentRow.cid) {
-                    throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-                }
-
-                // TODO move this to addAll method
-                const ipfsClient = this._clientsManager.getIpfsClientWithKuboRpcClientFunctions();
-                const addRes = await retryKuboIpfsAdd({
-                    ipfsClient: ipfsClient,
-                    log,
-                    content: commentIpfsContent,
-                    options: { pin: true }
-                });
-                if (addRes.path !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
-                log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+                    Logger("plebbit-js:local-subplebbit:start:_repinCommentsIPFSIfNeeded:_addCommentRowToIPFS")
+                );
             })
         );
 
@@ -2002,7 +2061,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const toDeleteMfsPaths = Array.from(this._mfsPathsToRemove.values());
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
             try {
-                await removeMfsFilesSafely(kuboRpc, toDeleteMfsPaths);
+                await removeMfsFilesSafely({
+                    kuboRpcClient: kuboRpc,
+                    paths: toDeleteMfsPaths,
+                    log
+                });
+                toDeleteMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
                 return toDeleteMfsPaths;
             } catch (e) {
                 const error = <Error>e;
@@ -2040,76 +2104,52 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._dbHandler.forceUpdateOnAllComments(); // plebbit-js will recalculate and publish all comment updates
     }
 
-    private *_createCommentUpdateIterable(commentUpdateRows: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
-        for (const row of commentUpdateRows) {
-            if (!row.newPostCommentUpdateString) throw Error("Should be defined");
-            yield { content: row.newPostCommentUpdateString };
-        }
-    }
-
     private async _syncPostUpdatesWithIpfs(commentUpdateRowsToPublishToIpfs: CommentUpdateToWriteToDbAndPublishToIpfs[]) {
         const log = Logger("plebbit-js:local-subplebbit:sync:_syncPostUpdatesFilesystemWithIpfs");
 
-        const postUpdatesDirectory = "/" + this.address;
-
-        const commentUpdatesOfPosts = <
-            (CommentUpdateToWriteToDbAndPublishToIpfs & {
-                postCommentUpdateRecordString: string;
-                postCommentUpdateCid: string;
-                localMfsPath: string;
-            })[]
-        >commentUpdateRowsToPublishToIpfs.filter((row) => typeof row.newPostCommentUpdateString === "string");
-
-        if (commentUpdatesOfPosts.length === 0) throw Error("No comment updates of posts to publish to postUpdates directory");
-
-        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
-        const newCommentUpdatesAddAll = await genToArray(
-            kuboRpc._client.addAll(this._createCommentUpdateIterable(commentUpdatesOfPosts), {
-                wrapWithDirectory: false // we want to publish them to ipfs as is
-            })
+        const postUpdatesDirectory = `/${this.address}`;
+        const commentUpdatesWithLocalPath = commentUpdateRowsToPublishToIpfs.filter(
+            (row): row is CommentUpdateToWriteToDbAndPublishToIpfs & { localMfsPath: string } => typeof row.localMfsPath === "string"
         );
 
+        if (commentUpdatesWithLocalPath.length === 0) throw Error("No comment updates of posts to publish to postUpdates directory");
+
+        const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
         const removedMfsPaths: string[] = await this._rmUnneededMfsPaths();
+        let postUpdatesDirectoryCid: Awaited<ReturnType<typeof kuboRpc._client.files.flush>> | undefined;
 
-        // Create a concurrency limiter with a limit of 50
-        const limit = pLimit(50);
-        const copyPromises = [];
+        const BATCH_SIZE = 50;
+        for (let index = 0; index < commentUpdatesWithLocalPath.length; index += BATCH_SIZE) {
+            const batch = commentUpdatesWithLocalPath.slice(index, index + BATCH_SIZE);
 
-        for (const commentUpdateFile of newCommentUpdatesAddAll) {
-            const commentUpdateFilePath = commentUpdatesOfPosts.find(
-                (row) => row.postCommentUpdateCid === commentUpdateFile.cid.toV0().toString()
-            )?.localMfsPath;
+            await Promise.all(
+                batch.map(async (row) => {
+                    const { localMfsPath, newCommentUpdate } = row;
+                    const content = deterministicStringify(newCommentUpdate);
 
-            if (!commentUpdateFilePath) throw Error("Failed to find the local mfs path of the post comment update");
+                    await kuboRpc._client.files.write(localMfsPath, content, {
+                        create: true,
+                        truncate: true,
+                        parents: true,
+                        flush: false
+                    });
 
-            removedMfsPaths.push(commentUpdateFilePath);
-
-            const copyPromise = limit(() =>
-                ipfsCpWithRmIfFails({
-                    kuboRpcClient: kuboRpc,
-                    log,
-                    src: "/ipfs/" + commentUpdateFile.cid.toString(),
-                    dest: commentUpdateFilePath,
-                    options: { parents: true, flush: false, force: true } as FilesCpOptions
+                    removedMfsPaths.push(localMfsPath);
                 })
             );
 
-            copyPromises.push(copyPromise);
+            postUpdatesDirectoryCid = await kuboRpc._client.files.flush(postUpdatesDirectory);
         }
 
-        // Wait for all copy operations to complete
-        await Promise.all(copyPromises);
-
-        const postUpdatesDirectoryCid = await kuboRpc._client.files.flush(postUpdatesDirectory);
-        removedMfsPaths.forEach((path) => this._mfsPathsToRemove.delete(path));
+        const postUpdatesDirectoryCidString = postUpdatesDirectoryCid?.toString();
         log(
             "Subplebbit",
             this.address,
             "Synced",
-            commentUpdatesOfPosts.length,
+            commentUpdatesWithLocalPath.length,
             "post CommentUpdates",
             "with MFS postUpdates directory",
-            postUpdatesDirectoryCid
+            postUpdatesDirectoryCidString
         );
         this._dbHandler.markCommentsAsPublishedToPostUpdates(commentUpdateRowsToPublishToIpfs.map((row) => row.newCommentUpdate.cid));
     }
@@ -2122,22 +2162,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const postsWithOutdatedPostUpdateBucket = this._dbHandler.queryPostsWithOutdatedBuckets(this._postUpdatesBuckets);
         if (postsWithOutdatedPostUpdateBucket.length === 0) return;
 
-        const outdatedPostDirectories = postsWithOutdatedPostUpdateBucket.map((post) =>
-            this._calculateLocalMfsPathForCommentUpdate(post, post.currentBucket).replace("/update", "")
-        );
-
-        outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.add(path));
-
         this._dbHandler.forceUpdateOnAllCommentsWithCid(postsWithOutdatedPostUpdateBucket.map((post) => post.cid));
 
-        try {
-            await removeMfsFilesSafely(this._clientsManager.getDefaultKuboRpcClient(), outdatedPostDirectories);
-            outdatedPostDirectories.forEach((path) => this._mfsPathsToRemove.delete(path));
-        } catch (e) {
-            log.error("Failed to remove outdated post update buckets from MFS", e);
-        }
-
-        log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets`);
+        log(`Found ${postsWithOutdatedPostUpdateBucket.length} posts with outdated buckets and forced their updates`);
     }
 
     private async _cleanUpIpfsRepoRarely(force = false) {
@@ -2145,14 +2172,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
-
-            try {
-                const rootCid = await kuboRpc._client.files.flush("/");
-                log("Flushed ipfs repo", "/", "before GC", "with CID", rootCid);
-            } catch (e) {
-                log.error("Failed to flush ipfs repo", "/", "due to error", e);
-                throw e;
-            }
 
             try {
                 for await (const res of kuboRpc._client.repo.gc({ quiet: true })) {
@@ -2167,6 +2186,37 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
+    private async _purgeDisapprovedCommentsOlderThan() {
+        if (typeof this.settings.purgeDisapprovedCommentsOlderThan !== "number") return;
+
+        const log = Logger("plebbit-js:local-subplebbit:_purgeDisapprovedCommentsOlderThan");
+        const purgedComments = this._dbHandler.purgeDisapprovedCommentsOlderThan(this.settings.purgeDisapprovedCommentsOlderThan);
+
+        if (!purgedComments || purgedComments.length === 0) return;
+
+        log(
+            "Purged disapproved comments",
+            purgedComments,
+            "because retention time has passed and it's time to purge them from DB and pages"
+        );
+
+        for (const purgedComment of purgedComments) {
+            const purgedCids = purgedComment.purgedCids ?? [];
+            purgedCids
+                .filter((cid) => !cid.startsWith("/"))
+                .forEach((cid) => {
+                    this._cidsToUnPin.add(cid);
+                    this._blocksToRm.push(cid);
+                });
+
+            if (typeof purgedComment.postUpdatesBucket !== "number") continue;
+
+            const localCommentUpdatePath = this._calculateLocalMfsPathForCommentUpdate(purgedComment, purgedComment.postUpdatesBucket);
+            this._mfsPathsToRemove.add(localCommentUpdatePath);
+        }
+        if (this._mfsPathsToRemove.size > 0) await this._rmUnneededMfsPaths();
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
 
@@ -2176,10 +2226,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedStateWithEmission("publishing-ipns");
             this._clientsManager.updateKuboRpcState("publishing-ipns", kuboRpc.url);
+            await this._purgeDisapprovedCommentsOlderThan();
             const commentUpdateRows = await this._updateCommentsThatNeedToBeUpdated();
+            this._requireSubplebbitUpdateIfModQueueChanged();
             await this.updateSubplebbitIpnsIfNeeded(commentUpdateRows);
             await this._cleanUpIpfsRepoRarely();
-            this._firstTimePublishingIpns = false;
         } catch (e) {
             //@ts-expect-error
             e.details = { ...e.details, subplebbitAddress: this.address };
@@ -2473,7 +2524,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
 
             this._subplebbitUpdateTrigger = true;
-            this._firstTimePublishingIpns = true;
             this._setStartedStateWithEmission("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
@@ -2828,7 +2878,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } catch (e) {
             log.error("Failed to update db internal state before deleting", e);
         } finally {
-            await this._dbHandler.destoryConnection();
+            this._dbHandler.destoryConnection();
         }
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this._plebbit);

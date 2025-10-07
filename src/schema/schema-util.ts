@@ -1,4 +1,4 @@
-import { PageIpfsSchema } from "../pages/schema.js";
+import { ModQueuePageIpfsSchema, PageIpfsSchema } from "../pages/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import {
@@ -57,7 +57,7 @@ import {
     CreateCommentEditOptionsSchema
 } from "../publications/comment-edit/schema.js";
 import { PlebbitUserOptionsSchema } from "../schema.js";
-import { z } from "zod";
+import { z, type ZodObject, type ZodType } from "zod";
 import type {
     CreateSubplebbitEditPublicationOptions,
     SubplebbitEditChallengeRequestToEncryptType,
@@ -80,7 +80,7 @@ export function parseJsonWithPlebbitErrorIfFails(x: string): any {
 export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
     subIpfs: z.infer<typeof SubplebbitIpfsSchema>
 ): SubplebbitIpfsType {
-    const parseRes = SubplebbitIpfsSchema.passthrough().safeParse(subIpfs);
+    const parseRes = SubplebbitIpfsSchema.loose().safeParse(subIpfs);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", {
             zodError: parseRes.error,
@@ -91,7 +91,7 @@ export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
 }
 
 export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: z.infer<typeof CommentIpfsSchema>): CommentIpfsType {
-    const parseRes = CommentIpfsSchema.passthrough().safeParse(commentIpfsJson);
+    const parseRes = CommentIpfsSchema.loose().safeParse(commentIpfsJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_IPFS_SCHEMA", { zodError: parseRes.error, commentIpfsJson });
     else return <CommentIpfsType>commentIpfsJson;
 }
@@ -99,7 +99,7 @@ export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson:
 export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
     commentUpdateJson: z.infer<typeof CommentUpdateSchema>
 ): CommentUpdateType {
-    const parseRes = CommentUpdateSchema.passthrough().safeParse(commentUpdateJson);
+    const parseRes = CommentUpdateSchema.loose().safeParse(commentUpdateJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE_SCHEMA", { zodError: parseRes.error, commentUpdateJson });
     else return commentUpdateJson;
 }
@@ -110,10 +110,17 @@ export function parsePageIpfsSchemaWithPlebbitErrorIfItFails(pageIpfsJson: z.inf
     else return pageIpfsJson;
 }
 
+export function parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(modQueuePageIpfsJson: z.infer<typeof ModQueuePageIpfsSchema>) {
+    const parseRes = ModQueuePageIpfsSchema.safeParse(modQueuePageIpfsJson);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_MODQUEUE_PAGE_IPFS_SCHEMA", { zodError: parseRes.error, modQueuePageIpfsJson });
+    else return modQueuePageIpfsJson;
+}
+
 export function parseDecryptedChallengeWithPlebbitErrorIfItFails(
     decryptedChallengeJson: z.infer<typeof DecryptedChallengeSchema>
 ): DecryptedChallenge {
-    const parseRes = DecryptedChallengeSchema.passthrough().safeParse(decryptedChallengeJson);
+    const parseRes = DecryptedChallengeSchema.loose().safeParse(decryptedChallengeJson);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA", { zodError: parseRes.error, decryptedChallengeJson });
     else return decryptedChallengeJson;
@@ -122,7 +129,7 @@ export function parseDecryptedChallengeWithPlebbitErrorIfItFails(
 export function parseDecryptedChallengeVerification(
     decryptedChallengeVerificationJson: z.infer<typeof DecryptedChallengeVerificationSchema>
 ): DecryptedChallengeVerification {
-    const parseRes = DecryptedChallengeVerificationSchema.passthrough().safeParse(decryptedChallengeVerificationJson);
+    const parseRes = DecryptedChallengeVerificationSchema.loose().safeParse(decryptedChallengeVerificationJson);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
             zodError: parseRes.error,
@@ -250,7 +257,7 @@ export function parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(
 export function parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(
     toEncrypt: z.infer<typeof CommentChallengeRequestToEncryptSchema>
 ): CommentChallengeRequestToEncryptType {
-    const parseRes = CommentChallengeRequestToEncryptSchema.passthrough().safeParse(toEncrypt);
+    const parseRes = CommentChallengeRequestToEncryptSchema.loose().safeParse(toEncrypt);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_COMMENT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA", {
             zodError: parseRes.error,
@@ -323,7 +330,7 @@ export function parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFai
 export function parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(
     args: z.infer<typeof CommentModerationPubsubMessagePublicationSchema>
 ) {
-    const parseRes = CommentModerationPubsubMessagePublicationSchema.passthrough().safeParse(args);
+    const parseRes = CommentModerationPubsubMessagePublicationSchema.loose().safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_COMMENT_MODERATION_ARGS_SCHEMA", {
             zodError: parseRes.error,
@@ -357,7 +364,7 @@ export function parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(args: z.in
 }
 
 export function parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof VotePubsubMessagePublicationSchema>) {
-    const parseRes = VotePubsubMessagePublicationSchema.passthrough().safeParse(args);
+    const parseRes = VotePubsubMessagePublicationSchema.loose().safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA", {
             zodError: parseRes.error,
@@ -456,4 +463,204 @@ export function parseSubplebbitAddressWithPlebbitErrorIfItFails(args: z.infer<ty
             args
         });
     else return args;
+}
+
+export type SchemaRowParserOptions = {
+    prefix?: string;
+    coerceBooleans?: boolean;
+    parseJsonStrings?: boolean;
+    loose?: boolean;
+    validate?: boolean;
+};
+
+type ObjectSchema = ZodObject<any, any>;
+type SchemaShape = Record<string, ZodType>;
+
+export interface SchemaRowParserResult<Schema extends ObjectSchema> {
+    data: z.output<Schema>;
+    extras: Record<string, unknown>;
+}
+
+export function createSchemaRowParser<Schema extends ObjectSchema>(
+    schema: Schema,
+    options: SchemaRowParserOptions = {}
+): (row: unknown) => SchemaRowParserResult<Schema> {
+    const { prefix, coerceBooleans = true, parseJsonStrings = true, loose = true, validate = true } = options;
+    const prefixLength = prefix?.length ?? 0;
+    const parsedSchema = loose && typeof (schema as any).loose === "function" ? (schema as any).loose() : schema;
+    const shape = schema.shape as SchemaShape;
+    const schemaKeys = new Set(Object.keys(shape));
+    const booleanKeys = coerceBooleans ? collectBooleanKeys(shape) : new Set<string>();
+    const jsonKeys = parseJsonStrings ? collectJsonKeys(shape) : new Set<string>();
+
+    return (row) => {
+        if (typeof row !== "object" || row === null) {
+            throw new TypeError(`Expected row to be an object, received ${typeof row}`);
+        }
+
+        const record = row as Record<string, unknown>;
+        const schemaInput: Record<string, any> = {};
+        const extras: Record<string, any> = {};
+
+        for (const [rawKey, rawValue] of Object.entries(record)) {
+            if (prefix && !rawKey.startsWith(prefix)) continue;
+            const key = prefix ? rawKey.slice(prefixLength) : rawKey;
+            const value = normalizeValue(rawValue, key, booleanKeys, jsonKeys, coerceBooleans, parseJsonStrings, prefix);
+            if (schemaKeys.has(key)) schemaInput[key] = value;
+            else extras[key] = value;
+        }
+
+        if (validate) {
+            const data = parsedSchema.parse(schemaInput) as z.output<Schema>;
+            return { data, extras };
+        }
+
+        return { data: schemaInput as z.output<Schema>, extras };
+    };
+}
+
+function normalizeValue(
+    value: unknown,
+    key: string,
+    booleanKeys: Set<string>,
+    jsonKeys: Set<string>,
+    coerceBooleans: boolean,
+    parseJsonStrings: boolean,
+    prefix?: string
+): any {
+    if (value === null || value === undefined) return undefined;
+    let current: any = value;
+
+    if (coerceBooleans && booleanKeys.has(key)) current = coerceBoolean(current);
+    if (parseJsonStrings && jsonKeys.has(key)) current = coerceJson(current, key, prefix);
+
+    return current;
+}
+
+function coerceBoolean(value: unknown): any {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") {
+        if (value === 0) return false;
+        if (value === 1) return true;
+        return value;
+    }
+    if (typeof value === "bigint") {
+        if (value === 0n) return false;
+        if (value === 1n) return true;
+        return value;
+    }
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === "0") return false;
+        if (normalized === "1") return true;
+        if (normalized === "true") return true;
+        if (normalized === "false") return false;
+    }
+    return value;
+}
+
+function coerceJson(value: unknown, key: string, prefix?: string): any {
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return value;
+    try {
+        return JSON.parse(trimmed);
+    } catch (error) {
+        if (error && typeof error === "object") {
+            (error as any).details = {
+                ...(error as any).details,
+                key: prefix ? `${prefix}${key}` : key,
+                value: trimmed
+            };
+        }
+        throw error;
+    }
+}
+
+function collectBooleanKeys(shape: SchemaShape): Set<string> {
+    const keys = new Set<string>();
+    for (const [key, childSchema] of Object.entries(shape)) if (isBooleanLike(childSchema)) keys.add(key);
+    return keys;
+}
+
+function collectJsonKeys(shape: SchemaShape): Set<string> {
+    const keys = new Set<string>();
+    for (const [key, childSchema] of Object.entries(shape)) if (isJsonLike(childSchema)) keys.add(key);
+    return keys;
+}
+
+function isBooleanLike(schema: ZodType): boolean {
+    const base = unwrapSchema(schema);
+    const def: any = base?.def;
+    if (!def) return false;
+    const type = def.type;
+    if (type === "boolean") return true;
+    if (type === "literal") return typeof def.value === "boolean";
+    if (type === "union") return (def.options as ZodType[]).every((option) => isBooleanLike(option));
+    if (type === "intersection") {
+        const { left, right } = def;
+        return isBooleanLike(left) && isBooleanLike(right);
+    }
+    return false;
+}
+
+function isJsonLike(schema: ZodType): boolean {
+    const base = unwrapSchema(schema);
+    const def: any = base?.def;
+    if (!def) return false;
+    const type = def.type;
+    if (jsonTypeNames.has(type)) return true;
+    if (type === "union") {
+        const { options } = def as { options: ZodType[] };
+        return options.every((option: ZodType) => isJsonLike(option) || isNullish(option));
+    }
+    if (type === "intersection") {
+        const { left, right } = def;
+        return isJsonLike(left) || isJsonLike(right);
+    }
+    if (type === "lazy") return true;
+    return false;
+}
+
+const jsonTypeNames = new Set([
+    "object",
+    "array",
+    "tuple",
+    "record",
+    "map",
+    "set"
+]);
+
+function isNullish(schema: ZodType): boolean {
+    const base = unwrapSchema(schema);
+    const def: any = base?.def;
+    if (!def) return false;
+    if (def.type === "null") return true;
+    if (def.type === "literal") return def.value === null;
+    return false;
+}
+
+function unwrapSchema(schema: ZodType, seen = new Set<ZodType>()): ZodType {
+    if (seen.has(schema)) return schema;
+    seen.add(schema);
+    const def: any = schema?.def;
+    if (!def || !def.type) return schema;
+    switch (def.type) {
+        case "optional":
+        case "nullable":
+        case "default":
+        case "catch":
+        case "readonly":
+            return unwrapSchema(def.innerType, seen);
+        case "effects":
+            return unwrapSchema(def.schema, seen);
+        case "lazy":
+            return unwrapSchema(def.getter(), seen);
+        case "pipe":
+            return unwrapSchema(def.out, seen);
+        case "brand":
+            return unwrapSchema(def.type, seen);
+        default:
+            return schema;
+    }
 }

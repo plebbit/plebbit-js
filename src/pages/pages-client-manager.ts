@@ -1,10 +1,14 @@
 import { BaseClientsManager, OptionsToLoadFromGateway } from "../clients/base-client-manager.js";
-import type { PageIpfs } from "./types.js";
+import type { ModQueuePageIpfs, ModQueueSortName, PageIpfs } from "./types.js";
 import * as remeda from "remeda";
 import Logger from "@plebbit/plebbit-logger";
-import { BasePages, PostsPages, RepliesPages } from "./pages.js";
+import { BasePages, ModQueuePages, PostsPages, RepliesPages } from "./pages.js";
 import { POSTS_SORT_TYPES, POST_REPLIES_SORT_TYPES } from "./util.js";
-import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import {
+    parseJsonWithPlebbitErrorIfFails,
+    parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails,
+    parsePageIpfsSchemaWithPlebbitErrorIfItFails
+} from "../schema/schema-util.js";
 import { hideClassPrivateProps } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 import { sha256 } from "js-sha256";
@@ -18,9 +22,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
         libp2pJsClients: { [sortType: string]: { [libp2pJsClientKey: string]: PagesLibp2pJsClient } };
     };
 
-    protected _pages: RepliesPages | PostsPages;
+    protected _pages: RepliesPages | PostsPages | ModQueuePages; // can be undefined if it's a mod queue
 
-    constructor(opts: { pages: RepliesPages | PostsPages; plebbit: Plebbit }) {
+    constructor(opts: { pages: BasePagesClientsManager["_pages"]; plebbit: Plebbit }) {
         super(opts.plebbit);
         this._pages = opts.pages;
         //@ts-expect-error
@@ -206,6 +210,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
+    protected parsePageJson(json: unknown): PageIpfs | ModQueuePageIpfs {
+        // default validator; subclasses can override
+        return parsePageIpfsSchemaWithPlebbitErrorIfItFails(json as any);
+    }
+
     private async _fetchPageWithKuboOrHeliaP2P(
         pageCid: string,
         log: Logger,
@@ -216,11 +225,11 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._updateKuboRpcClientOrHeliaState("fetching-ipfs", heliaOrKubo, sortTypes);
         const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
         try {
-            return parsePageIpfsSchemaWithPlebbitErrorIfItFails(
+            return this.parsePageJson(
                 parseJsonWithPlebbitErrorIfFails(
                     await this._fetchCidP2P(pageCid, { maxFileSizeBytes: pageMaxSize, timeoutMs: pageTimeoutMs })
                 )
-            );
+            ) as PageIpfs;
         } catch (e) {
             //@ts-expect-error
             e.details = { ...e.details, pageCid, sortTypes, pageMaxSize };
@@ -243,7 +252,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             timeoutMs: this._plebbit._timeouts["page-ipfs"],
             log
         });
-        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
+        const pageIpfs = this.parsePageJson(parseJsonWithPlebbitErrorIfFails(res.resText)) as PageIpfs;
 
         return pageIpfs;
     }
@@ -315,5 +324,23 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
 
     protected override getSortTypes() {
         return remeda.keys.strict(POSTS_SORT_TYPES);
+    }
+}
+
+export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
+    override clients!: {
+        ipfsGateways: Record<ModQueueSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
+        kuboRpcClients: Record<ModQueueSortName, { [kuboRpcClientUrl: string]: PagesIpfsGatewayClient }>;
+        plebbitRpcClients: Record<ModQueueSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
+        libp2pJsClients: Record<ModQueueSortName, { [libp2pJsClientKey: string]: PagesIpfsGatewayClient }>;
+    };
+
+    protected override getSortTypes(): ModQueueSortName[] {
+        return ["pendingApproval"];
+    }
+
+    protected override parsePageJson(json: unknown): ModQueuePageIpfs {
+        // Validate using the ModQueue page schema, then coerce to PageIpfs for consumers
+        return parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(json as any) as ModQueuePageIpfs;
     }
 }

@@ -17,21 +17,21 @@ import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subpleb
 import * as remeda from "remeda";
 import { CommentModerationPubsubMessagePublicationSchema } from "../publications/comment-moderation/schema.js";
 import { SubplebbitEditPubsubMessagePublicationSchema } from "../publications/subplebbit-edit/schema.js";
-import { nonNegativeIntStringSchema } from "../schema.js";
+import { Uint8ArraySchema, nonNegativeIntStringSchema } from "../schema.js";
 
 const AcceptedChallengeTypeSchema = z.string().min(1);
 
 export const PubsubMessageSignatureSchema = z
     .object({
-        signature: z.instanceof(Uint8Array), // (byte string in cbor)
-        publicKey: z.instanceof(Uint8Array), // (byte string in cbor) 32 bytes
+        signature: Uint8ArraySchema, // (byte string in cbor)
+        publicKey: Uint8ArraySchema, // (byte string in cbor) 32 bytes
         type: z.string().min(1),
         signedPropertyNames: z.string().array()
     })
     .strict();
 
 const PubsubMessageBaseSchema = z.object({
-    challengeRequestId: z.instanceof(Uint8Array), // (byte string in cbor) // multihash of pubsubmessage.signature.publicKey, each challengeRequestMessage must use a new public key
+    challengeRequestId: Uint8ArraySchema, // (byte string in cbor) // multihash of pubsubmessage.signature.publicKey, each challengeRequestMessage must use a new public key
     signature: PubsubMessageSignatureSchema,
     protocolVersion: ProtocolVersionSchema,
     userAgent: UserAgentSchema,
@@ -41,9 +41,9 @@ const PubsubMessageBaseSchema = z.object({
 export const EncryptedSchema = z
     .object({
         // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-        ciphertext: z.instanceof(Uint8Array),
-        iv: z.instanceof(Uint8Array),
-        tag: z.instanceof(Uint8Array),
+        ciphertext: Uint8ArraySchema,
+        iv: Uint8ArraySchema,
+        tag: Uint8ArraySchema,
         type: z.string().min(1)
     })
     .strict();
@@ -60,10 +60,10 @@ export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
 
 export const DecryptedChallengeRequestPublicationSchema = z.object({
     comment: CommentPubsubMessageWithFlexibleAuthorRefinementSchema.optional(),
-    vote: VotePubsubMessagePublicationSchema.passthrough().optional(),
-    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough().optional(),
-    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional(),
-    subplebbitEdit: SubplebbitEditPubsubMessagePublicationSchema.passthrough().optional()
+    vote: VotePubsubMessagePublicationSchema.loose().optional(),
+    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.loose().optional(),
+    commentModeration: CommentModerationPubsubMessagePublicationSchema.loose().optional(),
+    subplebbitEdit: SubplebbitEditPubsubMessagePublicationSchema.loose().optional()
 });
 
 // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
@@ -123,8 +123,8 @@ export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend
 
 export const DecryptedChallengeVerificationSchema = z
     .object({
-        comment: CommentIpfsSchema.passthrough(),
-        commentUpdate: CommentUpdateForChallengeVerificationSchema.passthrough()
+        comment: CommentIpfsSchema.loose(),
+        commentUpdate: CommentUpdateForChallengeVerificationSchema.loose()
     })
     .strict();
 

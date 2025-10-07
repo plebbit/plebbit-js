@@ -23,6 +23,7 @@ describeSkipIfRpc("subplebbit.postUpdates", async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
+        subplebbit.setMaxListeners(100);
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });

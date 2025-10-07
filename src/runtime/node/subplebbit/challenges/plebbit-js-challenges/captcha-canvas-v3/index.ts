@@ -1,10 +1,15 @@
 import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants.js";
 
-import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
+import {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import { createCaptcha } from "captcha-canvas";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "characters",
         label: "Characters",
@@ -35,7 +40,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     }
 ];
 
-const type: Challenge["type"] = "image/png";
+const type: ChallengeInput["type"] = "image/png";
 
 const description = "make custom image captcha";
 
@@ -43,7 +48,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
-): Promise<Challenge> => {
+): Promise<ChallengeInput> => {
     // setCaptchaOptions https://captcha-canvas.js.org/global.html#SetCaptchaOptions
 
     const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : 300;
@@ -58,7 +63,7 @@ const getChallenge = async (
 
     const imageBase64 = (await res.image).toString("base64");
 
-    const verify = async (_answer: string): Promise<ChallengeResult> => {
+    const verify = async (_answer: string): Promise<ChallengeResultInput> => {
         if (res.text.toLowerCase() === _answer.toLowerCase().trim()) {
             return { success: true };
         }
@@ -72,7 +77,7 @@ const getChallenge = async (
     return { challenge, verify, type, caseInsensitive: true };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     return { getChallenge, optionInputs, type, description, caseInsensitive: true };
 }
 

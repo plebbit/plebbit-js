@@ -178,6 +178,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private _subplebbitFsWatchAbort?: AbortController;
 
     private _addressRewriterDestroy?: () => Promise<void>;
+    private _addressRewriterSetupPromise?: Promise<void>;
+    destroyed = false;
     private _promiseToWaitForFirstSubplebbitschangeEvent: Promise<string[]>;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
@@ -338,10 +340,17 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     private async _setupHttpRoutersWithKuboNodeInBackground() {
         const log = Logger("plebbit-js:plebbit:_initHttpRoutersWithIpfsInBackground");
 
+        if (this.destroyed) return;
+
         if (this.httpRoutersOptions?.length && this.kuboRpcClientsOptions?.length && this._canCreateNewLocalSub()) {
             // only for node
-            setupKuboAddressesRewriterAndHttpRouters(this)
-                .then((addressesRewriterProxyServer) => {
+            const setupPromise = setupKuboAddressesRewriterAndHttpRouters(this)
+                .then(async (addressesRewriterProxyServer) => {
+                    if (this.destroyed) {
+                        await addressesRewriterProxyServer.destroy();
+                        return;
+                    }
+
                     log(
                         "Set http router options and their proxies successfully on all connected ipfs",
                         Object.keys(this.clients.kuboRpcClients)
@@ -349,9 +358,12 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
                     this._addressRewriterDestroy = addressesRewriterProxyServer.destroy;
                 })
                 .catch((e: Error) => {
+                    if (this.destroyed) return;
                     log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
                     this.emit("error", e);
                 });
+
+            this._addressRewriterSetupPromise = setupPromise;
         }
     }
 
@@ -554,7 +566,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         // last resort to set subplebbit ipfs props
         if (!subplebbit.raw.subplebbitIpfs) {
             if (options.signature) {
-                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(
+                const resParseSubplebbitIpfs = SubplebbitIpfsSchema.loose().safeParse(
                     remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
                 );
                 if (resParseSubplebbitIpfs.success) {
@@ -933,6 +945,8 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
     }
 
     async destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
         // Clean up connections
 
         for (const comment of Object.values(this._updatingComments)) await comment.stop();
@@ -943,7 +957,15 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
 
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
 
-        if (this._addressRewriterDestroy) await this._addressRewriterDestroy();
+        if (this._addressRewriterSetupPromise) {
+            await this._addressRewriterSetupPromise;
+            this._addressRewriterSetupPromise = undefined;
+        }
+
+        if (this._addressRewriterDestroy) {
+            await this._addressRewriterDestroy();
+            this._addressRewriterDestroy = undefined;
+        }
         await this._domainResolver.destroy();
 
         await this._storage.destroy();

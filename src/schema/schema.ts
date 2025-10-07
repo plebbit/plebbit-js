@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isIpfsCid } from "../util.js";
+import { CID } from "kubo-rpc-client";
 import { messages } from "../errors.js";
 import * as remeda from "remeda";
 
@@ -31,6 +31,14 @@ const WalletSchema = z.object({
     signature: z.object({ signature: z.string().min(1), type: z.string().min(1) })
 });
 
+const isIpfsCid = (value: string) => {
+    try {
+        return Boolean(CID.parse(value));
+    } catch {
+        return false;
+    }
+};
+
 export const CidStringSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
 
 // '/ipfs/QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1' => 'QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1'
@@ -43,24 +51,20 @@ const ChainTickerSchema = z.string().min(1); // chain ticker can be anything for
 
 const AuthorWalletsSchema = z.record(ChainTickerSchema, WalletSchema);
 
-export const AuthorAvatarNftSchema = z
-    .object({
-        chainTicker: ChainTickerSchema,
-        address: z.string(),
-        id: z.string(),
-        timestamp: PlebbitTimestampSchema,
-        signature: z.object({ signature: z.string().min(1), type: z.string().min(1) })
-    })
-    .passthrough();
+export const AuthorAvatarNftSchema = z.looseObject({
+    chainTicker: ChainTickerSchema,
+    address: z.string(),
+    id: z.string(),
+    timestamp: PlebbitTimestampSchema,
+    signature: z.object({ signature: z.string().min(1), type: z.string().min(1) })
+});
 
-export const FlairSchema = z
-    .object({
-        text: z.string(),
-        backgroundColor: z.string().optional(),
-        textColor: z.string().optional(),
-        expiresAt: PlebbitTimestampSchema.optional()
-    })
-    .passthrough();
+export const FlairSchema = z.looseObject({
+    text: z.string(),
+    backgroundColor: z.string().optional(),
+    textColor: z.string().optional(),
+    expiresAt: PlebbitTimestampSchema.optional()
+});
 
 // When author creates their publication, this is publication.author
 export const AuthorPubsubSchema = z
@@ -79,7 +83,7 @@ export const ChallengeAnswerStringSchema = z.string(); // TODO add validation fo
 export const ChallengeAnswersSchema = ChallengeAnswerStringSchema.array().nonempty(); // for example ["1+1=2", "3+3=6"]
 export const CreatePublicationUserOptionsSchema = z.object({
     signer: CreateSignerSchema,
-    author: AuthorPubsubSchema.partial().passthrough().optional(),
+    author: AuthorPubsubSchema.partial().loose().optional(),
     subplebbitAddress: SubplebbitAddressSchema,
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
@@ -107,16 +111,14 @@ export const PublicationBaseBeforeSigning = z.object({
     protocolVersion: ProtocolVersionSchema
 });
 
-export const SubplebbitAuthorSchema = z
-    .object({
-        postScore: z.number(), // total post karma in the subplebbit
-        replyScore: z.number(), // total reply karma in the subplebbit
-        banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
-        flair: FlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
-        firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
-        lastCommentCid: CidStringSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
-    })
-    .passthrough();
+export const SubplebbitAuthorSchema = z.looseObject({
+    postScore: z.number(), // total post karma in the subplebbit
+    replyScore: z.number(), // total reply karma in the subplebbit
+    banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
+    flair: FlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
+    firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
+    lastCommentCid: CidStringSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
+});
 export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
 
 export const AuthorWithOptionalCommentUpdateSchema = AuthorPubsubSchema.extend({

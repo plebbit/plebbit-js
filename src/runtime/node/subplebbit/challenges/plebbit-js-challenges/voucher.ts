@@ -1,4 +1,9 @@
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
+import type {
+    ChallengeFileInput,
+    ChallengeInput,
+    ChallengeResultInput,
+    SubplebbitChallengeSetting
+} from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -7,7 +12,7 @@ import type { LocalSubplebbit } from "../../local-subplebbit.js";
 const defaultDescription =
     "Distribute unique voucher codes to specific authors. Each author gets their own voucher code that only works for them.";
 
-const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
+const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
         option: "question",
         label: "Question",
@@ -46,7 +51,7 @@ const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     }
 ];
 
-const type: Challenge["type"] = "text/plain";
+const type: ChallengeInput["type"] = "text/plain";
 
 const getVoucherStateFilePath = (subplebbit: LocalSubplebbit): string => {
     const challengeDataDir = path.join(subplebbit._plebbit.dataPath!, "subplebbits", `${subplebbit.address}-challenge-data`);
@@ -83,7 +88,7 @@ const getChallenge = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
-): Promise<Challenge | ChallengeResult> => {
+): Promise<ChallengeInput | ChallengeResultInput> => {
     if (!subplebbitChallengeSettings?.options?.question) throw Error("No option question");
 
     const vouchersString = subplebbitChallengeSettings?.options?.vouchers;
@@ -124,7 +129,7 @@ const getChallenge = async (
     if (challengeAnswer === undefined) {
         return {
             challenge: subplebbitChallengeSettings?.options?.question,
-            verify: async (_answer: string) => {
+            verify: async (_answer: string): Promise<ChallengeResultInput> => {
                 if (!availableVouchers.includes(_answer)) {
                     return {
                         success: false,
@@ -180,7 +185,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFileInput {
     const question = subplebbitChallengeSettings?.options?.question;
     const challenge = question;
     const description = subplebbitChallengeSettings?.options?.description || defaultDescription;

@@ -22,6 +22,7 @@ import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { Buffer } from "buffer";
 import { messages } from "../../../../dist/node/errors.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const subplebbitAddress = signers[0].address;
 const subPostsBySortName = {}; // we will load all subplebbit pages and store its posts by sort name here
@@ -292,6 +293,33 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 } catch (e) {
                     expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
                     expect(e.details.signatureValidity.reason).to.equal(messages.ERR_PARENT_CID_OF_COMMENT_IN_PAGE_IS_NOT_CORRECT);
+                }
+            });
+
+            it(`Fails validation when a post in page has postCid defined`, async () => {
+                const validPageIpfs = subplebbit.raw.subplebbitIpfs.posts.pages.hot;
+                const invalidPage = JSON.parse(JSON.stringify(validPageIpfs));
+                const postWithNoRepliesIndex = invalidPage.comments.findIndex(
+                    (comment) => comment.comment.depth === 0 && !comment.commentUpdate.replies
+                );
+                expect(postWithNoRepliesIndex).to.be.greaterThanOrEqual(0);
+                invalidPage.comments[postWithNoRepliesIndex].comment.postCid =
+                    invalidPage.comments[postWithNoRepliesIndex].commentUpdate.cid; // Should be undefined for posts
+
+                // Update the commentUpdate.cid to match the modified comment
+                invalidPage.comments[postWithNoRepliesIndex].commentUpdate.cid = await calculateIpfsHash(
+                    deterministicStringify(invalidPage.comments[postWithNoRepliesIndex].comment)
+                );
+
+                console.log(invalidPage.comments[postWithNoRepliesIndex].commentUpdate.cid);
+                const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPage));
+
+                try {
+                    await subplebbit.posts.validatePage(invalidPage);
+                    expect.fail("Should have thrown");
+                } catch (e) {
+                    expect(e.code).to.equal("ERR_POSTS_PAGE_IS_INVALID");
+                    expect(e.details.signatureValidity.reason).to.equal(messages.ERR_PAGE_COMMENT_POST_HAS_POST_CID_DEFINED_WITH_DEPTH_0);
                 }
             });
 

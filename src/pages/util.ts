@@ -1,17 +1,7 @@
-import type {
-    PageIpfs,
-    PagesTypeIpfs,
-    PagesTypeJson,
-    PostSort,
-    ReplySort,
-    Timeframe,
-    PageTypeJson,
-    ReplySortName,
-    PostSortName
-} from "./types.js";
+import type { PageIpfs, PagesTypeIpfs, PagesTypeJson, PostSort, ReplySort, Timeframe, PageTypeJson } from "./types.js";
 import { Comment } from "../publications/comment/comment.js";
 import assert from "assert";
-import { BasePages } from "./pages.js";
+import { BasePages, PostsPages, RepliesPages } from "./pages.js";
 
 import * as remeda from "remeda";
 import type { CommentWithinPageJson } from "../publications/comment/types.js";
@@ -206,9 +196,8 @@ export function processAllCommentsRecursively(comments: PageIpfs["comments"], pr
 // To use for both subplebbit.posts and comment.replies
 
 export function parseRawPages(
-    pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | BasePages | undefined,
-    pageCreationTimestamp: number // to use to calculate sort pages client-side
-): Pick<BasePages, "pages"> {
+    pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | RepliesPages | PostsPages | undefined
+): Pick<RepliesPages | PostsPages, "pages"> {
     if (!pages)
         return {
             pages: {}

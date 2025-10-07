@@ -1,9 +1,13 @@
 import { parsePageIpfs } from "./util.js";
-import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
-import { verifyPage } from "../signer/signatures.js";
-import { BasePagesClientsManager, SubplebbitPostsPagesClientsManager, RepliesPagesClientsManager } from "./pages-client-manager.js";
+import type { PageIpfs, PageTypeJson, PostSortName, ReplySortName } from "./types.js";
+import { verifyModQueuePage, verifyPage } from "../signer/signatures.js";
+import {
+    BasePagesClientsManager,
+    SubplebbitPostsPagesClientsManager,
+    RepliesPagesClientsManager,
+    SubplebbitModQueueClientsManager
+} from "./pages-client-manager.js";
 import { PlebbitError } from "../plebbit-error.js";
-import * as remeda from "remeda";
 import { hideClassPrivateProps } from "../util.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { Comment } from "../publications/comment/comment.js";
@@ -21,21 +25,23 @@ type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> &
         parentComment: Comment;
     };
 
+type ModQueueProps = Pick<ModQueuePages, "pageCids" | "pages"> & BaseProps & { subplebbit: RemoteSubplebbit };
+
 export class BasePages {
-    pages!: PostsPages["pages"] | RepliesPages["pages"];
-    pageCids!: PostsPages["pageCids"] | RepliesPages["pageCids"];
+    pages!: PostsPages["pages"] | RepliesPages["pages"] | ModQueuePages["pages"];
+    pageCids!: PostsPages["pageCids"] | RepliesPages["pageCids"] | ModQueuePages["pageCids"];
     clients!: BasePagesClientsManager["clients"];
     _clientsManager!: BasePagesClientsManager;
     _parentComment: Comment | undefined = undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
     _subplebbit!: BaseProps["subplebbit"];
 
-    constructor(props: PostsProps | RepliesProps) {
+    constructor(props: PostsProps | RepliesProps | ModQueueProps) {
         this._initClientsManager(props.plebbit);
         this.updateProps(props);
         hideClassPrivateProps(this);
     }
 
-    updateProps(props: Omit<PostsProps | RepliesProps, "plebbit">) {
+    updateProps(props: Omit<PostsProps | RepliesProps | ModQueueProps, "plebbit">) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
         this._subplebbit = props.subplebbit;
@@ -43,8 +49,9 @@ export class BasePages {
             this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
             this._clientsManager.updatePagesMaxSizeCache(Object.values(this.pageCids), 1024 * 1024);
         }
-        for (const preloadedPage of Object.values(this.pages))
-            if (preloadedPage?.nextCid) this._clientsManager.updatePagesMaxSizeCache([preloadedPage.nextCid], 1024 * 1024);
+        if (this.pages)
+            for (const preloadedPage of Object.values(this.pages))
+                if (preloadedPage?.nextCid) this._clientsManager.updatePagesMaxSizeCache([preloadedPage.nextCid], 1024 * 1024);
     }
 
     protected _initClientsManager(plebbit: Plebbit) {
@@ -233,6 +240,58 @@ export class PostsPages extends BasePages {
         const signatureValidity = await verifyPage(verificationOpts);
         if (!signatureValidity.valid)
             throw new PlebbitError("ERR_POSTS_PAGE_IS_INVALID", {
+                signatureValidity,
+                verificationOpts
+            });
+    }
+}
+
+type ModQueuePageCids = Record<string, string>; // cid string, we assume pendingApproval is under pageCids
+
+export class ModQueuePages extends BasePages {
+    override pages: undefined = undefined;
+    override pageCids!: ModQueuePageCids;
+    override _parentComment = undefined;
+
+    constructor(props: ModQueueProps) {
+        super(props);
+        this.pages = undefined;
+    }
+
+    override resetPages(): void {
+        this.pageCids = {};
+        this.pages = undefined;
+    }
+
+    protected override _initClientsManager(plebbit: Plebbit): void {
+        this._clientsManager = new SubplebbitModQueueClientsManager({ plebbit, pages: this });
+        this.clients = this._clientsManager.clients;
+    }
+
+    override getPage(pageCid: string): Promise<PageTypeJson> {
+        // we need to make all updating subplebbit instances do the getPage call to cache _loadedUniqueCommentFromGetPage
+
+        return super.getPage(pageCid);
+    }
+
+    override async _validatePage(pageIpfs: PageIpfs, pageCid?: string) {
+        if (pageIpfs.comments.length === 0) return;
+        const pageSortName = Object.entries(this.pageCids).find(([_, pageCid]) => pageCid === pageCid)?.[0];
+        const verificationOpts = {
+            pageCid,
+            pageSortName,
+            page: pageIpfs,
+            resolveAuthorAddresses: this._clientsManager._plebbit.resolveAuthorAddresses,
+            clientsManager: this._clientsManager,
+            subplebbit: this._subplebbit,
+            parentComment: { cid: undefined, postCid: undefined, depth: -1 },
+            overrideAuthorAddressIfInvalid: true,
+            validatePages: this._clientsManager._plebbit.validatePages,
+            validateUpdateSignature: false // no need because we verified that page cid matches its content
+        };
+        const signatureValidity = await verifyModQueuePage(verificationOpts);
+        if (!signatureValidity.valid)
+            throw new PlebbitError("ERR_MOD_QUEUE_PAGE_IS_INVALID", {
                 signatureValidity,
                 verificationOpts
             });

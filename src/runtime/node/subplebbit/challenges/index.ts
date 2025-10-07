@@ -25,6 +25,7 @@ import type {
     Challenge,
     ChallengeFile,
     ChallengeFileFactory,
+    ChallengeFileFactoryInput,
     ChallengeResult,
     SubplebbitChallenge,
     SubplebbitChallengeSetting
@@ -39,7 +40,7 @@ type PendingChallenge = Challenge & { index: number };
 
 export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<DecryptedChallengeAnswer["challengeAnswers"]>;
 
-const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
+const plebbitJsChallenges: Record<string, ChallengeFileFactoryInput> = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
     fail: fail,
@@ -224,7 +225,7 @@ const getChallengeVerificationFromChallengeAnswers = async (
 > => {
     const verifyChallengePromises: Promise<ChallengeResult>[] = [];
     for (const i in pendingChallenges) {
-        verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i])); // TODO double check if zod verifies output of a promise
+        verifyChallengePromises.push(Promise.resolve(pendingChallenges[i].verify(challengeAnswers[i])));
     }
     const challengeResultsWithPendingIndexes = await Promise.all(verifyChallengePromises);
 
@@ -281,7 +282,7 @@ const getChallengeVerification = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     subplebbit: LocalSubplebbit,
     getChallengeAnswers: GetChallengeAnswers
-): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess">> => {
+): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess"> & { pendingApproval?: boolean }> => {
     if (!challengeRequestMessage) {
         throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`);
     }
@@ -294,6 +295,11 @@ const getChallengeVerification = async (
     if (!Array.isArray(subplebbit.settings?.challenges)) throw Error("subplebbit.settings?.challenges is not defined");
 
     const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
+
+    // there's basically 3 scenarios,
+    // all challenges pass, no pending approval,
+    // at least one challenge without pendingApproval: true fails, no pending approval,
+    // all challenges that fail have pendingApproval: true, it goes to pending approval.
 
     let challengeVerification: Pick<ChallengeVerificationMessageType, "challengeSuccess" | "challengeErrors">;
     // was able to verify without asking author for challenges
@@ -312,6 +318,19 @@ const getChallengeVerification = async (
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
     addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
 
+    // all challenges that failed have pendingApproval: true, therefore it will go to pending approval
+    const allFailuresRequirePendingApproval =
+        challengeVerification.challengeErrors &&
+        Object.keys(challengeVerification.challengeErrors).every((challengeIndexString) =>
+            Boolean(subplebbit.challenges?.[Number(challengeIndexString)]?.pendingApproval)
+        );
+
+    if (
+        challengeRequestMessage.comment && // only comments have pendingApproval
+        allFailuresRequirePendingApproval
+    ) {
+        return { ...challengeVerification, pendingApproval: true, challengeSuccess: true, challengeErrors: undefined };
+    }
     return challengeVerification;
 };
 
@@ -352,7 +371,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = async (
         description: subplebbitChallengeSettings.description || challengeFile.description,
         challenge,
         type,
-        caseInsensitive: challengeFile.caseInsensitive
+        caseInsensitive: challengeFile.caseInsensitive,
+        pendingApproval: subplebbitChallengeSettings.pendingApproval
     };
 };
 
