@@ -566,13 +566,20 @@ export async function removeMfsFilesSafely({
 
         operation.attempt(async (currentAttempt) => {
             try {
-                await pTimeout(kuboRpcClient._client.files.rm(paths, { recursive: true }), {
-                    milliseconds: 120000,
-                    message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
-                        toDeleteMfsPaths: paths,
-                        kuboRpcUrl: kuboRpcClient.url
-                    })
-                });
+                await pTimeout(
+                    kuboRpcClient._client.files.rm(paths, {
+                        recursive: true,
+                        //@ts-expect-error
+                        force: true
+                    }),
+                    {
+                        milliseconds: 120000,
+                        message: new PlebbitError("ERR_TIMED_OUT_RM_MFS_FILE", {
+                            toDeleteMfsPaths: paths,
+                            kuboRpcUrl: kuboRpcClient.url
+                        })
+                    }
+                );
 
                 resolve();
             } catch (error) {
