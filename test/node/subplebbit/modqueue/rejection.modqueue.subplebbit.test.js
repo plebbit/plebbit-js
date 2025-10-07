@@ -75,6 +75,7 @@ for (const commentMod of commentModProps) {
                 });
 
                 after(async () => {
+                    await commentToBeRejected.stop();
                     await subplebbit.delete();
                     await plebbit.destroy();
                     await remotePlebbit.destroy();
@@ -260,10 +261,15 @@ for (const commentMod of commentModProps) {
                         const newComment = await remotePlebbit.createComment(commentToBeRejected);
 
                         const errors = [];
+                        const failIfUpdated = () =>
+                            newComment.raw.commentUpdate &&
+                            expect.fail("Rejected comment unexpectedly emitted an update event with CommentUpdate");
+                        newComment.on("update", failIfUpdated);
                         newComment.on("error", (err) => errors.push(err));
                         await newComment.update();
 
                         await resolveWhenConditionIsTrue(newComment, () => errors.length > 0, "error");
+                        newComment.removeListener("update", failIfUpdated);
 
                         expect(errors[0].code).to.be.oneOf([
                             "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
