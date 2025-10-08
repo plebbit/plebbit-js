@@ -139,7 +139,7 @@
         "socket.io": "4.7.4",
         "socket.io-client": "4.7.4",
         "tempy": "1.0.1",
-        "typescript": "5.9.2",
+        "typescript": "5.9.3",
         "vite": "7.0.0",
         "vitest": "3.2.4",
         "wait-on": "6.0.1"
