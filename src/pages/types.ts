@@ -4,7 +4,8 @@ import type {
     CommentIpfsType,
     CommentUpdateForChallengeVerification,
     CommentUpdateType,
-    CommentWithinPageJson
+    CommentWithinModQueuePageJson,
+    CommentWithinRepliesPostsPageJson
 } from "../publications/comment/types";
 import { JsonOfClass } from "../types";
 import { PostsPages, RepliesPages } from "./pages";
@@ -37,7 +38,7 @@ export type ReplySort = Record<ReplySortName, SortProps>;
 // JSON types
 
 export interface PageTypeJson extends Omit<PageIpfs, "comments"> {
-    comments: CommentWithinPageJson[];
+    comments: CommentWithinRepliesPostsPageJson[];
 }
 
 export type PostsPagesTypeJson = JsonOfClass<PostsPages>;
@@ -52,5 +53,10 @@ export type ModQueueCommentInPage = {
 
 export type ModQueuePageIpfs = {
     comments: ModQueueCommentInPage[];
+    nextCid?: string;
+};
+
+export type ModQueuePageTypeJson = {
+    comments: CommentWithinModQueuePageJson[];
     nextCid?: string;
 };

@@ -7,7 +7,7 @@ import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from ".
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit/plebbit.js";
-import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdateForChallengeVerification } from "../../signer/signatures.js";
+import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdate } from "../../signer/signatures.js";
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import * as remeda from "remeda";
@@ -22,7 +22,7 @@ import type {
     CommentUpdateForChallengeVerification,
     CommentUpdateType,
     CommentUpdatingState,
-    CommentWithinPageJson,
+    CommentWithinRepliesPostsPageJson,
     CreateCommentOptions,
     RpcCommentUpdateResultType
 } from "./types.js";
@@ -50,7 +50,7 @@ export class Comment
         Partial<Omit<CommentUpdateType, "replies">>
 {
     // Only Comment props
-    shortCid?: CommentWithinPageJson["shortCid"];
+    shortCid?: CommentWithinRepliesPostsPageJson["shortCid"];
 
     override clients!: CommentClientsManager["clients"];
     override author!: AuthorWithOptionalCommentUpdateJson;
@@ -72,7 +72,7 @@ export class Comment
     linkHtmlTagName?: CommentPubsubMessagePublication["linkHtmlTagName"];
 
     // CommentEdit and CommentUpdate props
-    original?: CommentWithinPageJson["original"];
+    original?: CommentWithinRepliesPostsPageJson["original"];
     upvoteCount?: CommentUpdateType["upvoteCount"];
     downvoteCount?: CommentUpdateType["downvoteCount"];
     replyCount?: CommentUpdateType["replyCount"];
@@ -81,7 +81,7 @@ export class Comment
     replies!: RepliesPages;
     edit?: CommentUpdateType["edit"];
     flair?: CommentPubsubMessagePublication["flair"];
-    deleted?: CommentWithinPageJson["deleted"];
+    deleted?: CommentWithinRepliesPostsPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
     nsfw?: CommentIpfsType["nsfw"];
     pinned?: CommentUpdateType["pinned"];
@@ -206,7 +206,7 @@ export class Comment
         }
     }
 
-    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson, subplebbit?: Pick<SubplebbitIpfsType, "signature">) {
+    _initCommentUpdate(props: CommentUpdateType | CommentWithinRepliesPostsPageJson, subplebbit?: Pick<SubplebbitIpfsType, "signature">) {
         const log = Logger("plebbit-js:comment:_initCommentUpdate");
         if ("depth" in props)
             // CommentWithinPageJson
@@ -259,7 +259,7 @@ export class Comment
     }
 
     _updateRepliesPostsInstance(
-        newReplies: CommentUpdateType["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">,
+        newReplies: CommentUpdateType["replies"] | CommentWithinRepliesPostsPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">,
         subplebbit?: Pick<SubplebbitIpfsType, "signature">
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
@@ -325,6 +325,14 @@ export class Comment
 
         const calculatedCid = await calculateIpfsHash(JSON.stringify(decryptedVerification.comment));
 
+        const postCid = decryptedVerification.comment.postCid || (decryptedVerification.comment.depth === 0 ? calculatedCid : undefined);
+
+        if (!postCid) {
+            throw Error(
+                "Unable to calculate postCid after receiving challengeVerification for comment. This is either a critical error in plebbit-js or the sub did not include postCid in replies"
+            );
+        }
+
         const commentIpfsValidity = await verifyCommentIpfs({
             comment: decryptedVerification.comment,
             resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
@@ -341,7 +349,16 @@ export class Comment
             this.emit("error", error);
             return error;
         }
-        const commentUpdateValidity = await verifyCommentUpdateForChallengeVerification(decryptedVerification.commentUpdate);
+        const commentUpdateValidity = await verifyCommentUpdate({
+            update: decryptedVerification.commentUpdate,
+            clientsManager: this._clientsManager,
+            comment: { ...decryptedVerification.comment, cid: calculatedCid, postCid },
+            subplebbit: this._subplebbit!,
+            overrideAuthorAddressIfInvalid: false,
+            resolveAuthorAddresses: this._plebbit.resolveAuthorAddresses,
+            validateUpdateSignature: true,
+            validatePages: true
+        });
         if (!commentUpdateValidity.valid) {
             const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE", {
                 reason: commentUpdateValidity.reason,

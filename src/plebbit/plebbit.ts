@@ -83,7 +83,7 @@ import type {
     CommentOptionsToSign,
     CommentPubsubMessagePublication,
     CommentUpdateType,
-    CommentWithinPageJson,
+    CommentWithinRepliesPostsPageJson,
     CreateCommentOptions,
     MinimumCommentFieldsToFetchPages
 } from "../publications/comment/types.js";
@@ -464,7 +464,7 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
         };
     }
 
-    private async _createCommentInstanceFromAnotherCommentInstance(options: Comment | CommentWithinPageJson | CommentJson) {
+    private async _createCommentInstanceFromAnotherCommentInstance(options: Comment | CommentWithinRepliesPostsPageJson | CommentJson) {
         const commentInstance = new Comment(this);
 
         if (options.cid) commentInstance.setCid(options.cid);
@@ -491,13 +491,15 @@ export class Plebbit extends PlebbitTypedEmitter<PlebbitEvents> implements Parse
             | CreateCommentOptions
             | CommentJson
             | Comment
-            | CommentWithinPageJson
+            | CommentWithinRepliesPostsPageJson
             | CommentIpfsWithCidDefined
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
         if ("clients" in options || "raw" in options || "original" in options || options instanceof Comment)
-            return this._createCommentInstanceFromAnotherCommentInstance(options as Comment | CommentWithinPageJson | CommentJson); // CommentJson
+            return this._createCommentInstanceFromAnotherCommentInstance(
+                options as Comment | CommentWithinRepliesPostsPageJson | CommentJson
+            ); // CommentJson
 
         const commentInstance = new Comment(this);
         if ("subplebbitAddress" in options && options.subplebbitAddress)

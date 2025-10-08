@@ -11,7 +11,7 @@ import type {
     SubplebbitEditOptions,
     RpcLocalSubplebbitUpdateResultType
 } from "../../subplebbit/types.js";
-import type { PageIpfs } from "../../pages/types.js";
+import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
 import { SubscriptionIdSchema } from "./schema.js";
 import { SubplebbitAddressSchema } from "../../schema/schema.js";
 import type { DecryptedChallengeAnswer, DecryptedChallengeRequest } from "../../pubsub-messages/types.js";
@@ -209,20 +209,29 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return commentProps;
     }
 
-    async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
+    async getCommentRepliesPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const pageIpfs = <PageIpfs>(
-            await this._webSocketClient.call("getCommentPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress])
+            await this._webSocketClient.call("getCommentRepliesPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress])
         );
         return pageIpfs;
     }
 
-    async getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
+    async getSubplebbitPostsPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPage", [parsedPageCid, parsedSubplebbitAddress]);
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentRepliesPage", [parsedPageCid, parsedSubplebbitAddress]);
+        return pageIpfs;
+    }
+
+    async getSubplebbitModQueuePage(pageCid: string, subplebbitAddress: string): Promise<ModQueuePageIpfs> {
+        const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const pageIpfs = <ModQueuePageIpfs>(
+            await this._webSocketClient.call("getSubplebbitModQueuePage", [parsedPageCid, parsedSubplebbitAddress])
+        );
         return pageIpfs;
     }
 

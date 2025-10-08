@@ -21,7 +21,7 @@ import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type {
     CommentIpfsWithCidDefined,
     CommentIpfsWithCidPostCidDefined,
-    CommentWithinPageJson,
+    CommentWithinRepliesPostsPageJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
 import pTimeout from "p-timeout";
@@ -156,7 +156,7 @@ export async function generateMockVote(
     return voteObj;
 }
 
-export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
+export async function loadAllPages(pageCid: string, pagesInstance: PostsPages | RepliesPages) {
     if (!pageCid) throw Error("Can't load all pages with undefined pageCid");
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
@@ -176,6 +176,7 @@ export async function loadAllPagesBySortName(pageSortName: string, pagesInstance
     let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        //@ts-expect-error
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
     }
     return sortedComments;
@@ -709,12 +710,12 @@ export async function publishWithExpectedResult(publication: Publication, expect
     }
 }
 
-export async function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: BasePages) {
+export async function iterateThroughPageCidToFindComment(commentCid: string, pageCid: string, pages: PostsPages | RepliesPages) {
     if (!commentCid) throw Error("Can't find comment with undefined commentCid");
     if (!pageCid) throw Error("Can't find comment with undefined pageCid");
     let currentPageCid: string | undefined = remeda.clone(pageCid);
     while (currentPageCid) {
-        const loadedPage = await pages.getPage(currentPageCid);
+        const loadedPage = (await pages.getPage(currentPageCid)) as PageTypeJson;
         const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
         if (commentInPage) return commentInPage;
         currentPageCid = loadedPage.nextCid;
@@ -1873,8 +1874,8 @@ export function mockViemClient({
 }
 
 export function processAllCommentsRecursively(
-    comments: (Comment | CommentWithinPageJson)[] | undefined,
-    processor: (comment: Comment | CommentWithinPageJson) => void
+    comments: (Comment | CommentWithinRepliesPostsPageJson)[] | undefined,
+    processor: (comment: Comment | CommentWithinRepliesPostsPageJson) => void
 ): void {
     if (!comments || comments.length === 0) return;
 

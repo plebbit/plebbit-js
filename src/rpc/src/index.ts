@@ -62,6 +62,7 @@ import type { InputPlebbitOptions } from "../../types.js";
 import type { SubplebbitEditChallengeRequestToEncryptType } from "../../publications/subplebbit-edit/types.js";
 import { PublicationRpcErrorToTransmit, RpcPublishResult } from "../../publications/types.js";
 import { TypedEmitter } from "tiny-typed-emitter";
+import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -161,8 +162,9 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
 
         // register all JSON RPC methods
         this.rpcWebsocketsRegister("getComment", this.getComment.bind(this));
-        this.rpcWebsocketsRegister("getSubplebbitPage", this.getSubplebbitPage.bind(this));
-        this.rpcWebsocketsRegister("getCommentPage", this.getCommentPage.bind(this));
+        this.rpcWebsocketsRegister("getSubplebbitPostsPage", this.getSubplebbitPostsPage.bind(this));
+        this.rpcWebsocketsRegister("getSubplebbitModqueuePage", this.getSubplebbitModQueuePage.bind(this));
+        this.rpcWebsocketsRegister("getCommentRepliesPage", this.getCommentRepliesPage.bind(this));
         this.rpcWebsocketsRegister("createSubplebbit", this.createSubplebbit.bind(this));
         this.rpcWebsocketsRegister("startSubplebbit", this.startSubplebbit.bind(this));
         this.rpcWebsocketsRegister("stopSubplebbit", this.stopSubplebbit.bind(this));
@@ -243,7 +245,20 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         return comment.toJSONIpfs();
     }
 
-    async getSubplebbitPage(params: any) {
+    async getSubplebbitModQueuePage(params: any): Promise<ModQueuePageIpfs> {
+        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
+        const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
+
+        // Use started subplebbit to fetch the page if possible, to expediete the process
+        const sub =
+            subplebbitAddress in startedSubplebbits
+                ? await getStartedSubplebbit(subplebbitAddress)
+                : <RemoteSubplebbit | LocalSubplebbit>await this.plebbit.createSubplebbit({ address: subplebbitAddress });
+        const page = await sub.modQueue._fetchAndVerifyPage(pageCid);
+        return page;
+    }
+
+    async getSubplebbitPostsPage(params: any): Promise<PageIpfs> {
         const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
 
@@ -256,7 +271,7 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
         return page;
     }
 
-    async getCommentPage(params: any) {
+    async getCommentRepliesPage(params: any): Promise<PageIpfs> {
         const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const commentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[1]);
         const subplebbitAddress = SubplebbitAddressSchema.parse(params[2]);

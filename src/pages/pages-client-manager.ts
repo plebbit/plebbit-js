@@ -196,12 +196,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
         try {
             return this._pages._parentComment
-                ? await this._plebbit._plebbitRpcClient!.getCommentPage(
+                ? await this._plebbit._plebbitRpcClient!.getCommentRepliesPage(
                       pageCid,
                       this._pages._parentComment.cid!,
                       this._pages._subplebbit.address
                   )
-                : await this._plebbit._plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbit.address);
+                : sortTypes?.[0] === "pendingApproval"
+                  ? await this._plebbit._plebbitRpcClient!.getSubplebbitModQueuePage(pageCid, this._pages._subplebbit.address)
+                  : await this._plebbit._plebbitRpcClient!.getSubplebbitPostsPage(pageCid, this._pages._subplebbit.address);
         } catch (e) {
             log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
             throw e;
@@ -220,7 +222,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         log: Logger,
         sortTypes: string[] | undefined,
         pageMaxSize: number
-    ): Promise<PageIpfs> {
+    ): Promise<PageIpfs | ModQueuePageIpfs> {
         const heliaOrKubo = this.getDefaultKuboRpcClientOrHelia();
         this._updateKuboRpcClientOrHeliaState("fetching-ipfs", heliaOrKubo, sortTypes);
         const pageTimeoutMs = this._plebbit._timeouts["page-ipfs"];
@@ -240,7 +242,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    async _fetchPageFromGateways(pageCid: string, log: Logger, pageMaxSize: number): Promise<PageIpfs> {
+    async _fetchPageFromGateways(pageCid: string, log: Logger, pageMaxSize: number): Promise<PageIpfs | ModQueuePageIpfs> {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
         const res = await this.fetchFromMultipleGateways({
@@ -256,7 +258,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
         return pageIpfs;
     }
-    async fetchPage(pageCid: string): Promise<PageIpfs> {
+    async fetchPage(pageCid: string): Promise<PageIpfs | ModQueuePageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypesFromPageCids = remeda.keys
             .strict(this._pages.pageCids)
@@ -273,7 +275,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
               ? 1024 * 1024
               : undefined;
         if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
-        let page: PageIpfs;
+        let page: PageIpfs | ModQueuePageIpfs;
         try {
             if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
             else if (
@@ -337,6 +339,10 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
 
     protected override getSortTypes(): ModQueueSortName[] {
         return ["pendingApproval"];
+    }
+
+    override async fetchPage(pageCid: string): Promise<ModQueuePageIpfs> {
+        return <ModQueuePageIpfs>await super.fetchPage(pageCid);
     }
 
     protected override parsePageJson(json: unknown): ModQueuePageIpfs {

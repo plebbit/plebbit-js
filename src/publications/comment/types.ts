@@ -61,7 +61,7 @@ export interface CommentIpfsWithCidPostCidDefined extends CommentIpfsWithCidDefi
 }
 
 // subplebbit.posts.pages.hot.comments[0] will have this shape
-export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined, Omit<CommentUpdateType, "replies"> {
+export interface CommentWithinRepliesPostsPageJson extends CommentIpfsWithCidPostCidDefined, Omit<CommentUpdateType, "replies"> {
     original: CommentOriginalField;
     shortCid: string;
     shortSubplebbitAddress: string;
@@ -69,6 +69,15 @@ export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined,
     deleted?: boolean;
     replies?: Omit<RepliesPagesTypeJson, "clients">;
     raw: { comment: CommentIpfsType; commentUpdate: CommentUpdateType };
+}
+
+export interface CommentWithinModQueuePageJson extends CommentIpfsWithCidPostCidDefined, CommentUpdateForChallengeVerification {
+    original: CommentOriginalField;
+    shortCid: string;
+    shortSubplebbitAddress: string;
+    author: AuthorWithShortSubplebbitAddress;
+    raw: { comment: CommentIpfsType; commentUpdate: CommentUpdateForChallengeVerification & { pendingApproval: boolean } };
+    pendingApproval: boolean;
 }
 
 // Comment states

@@ -61,7 +61,7 @@ import {
     CommentUpdateReservedFields,
     CommentUpdateSignedPropertyNames
 } from "../publications/comment/schema.js";
-import type { PageIpfs } from "../pages/types.js";
+import type { ModQueuePageIpfs, PageIpfs } from "../pages/types.js";
 import { SubplebbitIpfsReservedFields, SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
 import {
     ChallengeRequestMessageSignedPropertyNames,
@@ -660,7 +660,7 @@ export async function verifyCommentUpdate({
     validatePages,
     validateUpdateSignature
 }: {
-    update: CommentUpdateType;
+    update: CommentUpdateType | CommentUpdateForChallengeVerification | ModQueuePageIpfs["comments"][0]["commentUpdate"];
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     subplebbit: SubplebbitForVerifyingPages;
@@ -693,7 +693,7 @@ export async function verifyCommentUpdate({
     );
 
     if (clientsManager._plebbit._memCaches.commentUpdateVerificationCache.get(cacheKey)) return { valid: true };
-    if (update.edit) {
+    if ("edit" in update && update.edit) {
         if (update.edit.signature.publicKey !== comment.signature.publicKey)
             return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
         const editSignatureValidation = await _validateSignatureOfPlebbitRecord(update.edit);
@@ -701,7 +701,7 @@ export async function verifyCommentUpdate({
     }
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
 
-    if (update.replies && validatePages) {
+    if ("replies" in update && update.replies && validatePages) {
         // Validate update.replies
         const replyPageKeys = remeda.keys.strict(update.replies.pages);
         for (const replySortName of replyPageKeys) {
@@ -728,21 +728,6 @@ export async function verifyCommentUpdate({
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
 
     clientsManager._plebbit._memCaches.commentUpdateVerificationCache.set(cacheKey, true);
-
-    return { valid: true };
-}
-
-export async function verifyCommentUpdateForChallengeVerification(
-    update: CommentUpdateForChallengeVerification
-): Promise<ValidationResult> {
-    if (!_allFieldsOfRecordInSignedPropertyNames(update))
-        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
-    if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
-        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
-
-    // Validate signature
-    const jsonValidation = await _validateSignatureOfPlebbitRecord(update);
-    if (!jsonValidation.valid) return jsonValidation;
 
     return { valid: true };
 }
@@ -845,7 +830,7 @@ export async function verifyPageComment({
     validatePages,
     validateUpdateSignature
 }: {
-    pageComment: PageIpfs["comments"][0];
+    pageComment: (PageIpfs | ModQueuePageIpfs)["comments"][0];
     subplebbit: SubplebbitForVerifyingPages;
     parentComment: ParentCommentForVerifyingPages | undefined;
     resolveAuthorAddresses: boolean;
@@ -890,6 +875,7 @@ export async function verifyPageComment({
     const postCid =
         (parentComment && parentComment.postCid) || (pageComment.comment.depth === 0 ? calculatedCommentCid : pageComment.comment.postCid);
     if (!postCid) return { valid: false, reason: messages.ERR_PAGE_COMMENT_NO_WAY_TO_DERIVE_POST_CID };
+
     const commentUpdateSignatureValidity = await verifyCommentUpdate({
         update: pageComment.commentUpdate,
         resolveAuthorAddresses,
@@ -979,7 +965,7 @@ export async function verifyModQueuePage({
     validateUpdateSignature
 }: {
     pageCid: string | undefined;
-    page: PageIpfs;
+    page: ModQueuePageIpfs;
     resolveAuthorAddresses: boolean;
     clientsManager: BaseClientsManager;
     subplebbit: SubplebbitForVerifyingPages;
