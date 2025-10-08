@@ -35,7 +35,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
             });
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+            await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.updatedAt));
 
             expect(Object.keys(subplebbit.modQueue.pageCids)).to.deep.equal([]); // should be empty
 
@@ -52,6 +52,7 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         after(async () => {
+            await approvedComment.stop();
             await subplebbit.delete();
             await plebbit.destroy();
             await remotePlebbit.destroy();
