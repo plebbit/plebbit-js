@@ -43,7 +43,7 @@ getAvailablePlebbitConfigsToTestAgainst({ includeOnlyTheseTests: ["remote-ipfs-g
 
 getAvailablePlebbitConfigsToTestAgainst().map((config) => {
     describe("modQueue.getPage - " + config.name, () => {
-        it(`subplebbit.modQueue.getPage will throw if retrieved page has a comment with an signature `, async () => {
+        itSkipIfRpc(`subplebbit.modQueue.getPage will throw if retrieved page has a comment with an signature `, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
@@ -65,7 +65,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
+        itSkipIfRpc("Should fail getPage if a modqueue comment belongs to a different sub", async () => {
             // TODO: Ensure cross-sub comments cannot appear under another sub's modqueue
             // and that the operation fails or rejects with an appropriate error
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
@@ -88,7 +88,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it("fails validation when calculated CID of CommentIpfs doesn't match commentUpdate.cid", async () => {
+        itSkipIfRpc("fails validation when calculated CID of CommentIpfs doesn't match commentUpdate.cid", async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
             const sub = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
@@ -110,7 +110,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it("fails validation when a post has parentCid defined", async () => {
+        itSkipIfRpc("fails validation when a post has parentCid defined", async () => {
             const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
@@ -138,7 +138,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`Fails validation when pending posts have postCid defined`, async () => {
+        itSkipIfRpc(`Fails validation when pending posts have postCid defined`, async () => {
             const invalidPage = JSON.parse(JSON.stringify(validModQueuePage));
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
@@ -166,7 +166,7 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
             await plebbit.destroy();
         });
 
-        it(`modQueue.getPage will throw if the first page is over 1mb`, async () => {
+        itSkipIfRpc(`modQueue.getPage will throw if the first page is over 1mb`, async () => {
             const plebbit = await config.plebbitInstancePromise({ plebbitOptions: { validatePages: true } });
 
             const subplebbit = await plebbit.createSubplebbit({ address: subplebbitAddressOfFixture });
