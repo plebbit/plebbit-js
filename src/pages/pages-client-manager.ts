@@ -187,23 +187,27 @@ export class BasePagesClientsManager extends BaseClientsManager {
         else this.updateKuboRpcState(newState, kuboRpcOrHelia.url, sortTypes);
     }
 
-    private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
+    protected preFetchPage() {
+        throw Error("should be implemented");
+    }
+
+    protected async _requestPageFromRPC(
+        pageCid: string,
+        log: Logger,
+        sortTypes: string[] | undefined
+    ): Promise<ModQueuePageIpfs | PageIpfs> {
+        throw Error("Should be implemented");
+    }
+
+    private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<ModQueuePageIpfs | PageIpfs> {
         const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
 
-        if (this._pages._parentComment && !this._pages._parentComment?.cid) throw Error("Parent comment cid is not defined");
+        this.preFetchPage();
         log.trace(`Fetching page cid (${pageCid}) using rpc`);
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
 
         try {
-            return this._pages._parentComment
-                ? await this._plebbit._plebbitRpcClient!.getCommentRepliesPage(
-                      pageCid,
-                      this._pages._parentComment.cid!,
-                      this._pages._subplebbit.address
-                  )
-                : sortTypes?.[0] === "pendingApproval"
-                  ? await this._plebbit._plebbitRpcClient!.getSubplebbitModQueuePage(pageCid, this._pages._subplebbit.address)
-                  : await this._plebbit._plebbitRpcClient!.getSubplebbitPostsPage(pageCid, this._pages._subplebbit.address);
+            return this._requestPageFromRPC(pageCid, log, sortTypes);
         } catch (e) {
             log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
             throw e;
@@ -277,8 +281,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
         if (!pageMaxSize) throw Error("Failed to calculate max page size. Is this page cid under the correct subplebbit/comment?");
         let page: PageIpfs | ModQueuePageIpfs;
         try {
-            if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
-            else if (
+            if (this._plebbit._plebbitRpcClient) {
+                page = await this._fetchPageWithRpc(pageCid, log, sortTypesFromMemcache);
+            } else if (
                 Object.keys(this._plebbit.clients.kuboRpcClients).length > 0 ||
                 Object.keys(this._plebbit.clients.libp2pJsClients).length > 0
             )
@@ -314,6 +319,19 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
     protected override getSortTypes() {
         return remeda.keys.strict(POST_REPLIES_SORT_TYPES);
     }
+
+    protected override preFetchPage(): void {
+        if (!this._pages._parentComment) throw Error("parent comment needs to be defined");
+
+        if (!this._pages._parentComment?.cid) throw Error("Parent comment cid is not defined");
+    }
+    protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
+        return this._plebbit._plebbitRpcClient!.getCommentRepliesPage(
+            pageCid,
+            this._pages._parentComment!.cid!,
+            this._pages._subplebbit.address
+        );
+    }
 }
 
 export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager {
@@ -326,6 +344,16 @@ export class SubplebbitPostsPagesClientsManager extends BasePagesClientsManager 
 
     protected override getSortTypes() {
         return remeda.keys.strict(POSTS_SORT_TYPES);
+    }
+
+    protected override preFetchPage(): void {
+        if (!this._pages._subplebbit) throw Error("Subplebbit needs to be defined");
+
+        if (!this._pages._subplebbit.address) throw Error("Subplebbit address is not defined");
+    }
+
+    protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
+        return this._plebbit._plebbitRpcClient!.getSubplebbitPostsPage(pageCid, this._pages._subplebbit.address);
     }
 }
 
@@ -345,8 +373,18 @@ export class SubplebbitModQueueClientsManager extends BasePagesClientsManager {
         return <ModQueuePageIpfs>await super.fetchPage(pageCid);
     }
 
+    protected override preFetchPage(): void {
+        if (!this._pages._subplebbit) throw Error("Subplebbit needs to be defined");
+
+        if (!this._pages._subplebbit.address) throw Error("Subplebbit address is not defined");
+    }
+
     protected override parsePageJson(json: unknown): ModQueuePageIpfs {
         // Validate using the ModQueue page schema, then coerce to PageIpfs for consumers
         return parseModQueuePageIpfsSchemaWithPlebbitErrorIfItFails(json as any) as ModQueuePageIpfs;
+    }
+
+    protected override async _requestPageFromRPC(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<ModQueuePageIpfs> {
+        return this._plebbit._plebbitRpcClient!.getSubplebbitModQueuePage(pageCid, this._pages._subplebbit.address);
     }
 }
