@@ -54,6 +54,7 @@ for (const pendingCommentDepth of depthsToTest) {
         after(async () => {
             await subplebbit.delete();
             await plebbit.destroy();
+            await remotePlebbit.destroy();
         });
 
         it("Should approve comment using createCommentModeration with approved: true", async () => {
