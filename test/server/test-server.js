@@ -671,7 +671,12 @@ const setUpMockPubsubServer = async () => {
         "test-server", // Add test-server directory cleanup
         ...ipfsNodesToRun.map((node) => path.basename(node.dir))
     ];
-    for (const dir of dirsToDelete) await fs.promises.rm(path.join(process.cwd(), dir), { recursive: true, force: true });
+    for (const dir of dirsToDelete)
+        try {
+            await fs.promises.rm(path.join(process.cwd(), dir), { recursive: true, force: true });
+        } catch (e) {
+            console.warn("Failed to remove ", dirsToDelete, "skipping for now", e);
+        }
 
     await startIpfsNodes();
 
