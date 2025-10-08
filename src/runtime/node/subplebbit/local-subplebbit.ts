@@ -2844,7 +2844,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             }
 
         try {
-            await kuboClient._client.files.rm("/" + this.address, { recursive: true, flush: true });
+            await removeMfsFilesSafely({ kuboRpcClient: kuboClient, paths: ["/" + this.address], log });
         } catch (e) {
             log.error("Failed to delete subplebbit mfs folder", "/" + this.address, e);
         }

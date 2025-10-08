@@ -15,6 +15,7 @@ import type {
     BlockRmOptions,
     create as CreateKuboRpcClient,
     FilesCpOptions,
+    FilesRmOptions,
     RoutingProvideOptions
 } from "kubo-rpc-client";
 import type {
@@ -547,12 +548,14 @@ export async function removeMfsFilesSafely({
     kuboRpcClient,
     paths,
     log,
-    inputNumOfRetries
+    inputNumOfRetries,
+    rmOptions
 }: {
     kuboRpcClient: Plebbit["clients"]["kuboRpcClients"][string];
     paths: string[];
     log?: Logger;
     inputNumOfRetries?: number;
+    rmOptions?: FilesRmOptions;
 }) {
     const logger = log ?? Logger("plebbit-js:util:removeMfsFilesSafely");
     const numOfRetries = inputNumOfRetries ?? 3;
@@ -570,7 +573,8 @@ export async function removeMfsFilesSafely({
                     kuboRpcClient._client.files.rm(paths, {
                         recursive: true,
                         //@ts-expect-error
-                        force: true
+                        force: true,
+                        ...rmOptions
                     }),
                     {
                         milliseconds: 120000,
