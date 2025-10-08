@@ -99,12 +99,15 @@ for (const commentMod of commentModProps) {
                 });
 
                 if (!shouldCommentBePurged)
-                    it(`Rejecting a pending comment with ${JSON.stringify(commentMod)} will not remove it from database of subplebbit because it has more than {approved: false}`, async () => {
-                        const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
-                        expect(queryRes).to.be.exist;
-                    });
+                    itSkipIfRpc(
+                        `Rejecting a pending comment with ${JSON.stringify(commentMod)} will not remove it from database of subplebbit because it has more than {approved: false}`,
+                        async () => {
+                            const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
+                            expect(queryRes).to.be.exist;
+                        }
+                    );
                 if (shouldCommentBePurged) {
-                    it(`Rejecting a pending comment with only ${JSON.stringify(commentMod)} will purge it out of DB`, async () => {
+                    itSkipIfRpc(`Rejecting a pending comment with only ${JSON.stringify(commentMod)} will purge it out of DB`, async () => {
                         const queryRes = subplebbit._dbHandler.queryComment(commentToBeRejected.cid);
                         expect(queryRes).to.be.not.exist;
                     });

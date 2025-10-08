@@ -4,7 +4,8 @@ import {
     mockGatewayPlebbit,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
-    publishToModQueueWithDepth
+    publishToModQueueWithDepth,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 
 const ONE_MINUTE = 60;
@@ -140,7 +141,7 @@ function backdateCommentUpdate(ctx, commentCid, secondsAgo) {
     return cutoffTimestamp;
 }
 
-describe("purgeDisapprovedCommentsOlderThan expirations", function () {
+describeSkipIfRpc("purgeDisapprovedCommentsOlderThan expirations", function () {
     this.timeout(120_000);
 
     describe("default retention configuration", () => {

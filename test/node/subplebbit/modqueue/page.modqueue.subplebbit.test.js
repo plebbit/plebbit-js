@@ -1,16 +1,15 @@
 import { expect } from "chai";
 import {
     mockPlebbit,
-    publishWithExpectedResult,
     resolveWhenConditionIsTrue,
     publishToModQueueWithDepth,
-    publishRandomReply
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
 
 const depthsToTest = [0, 1, 2, 3, 4, 5];
 
-describe("Modqueue depths", () => {
+describeSkipIfRpc("Modqueue depths", () => {
     let plebbit, subplebbit, modSigner;
     const pendingComments = [];
 

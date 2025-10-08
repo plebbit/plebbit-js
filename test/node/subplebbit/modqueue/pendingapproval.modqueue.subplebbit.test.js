@@ -14,7 +14,8 @@ import {
     forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
     generateMockVote,
-    generateMockComment
+    generateMockComment,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -123,7 +124,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
             await publishWithExpectedResult(reply, false, messages.ERR_USER_PUBLISHED_UNDER_PENDING_COMMENT);
         });
 
-        it(`Pending comment should not be pinned in ipfs node`, async () => {
+        itSkipIfRpc(`Pending comment should not be pinned in ipfs node`, async () => {
             const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
             // Collect all pinned CIDs
