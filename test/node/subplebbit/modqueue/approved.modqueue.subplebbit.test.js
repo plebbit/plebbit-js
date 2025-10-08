@@ -9,7 +9,9 @@ import {
     mockGatewayPlebbit,
     forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
-    loadAllPages
+    loadAllPages,
+    describeSkipIfRpc,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -206,7 +208,7 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         if (pendingCommentDepth === 0)
-            it(`Approved post shows up in subplebbit.postUpdates`, async () => {
+            itSkipIfRpc(`Approved post shows up in subplebbit.postUpdates`, async () => {
                 expect(subplebbit.postUpdates).to.exist;
                 const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${approvedComment.cid}/update`;
                 const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
@@ -216,7 +218,7 @@ for (const pendingCommentDepth of depthsToTest) {
                 expect(res.size).to.be.greaterThan(0);
             });
 
-        it(`Approved comment is pinned to IPFS node`, async () => {
+        itSkipIfRpc(`Approved comment is pinned to IPFS node`, async () => {
             const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
             const res = await kuboRpc.block.stat(approvedComment.cid);

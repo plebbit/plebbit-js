@@ -1,11 +1,5 @@
 import { expect } from "chai";
-import {
-    mockPlebbit,
-    generateMockPost,
-    publishWithExpectedResult,
-    resolveWhenConditionIsTrue,
-    publishToModQueueWithDepth
-} from "../../../../dist/node/test/test-util.js";
+import { mockPlebbit, resolveWhenConditionIsTrue, publishToModQueueWithDepth, itSkipIfRpc } from "../../../../dist/node/test/test-util.js";
 
 describe(`Modqueue limits`, () => {
     let plebbit;
@@ -61,7 +55,7 @@ describe(`Modqueue limits`, () => {
         // none of the comments got rejected, instead 2 of them got removed from pending queue
     });
 
-    it("Should remove old pending comments from DB when hitting maxPendingApprovalCount limit", async function () {
+    itSkipIfRpc("Should remove old pending comments from DB when hitting maxPendingApprovalCount limit", async function () {
         const limit = subplebbit.settings.maxPendingApprovalCount;
         await resolveWhenConditionIsTrue(subplebbit, async () => subplebbit._dbHandler.queryCommentsPendingApproval().length === limit);
 

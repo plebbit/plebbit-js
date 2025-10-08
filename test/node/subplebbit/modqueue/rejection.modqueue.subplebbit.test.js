@@ -11,7 +11,8 @@ import {
     forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
     generateMockVote,
-    loadAllPages
+    loadAllPages,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -240,21 +241,24 @@ for (const commentMod of commentModProps) {
                     expect(subplebbit.modQueue.pageCids.pendingApproval).to.be.undefined;
                 });
                 if (pendingCommentDepth === 0)
-                    it(`Rejecting a pending post with ${JSON.stringify(commentMod)} will ${shouldCommentBePurged ? "not" : ""} keep it in subplebbit.postUpdates`, async () => {
-                        expect(subplebbit.postUpdates).to.exist;
-                        const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${commentToBeRejected.cid}/update`;
-                        const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
+                    itSkipIfRpc(
+                        `Rejecting a pending post with ${JSON.stringify(commentMod)} will ${shouldCommentBePurged ? "not" : ""} keep it in subplebbit.postUpdates`,
+                        async () => {
+                            expect(subplebbit.postUpdates).to.exist;
+                            const localMfsPath = `/${subplebbit.address}/postUpdates/86400/${commentToBeRejected.cid}/update`;
+                            const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
-                        try {
-                            const res = await kuboRpc.files.stat(localMfsPath); // this call needs to pass because file should exist
+                            try {
+                                const res = await kuboRpc.files.stat(localMfsPath); // this call needs to pass because file should exist
 
-                            if (!shouldCommentBePurged) expect(res.size).to.be.greaterThan(0);
-                            else expect.fail("call should not succeed");
-                        } catch (e) {
-                            if (shouldCommentBePurged) expect(e.message).to.equal("file does not exist");
-                            else expect.fail("should not fail");
+                                if (!shouldCommentBePurged) expect(res.size).to.be.greaterThan(0);
+                                else expect.fail("call should not succeed");
+                            } catch (e) {
+                                if (shouldCommentBePurged) expect(e.message).to.equal("file does not exist");
+                                else expect.fail("should not fail");
+                            }
                         }
-                    });
+                    );
 
                 if (shouldCommentBePurged)
                     it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
@@ -349,7 +353,7 @@ for (const commentMod of commentModProps) {
                     await publishWithExpectedResult(edit, false, expectedMessage);
                 });
 
-                it(`A rejected comment is not pinned to IPFS node`, async () => {
+                itSkipIfRpc(`A rejected comment is not pinned to IPFS node`, async () => {
                     const kuboRpc = Object.values(plebbit.clients.kuboRpcClients)[0]._client;
 
                     // Collect all pinned CIDs
@@ -372,7 +376,7 @@ for (const commentMod of commentModProps) {
                     await publishWithExpectedResult(commentModerationDisapproval, false, expectedMessage);
                 });
 
-                it(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {
+                itSkipIfRpc(`A rejected comment is not pinned to IPFS node after restarting the sub`, async () => {
                     await subplebbit.stop();
 
                     const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
