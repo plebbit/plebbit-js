@@ -222,7 +222,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     async getSubplebbitPostsPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentRepliesPage", [parsedPageCid, parsedSubplebbitAddress]);
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPostsPage", [parsedPageCid, parsedSubplebbitAddress]);
         return pageIpfs;
     }
 
@@ -230,7 +230,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const pageIpfs = <ModQueuePageIpfs>(
-            await this._webSocketClient.call("getSubplebbitModQueuePage", [parsedPageCid, parsedSubplebbitAddress])
+            await this._webSocketClient.call("getSubplebbitModqueuePage", [parsedPageCid, parsedSubplebbitAddress])
         );
         return pageIpfs;
     }
