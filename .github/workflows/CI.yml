@@ -46,7 +46,7 @@ jobs:
               shell: bash
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
-            - run: DEBUG="plebbit*" npm run test:node:local
+            - run: DEBUG="plebbit*" npm run test:node:parallel:local
               shell: bash
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
