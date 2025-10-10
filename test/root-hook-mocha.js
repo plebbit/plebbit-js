@@ -1,8 +1,13 @@
-// import { destroyMockIpfsClient } from "../dist/node/test/mock-ipfs-client.js";
-// Root Mocha hook.
+import { inspect } from "node:util";
+
+// Expand debug logging to print deeply nested objects while running tests.
+if (!process.env.DEBUG_DEPTH) {
+    process.env.DEBUG_DEPTH = "null";
+}
+
+inspect.defaultOptions.depth = null;
+inspect.defaultOptions.colors = false;
+
 export const mochaHooks = {
-    afterAll: () => {
-        console.log("Test running afterAll");
-        // destroyMockIpfsClient(); // Need to figure out how to destory io client with parallel mocha
-    }
+    afterAll: () => {}
 };
