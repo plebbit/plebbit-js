@@ -1,15 +1,10 @@
 import { expect } from "chai";
-import sinon from "sinon";
 import PlebbitRpcClient from "../../../dist/node/clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../../../dist/node/plebbit-error.js";
 import { messages } from "../../../dist/node/errors.js";
-import { PlebbitWsServer } from "../../../dist/node/rpc/src/index.js";
+import { sanitizeRpcNotificationResult } from "../../../dist/node/rpc/src/json-rpc-util.js";
 
 describe("RPC error (de)serialization helpers", () => {
-    afterEach(() => {
-        sinon.restore();
-    });
-
     describe("_deserializeRpcError", () => {
         it("returns a populated PlebbitError when the payload contains a known error code", () => {
             const client = new PlebbitRpcClient("ws://localhost:0");
@@ -80,15 +75,8 @@ describe("RPC error (de)serialization helpers", () => {
         });
     });
 
-    describe("jsonRpcSendNotification", () => {
-        it("strips stack traces before serializing error notifications", () => {
-            const fakeConnectionId = "connection-1";
-            const sendSpy = sinon.spy();
-            const serverLike = {
-                connections: {
-                    [fakeConnectionId]: { send: sendSpy }
-                }
-            };
+    describe("sanitizeRpcNotificationResult", () => {
+        it("strips stack traces for error notifications without mutating the original payload", () => {
             const errorPayload = {
                 name: "PlebbitError",
                 code: "ERR_SUB_ALREADY_STARTED",
@@ -100,52 +88,29 @@ describe("RPC error (de)serialization helpers", () => {
                 }
             };
 
-            PlebbitWsServer.prototype.jsonRpcSendNotification.call(serverLike, {
-                method: "startSubplebbit",
-                subscription: 42,
-                event: "error",
-                result: { ...errorPayload },
-                connectionId: fakeConnectionId
-            });
+            const sanitized = sanitizeRpcNotificationResult("error", errorPayload);
 
-            expect(sendSpy.calledOnce).to.equal(true);
-            const [rawMessage] = sendSpy.firstCall.args;
-            const sentMessage = JSON.parse(rawMessage);
-            expect(sentMessage.params.event).to.equal("error");
-            expect(sentMessage.params.result.code).to.equal("ERR_SUB_ALREADY_STARTED");
-            expect(sentMessage.params.result.stack).to.be.undefined;
-            expect(sentMessage.params.result.details.error.stack).to.be.undefined;
-            expect(sentMessage.params.result.details.error.reason).to.equal("boom");
-            expect(sentMessage.params.result.details.newStartedState).to.equal("failed");
+            expect(sanitized).to.not.equal(errorPayload);
+            expect(sanitized.stack).to.be.undefined;
+            expect(sanitized.details.error.stack).to.be.undefined;
+            expect(sanitized.details.error.reason).to.equal("boom");
+            expect(sanitized.details.newStartedState).to.equal("failed");
+            // original payload remains untouched
+            expect(errorPayload.stack).to.equal("top-level stack");
+            expect(errorPayload.details.error.stack).to.equal("nested stack");
         });
 
-        it("keeps stack traces for non-error events", () => {
-            const fakeConnectionId = "connection-2";
-            const sendSpy = sinon.spy();
-            const serverLike = {
-                connections: {
-                    [fakeConnectionId]: { send: sendSpy }
-                }
-            };
+        it("returns the original payload reference for non-error events", () => {
             const notificationPayload = {
                 stack: "keep me",
                 details: { error: { stack: "keep me too" } }
             };
 
-            PlebbitWsServer.prototype.jsonRpcSendNotification.call(serverLike, {
-                method: "startSubplebbit",
-                subscription: 99,
-                event: "update",
-                result: { ...notificationPayload },
-                connectionId: fakeConnectionId
-            });
+            const sanitized = sanitizeRpcNotificationResult("update", notificationPayload);
 
-            expect(sendSpy.calledOnce).to.equal(true);
-            const [rawMessage] = sendSpy.firstCall.args;
-            const sentMessage = JSON.parse(rawMessage);
-            expect(sentMessage.params.event).to.equal("update");
-            expect(sentMessage.params.result.stack).to.equal("keep me");
-            expect(sentMessage.params.result.details.error.stack).to.equal("keep me too");
+            expect(sanitized).to.equal(notificationPayload);
+            expect(sanitized.stack).to.equal("keep me");
+            expect(sanitized.details.error.stack).to.equal("keep me too");
         });
     });
 });

@@ -62,6 +62,7 @@ import type { InputPlebbitOptions } from "../../types.js";
 import type { SubplebbitEditChallengeRequestToEncryptType } from "../../publications/subplebbit-edit/types.js";
 import { PublicationRpcErrorToTransmit, RpcPublishResult } from "../../publications/types.js";
 import { TypedEmitter } from "tiny-typed-emitter";
+import { sanitizeRpcNotificationResult } from "./json-rpc-util.js";
 import type { ModQueuePageIpfs, PageIpfs } from "../../pages/types.js";
 
 // store started subplebbits  to be able to stop them
@@ -227,15 +228,11 @@ class PlebbitWsServer extends TypedEmitter<PlebbitRpcServerEvents> {
             jsonrpc: "2.0",
             method,
             params: {
-                result,
+                result: sanitizeRpcNotificationResult(event, result),
                 subscription,
                 event
             }
         };
-        if (event === "error") {
-            delete message?.params?.result?.stack;
-            delete message?.params?.result?.details?.error?.stack;
-        }
         this.connections[connectionId]?.send?.(JSON.stringify(message));
     }
 
@@ -1123,5 +1120,3 @@ const PlebbitRpc = {
 };
 
 export default PlebbitRpc;
-
-export { PlebbitWsServer };
