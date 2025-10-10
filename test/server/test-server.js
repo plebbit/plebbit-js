@@ -168,6 +168,15 @@ const startIpfsNode = async (nodeArgs) => {
 
     ipfsConfig["Addresses"]["API"] = `/ip4/0.0.0.0/tcp/${nodeArgs.apiPort}`;
     ipfsConfig["Addresses"]["Gateway"] = `/ip4/0.0.0.0/tcp/${nodeArgs.gatewayPort}`;
+    ipfsConfig["Gateway"]["PublicGateways"] = ipfsConfig["Gateway"]["PublicGateways"] || {};
+    const publicGatewayConfig = {
+        Paths: ["/ipfs/", "/ipns/"],
+        UseSubdomains: false,
+        InlineDNSLink: false
+    };
+    ipfsConfig["Gateway"]["PublicGateways"]["127.0.0.1"] = publicGatewayConfig;
+    ipfsConfig["Gateway"]["PublicGateways"]["localhost"] = publicGatewayConfig;
+    ipfsConfig["Gateway"]["PublicGateways"]["[::1]"] = publicGatewayConfig;
     ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
