@@ -286,6 +286,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                 );
 
                 for (const purgedComment of commentsWithDifferentPlebbit) {
+                    expect(purgedComment.raw.comment).to.be.undefined;
+                    expect(purgedComment.raw.commentUpdate).to.be.undefined;
                     expect(purgedComment.depth).to.be.undefined; // comment depth is not defined
                     expect(purgedComment.updatedAt).to.be.undefined; // comment update is not defined
                 }
@@ -297,7 +299,13 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                         // Create a promise that rejects if update event is emitted
                         const updateEventPromise = new Promise((_, reject) => {
                             purgedComment.on("update", () => {
-                                reject(new Error("Purged comment should not emit update event"));
+                                reject(
+                                    new Error(
+                                        "Purged comment should not emit update event with " + purgedComment.raw.commentUpdate
+                                            ? "CommentUpdate props"
+                                            : "CommentIpfs props"
+                                    )
+                                );
                             });
                         });
 
@@ -318,6 +326,8 @@ getAvailablePlebbitConfigsToTestAgainst().map((config) => {
                         expect(waitingRetryErrs.length).to.be.greaterThan(0);
                         expect(purgedComment.updatedAt).to.be.undefined; // should not load comment update
                         expect(purgedComment.depth).to.be.undefined; // should not load comment ipfs
+                        expect(purgedComment.raw.comment).to.be.undefined;
+                        expect(purgedComment.raw.commentUpdate).to.be.undefined;
 
                         await purgedComment.stop();
                     })
