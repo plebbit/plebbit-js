@@ -298,6 +298,7 @@ export class BaseClientsManager {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
 
         const handleError = (e: Error | PlebbitError) => {
+            const nodeError = <NodeJS.ErrnoException & { address?: string; port?: number; cause?: unknown }>(<unknown>e);
             if (e instanceof PlebbitError) throw e;
             else if (e instanceof Error && e.message.includes("over limit"))
                 throw new PlebbitError("ERR_OVER_DOWNLOAD_LIMIT", { url, options });
@@ -314,6 +315,12 @@ export class BaseClientsManager {
                     status: res?.status,
                     statusText: res?.statusText,
                     fetchError: String(e),
+                    fetchErrorCode: nodeError?.code,
+                    fetchErrorErrno: nodeError?.errno,
+                    fetchErrorSyscall: nodeError?.syscall,
+                    fetchErrorAddress: nodeError?.address,
+                    fetchErrorPort: nodeError?.port,
+                    fetchErrorCause: nodeError?.cause,
                     options
                 });
             }
