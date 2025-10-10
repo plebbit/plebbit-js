@@ -2169,6 +2169,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _cleanUpIpfsRepoRarely(force = false) {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
+        // TODO this is a temporary disablement of GC, I suspect it's causing CI to fail
+        return;
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
