@@ -1,5 +1,11 @@
 import { expect } from "chai";
-import { mockPlebbit, resolveWhenConditionIsTrue, publishToModQueueWithDepth, itSkipIfRpc } from "../../../../dist/node/test/test-util.js";
+import {
+    mockPlebbit,
+    resolveWhenConditionIsTrue,
+    publishToModQueueWithDepth,
+    itSkipIfRpc,
+    mockPlebbitNoDataPathWithOnlyKuboClient
+} from "../../../../dist/node/test/test-util.js";
 
 describe(`Modqueue limits`, () => {
     let plebbit;
@@ -10,7 +16,7 @@ describe(`Modqueue limits`, () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
-        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+        await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.updatedAt));
     });
 
     after(async () => {
@@ -46,12 +52,15 @@ describe(`Modqueue limits`, () => {
         expect(subplebbit.settings.maxPendingApprovalCount).to.equal(limit);
 
         const totalToPublish = limit + 2;
+        const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
 
         for (let index = 0; index < totalToPublish; index++) {
-            const { comment, challengeVerification } = await publishToModQueueWithDepth({ subplebbit, depth: 0 });
+            const { comment, challengeVerification } = await publishToModQueueWithDepth({ subplebbit, depth: 0, plebbit: remotePlebbit });
             expect(comment.pendingApproval).to.be.true;
             pendingComments.push(comment);
         }
+        await remotePlebbit.destroy();
+
         // none of the comments got rejected, instead 2 of them got removed from pending queue
     });
 
