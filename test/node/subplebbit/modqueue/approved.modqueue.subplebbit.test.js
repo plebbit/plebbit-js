@@ -6,12 +6,11 @@ import {
     processAllCommentsRecursively,
     getCommentWithCommentUpdateProps,
     forceSubplebbitToGenerateAllRepliesPages,
-    mockGatewayPlebbit,
     forceSubplebbitToGenerateAllPostsPages,
     publishToModQueueWithDepth,
     loadAllPages,
-    describeSkipIfRpc,
-    itSkipIfRpc
+    itSkipIfRpc,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 
@@ -23,7 +22,7 @@ for (const pendingCommentDepth of depthsToTest) {
 
         before(async () => {
             plebbit = await mockPlebbit();
-            remotePlebbit = await mockGatewayPlebbit();
+            remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
             subplebbit = await plebbit.createSubplebbit();
             subplebbit.setMaxListeners(100);
             await subplebbit.start();
