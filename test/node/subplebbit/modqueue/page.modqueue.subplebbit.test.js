@@ -3,7 +3,8 @@ import {
     mockPlebbit,
     resolveWhenConditionIsTrue,
     publishToModQueueWithDepth,
-    describeSkipIfRpc
+    describeSkipIfRpc,
+    mockPlebbitNoDataPathWithOnlyKuboClient
 } from "../../../../dist/node/test/test-util.js";
 import { testCommentFieldsInModQueuePageJson } from "../../../node-and-browser/pages/pages-test-util.js";
 
@@ -51,8 +52,11 @@ describeSkipIfRpc("Modqueue depths", () => {
         it(`should support mod queue pages with comments of the same depth, depth = ${depth}`, async () => {
             const numOfComments = 2;
             const pendingComments = [];
+            const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
             for (let i = 0; i < numOfComments; i++) {
-                pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner } }));
+                pendingComments.push(
+                    await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner }, plebbit: remotePlebbit })
+                );
             }
 
             await new Promise((resolve) => setTimeout(resolve, 3000)); // wait till subplebbit updates modqueue
@@ -62,6 +66,7 @@ describeSkipIfRpc("Modqueue depths", () => {
             const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
 
             expect(modQueuepageLoaded.comments.every((comment) => comment.depth === depth)).to.be.true;
+            await remotePlebbit.destroy();
         });
     }
 
@@ -70,15 +75,21 @@ describeSkipIfRpc("Modqueue depths", () => {
         // and verify modqueue page rendering/order handles varying depths correctly
         const pendingComments = [];
 
+        const remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
+
         for (const depth of depthsToTest) {
-            pendingComments.push(await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner } }));
+            pendingComments.push(
+                await publishToModQueueWithDepth({ subplebbit, depth, modCommentProps: { signer: modSigner }, plebbit: remotePlebbit })
+            );
         }
+
         // different depths should show up in mod queue
 
         await new Promise((resolve) => setTimeout(resolve, 5000)); // wait till subplebbit updates modqueue
 
         await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval);
 
+        await remotePlebbit.destroy();
         const modQueuepageLoaded = await subplebbit.modQueue.getPage(subplebbit.modQueue.pageCids.pendingApproval);
 
         for (let i = 0; i < pendingComments.length; i++) {

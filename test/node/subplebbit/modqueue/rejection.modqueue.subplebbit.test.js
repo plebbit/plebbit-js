@@ -61,7 +61,7 @@ for (const commentMod of commentModProps) {
                         settings: { challenges: [{ ...subplebbit.settings.challenges[0], pendingApproval: true }] }
                     });
 
-                    await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+                    await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.updatedAt));
 
                     const pending = await publishToModQueueWithDepth({
                         subplebbit,
