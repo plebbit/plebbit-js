@@ -166,8 +166,8 @@ const startIpfsNode = async (nodeArgs) => {
     const ipfsConfigPath = path.join(nodeArgs.dir, "config");
     const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
 
-    ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
-    ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
+    ipfsConfig["Addresses"]["API"] = `/ip4/0.0.0.0/tcp/${nodeArgs.apiPort}`;
+    ipfsConfig["Addresses"]["Gateway"] = `/ip4/0.0.0.0/tcp/${nodeArgs.gatewayPort}`;
     ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
     ipfsConfig["Gateway"]["HTTPHeaders"]["Access-Control-Allow-Headers"] = ["*"];
     ipfsConfig["Ipns"]["MaxCacheTTL"] = "10s";
