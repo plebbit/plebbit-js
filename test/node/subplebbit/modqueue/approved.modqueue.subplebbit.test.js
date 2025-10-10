@@ -46,7 +46,7 @@ for (const pendingCommentDepth of depthsToTest) {
             });
             approvedComment = pending.comment;
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.modQueue.pageCids.pendingApproval); // wait until we publish a new mod queue with this new comment
+            await resolveWhenConditionIsTrue(subplebbit, () => Boolean(subplebbit.modQueue.pageCids.pendingApproval)); // wait until we publish a new mod queue with this new comment
             await approvedComment.update();
         });
 
@@ -69,7 +69,7 @@ for (const pendingCommentDepth of depthsToTest) {
         });
 
         it(`pending comment after approval will receive updates now`, async () => {
-            await resolveWhenConditionIsTrue(approvedComment, () => approvedComment.updatedAt);
+            await resolveWhenConditionIsTrue(approvedComment, () => Boolean(approvedComment.updatedAt));
             expect(approvedComment.updatedAt).to.be.a("number");
             expect(approvedComment.pendingApproval).to.be.false;
             expect(approvedComment.approved).to.be.true;
@@ -148,7 +148,7 @@ for (const pendingCommentDepth of depthsToTest) {
             it(`Approved reply now shows up in parentComment.replies`, async () => {
                 const parentComment = await plebbit.getComment(approvedComment.parentCid);
                 await parentComment.update();
-                await resolveWhenConditionIsTrue(parentComment, () => parentComment.updatedAt);
+                await resolveWhenConditionIsTrue(parentComment, () => Boolean(parentComment.updatedAt));
                 let foundInReplies = false;
                 processAllCommentsRecursively(parentComment.replies.pages.best?.comments || [], (comment) => {
                     if (comment.cid === approvedComment.cid) {
