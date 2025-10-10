@@ -153,7 +153,7 @@ export const SubplebbitChallengeSettingSchema = z
 export const ChallengeFileSchema = z
     .object({
         // the result of the function exported by the challenge file
-        optionInputs: ChallengeOptionInputSchema.array().nonempty().optional(), // the options inputs fields to display to the user
+        optionInputs: ChallengeOptionInputSchema.array().optional(), // the options inputs fields to display to the user
         type: ChallengeFromGetChallengeSchema.shape.type,
         challenge: ChallengeFromGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
         caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
@@ -170,15 +170,14 @@ export const ChallengeFileSchema = z
     })
     .strict();
 
-export const SubplebbitChallengeSchema = z
-    .looseObject({
-        exclude: ChallengeExcludeSchema.array().nonempty().optional(),
-        description: ChallengeFileSchema.shape.description,
-        challenge: ChallengeFileSchema.shape.challenge,
-        type: ChallengeFileSchema.shape.type,
-        caseInsensitive: ChallengeFileSchema.shape.caseInsensitive,
-        pendingApproval: z.boolean().optional()
-    });
+export const SubplebbitChallengeSchema = z.looseObject({
+    exclude: ChallengeExcludeSchema.array().nonempty().optional(),
+    description: ChallengeFileSchema.shape.description,
+    challenge: ChallengeFileSchema.shape.challenge,
+    type: ChallengeFileSchema.shape.type,
+    caseInsensitive: ChallengeFileSchema.shape.caseInsensitive,
+    pendingApproval: z.boolean().optional()
+});
 export const ChallengeFileFactorySchema = z.function({ input: [SubplebbitChallengeSettingSchema], output: ChallengeFileSchema });
 
 // Subplebbit actual schemas here
