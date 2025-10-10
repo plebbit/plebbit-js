@@ -1233,6 +1233,7 @@ export function setPlebbitConfigs(configs: PlebbitTestConfigCode[]) {
             console.error("unhandledRejection", JSON.stringify(err, ["message", "arguments", "type", "name"]));
         });
     } else if (process) {
+        process.setMaxListeners(100);
         process.on("uncaughtException", (...err: any[]) => {
             console.error("uncaughtException", ...err);
         });
@@ -1737,6 +1738,7 @@ export async function forceSubplebbitToGenerateAllPostsPages(subplebbit: RemoteS
     const rawSubplebbitRecord = subplebbit.toJSONIpfs();
     if (!rawSubplebbitRecord) throw Error("Subplebbit should be updating before forcing to generate all pages");
 
+    subplebbit.setMaxListeners(100);
     if (Object.keys(subplebbit.posts.pageCids).length > 0) return;
     const curRecordSize = Buffer.byteLength(JSON.stringify(rawSubplebbitRecord));
 
