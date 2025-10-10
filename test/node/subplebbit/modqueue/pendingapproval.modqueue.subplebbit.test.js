@@ -43,7 +43,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
                 }
             });
 
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         });
 
         after(async () => {
@@ -55,7 +55,7 @@ for (const commentInPendingApprovalDepth of depthsToTest) {
         it("Should put failed comment in pending approval queue when challenge has pendingApproval: true", async () => {
             // TODO: Test that when a challenge with pendingApproval fails,
             // the publication goes to pending approval instead of being rejected
-            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt);
+            await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
 
             const { comment, challengeVerification } = await publishToModQueueWithDepth({
                 subplebbit,
