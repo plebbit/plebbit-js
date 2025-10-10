@@ -1123,3 +1123,5 @@ const PlebbitRpc = {
 };
 
 export default PlebbitRpc;
+
+export { PlebbitWsServer };

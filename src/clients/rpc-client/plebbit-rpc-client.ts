@@ -27,6 +27,7 @@ import * as z from "zod";
 import { TypedEmitter } from "tiny-typed-emitter";
 import type { PlebbitRpcClientEvents } from "../../types.js";
 import type { RpcPublishResult } from "../../publications/types.js";
+import { messages } from "../../errors.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -97,9 +98,8 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
 
                     // We need to parse error props into PlebbitErrors
                     if (message?.params?.event === "error") {
-                        // zod here
-                        message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
-                        delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
+                        message.params.result = this._deserializeRpcError(message.params.result);
+                        delete (<any>message.params.result).stack; // Need to delete locally generated stack traces
                     }
                     if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0)
                         this._pendingSubscriptionMsgs[subscriptionId].push(message);
@@ -195,6 +195,62 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         if (this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId].removeAllListeners();
         delete this._subscriptionEvents[subscriptionId];
         delete this._pendingSubscriptionMsgs[subscriptionId];
+    }
+
+    private _deserializeRpcError(errorPayload: any): PlebbitError | Error {
+        if (!errorPayload || typeof errorPayload !== "object") {
+            const genericError = new Error("Received malformed RPC error payload");
+            (<any>genericError).details = { rawError: errorPayload };
+            return genericError;
+        }
+
+        const { code, details, message, name, ...rest } = errorPayload as {
+            code?: unknown;
+            details?: unknown;
+            message?: unknown;
+            name?: unknown;
+        };
+        const hasValidCode = typeof code === "string" && Object.prototype.hasOwnProperty.call(messages, code);
+        const serverMessage =
+            typeof message === "string" && message.length > 0 ? (message as string) : "RPC server returned an unknown error";
+
+        if (hasValidCode) {
+            const plebbitError = new PlebbitError(code as keyof typeof messages, details);
+            this._setErrorName(plebbitError, name);
+            this._assignAdditionalProps(plebbitError, rest);
+            return plebbitError;
+        }
+
+        if (typeof code === "string" && typeof name === "string" && name === "PlebbitError") {
+            const plebbitError = new PlebbitError("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", details);
+            (<any>plebbitError).code = code;
+            (<any>plebbitError).message = serverMessage;
+            this._setErrorName(plebbitError, name);
+            this._assignAdditionalProps(plebbitError, rest);
+            return plebbitError;
+        }
+
+        const genericError = new Error(serverMessage);
+        genericError.name = typeof name === "string" && name.length > 0 ? (name as string) : genericError.name;
+        (<any>genericError).code = code;
+        (<any>genericError).details = details;
+        this._assignAdditionalProps(genericError, rest);
+        return genericError;
+    }
+
+    private _setErrorName(target: PlebbitError | Error, name?: unknown) {
+        if (typeof name !== "string" || name.length === 0 || target.name === name) return;
+        const descriptor = Object.getOwnPropertyDescriptor(target, "name");
+        try {
+            if (descriptor) Object.defineProperty(target, "name", { ...descriptor, value: name });
+            else target.name = name;
+        } catch {
+            // Ignore failures to redefine the property
+        }
+    }
+
+    private _assignAdditionalProps(target: PlebbitError | Error, rest: Record<string, unknown>) {
+        if (rest && Object.keys(rest).length > 0) Object.assign(target, rest);
     }
 
     emitAllPendingMessages(subscriptionId: number) {
