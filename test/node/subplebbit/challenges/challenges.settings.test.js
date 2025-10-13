@@ -57,6 +57,7 @@ describe(`subplebbit.settings.challenges`, async () => {
     ];
     const defaultChallengeTypes = ["text/plain", "text/plain", "url/iframe"];
     const defaultMintpassChallengeUrl = "https://mintpass.org/request/{authorAddress}?hide-nft=true&hide-address=true";
+    const mintpassMissingWalletError = "Author wallet address is not defined. Please set your wallet address in settings.";
 
     before(async () => {
         plebbit = await mockPlebbit();
@@ -109,8 +110,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(Object.keys(challengeVerification.challengeErrors)).to.have.members(["0", "1", "2"]);
         expect(challengeVerification.challengeErrors?.["0"]).to.equal(defaultSettingsChallenges[0].options.error);
         expect(challengeVerification.challengeErrors?.["1"]).to.equal(defaultSettingsChallenges[1].options.error);
-        expect(challengeVerification.challengeErrors?.["2"]).to.be.a("string");
-        expect(challengeVerification.challengeErrors?.["2"]).to.include("You need a MintPass NFT to post in this community.");
+        expect(challengeVerification.challengeErrors?.["2"]).to.equal(mintpassMissingWalletError);
         await subplebbit.delete();
     });
 

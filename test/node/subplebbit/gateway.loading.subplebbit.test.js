@@ -102,7 +102,7 @@ const fetchCidRecordDirectly = async (gatewayPlebbit, cid) => {
     return fetchGatewayJson(ipfsUrl, "Direct CID fetch");
 };
 
-describe(`Gateway loading of local subplebbit IPNS - iteration ${i}`, async () => {
+describe("Gateway loading of local subplebbit IPNS", async () => {
     let plebbit, subplebbit;
     let gatewayPlebbit;
     let kuboPlebbit;
@@ -146,32 +146,32 @@ describe(`Gateway loading of local subplebbit IPNS - iteration ${i}`, async () =
     });
 
     it("Can fetch the IPNS record directly from gateway without plebbit instance", async () => {
-        console.log(`Starting test: iteration ${i} - Direct IPNS fetch without plebbit instance`);
+        console.log("Starting test: Direct IPNS fetch without plebbit instance");
         const record = await fetchIpnsRecordDirectly(gatewayPlebbit, subplebbit);
         expect(record.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
     it("Can fetch the CID directly from gateway without plebbit instance", async () => {
-        console.log(`Starting test: iteration ${i} - Direct CID fetch without plebbit instance`);
+        console.log("Starting test: Direct CID fetch without plebbit instance");
         const record = await fetchCidRecordDirectly(gatewayPlebbit, latestUpdateCid);
         expect(record.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
     it("Can load the CID using gatewayPlebbit.fetchCid after it's published", async () => {
-        console.log(`Starting test: iteration ${i} - Can load the CID using gatewayPlebbit.fetchCid after it's published`);
+        console.log("Starting test: Can load the CID using gatewayPlebbit.fetchCid after it's published");
         const rawRecord = await gatewayPlebbit.fetchCid(latestUpdateCid);
         const record = JSON.parse(rawRecord);
         expect(record.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
     it("Can load the IPNS record from gateway Plebbit after it's published", async () => {
-        console.log(`Starting test: iteration ${i} - Can load the IPNS record from gateway after it's published`);
+        console.log("Starting test: Can load the IPNS record from gateway after it's published");
         const remoteSub = await gatewayPlebbit.getSubplebbit(subplebbit.address);
         expect(remoteSub.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
     it("Can load the IPNS record from kubo after it's published", async () => {
-        console.log(`Starting test: iteration ${i} - Can load the IPNS record from kubo after it's published`);
+        console.log("Starting test: Can load the IPNS record from kubo after it's published");
         const remoteSub = await kuboPlebbit.getSubplebbit(subplebbit.address);
         expect(remoteSub.updatedAt).to.equal(subplebbit.updatedAt);
     });
