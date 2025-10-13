@@ -6,7 +6,7 @@ import {
 } from "../../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import { createCaptcha } from "captcha-canvas";
-import { SetCaptchaOption } from "captcha-canvas/dist/constants.js";
+import type { SetCaptchaOption } from "captcha-canvas/dist/constants.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
