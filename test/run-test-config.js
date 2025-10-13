@@ -263,6 +263,7 @@ const runNodeTests = () => {
     let timeoutHandle;
     let sigtermHandle;
     let sigkillHandle;
+    let absoluteTimeoutHandle;
 
     const cleanupAndExit = async (code) => {
         if (exitHandled) {
@@ -278,6 +279,9 @@ const runNodeTests = () => {
         }
         if (sigkillHandle) {
             clearTimeout(sigkillHandle);
+        }
+        if (absoluteTimeoutHandle) {
+            clearTimeout(absoluteTimeoutHandle);
         }
 
         const closePromises = [];
@@ -339,6 +343,21 @@ const runNodeTests = () => {
         };
 
         timeoutHandle = setTimeout(scheduleKill, runTimeoutMs);
+        absoluteTimeoutHandle = setTimeout(() => {
+            if (exitHandled) {
+                return;
+            }
+            console.error("Attempting final SIGKILL before hard exit...");
+            try {
+                mochaProcess.kill("SIGKILL");
+            } catch (error) {
+                console.error(`Failed to send final SIGKILL: ${error.message}`);
+            }
+            console.error(
+                `Hard timeout reached (${runTimeoutMs + 7000}ms since start). Forcing wrapper exit.`
+            );
+            finalize(124);
+        }, runTimeoutMs + 7000);
     }
 
     const settle = (code, signal, source) => {

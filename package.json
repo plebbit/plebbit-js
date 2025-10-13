@@ -15,7 +15,7 @@
         "test:mocked:challenges": "mocha --forbid-only --bail --recursive --config config/.mocharc.json  test/challenges",
         "test:node:parallel:all": "mocha --forbid-only --bail --parallel --recursive --config config/.mocharc.json test/node test/node-and-browser",
         "test:node:parallel:local": "cross-env PLEBBIT_CONFIGS=local-kubo-rpc mocha --forbid-only --parallel --recursive --config config/.mocharc.json test/node",
-        "test:node:local": "node test/run-test-config.js --environment node --mocha-spec test/node --run-timeout-ms 2040000 --log-prefix test_node_local",
+        "test:node:local": "node test/run-test-config.js --environment node --mocha-spec test/node --run-timeout-ms 1860000 --log-prefix test_node_local",
         "test:node:parallel:remote": "cross-env PLEBBIT_CONFIGS=remote-libp2pjs,remote-kubo-rpc,remote-ipfs-gateway mocha --forbid-only --parallel --recursive --config config/.mocharc.json test/node-and-browser",
         "test:node:remote": "node test/run-test-config.js --plebbit-config remote-libp2pjs,remote-kubo-rpc,remote-ipfs-gateway --environment node",
         "test:browser:chrome": "node test/run-test-config.js --plebbit-config ${PLEBBIT_CONFIGS:-remote-kubo-rpc,remote-ipfs-gateway,remote-libp2pjs} --environment chrome",
