@@ -414,11 +414,11 @@ export class BaseClientsManager {
     private _handleIfGatewayRedirectsToSubdomainResolution(
         gateway: string,
         loadOpts: OptionsToLoadFromGateway,
-        res: Response,
+        res: Response | undefined,
         log: Logger
     ) {
         if (GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway]) return; // already handled, no need to do anything
-        if (!res.redirected) return; // if it doesn't redirect to subdomain gateway then the gateway doesn't support subdomain resolution
+        if (!res?.redirected) return; // if it doesn't redirect to subdomain gateway then the gateway doesn't support subdomain resolution
         const resUrl = new URL(res.url);
         if (resUrl.hostname.includes(`.${loadOpts.recordIpfsType}.`)) {
             log(`Gateway`, gateway, "supports subdomain resolution. Switching url formulation to subdomain resolution");
