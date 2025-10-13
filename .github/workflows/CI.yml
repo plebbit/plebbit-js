@@ -46,10 +46,25 @@ jobs:
               shell: bash
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
-            - run: DEBUG="plebbit*" npm run test:node:local
+            - name: Run node tests (local config)
+              run: DEBUG="plebbit*" node test/run-test-config.js --environment node --mocha-spec test/node --run-timeout-ms 2040000 --log-prefix test_node_local
+              shell: bash
+            - name: Show Mocha test logs
+              if: ${{ always() }}
+              run: |
+                  if [ "${{ job.status }}" = "success" ]; then
+                      echo "Skipping Mocha log dump because job succeeded."
+                      exit 0
+                  fi
+                  echo "::group::test_node_local.stdout.log"
+                  cat test_node_local.stdout.log || true
+                  echo "::endgroup::"
+                  echo "::group::test_node_local.stderr.log"
+                  cat test_node_local.stderr.log || true
+                  echo "::endgroup::"
               shell: bash
             - run: cat test_server.log
-              if: ${{ !cancelled() && failure() }}
+              if: ${{ always() && job.status != 'success' }}
               shell: bash
 
     test-plebbit-js-node-remote-configs:
