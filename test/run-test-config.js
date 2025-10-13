@@ -239,7 +239,11 @@ const runNodeTests = () => {
 
     const forwardSignal = (signal) => {
         if (!mochaProcess.killed) {
-            mochaProcess.kill(signal);
+            try {
+                mochaProcess.kill(signal);
+            } catch (error) {
+                console.error(`Failed to forward ${signal} to Mocha:`, error);
+            }
         }
     };
 
@@ -264,6 +268,60 @@ const runNodeTests = () => {
     let sigtermHandle;
     let sigkillHandle;
     let absoluteTimeoutHandle;
+
+    const isWindows = process.platform === "win32";
+
+    const sendSignal = (signal, label) => {
+        try {
+            const result = signal ? mochaProcess.kill(signal) : mochaProcess.kill();
+            if (!result) {
+                console.error(
+                    `Attempt to send ${label ?? signal ?? "default"} to Mocha returned false.`
+                );
+            }
+            return result;
+        } catch (error) {
+            console.error(`Failed to send ${label ?? signal ?? "default"} to Mocha:`, error);
+            return false;
+        }
+    };
+
+    const taskKillWindows = (stage) => {
+        if (!isWindows) {
+            return;
+        }
+        const args = ["/pid", String(mochaProcess.pid), "/t", "/f"];
+        try {
+            const killer = spawn("taskkill", args, {
+                windowsHide: true,
+                stdio: ["ignore", "ignore", "inherit"]
+            });
+            killer.once("error", (error) => {
+                console.error(`Failed to run taskkill during ${stage}:`, error);
+            });
+        } catch (error) {
+            console.error(`Failed to spawn taskkill during ${stage}:`, error);
+        }
+    };
+
+    const attemptTerminate = (stage) => {
+        console.error(`Attempting to terminate Mocha (${stage}).`);
+        if (sendSignal("SIGTERM", "SIGTERM") || sendSignal("SIGINT", "SIGINT")) {
+            taskKillWindows(stage);
+            return;
+        }
+        if (!sendSignal(undefined, "default kill")) {
+            console.error("Direct process.kill without signal reported failure.");
+        }
+        taskKillWindows(stage);
+    };
+
+    const attemptHardKill = (stage) => {
+        console.error(`Attempting hard kill of Mocha (${stage}).`);
+        sendSignal("SIGKILL", "SIGKILL");
+        sendSignal(undefined, "default kill");
+        taskKillWindows(`${stage} hard kill`);
+    };
 
     const cleanupAndExit = async (code) => {
         if (exitHandled) {
@@ -320,17 +378,13 @@ const runNodeTests = () => {
             console.error(
                 `Mocha did not finish within ${Math.round(runTimeoutMs / 1000)} seconds. Sending SIGTERM...`
             );
-            mochaProcess.kill("SIGTERM");
+            attemptTerminate("timeout");
             sigtermHandle = setTimeout(() => {
                 if (exitHandled) {
                     return;
                 }
                 console.error("Mocha still running after SIGTERM. Sending SIGKILL...");
-                try {
-                    mochaProcess.kill("SIGKILL");
-                } catch (error) {
-                    console.error(`Failed to send SIGKILL to Mocha: ${error.message}`);
-                }
+                attemptHardKill("timeout escalation");
                 sigkillHandle = setTimeout(() => {
                     if (!exitHandled) {
                         console.error(
@@ -348,11 +402,7 @@ const runNodeTests = () => {
                 return;
             }
             console.error("Attempting final SIGKILL before hard exit...");
-            try {
-                mochaProcess.kill("SIGKILL");
-            } catch (error) {
-                console.error(`Failed to send final SIGKILL: ${error.message}`);
-            }
+            attemptHardKill("absolute timeout");
             console.error(
                 `Hard timeout reached (${runTimeoutMs + 7000}ms since start). Forcing wrapper exit.`
             );
