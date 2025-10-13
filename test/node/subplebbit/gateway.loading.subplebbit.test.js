@@ -6,21 +6,28 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 
-const buildGatewayIpnsUrl = (gatewayPlebbit, subplebbit) => {
+const getGatewayBaseUrl = (gatewayPlebbit) => {
     const [gatewayUrl] = gatewayPlebbit.ipfsGatewayUrls || [];
     if (!gatewayUrl) throw new Error("Gateway Plebbit has no ipfsGatewayUrls configured");
-    return new URL(`/ipns/${subplebbit.address}`, gatewayUrl).toString();
+    return gatewayUrl;
 };
 
-const fetchIpnsRecordDirectly = async (gatewayPlebbit, subplebbit) => {
-    const ipnsUrl = buildGatewayIpnsUrl(gatewayPlebbit, subplebbit);
-    console.log(`Direct IPNS fetch attempt to ${ipnsUrl}`);
+const buildGatewayIpnsUrl = (gatewayPlebbit, subplebbit) => {
+    return new URL(`/ipns/${subplebbit.address}`, getGatewayBaseUrl(gatewayPlebbit)).toString();
+};
+
+const buildGatewayIpfsUrl = (gatewayPlebbit, cid) => {
+    return new URL(`/ipfs/${cid}`, getGatewayBaseUrl(gatewayPlebbit)).toString();
+};
+
+const fetchGatewayJson = async (url, context) => {
+    console.log(`${context} attempt to ${url}`);
     let res;
     try {
-        res = await fetch(ipnsUrl, { cache: "no-store" });
+        res = await fetch(url, { cache: "no-store" });
     } catch (error) {
-        console.error("Direct IPNS fetch request threw before receiving a response", {
-            url: ipnsUrl,
+        console.error(`${context} request threw before receiving a response`, {
+            url,
             errorName: error?.name,
             errorMessage: error?.message,
             errorStack: error?.stack,
@@ -37,7 +44,7 @@ const fetchIpnsRecordDirectly = async (gatewayPlebbit, subplebbit) => {
     if (!res.ok) {
         const headers = Object.fromEntries(res.headers.entries());
         const failureDetails = {
-            url: ipnsUrl,
+            url,
             status: res.status,
             statusText: res.statusText,
             headers,
@@ -46,8 +53,8 @@ const fetchIpnsRecordDirectly = async (gatewayPlebbit, subplebbit) => {
             redirect: res.redirected,
             type: res.type
         };
-        console.error("Direct IPNS fetch received non-OK response", failureDetails);
-        const error = new Error(`Direct IPNS fetch failed with status ${res.status}`);
+        console.error(`${context} received non-OK response`, failureDetails);
+        const error = new Error(`${context} failed with status ${res.status}`);
         //@ts-ignore - augment error for easier debugging
         error.responseBody = bodyText;
         //@ts-ignore
@@ -61,14 +68,14 @@ const fetchIpnsRecordDirectly = async (gatewayPlebbit, subplebbit) => {
         //@ts-ignore
         error.redirected = res.redirected;
         //@ts-ignore
-        error.url = ipnsUrl;
+        error.url = url;
         throw error;
     }
     try {
         return JSON.parse(bodyText);
     } catch (error) {
-        console.error("Failed to parse IPNS fetch response", {
-            url: ipnsUrl,
+        console.error(`Failed to parse ${context} response`, {
+            url,
             status: res.status,
             statusText: res.statusText,
             bodyPreview: bodyText.slice(0, 2000),
@@ -78,17 +85,28 @@ const fetchIpnsRecordDirectly = async (gatewayPlebbit, subplebbit) => {
             parseErrorStack: error?.stack
         });
         //@ts-ignore
-        error.url = ipnsUrl;
+        error.url = url;
         //@ts-ignore
         error.responseBody = bodyText;
         throw error;
     }
 };
 
+const fetchIpnsRecordDirectly = async (gatewayPlebbit, subplebbit) => {
+    const ipnsUrl = buildGatewayIpnsUrl(gatewayPlebbit, subplebbit);
+    return fetchGatewayJson(ipnsUrl, "Direct IPNS fetch");
+};
+
+const fetchCidRecordDirectly = async (gatewayPlebbit, cid) => {
+    const ipfsUrl = buildGatewayIpfsUrl(gatewayPlebbit, cid);
+    return fetchGatewayJson(ipfsUrl, "Direct CID fetch");
+};
+
 describe(`Gateway loading of local subplebbit IPNS - iteration ${i}`, async () => {
     let plebbit, subplebbit;
     let gatewayPlebbit;
     let kuboPlebbit;
+    let latestUpdateCid;
 
     before(async () => {
         plebbit = await mockPlebbit();
@@ -116,6 +134,8 @@ describe(`Gateway loading of local subplebbit IPNS - iteration ${i}`, async () =
         });
 
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updateCid === "string");
+        latestUpdateCid = subplebbit.updateCid;
     });
 
     after(async () => {
@@ -128,6 +148,19 @@ describe(`Gateway loading of local subplebbit IPNS - iteration ${i}`, async () =
     it("Can fetch the IPNS record directly from gateway without plebbit instance", async () => {
         console.log(`Starting test: iteration ${i} - Direct IPNS fetch without plebbit instance`);
         const record = await fetchIpnsRecordDirectly(gatewayPlebbit, subplebbit);
+        expect(record.updatedAt).to.equal(subplebbit.updatedAt);
+    });
+
+    it("Can fetch the CID directly from gateway without plebbit instance", async () => {
+        console.log(`Starting test: iteration ${i} - Direct CID fetch without plebbit instance`);
+        const record = await fetchCidRecordDirectly(gatewayPlebbit, latestUpdateCid);
+        expect(record.updatedAt).to.equal(subplebbit.updatedAt);
+    });
+
+    it("Can load the CID using gatewayPlebbit.fetchCid after it's published", async () => {
+        console.log(`Starting test: iteration ${i} - Can load the CID using gatewayPlebbit.fetchCid after it's published`);
+        const rawRecord = await gatewayPlebbit.fetchCid(latestUpdateCid);
+        const record = JSON.parse(rawRecord);
         expect(record.updatedAt).to.equal(subplebbit.updatedAt);
     });
 
