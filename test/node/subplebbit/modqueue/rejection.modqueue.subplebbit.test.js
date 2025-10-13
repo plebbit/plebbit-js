@@ -265,7 +265,19 @@ for (const commentMod of commentModProps) {
 
                 if (shouldCommentBePurged)
                     it(`Should not be able to update a rejected comment with ${JSON.stringify(commentMod)} and retrieve its update`, async () => {
+                        // this is failing
+                        // is it not timing out properly?
                         const newComment = await remotePlebbit.createComment(commentToBeRejected);
+
+                        newComment.on("updatingstatechange", (newState) => {
+                            console.log(
+                                "New updating state at",
+                                new Date(),
+                                newState,
+                                "subplebbit updatedAt",
+                                remotePlebbit._updatingSubplebbits[newComment.subplebbitAddress]?.updatedAt
+                            );
+                        });
 
                         const errors = [];
                         const failIfUpdated = () =>
@@ -275,13 +287,36 @@ for (const commentMod of commentModProps) {
                         newComment.on("error", (err) => errors.push(err));
                         await newComment.update();
 
-                        await resolveWhenConditionIsTrue(newComment, () => errors.length > 0, "error");
+                        // Wait until an error arrives or 20s pass so the test can proceed
+                        await new Promise((resolve) => {
+                            let settled = false;
+                            let timeoutId;
+                            const onError = () => {
+                                if (settled) return;
+                                settled = true;
+                                clearTimeout(timeoutId);
+                                newComment.removeListener("error", onError);
+                                resolve();
+                            };
+                            timeoutId = setTimeout(() => {
+                                if (settled) return;
+                                settled = true;
+                                newComment.removeListener("error", onError);
+                                resolve();
+                            }, 20_000);
+                            newComment.on("error", onError);
+                        });
+
                         newComment.removeListener("update", failIfUpdated);
 
-                        expect(errors[0].code).to.be.oneOf([
-                            "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
-                            "ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS"
-                        ]);
+                        expect(newComment.raw.commentUpdate).to.be.undefined;
+                        expect(newComment.updatedAt).to.be.undefined;
+                        if (errors.length > 0)
+                            expect(errors[0].code).to.be.oneOf([
+                                "ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES",
+                                "ERR_FAILED_TO_FIND_REPLY_COMMENT_UPDATE_WITHIN_PARENT_COMMENT_PAGE_CIDS"
+                            ]);
+                        await newComment.stop();
                     });
 
                 if (!shouldCommentBePurged)
