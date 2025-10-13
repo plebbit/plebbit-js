@@ -12,6 +12,52 @@ import {
 
 describe(`subplebbit.settings.challenges`, async () => {
     let plebbit, remotePlebbit;
+    const defaultMatches = JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]);
+    const defaultSettingsChallenges = [
+        {
+            name: "publication-match",
+            options: {
+                matches: defaultMatches,
+                error: "Posting in this community requires a username (author address) that ends with .eth or .sol. Go to the settings to set your username."
+            },
+            exclude: [
+                { role: ["moderator", "admin", "owner"] },
+                {
+                    firstCommentTimestamp: 60 * 60 * 24 * 30,
+                    postScore: 3,
+                    rateLimit: 2,
+                    replyScore: 0
+                },
+                { challenges: [1] },
+                { challenges: [2] }
+            ]
+        },
+        {
+            name: "whitelist",
+            options: {
+                urls: "https://raw.githubusercontent.com/plebbit/lists/refs/heads/master/whitelist-challenge.json",
+                error: "Or posting in this community requires being whitelisted. Go to https://t.me/plebbit and ask to be whitelisted. Or"
+            },
+            exclude: [{ challenges: [0] }, { challenges: [2] }]
+        },
+        {
+            name: "mintpass",
+            options: {
+                contractAddress: "0xcb60e1dd6944dfc94920e28a277a51a06e9f20d2",
+                chainTicker: "eth",
+                rpcUrl: "https://sepolia.base.org"
+            },
+            exclude: [{ challenges: [0] }, { challenges: [1] }]
+        }
+    ];
+    const defaultChallengeDescriptions = [
+        "Match publication properties against regex patterns.",
+        "Whitelist author addresses.",
+        "Verify that the author owns a MintPass NFT of the required type, with transfer cooldown protection."
+    ];
+    const defaultChallengeTypes = ["text/plain", "text/plain", "url/iframe"];
+    const defaultMintpassChallengeUrl = "https://mintpass.org/request/{authorAddress}?hide-nft=true&hide-address=true";
+
     before(async () => {
         plebbit = await mockPlebbit();
         remotePlebbit = await mockPlebbitNoDataPathWithOnlyKuboClient();
@@ -22,29 +68,12 @@ describe(`subplebbit.settings.challenges`, async () => {
         await remotePlebbit.destroy();
     });
 
-    it(`default challenge is captcha-canvas-v3`, async () => {
+    it(`default challenges are configured on new subplebbit`, async () => {
         // Should be set to default on subplebbit.start()
         const subplebbit = await plebbit.createSubplebbit({});
-        // subplebbit?.settings?.challenges should be set to captcha-canvas-v3
+        // subplebbit?.settings?.challenges should be set to defaultSettingsChallenges
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
-        expect(subplebbit?.settings?.challenges).to.deep.equal([
-            {
-                name: "captcha-canvas-v3",
-                exclude: [
-                    {
-                        role: ["moderator", "admin", "owner"],
-                        publicationType: {
-                            commentEdit: true,
-                            commentModeration: true,
-                            post: true,
-                            reply: true,
-                            subplebbitEdit: true,
-                            vote: true
-                        }
-                    }
-                ]
-            }
-        ]);
+        expect(subplebbit?.settings?.challenges).to.deep.equal(defaultSettingsChallenges);
 
         expect(subplebbit._usingDefaultChallenge).to.be.true;
 
@@ -52,42 +81,36 @@ describe(`subplebbit.settings.challenges`, async () => {
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) {
-            expect(_subplebbit.challenges[0].type).to.equal("image/png");
+            expect(_subplebbit.challenges.length).to.equal(defaultSettingsChallenges.length);
+            _subplebbit.challenges.forEach((challenge, index) => {
+                expect(challenge.type).to.equal(defaultChallengeTypes[index]);
+                expect(challenge.description).to.equal(defaultChallengeDescriptions[index]);
+                expect(challenge.exclude).to.deep.equal(defaultSettingsChallenges[index].exclude);
+            });
             expect(_subplebbit.challenges[0].challenge).to.be.undefined;
-            expect(_subplebbit.challenges[0].description).to.equal("make custom image captcha");
-            expect(_subplebbit.challenges[0].exclude).to.deep.equal([
-                {
-                    role: ["moderator", "admin", "owner"],
-                    publicationType: {
-                        commentEdit: true,
-                        commentModeration: true,
-                        post: true,
-                        reply: true,
-                        subplebbitEdit: true,
-                        vote: true
-                    }
-                }
-            ]);
-            expect(_subplebbit.challenges[0].caseInsensitive).to.be.true;
+            expect(_subplebbit.challenges[1].challenge).to.be.undefined;
+            expect(_subplebbit.challenges[2].challenge).to.equal(defaultMintpassChallengeUrl);
         }
         // clean up
         await subplebbit.delete();
     });
 
-    it(`Default challenge will send a challenge with the correct properties`, async () => {
+    it(`Default challenges reject authors without an allowed address`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
 
-        const challengePromise = new Promise((resolve) => subplebbit.once("challenge", resolve));
+        const challengeVerificationPromise = new Promise((resolve) => subplebbit.once("challengeverification", resolve));
         const post = await generateMockPost(subplebbit.address, remotePlebbit);
-        await post.publish();
-        const challengePubsubMsg = await challengePromise;
-        expect(challengePubsubMsg.challenges).to.be.a("array");
-        expect(challengePubsubMsg.challenges.length).to.equal(1);
-        expect(challengePubsubMsg.challenges[0].type).to.equal("image/png");
-        expect(challengePubsubMsg.challenges[0].challenge).to.be.be.a("string"); // base64 string
-        expect(challengePubsubMsg.challenges[0].caseInsensitive).to.be.true;
+        await publishWithExpectedResult(post, false);
+        const challengeVerification = await challengeVerificationPromise;
+        expect(challengeVerification.challengeSuccess).to.equal(false);
+        expect(challengeVerification.challengeErrors).to.not.equal(undefined);
+        expect(Object.keys(challengeVerification.challengeErrors)).to.have.members(["0", "1", "2"]);
+        expect(challengeVerification.challengeErrors?.["0"]).to.equal(defaultSettingsChallenges[0].options.error);
+        expect(challengeVerification.challengeErrors?.["1"]).to.equal(defaultSettingsChallenges[1].options.error);
+        expect(challengeVerification.challengeErrors?.["2"]).to.be.a("string");
+        expect(challengeVerification.challengeErrors?.["2"]).to.include("You need a MintPass NFT to post in this community.");
         await subplebbit.delete();
     });
 
@@ -104,24 +127,7 @@ describe(`subplebbit.settings.challenges`, async () => {
 
     itSkipIfRpc(`plebbit-js will upgrade default challenge if there is a new one`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
-        expect(subplebbit?.settings?.challenges).to.deep.equal([
-            {
-                name: "captcha-canvas-v3",
-                exclude: [
-                    {
-                        role: ["moderator", "admin", "owner"],
-                        publicationType: {
-                            commentEdit: true,
-                            commentModeration: true,
-                            post: true,
-                            reply: true,
-                            subplebbitEdit: true,
-                            vote: true
-                        }
-                    }
-                ]
-            }
-        ]);
+        expect(subplebbit?.settings?.challenges).to.deep.equal(defaultSettingsChallenges);
         expect(subplebbit._usingDefaultChallenge).to.be.true;
         const differentDefaultChallenges = [];
         subplebbit._defaultSubplebbitChallenges = differentDefaultChallenges;

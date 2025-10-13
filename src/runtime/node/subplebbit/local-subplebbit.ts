@@ -175,20 +175,39 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private _defaultSubplebbitChallenges: SubplebbitChallengeSetting[] = [
         {
-            name: "captcha-canvas-v3",
+            name: "publication-match",
+            options: {
+                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]),
+                error: "Posting in this community requires a username (author address) that ends with .eth or .sol. Go to the settings to set your username."
+            },
             exclude: [
+                { role: ["moderator", "admin", "owner"] },
                 {
-                    role: ["moderator", "admin", "owner"],
-                    publicationType: {
-                        commentModeration: true,
-                        subplebbitEdit: true,
-                        commentEdit: true,
-                        post: true,
-                        reply: true,
-                        vote: true
-                    }
-                }
+                    firstCommentTimestamp: 60 * 60 * 24 * 30,
+                    postScore: 3,
+                    rateLimit: 2,
+                    replyScore: 0
+                },
+                { challenges: [1] },
+                { challenges: [2] }
             ]
+        },
+        {
+            name: "whitelist",
+            options: {
+                urls: "https://raw.githubusercontent.com/plebbit/lists/refs/heads/master/whitelist-challenge.json",
+                error: "Or posting in this community requires being whitelisted. Go to https://t.me/plebbit and ask to be whitelisted. Or"
+            },
+            exclude: [{ challenges: [0] }, { challenges: [2] }]
+        },
+        {
+            name: "mintpass",
+            options: {
+                contractAddress: "0xcb60e1dd6944dfc94920e28a277a51a06e9f20d2",
+                chainTicker: "eth",
+                rpcUrl: "https://sepolia.base.org"
+            },
+            exclude: [{ challenges: [0] }, { challenges: [1] }]
         }
     ];
 
@@ -2169,8 +2188,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _cleanUpIpfsRepoRarely(force = false) {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        // TODO this is a temporary disablement of GC, I suspect it's causing CI to fail
-        return;
         if (Math.random() < 0.0001 || force) {
             let gcCids = 0;
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
