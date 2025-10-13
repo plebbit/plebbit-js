@@ -42,7 +42,7 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
               shell: bash
             - name: Run mocked challenge tests
               run: npm run test:mocked:challenges
@@ -70,7 +70,7 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
             - name: Run tests with config
               run: DEBUG="plebbit*, -plebbit*trace" node test/run-test-config.js --plebbit-config ${{ matrix.config }} --environment node
             - run: cat test_server.log
@@ -95,7 +95,7 @@ jobs:
             - run: npm ci
             - run: npm run build
 
-            - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*" npm run test:server:node 2>&1 | tee test_server.log & npm run test:server:wait-on
 
             # Install Chrome
             - name: Install Playwright browsers
@@ -122,7 +122,7 @@ jobs:
             - run: npm ci
             - run: npm run build
             # Setup tests for plebbit-js using rpc here
-            - run: DEBUG="plebbit*" npm run test:server:node:rpc |& tee test_server.log & npm run test:server:wait-on
+            - run: DEBUG="plebbit*" npm run test:server:node:rpc 2>&1 | tee test_server.log & npm run test:server:wait-on
             - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
             - run: cat test_server.log
               if: ${{ !cancelled() && failure() }}
