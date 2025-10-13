@@ -20,15 +20,17 @@ async function createTestContext({ retentionSeconds } = {}) {
     const modSigner = await plebbit.createSigner();
 
     const initialSettings = JSON.parse(JSON.stringify(subplebbit.settings ?? {}));
-    const mergedChallenges = Array.isArray(initialSettings.challenges)
-        ? initialSettings.challenges.map((challenge, idx) => (idx === 0 ? { ...challenge, pendingApproval: true } : challenge))
-        : [
-              {
-                  name: "question",
-                  options: { question: "1+1?", answer: "2" },
-                  pendingApproval: true
-              }
-          ];
+    const mergedChallenges = [
+        {
+            name: "publication-match",
+            options: {
+                matches: JSON.stringify([{ propertyName: "author.address", regexp: "\\.(sol|eth)$" }]),
+                error: "Posting in this community requires a username (author address) that ends with .eth or .sol."
+            },
+            exclude: [{ role: ["moderator", "admin", "owner"] }],
+            pendingApproval: true
+        }
+    ];
 
     const editedSettings = {
         ...initialSettings,
