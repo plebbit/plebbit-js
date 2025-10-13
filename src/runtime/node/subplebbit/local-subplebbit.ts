@@ -2188,7 +2188,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _cleanUpIpfsRepoRarely(force = false) {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        if (Math.random() < 0.0001 || force) {
+        if (Math.random() < 0.00001 || force) {
             let gcCids = 0;
             const kuboRpc = this._clientsManager.getDefaultKuboRpcClient();
 
