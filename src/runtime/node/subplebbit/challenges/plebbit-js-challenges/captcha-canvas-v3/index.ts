@@ -1,5 +1,3 @@
-import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants.js";
-
 import {
     ChallengeFileInput,
     ChallengeInput,
@@ -8,6 +6,7 @@ import {
 } from "../../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import { createCaptcha } from "captcha-canvas";
+import { SetCaptchaOption } from "captcha-canvas/dist/constants.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
     {
@@ -56,7 +55,7 @@ const getChallenge = async (
     const characters = subplebbitChallengeSettings?.options?.characters ? Number(subplebbitChallengeSettings?.options?.characters) : 6;
     const colors = subplebbitChallengeSettings?.options?.colors ? (subplebbitChallengeSettings?.options?.colors).split(",") : ["#32cf7e"];
 
-    const setCaptchaOptions: CreateCaptchaOptions["captcha"] = {};
+    const setCaptchaOptions: SetCaptchaOption = {};
     if (characters) setCaptchaOptions.characters = characters;
     if (colors) setCaptchaOptions.colors = colors;
     const res = createCaptcha(width, height, { captcha: setCaptchaOptions });
