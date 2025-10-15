@@ -1,11 +1,10 @@
-import {
+import type {
     ChallengeFileInput,
     ChallengeInput,
     ChallengeResultInput,
     SubplebbitChallengeSetting
 } from "../../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
-import { createCaptcha } from "captcha-canvas";
 import type { SetCaptchaOption } from "captcha-canvas/dist/constants.js";
 
 const optionInputs = <NonNullable<ChallengeFileInput["optionInputs"]>>[
@@ -48,6 +47,7 @@ const getChallenge = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ): Promise<ChallengeInput> => {
+    const { createCaptcha } = await import("captcha-canvas");
     // setCaptchaOptions https://captcha-canvas.js.org/global.html#SetCaptchaOptions
 
     const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : 300;
